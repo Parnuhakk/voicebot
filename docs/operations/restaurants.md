@@ -312,6 +312,17 @@ restaurant data uses its own database and does not migrate prior reservations.
 
 ## Local checks
 
+### Family facilities
+
+The optional `family_facilities` object accepts `drawing`, `toys`,
+`play_corner` and `children_menu`, with strict boolean or null values. Only
+`true` is stated as available. An absent field remains unconfirmed. The demo
+profile's four positive values were confirmed by the owner on 2026-10-04.
+They do not establish children's dishes, prices, supervision, age limits,
+highchairs or free use. Questions about those details ask the restaurant team.
+The shared question selector and reviewed ET/EN/RU answer apply to web and
+native conversation turns; a native deployment still needs release verification.
+
 Run the core and separate media suites with their project environments:
 
 ```powershell
