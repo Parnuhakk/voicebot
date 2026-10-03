@@ -42,3 +42,27 @@ jobs:
           tests/test_twilio_deployment.py
       - name: Core regression suite (synthetic providers)
         run: python -m pytest tests -q
+
+  shared-images:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Build both production images from the same checkout
+        run: |
+          docker build --tag voicebot-web:ci .
+          docker build --file deploy/telephony/Dockerfile --tag voicebot-telephone:ci .
+      - name: Compare actual web and telephone source and behavior fingerprints
+        shell: bash
+        run: |
+          voicebot_web_identity="$(docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges --entrypoint python voicebot-web:ci -m app.release_status identity)"
+          voicebot_native_identity="$(docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges --entrypoint python voicebot-telephone:ci -m app.release_status identity)"
+          test "$voicebot_web_identity" = "$voicebot_native_identity"
+          test "${#voicebot_web_identity}" -eq 64
+      - name: Import native worker and bridge without network or live credentials
+        run: >-
+          docker run --rm --network none --read-only --cap-drop ALL
+          --security-opt no-new-privileges --entrypoint python
+          voicebot-telephone:ci -c 'import app.worker; import app.twilio_bridge'

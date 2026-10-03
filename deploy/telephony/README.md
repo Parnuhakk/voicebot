@@ -222,6 +222,9 @@ GitHub Actions workflow does not install a systemd service on the Arle host.
 `.github/workflows/voice-release-checks.yml` checks the real Linux locking and
 reconciliation paths plus Docker Compose parsing on pull requests and master
 pushes. It uses synthetic provider fixtures, never deployment or carrier keys.
+An independent job builds both production images, compares their actual common
+source/behavior fingerprints and imports the native worker/bridge without
+network access or live credentials.
 
 ## Synthetic proofs
 
