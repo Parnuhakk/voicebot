@@ -99,24 +99,18 @@ async page => {
     await page.waitForFunction(()=>state.sessionId && !state.turnBusy);
     assert((await page.locator('#demo-messages').textContent()).includes(language.greeting));
     assert.equal(requests.at(-1).body.language,language.code);
-    const unsupportedPrompt = {
-      et: 'Palun räägi eesti, vene või inglise keeles.',
-      en: 'Please speak Estonian, Russian or English.',
-      ru: 'Пожалуйста, говорите по-эстонски, по-русски или по-английски.',
+    const recoveryPrompts = {
+      et: ['Ma ei saanud päris aru. Palun korda oma vastust.', 'Ma ei saanud ikka aru. Palun kirjuta oma vastus eesti, vene või inglise keeles.'],
+      en: ["I didn't quite catch that. Please repeat your answer.", "I still couldn't understand. Please type your answer in Estonian, Russian or English."],
+      ru: ['Не удалось разобрать ответ. Повторите, пожалуйста.', 'Всё ещё не удалось понять. Напишите ответ по-эстонски, по-русски или по-английски.'],
     }[language.code];
-    await page.route('**/api/turn', route => route.fulfill({
-      status: 200, contentType: 'application/json', body: JSON.stringify({
-        text_heard: '', language: language.code, reply: unsupportedPrompt,
-        audio_b64: '', input_status: 'unsupported_language',
-        tools_used: 0, booking_changes: [], booking_ids: [], warnings: [],
-        outcome: 'ok', tts_failed: true, recap_delivery_id: null,
-      }),
-    }), {times: 1});
-    await page.evaluate(() => sendTurn({audio_b64: btoa('fixture-audio')}));
-    await page.waitForFunction(() => !state.turnBusy);
-    assert.equal(await page.locator('#demo-status').textContent(), unsupportedPrompt);
-    assert((await page.locator('#demo-messages .message').last().textContent()).includes(unsupportedPrompt));
-    assert.equal(await page.locator('#demo-messages .message').count(), 2, 'unsupported speech added an empty caller message');
+    for (const prompt of recoveryPrompts) {
+      await page.evaluate(() => sendTurn({audio_b64: btoa('fixture-unsupported-recovery')}));
+      await page.waitForFunction(() => !state.turnBusy);
+      assert.equal(await page.locator('#demo-status').textContent(), prompt);
+      assert((await page.locator('#demo-messages .message').last().textContent()).includes(prompt));
+    }
+    assert.equal(await page.locator('#demo-messages .message').count(), 3, 'unsupported speech added an empty caller message');
     assert.equal(await page.evaluate(() => state.recap), null);
     const hoursQuestions = {
       et: ['Mis kellani te lahti olete?', 'Aga nädalavahetusel?', 'Esmaspäevast neljapäevani'],

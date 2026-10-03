@@ -1046,7 +1046,7 @@ async function sendTurn(input) {
     $("demo-text").value = "";
     status(
       "demo-status",
-      data.input_status === "unsupported_language"
+      ["unsupported_language", "no_speech"].includes(data.input_status)
         ? data.reply
         : data.outcome === "unknown_outcome"
         ? demoCopy().unknown

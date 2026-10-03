@@ -11,7 +11,7 @@ pytest.importorskip("livekit.agents")
 from livekit import rtc  # noqa: E402
 from livekit.agents import APIError, APIConnectOptions, llm, stt  # noqa: E402
 
-from app.languages import ENGLISH  # noqa: E402
+from app.input_recovery import REPEAT_PROMPT, WRITE_LANGUAGE_PROMPT  # noqa: E402
 from app.providers.telephone_stt import TelephoneSTT  # noqa: E402
 from app.telephone import CallTools  # noqa: E402
 from app.worker import TelephoneAgent  # noqa: E402
@@ -170,7 +170,7 @@ def test_unsupported_language_asks_supported_language_and_blocks_tools(mode, sou
         await agent.on_user_turn_completed(
             None, NS(role="user", text_content="Bonjour")
         )
-        assert state.guard_reply("Anything", []) == ENGLISH["unsupported"]
+        assert state.guard_reply("Anything", []) == REPEAT_PROMPT["en"]
         assert (await state.dispatch("get_slot_catalogue", {}))[
             "error"
         ] == "clarification_required"
@@ -252,8 +252,10 @@ def test_unsupported_fragment_is_not_hidden_by_later_supported_fragment():
         assert message.text_content is None
         with patch("livekit.agents.Agent.default.llm_node", side_effect=AssertionError("model called")):
             replies = [chunk async for chunk in agent.llm_node(llm.ChatContext(items=[message]), [], NS())]
-        assert replies == [ENGLISH["unsupported"]]
+        assert replies == [REPEAT_PROMPT["en"]]
         assert not state.dispatcher.calls
         assert not agent._unsupported_language
+        await agent.on_user_turn_completed(None, llm.ChatMessage(role="user", content=[""]))
+        assert state.direct_reply == WRITE_LANGUAGE_PROMPT["en"]
 
     asyncio.run(run())

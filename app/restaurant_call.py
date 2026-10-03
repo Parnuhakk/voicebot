@@ -478,7 +478,10 @@ class RestaurantCallTools(CallTools):
         self._restaurant_question = None
         self._restaurant_unmatched = False
         text = " ".join(text.casefold().split()) if isinstance(text, str) else ""
-        if self.mutation_uncertain or self.unsupported_language:
+        if (
+            self.mutation_uncertain or self.unsupported_language or self.input_recovery_reply
+            or kwargs.get("recognition_status") in {"stt_unavailable", "input_invalid"}
+        ):
             return
         if self.conversation.intent in {"decline", "goodbye"}:
             self._restaurant_inquiry = None
@@ -752,7 +755,7 @@ class RestaurantCallTools(CallTools):
             return {"error": "not_allowed"}
         if self.mutation_uncertain:
             return self._unknown_mutation(name)
-        if self.clarification or self.unsupported_language:
+        if self.clarification or self.unsupported_language or self.input_recovery_reply:
             return {"error": "clarification_required"}
         if (
             name == "plan_restaurant_reservation"
@@ -952,7 +955,7 @@ class RestaurantCallTools(CallTools):
             return copybook["unknown"]
         if not self.unsupported_language and self.clarification in {"ambiguous_time", "invalid_time"}:
             return copybook[self.clarification]
-        if self.clarification or self.unsupported_language:
+        if self.clarification or self.unsupported_language or self.input_recovery_reply:
             return super().guard_reply(text, results)
         if errors:
             self.invalidate_recap()
@@ -990,6 +993,9 @@ class RestaurantCallTools(CallTools):
                 }
                 if row["restaurant_information"] in approved:
                     return row["restaurant_information"]
+        if text in (STT_UNAVAILABLE[self.language], TURN_UNAVAILABLE[self.language]):
+            self.invalidate_recap()
+            return text
         reply = self.inquiry_reply()
         if reply:
             return reply

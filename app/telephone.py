@@ -48,6 +48,7 @@ from .booking_faq import (
     render_catalogue,
 )
 from .russian import localize
+from .input_recovery import InputRecovery
 from .languages import (
     AFFIRMATIONS_ET,
     AFFIRMATIONS_EN,
@@ -61,7 +62,6 @@ from .languages import (
     ENGLISH_INVITATION,
     ENGLISH_TOOL_ERRORS,
     LANGUAGE_POLICY,
-    SUPPORTED_LANGUAGE_PROMPT,
     LANGUAGES,
     english_clarification,
     render_english_read,
@@ -549,6 +549,7 @@ class CallTools:
         self.conversation = Conversation()
         self.clarification = None
         self.unsupported_language = False
+        self._input_recovery = InputRecovery()
         self.dispatcher = dispatcher
         self.call_id = validate_call_id(
             uuid.uuid4().hex if call_id is None else call_id
@@ -787,8 +788,12 @@ class CallTools:
         return ENGLISH["fallback"] if self.language == "en" else self.say(FALLBACK)
 
     @property
+    def input_recovery_reply(self):
+        return self._input_recovery.reply(self.language)
+
+    @property
     def direct_reply(self):
-        if self.unsupported_language:
+        if self.unsupported_language or self.input_recovery_reply:
             return self.guard_reply("", [])
         if self.pending and not self.pending["approved"]:
             # Repeat/language-switch turns keep an owned proposal but revoke
@@ -806,6 +811,7 @@ class CallTools:
         detected_language: object = None,
         language: str | None = None,
         unsupported: bool = False,
+        recognition_status: str | None = None,
     ) -> None:
         """Trusted STT/HTTP caller only; no transcript is retained or logged."""
         if is_final is not True:
@@ -832,6 +838,11 @@ class CallTools:
         self.language = selected
         self.conversation.observe(text, selected)
         self.unsupported_language = bool(unsupported)
+        self._input_recovery.observe(
+            "unsupported_language" if self.unsupported_language
+            else recognition_status if recognition_status in {"stt_unavailable", "input_invalid"}
+            else "recognized" if text.strip() else "no_speech"
+        )
         if self.unsupported_language:
             self.invalidate_recap()
         self.clarification = english_clarification(text) if selected == "en" else None
@@ -1200,9 +1211,9 @@ class CallTools:
             return self.say(mutation_replies[self.turn_mutation]) + self.say(
                 ENGLISH["other_failed"] if english else " Muu päring ebaõnnestus."
             )
-        if self.unsupported_language:
+        if self.unsupported_language or self.input_recovery_reply:
             self.invalidate_recap()
-            return SUPPORTED_LANGUAGE_PROMPT[self.language]
+            return self.input_recovery_reply or REPEAT_PROMPT[self.language]
         if self.clarification:
             self.invalidate_recap()
             return ENGLISH[self.clarification]
@@ -1833,7 +1844,7 @@ class CallTools:
         if self.count > 64 or not isinstance(name, str) or name not in self.names:
             return {"error": "not_allowed"}
         if (
-            self.clarification or self.unsupported_language
+            self.clarification or self.unsupported_language or self.input_recovery_reply
         ) and name != "get_demo_profile":
             return {"error": "clarification_required"}
         if self.mutation_uncertain and name in MUTATION_TOOLS | {

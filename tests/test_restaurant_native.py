@@ -17,6 +17,7 @@ from app.booking.restaurant import RestaurantAdapter  # noqa: E402
 from app.business import restaurant_dispatcher  # noqa: E402
 from app.call_factory import make_call_tools  # noqa: E402
 from app.restaurant_data import load_restaurant_data  # noqa: E402
+from app.input_recovery import REPEAT_PROMPT, WRITE_LANGUAGE_PROMPT  # noqa: E402
 from livekit.agents import AgentSession  # noqa: E402
 from tests.test_native_booking_terminals import (  # noqa: E402
     Playback,
@@ -103,6 +104,38 @@ def test_native_sdk_confirmation_is_visible_in_the_restaurant_database(
         assert len(rows) == 1 and rows[0]["status"] == "confirmed"
         assert rows[0]["service_id"] == 4
         assert str(rows[0]["id"]) in state.bookings
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("language", ["et", "en", "ru"])
+def test_native_sdk_repeats_once_then_requests_writing_and_resets(tmp_path, language):
+    async def run():
+        data = load_restaurant_data()
+        adapter = RestaurantAdapter(str(tmp_path / "recovery.db"), data=data, allow_writes=True)
+        state = make_call_tools(restaurant_dispatcher(adapter, data), language=language)
+        agent = worker.TelephoneAgent(state)
+        model = UnusedModel()
+        session = AgentSession(llm=model, tts=UnusedTTS(), turn_handling={"turn_detection": "manual"})
+        session.output.audio = Playback()
+        with patch("livekit.agents.Agent.default.tts_node", synthesize):
+            await session.start(agent=agent, record=False)
+            try:
+                for expected in (REPEAT_PROMPT[language], WRITE_LANGUAGE_PROMPT[language]):
+                    agent._unsupported_language = True
+                    await native_turn(session, agent, "private-rejected-language-fixture")
+                    assert agent.chat_ctx.items[-1].text_content == expected
+                    assert not state.bookings and state.pending is None
+                greeting = {"et": "Tere", "en": "Hello", "ru": "Здравствуйте"}[language]
+                await native_turn(session, agent, greeting)
+                assert state.input_recovery_reply is None
+                agent._unsupported_language = True
+                await native_turn(session, agent, "private-rejected-language-fixture")
+                assert agent.chat_ctx.items[-1].text_content == REPEAT_PROMPT[language]
+                assert model.calls == 0
+                assert not any("private-rejected" in (item.text_content or "") for item in agent.chat_ctx.items if getattr(item, "role", None) == "user")
+            finally:
+                await session.aclose()
 
     asyncio.run(run())
 

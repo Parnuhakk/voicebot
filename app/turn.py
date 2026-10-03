@@ -4,7 +4,8 @@ One inbound turn: transcribe audio, chat with tool-calling, execute any
 tool calls via Dispatcher (errors become tool results, never call drops),
 render the final reply through the price gate, synthesize it.
 Primary LLM 429/retryable failure fails over to the secondary once.
-Empty transcription returns a repeat-prompt without spending LLM/TTS.
+Empty or rejected transcription uses the session's recovery prompt, skipping
+the model and booking tools.
 History is sanitized (role allowlist, turn/char caps, tool output is
 untrusted data). Price-like tokens in the final reply must match a
 quoted_total from THIS turn's tool results or the reply is replaced
@@ -19,7 +20,7 @@ import re
 from dataclasses import dataclass
 from inspect import getattr_static
 
-from .languages import SUPPORTED_LANGUAGE_PROMPT
+from .input_recovery import REPEAT_PROMPT
 from .providers.transcription import Transcription
 
 from .providers.errors import (
@@ -27,12 +28,6 @@ from .providers.errors import (
     RateLimitedError,
     RetryableProviderError,
 )
-
-REPEAT_PROMPT = {
-    "et": "Vabandust, ma ei kuulnud. Palun korrake?",
-    "en": "Sorry, I didn't catch that. Please repeat?",
-    "ru": "Извините, не расслышал. Повторите, пожалуйста?",
-}
 
 STT_UNAVAILABLE = {
     "et": (
@@ -191,16 +186,18 @@ async def run_turn(
     history: list | None = None,
     text: str | None = None,
     recognition_status: str | None = None,
+    recovery_prompt: str | None = None,
 ) -> dict:
     """Execute one voice turn. Returns heard/reply/audio/tool_results.
 
-    text skips STT (typed/test turns); audio turns transcribe first.
+    text skips STT (typed/test turns); audio turns transcribe first. Session
+    owners supply their already-observed recovery prompt; this loop is stateless.
     """
     lang = language if language in ("et", "en", "ru") else "et"
     if text is None:
         if not (audio or b"").strip():
             # Empty audio never reaches paid STT.
-            prompt = REPEAT_PROMPT.get(lang, REPEAT_PROMPT["et"])
+            prompt = recovery_prompt or REPEAT_PROMPT[lang]
             return {
                 "text_heard": "",
                 "reply": prompt,
@@ -211,7 +208,7 @@ async def run_turn(
             }
         text, recognition_status = await recognize_audio(stt, audio, lang)
     if recognition_status == "unsupported_language":
-        prompt = SUPPORTED_LANGUAGE_PROMPT[lang]
+        prompt = recovery_prompt or REPEAT_PROMPT[lang]
         return {
             "text_heard": "",
             "reply": prompt,
@@ -231,7 +228,7 @@ async def run_turn(
             "input_status": "stt_unavailable",
         }
     if not (text or "").strip():
-        prompt = REPEAT_PROMPT.get(lang, REPEAT_PROMPT["et"])
+        prompt = recovery_prompt or REPEAT_PROMPT[lang]
         return {
             "text_heard": "",
             "reply": prompt,

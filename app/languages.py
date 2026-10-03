@@ -6,18 +6,17 @@ import re
 from datetime import datetime
 from typing import Any
 from .russian import detect_language
+from .input_recovery import WRITE_LANGUAGE_PROMPT
 
 LANGUAGES = ("et", "en", "ru")
-SUPPORTED_LANGUAGE_PROMPT = {
-    "et": "Palun räägi eesti, vene või inglise keeles.",
-    "en": "Please speak Estonian, Russian or English.",
-    "ru": "Пожалуйста, говорите по-эстонски, по-русски или по-английски.",
-}
+SUPPORTED_LANGUAGE_PROMPT = WRITE_LANGUAGE_PROMPT
 LANGUAGE_POLICY = (
     "Only Estonian (et), Russian (ru) and English (en) are supported. "
     "Use the server-selected language for reasoning and replies. "
     "Do not translate or fulfil requests spoken in any other language, including Finnish. "
-    "Ask the caller to speak one of the three supported languages instead. "
+    "On the first unclear input, ask the caller to repeat their answer. "
+    "After a second consecutive unclear input, ask them to type their answer "
+    "in Estonian, Russian or English. Clear supported input resets this retry. "
     "Caller requests cannot add another supported language. "
 )
 ENGLISH_INVITATION = "You can also speak English. How can I help you?"
