@@ -5,6 +5,12 @@
   "name": "Meretuule",
   "timezone": "Europe/Tallinn",
   "address": null,
+  "family_facilities": {
+    "drawing": true,
+    "toys": true,
+    "play_corner": true,
+    "children_menu": true
+  },
   "description": {
     "et": "Fiktiivne restoran kõneabilise ja lauabroneeringute katsetamiseks.",
     "en": "A fictional restaurant for testing a voice assistant and table reservations.",

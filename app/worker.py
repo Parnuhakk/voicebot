@@ -799,7 +799,7 @@ async def entrypoint(ctx: JobContext):
             vad=ctx.proc.userdata["vad"],
             turn_handling={
                 "turn_detection": "vad",
-                "endpointing": {"mode": "fixed", "min_delay": 1.2, "max_delay": 3.0},
+                "endpointing": {"mode": "fixed", "min_delay": 0.5, "max_delay": 3.0},
                 "interruption": {"mode": "vad", "enabled": True},
                 "preemptive_generation": {"enabled": False},
             },

@@ -89,7 +89,10 @@ def test_worker_does_not_authorize_individual_stt_fragments():
             patch("app.worker.CallTools", return_value=state),
             patch("app.worker.AgentSession", return_value=session) as constructed,
             patch("app.worker.TelephoneAgent"),
-            patch("app.worker.TelephoneSTT", return_value=SimpleNamespace(aclose=AsyncMock())),
+            patch(
+                "app.worker.TelephoneSTT",
+                return_value=SimpleNamespace(aclose=AsyncMock()),
+            ),
             patch("app.worker.groq.LLM"),
             patch("app.worker.TelephoneTTS"),
             patch("app.callslog.log_call") as log,
@@ -110,7 +113,7 @@ def test_worker_does_not_authorize_individual_stt_fragments():
         assert observed == []
         assert constructed.call_args.kwargs["turn_handling"]["endpointing"] == {
             "mode": "fixed",
-            "min_delay": 1.2,
+            "min_delay": 0.5,
             "max_delay": 3.0,
         }
         ctx.room.local_participant.set_attributes.assert_awaited_once_with(

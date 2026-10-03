@@ -338,7 +338,9 @@ def test_english_auto_conversation_keeps_details_across_question(make_state):
         assert state.language == "en"
         assert state.guard_reply("Untrusted answer", []) == COPY["en"][key]
     state.observe_user_text("How much does the salmon cost?")
-    assert trusted_booking_response(state) == {"content": COPY["en"]["price"]}
+    side_answer = trusted_booking_response(state)["content"]
+    assert side_answer.startswith(COPY["en"]["price"])
+    assert side_answer.endswith(COPY["en"]["time"])
     state.observe_user_text("Two pm")
     assert state.guard_reply("Untrusted answer", []) == COPY["en"]["party"]
     state.observe_user_text("There will be four of us")
@@ -370,7 +372,9 @@ def test_unknown_question_does_not_replay_previous_booking_plan(make_state):
     state.observe_user_text("I'd like a table tomorrow at 2 pm for four")
     inquiry = state.booking_inquiry
     state.observe_user_text("What is the Wi-Fi password?")
-    assert trusted_booking_response(state) == {"content": COPY["en"]["information_unknown"]}
+    side_answer = trusted_booking_response(state)["content"]
+    assert side_answer.startswith(COPY["en"]["information_unknown"])
+    assert side_answer.endswith(COPY["en"]["resume_check"])
     assert state.booking_inquiry == inquiry
     assert state.pending is None
 
@@ -383,7 +387,12 @@ def test_unknown_question_with_numbers_cannot_become_a_booking(make_state, quest
         state.observe_user_text("I'd like a table tomorrow at 2 pm for four")
     previous = state.booking_inquiry
     state.observe_user_text(question)
-    assert trusted_booking_response(state) == {"content": COPY["en"]["information_unknown"]}
+    side_answer = trusted_booking_response(state)["content"]
+    assert side_answer.startswith(COPY["en"]["information_unknown"])
+    if has_inquiry:
+        assert side_answer.endswith(COPY["en"]["resume_check"])
+    else:
+        assert side_answer == COPY["en"]["information_unknown"]
     assert state.booking_inquiry == previous
 
 

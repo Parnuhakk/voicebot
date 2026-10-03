@@ -81,6 +81,14 @@ def load_restaurant_data(path=None):
             _translations(data[field])
         if "pet_policy" in data:
             data["pet_policy"] = _translations(data["pet_policy"])
+        if "family_facilities" in data:
+            from .restaurant_family import FACILITIES
+
+            facilities = data["family_facilities"]
+            if not isinstance(facilities, dict) or set(facilities) - set(FACILITIES):
+                raise ValueError()
+            if any(value is not None and type(value) is not bool for value in facilities.values()):
+                raise ValueError()
         ranges = {
             "reservation_duration_minutes": (30, 240),
             "slot_interval_minutes": (5, 60),
