@@ -22,7 +22,7 @@ from app.conversation import QUESTIONS
 from app.languages import CONSENT, ENGLISH
 from app.russian import localize
 from app.telephone import CallTools, UNKNOWN_REPLY, UNVERIFIED_REPLY
-from tests.test_product_demo import SimpleLlm, call, client, send, start
+from tests.test_product_demo import AUTH, SimpleLlm, call, client, send, start
 from tests.test_telephone import Slots, prepared
 
 
@@ -156,7 +156,11 @@ def setup_session(client, language):
     dispatcher = FaqDispatcher()
     model = SimpleLlm("Unapproved model claim: your booking is confirmed.")
     client.app.state.stack.update(dispatcher=dispatcher, llm_primary=model)
-    session = start(client)
+    started = client.post(
+        "/api/demo/session", headers=AUTH, json={"language": language}
+    )
+    assert started.status_code == 200
+    session = started.json()["session_id"]
     state = client.app.state.demo_sessions.sessions[session].tools
     return session, state, dispatcher, model
 
