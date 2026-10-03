@@ -246,14 +246,14 @@ def select_language(text: str, detected: object, current: str) -> str:
     inferred = detect_language(text, "en")
     if inferred == "ru":
         return "ru"
-    if inferred == "et":
+    if inferred == "et" and detect_language(re.sub(r"[õäöü]", "", text, flags=re.I), "en") == "et":
         return "et"
     if re.search(
         r"\b(?:hello|hi|hey|please|where|when|what|how|book|booking|want|need|reserve|thank|"
         r"tomorrow|today|tonight|thanks|goodbye|bye)\b|"
         r"\b(?:i|we|you|there|it|that)\s+(?:would|will|have|are|is|can|like)\b|"
         r"\b(?:i['’]d|we['’]d|i['’]m|we['’]re|can i|can you|can we|do you|does the|"
-        r"is there|is the|is this|is that|are you|are there|does it|could i|could you|"
+        r"is there|is the|is this|is that|is it|are you|are there|does it|does your|could i|could you|"
         r"a table|a reservation|a booking|good morning|good afternoon|good evening|"
         r"for (?:two|three|four|five|six))\b",
         text,
@@ -262,7 +262,7 @@ def select_language(text: str, detected: object, current: str) -> str:
         return "en"
     if code:
         return code
-    return current
+    return "et" if inferred == "et" else current
 
 
 def english_clarification(text: object) -> str | None:

@@ -359,6 +359,8 @@ def test_english_auto_conversation_keeps_details_across_question(make_state):
     ("How long can we keep the table?", "duration"),
     ("Do you serve vegan food?", "menu"),
     ("Is this a real restaurant?", "demo"),
+    ("Where can I park?", "parking"),
+    ("What are the café opening hours?", "hours"),
 ])
 def test_english_questions_answer_the_requested_topic(make_state, question, topic):
     state = make_state()
@@ -377,9 +379,51 @@ def test_unknown_question_does_not_replay_previous_booking_plan(make_state):
     assert state.pending is None
 
 
+@pytest.mark.parametrize("question", ["What is Wi-Fi for six devices?", "What is the Wi-Fi password?"])
+@pytest.mark.parametrize("has_inquiry", [False, True])
+def test_unknown_question_with_numbers_cannot_become_a_booking(make_state, question, has_inquiry):
+    state = make_state()
+    if has_inquiry:
+        state.observe_user_text("I'd like a table tomorrow at 2 pm for four")
+    previous = state.booking_inquiry
+    state.observe_user_text(question)
+    assert trusted_booking_response(state) == {"content": COPY["en"]["information_unknown"]}
+    assert state.booking_inquiry == previous
+
+
+@pytest.mark.parametrize("question", [
+    "Do you serve English breakfast?",
+    "Does your website contain advertisements?",
+    "What is the Wi-Fi password?",
+])
+def test_unverified_english_question_does_not_get_unrelated_menu_answer(make_state, question):
+    state = make_state()
+    state.observe_user_text(question)
+    assert state.language == "en"
+    assert trusted_booking_response(state) == {"content": COPY["en"]["information_unknown"]}
+
+
 def test_ambiguous_time_change_does_not_keep_previous_time():
     previous = {"date": "2026-10-04", "start_time": "14:00", "party_size": 4}
     assert "start_time" not in parse_restaurant_request("Actually at seven", previous)
+
+
+@pytest.mark.parametrize("text", ["at 25 pm", "at 13 pm", "at 13:99", "at 13:00 pm"])
+def test_invalid_time_never_reuses_previous_time(text):
+    previous = {"date": "2026-10-04", "start_time": "14:00", "party_size": 4}
+    assert "start_time" not in parse_restaurant_request(text, previous)
+
+
+def test_english_ambiguous_clock_requires_am_or_pm(make_state):
+    state = make_state()
+    state.observe_user_text("I'd like a table tomorrow at 7:30 for four")
+    assert state.language == "en"
+    assert state.clarification == "ambiguous_time"
+    assert "start_time" not in state.booking_inquiry
+    assert "content" in trusted_booking_response(state)
+    state.observe_user_text("At 7:30 pm")
+    assert state.clarification is None
+    assert trusted_booking_response(state)["arguments"]["start_time"] == "19:30"
 
 
 @pytest.mark.parametrize("utterance", ["Four", "Two pm", "2 p.m."])

@@ -29,18 +29,18 @@ INFORMATION_TOPICS = (
 
 PATTERNS = {
     "allergens": r"allerg|allergeen|аллерг|глютен|glut(?:ee|e)n|peanut|pähkl|орех|laktoos|lactose|лактоз|sisald|contain|koostis|ingredients|содерж|состав",
-    "price": r"\b(?:price|cost|how much|hind|hinna\w*|hinnaga|maksab|цен\w*|стоим\w*)\b",
+    "price": r"\b(?:price|cost|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maksab|цен\w*|стоим\w*)\b",
     "menu": r"menüü|menu|меню|vegan|веган|vegetarian|taimetoit|вегетар|\b(?:dishes|serve|roogi|блюд\w*)\b|mis.*süüa|mida.*(?:süüa|pakute)",
     "kitchen": r"kitchen|köök|köögi|кухн|(?:kell|kellaajani|millal).*süüa|when.*(?:food|eat)|(?:до скольки|когда).*еда",
     "hours": r"\b(?:hours|open\w*|close\w*|shut|lahtiole\w*|avatud|avate|lahti|kinni|sulge\w*|tööa\w*|откры\w*|закры\w*|работа\w*)\b",
-    "location": r"\b(?:where|address|location|located|aadress|asute|asub|kus|где|адрес|находит\w*)\b",
+    "location": r"\b(?:where are you|where is (?:the )?restaurant|where is it|address|location|located|aadress|asute|asub|kus|где|адрес|находит\w*)\b",
     "duration": r"(?:how long|kui kaua|сколько времени|как долго).*(?:table|stay|keep|laua|broneering|стол|брон)|(?:reservation|broneering|брон\w*).*(?:last|kest|длит)",
     "groups": r"\b(?:group\w*|grup\w*|seltskonn\w*|firmapidu|sünnipäev\w*|групп\w*|компани\w*)\b",
     "children": r"\b(?:children|kids?|child|lapsed|lastega|laste|laps|дети|детей|детьми|реб[её]н\w*)\b",
     "cancellation_help": r"(?:how|kuidas|как).*(?:cancel|tühista|отмен)|(?:can|kas|можно).*(?:cancel|tühista|отмен)",
     "changes": r"(?:change|move|muuta|muutmine|muutmiseks|измен|перенес).*(?:booking|reservation|broneering|брон)|(?:booking|reservation|broneering\w*|брон\w*).*(?:change|move|muuta|muutm|измен|перенес)",
     "late": r"\b(?:late|hiline\w*|опозд\w*)\b",
-    "parking": r"parkim|parkida|parking|car park|парков",
+    "parking": r"parkim|parkida|parking|\bpark\b|car park|парков",
     "pets": r"\b(?:dogs?|pets?|pupp(?:y|ies)|cats?|koer\w*|kutsu\w*|lemmik\w*|kiis\w*|kass(?:i\w*|e\w*|iga|idega)?|собак\w*|животн\w*|питом\w*|щен\w*|кош(?:к|ек|еч)\w*)\b",
     "highchair": r"high\s?chair|high chair|lastetool|детск\w*\s+(?:стул|кресл)",
     "accessibility": r"wheelchair|accessible|accessibility|ratastool|ligipääs|инвалид|коляск|доступн",
@@ -76,6 +76,21 @@ def match_question(
     matches = [(match.start(), topic) for topic, pattern in PATTERNS.items()
                if (match := re.search(pattern, text))]
     topics = [topic for _, topic in sorted(matches)]
+    # An English question about an unlisted dish or a non-food "contain"
+    # must not receive an unrelated menu/allergen answer.
+    if "allergens" in topics and not (
+        has_dish or has_diet or previous and re.search(r"\b(?:it|this|that)\b", text) and any(
+            topic in {"menu", "allergens"} for topic in previous.topics
+        ) or re.search(
+            r"allerg|allergeen|аллерг|глютен|glut|peanut|pähkl|орех|laktoos|lactose|лактоз|"
+            r"food|dish|ingredient|milk|fish|celery|sisald|koostis|содерж|состав", text
+        )
+    ):
+        topics.remove("allergens")
+    if "menu" in topics and re.search(r"\bdo you (?:have|serve)\b", text) and not (
+        has_dish or has_diet or re.search(r"\b(?:menu|dishes|food)\b", text)
+    ):
+        topics.remove("menu")
     # Narrative party counts are booking details, not a request for policies.
     # In particular, "for two adults and two children" must reach the planner.
     policy_question = bool(re.search(

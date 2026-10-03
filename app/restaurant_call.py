@@ -288,8 +288,10 @@ def parse_restaurant_request(text, previous=None, *, now=None):
         suffix = (clock[3] or "").replace(".", "")
         if suffix and 1 <= hour <= 12:
             hour = hour % 12 + (12 if suffix == "pm" else 0)
-        if 0 <= hour <= 23 and 0 <= minute <= 59:
+        if 0 <= hour <= 23 and 0 <= minute <= 59 and (not suffix or 1 <= int(clock[1]) <= 12):
             inquiry["start_time"] = f"{hour:02d}:{minute:02d}"
+        else:
+            inquiry.pop("start_time", None)
     else:
         hours = {**NUMBER_WORDS, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12}
         hour_words = "|".join(map(re.escape, hours))
@@ -301,11 +303,12 @@ def parse_restaurant_request(text, previous=None, *, now=None):
         )
         if hour_only:
             hour = int(hour_only[1]) if hour_only[1].isdigit() else hours[hour_only[1]]
+            original_hour = hour
             suffix = (hour_only[2] or "").replace(".", "")
             if suffix and 1 <= hour <= 12:
                 hour = hour % 12 + (12 if suffix == "pm" else 0)
             # English bare 1..12 remains ambiguous; shared clarification asks.
-            if 0 <= hour <= 23 and (
+            if 0 <= hour <= 23 and (not suffix or 1 <= original_hour <= 12) and (
                 suffix or hour > 12 or re.match(r"(?:kell|в)\b", hour_only[0])
             ):
                 inquiry["start_time"] = f"{hour:02d}:00"
@@ -520,13 +523,20 @@ class RestaurantCallTools(CallTools):
         ):
             # An unrelated question must not silently replay a complete plan.
             details = parse_restaurant_request(text, {})
-            self._restaurant_unmatched = not details and not re.search(
-                BOOKING_REQUEST, text
+            booking_request = re.search(BOOKING_REQUEST, text)
+            question = re.search(r"^(?:what|where|why|how|do|does|is|are)\b", text)
+            self._restaurant_unmatched = not booking_request and (
+                self._restaurant_inquiry is None or not details or question is not None
             )
             if not self._restaurant_unmatched:
                 self._restaurant_inquiry = parse_restaurant_request(
                     text, self._restaurant_inquiry
                 )
+                clock = re.search(r"\b(\d{1,2}):\d{2}\s*(a\.?m\.?|p\.?m\.?)?\b", text)
+                if self.language == "en" and clock and 1 <= int(clock[1]) <= 12 and not clock[2]:
+                    self.clarification = "ambiguous_time"
+                    if self._restaurant_inquiry:
+                        self._restaurant_inquiry.pop("start_time", None)
 
     def inquiry_reply(self) -> str | None:
         if (
