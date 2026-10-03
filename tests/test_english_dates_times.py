@@ -9,11 +9,10 @@ import httpx
 import pytest
 
 from app.booking_response import trusted_booking_response
-from app.languages import ENGLISH
 from app.providers.groq import GroqClient
 from app.restaurant_call import COPY, parse_restaurant_request
 from app.restaurant_dates import resolve_restaurant_date
-from app.restaurant_times import resolve_english_time
+from app.restaurant_times import parse_spoken_time
 from tests.test_restaurant_http import AUTH, start, tomorrow
 
 pytest_plugins = ["tests.test_restaurant_http", "tests.test_restaurant_conversation"]
@@ -32,7 +31,7 @@ def ordinal(day):
 def test_english_named_dates_are_one_calendar_date(text):
     resolved = resolve_restaurant_date(text, NOW)
     assert resolved.value == "2026-10-04" and resolved.issue is None
-    inquiry = parse_restaurant_request("table " + text + " at 6 pm for four", now=NOW, language="en")
+    inquiry = parse_restaurant_request("table " + text + " at 6 pm for four", now=NOW)
     assert inquiry == {"date": "2026-10-04", "start_time": "18:00", "party_size": 4}
 
 
@@ -65,20 +64,20 @@ def test_invalid_or_conflicting_dates_cannot_become_a_selected_day(text):
 
 def test_may_permission_and_neighbouring_clock_are_not_year_or_date():
     assert resolve_restaurant_date("May I book a table?", NOW).issue is None
-    request = parse_restaurant_request("table 4th October 18:00 for four", now=NOW, language="en")
+    request = parse_restaurant_request("table 4th October 18:00 for four", now=NOW)
     assert request == {"date": "2026-10-04", "start_time": "18:00", "party_size": 4}
 
 
 @pytest.mark.parametrize("text,expected", [("12pm", "12:00"), ("11am", "11:00")])
 def test_month_neighbouring_am_pm_clock_is_not_a_short_year(text, expected):
-    request = parse_restaurant_request("table 4th October " + text + " for four", now=NOW, language="en")
+    request = parse_restaurant_request("table 4th October " + text + " for four", now=NOW)
     assert request == {"date": "2026-10-04", "start_time": expected, "party_size": 4}
 
 
 @pytest.mark.parametrize("text", ["6 o clock", "6 o'clock", "six o’clock", "six oclock", "at six", "6:00"])
 def test_twelve_hour_time_is_recognized_and_remembered_without_guessing(text):
-    resolution = resolve_english_time(text)
-    assert resolution.issue == "time_ambiguous"
+    resolution = parse_spoken_time(text)
+    assert not resolution.invalid
     assert resolution.candidates == ("06:00", "18:00") and resolution.value is None
 
 
@@ -90,35 +89,34 @@ def test_twelve_hour_time_is_recognized_and_remembered_without_guessing(text):
     ("12 midnight", "00:00"), ("noon", "12:00"), ("midnight", "00:00"),
 ])
 def test_explicit_times(text, expected):
-    resolution = resolve_english_time(text)
-    assert resolution.value == expected and not resolution.issue
+    resolution = parse_spoken_time(text)
+    assert resolution.value == expected and not resolution.invalid
 
 
 @pytest.mark.parametrize("text,expected", [("pm", "18:00"), ("in the evening", "18:00"), ("am", "06:00"), ("in the morning", "06:00")])
 def test_daypart_answer_resolves_previous_hour(text, expected):
-    previous = parse_restaurant_request("six o'clock", {"date": "2026-10-04", "party_size": 4}, language="en", now=NOW)
-    resolved = parse_restaurant_request(text, previous, language="en", now=NOW)
+    previous = parse_restaurant_request("six o'clock", {"date": "2026-10-04", "party_size": 4}, now=NOW)
+    resolved = parse_restaurant_request(text, previous, now=NOW)
     assert resolved == {"date": "2026-10-04", "party_size": 4, "start_time": expected}
 
 
 @pytest.mark.parametrize("text", ["25 o'clock", "6:90 pm", "13 pm", "6 am in the evening", "at six or seven", "not at six", "at twenty four", "at twenty-four", "18:999", "at 100", "at -6", "six o'clock in the morning and at night"])
 def test_invalid_time_clears_previous_selection(text):
-    result = parse_restaurant_request(text, {"date": "2026-10-04", "party_size": 4, "start_time": "18:00"}, language="en", now=NOW)
-    assert "start_time" not in result and result["time_issue"]
+    result = parse_restaurant_request(text, {"date": "2026-10-04", "party_size": 4, "start_time": "18:00"}, now=NOW)
+    assert "start_time" not in result and (result.get("time_invalid") or result.get("time_candidates"))
 
 
 @pytest.mark.parametrize("text", ["not pm", "not in the evening", "morning or evening", "not noon", "morning and night"])
 def test_negated_or_conflicting_daypart_does_not_select_a_time(text):
-    resolved = resolve_english_time(text, candidates=("06:00", "18:00"))
-    assert resolved.value is None and resolved.issue
-    assert resolved.candidates == ("06:00", "18:00")
+    resolved = parse_spoken_time(text, pending=("06:00", "18:00"))
+    assert resolved.value is None and (resolved.invalid or resolved.candidates)
 
 
 def test_bare_number_depends_on_the_question_and_time_numbers_are_not_guest_counts():
     previous = {"date": "2026-10-04"}
-    time = parse_restaurant_request("six", previous, now=NOW, language="en", expected_field="time")
-    assert "party_size" not in time and time["time_candidates"] == ["06:00", "18:00"]
-    party = parse_restaurant_request("six", previous, now=NOW, language="en", expected_field="party")
+    time = parse_restaurant_request("six", previous, now=NOW, expected_field="time")
+    assert "party_size" not in time and time["time_candidates"] == ("06:00", "18:00")
+    party = parse_restaurant_request("six", previous, now=NOW, expected_field="party")
     assert party["party_size"] == 6 and "time_candidates" not in party
 
 
@@ -138,7 +136,7 @@ def test_complete_http_followups_keep_date_time_and_party_without_early_booking(
         for text, expected in [
             ("I'd like a table for four", COPY["en"]["date"]),
             (date_text, COPY["en"]["time"]),
-            ("6 o clock", ENGLISH["ambiguous_time"]),
+            ("6 o clock", COPY["en"]["ambiguous_time"]),
             ("in the evening", None),
         ]:
             transcript = text
@@ -169,7 +167,7 @@ def test_ambiguous_time_cannot_be_overridden_by_model_arguments(make_state):
         state.observe_user_text("table tomorrow for four", language="en")
         state.guard_reply("", [])
         state.observe_user_text("6 o'clock", language="en")
-        assert state.guard_reply("", []) == ENGLISH["ambiguous_time"]
+        assert state.guard_reply("", []) == COPY["en"]["ambiguous_time"]
         result = await state.dispatch("plan_restaurant_reservation", {"date": tomorrow(), "start_time": "18:00", "party_size": 4})
         assert result == {"error": "clarification_required"}
         assert not state.holds and not state.bookings

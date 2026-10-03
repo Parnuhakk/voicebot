@@ -1,108 +1,238 @@
-"""English spoken times and remembered AM/PM clarification, never consent."""
+"""Spoken ET/EN/RU clock selections, without assuming AM/PM or availability."""
 
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
-
-HOURS = {
-    word: number for number, word in enumerate((
-        "zero", "one", "two", "three", "four", "five", "six", "seven",
-        "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen",
-        "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
-        "twenty one", "twenty two", "twenty three",
-    ))
-}
-HOUR_WORDS = "|".join(
-    re.escape(word).replace(r"\ ", "[ -]")
-    for word in sorted(HOURS, key=len, reverse=True)
-)
-VALUE = re.compile(
-    r"(?<!\w)(?P<at>at\s+)?(?P<hour>-?\d{1,3}|" + HOUR_WORDS + r")"
-    + r"(?P<minutes>[:.]\d+)?(?P<oclock>\s+o\s*['’]?\s*clock)?"
-    + r"(?:\s*(?P<suffix>[ap]\.?m\.?))?(?!\w|[:.]\d)"
-)
-PERIOD = re.compile(r"\b(?:[ap]\.?m\.?|morning|afternoon|evening|night|noon|midnight)\b")
-DAYPART_AFTER = re.compile(r"\s+(?:(?:in|at)(?:\s+the)?\s+)?(?:morning|afternoon|evening|night|noon|midnight)\b")
-COMPOUND_TAIL = re.compile(r"[ -]+(?:one|two|three|four|five|six|seven|eight|nine|\d+)\b")
 
 
 @dataclass(frozen=True)
-class TimeResolution:
-    value: str | None
-    candidates: tuple[str, ...]
-    issue: str | None
-    remaining_text: str
+class RequestedTime:
+    value: str | None = None
+    candidates: tuple[str, str] | None = None
+    invalid: bool = False
+    span: tuple[int, int] | None = None
 
 
-def resolve_english_time(
-    text: str, *, candidates: tuple[str, ...] = (), expected_time: bool = False
-) -> TimeResolution | None:
-    """Use explicit time wording; a bare count is a time only after a time question."""
-    text = text.casefold().replace("’", "'")
-    periods = {match[0].replace(".", "") for match in PERIOD.finditer(text)}
-    am = bool(periods & {"am", "morning", "midnight"})
-    pm = bool(periods & {"pm", "afternoon", "evening", "noon"})
-    values: list[tuple[int, int, bool]] = []
-    spans: list[tuple[int, int]] = []
-    invalid = (am and pm) or ("night" in periods and len(periods) > 1)
-    for match in VALUE.finditer(text):
-        standalone = text.strip(" .!?") == match[0].strip(" .!?")
-        if not (
-            match["at"] or match["minutes"] or match["oclock"] or match["suffix"]
-            or DAYPART_AFTER.match(text[match.end():])
-            or (expected_time and standalone)
+TIME_INPUT_EXAMPLES = {
+    "et": ["kell kuus õhtul", "pool seitse õhtul", "kell kaheksateist kolmkümmend"],
+    "en": ["at six o'clock in the evening", "half past six in the evening", "at six thirty PM"],
+    "ru": ["в шесть вечера", "полседьмого вечера", "в восемнадцать тридцать"],
+}
+
+
+def _number_words() -> dict[str, int]:
+    words: dict[str, int] = {}
+    units = (
+        ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"),
+        ("null", "üks", "kaks", "kolm", "neli", "viis", "kuus", "seitse", "kaheksa", "üheksa"),
+        ("ноль", "один", "два", "три", "четыре", "пять", "шесть", "семь", "восемь", "девять"),
+    )
+    teens = (
+        ("ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"),
+        ("kümme", "üksteist", "kaksteist", "kolmteist", "neliteist", "viisteist", "kuusteist", "seitseteist", "kaheksateist", "üheksateist"),
+        ("десять", "одиннадцать", "двенадцать", "тринадцать", "четырнадцать", "пятнадцать", "шестнадцать", "семнадцать", "восемнадцать", "девятнадцать"),
+    )
+    tens = (
+        ("twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"),
+        ("kakskümmend", "kolmkümmend", "nelikümmend", "viiskümmend", "kuuskümmend", "seitsekümmend", "kaheksakümmend", "üheksakümmend"),
+        ("двадцать", "тридцать", "сорок", "пятьдесят", "шестьдесят", "семьдесят", "восемьдесят", "девяносто"),
+    )
+    for language, singles in enumerate(units):
+        words.update({word: number for number, word in enumerate(singles)})
+        words.update({word: number for number, word in enumerate(teens[language], 10)})
+        for ten, prefix in enumerate(tens[language], 2):
+            words[prefix] = ten * 10
+            for digit, suffix in enumerate(singles[1:], 1):
+                words[prefix + " " + suffix] = ten * 10 + digit
+                if language == 1:
+                    words[prefix + suffix] = ten * 10 + digit
+    words.update({"oh": 0, "две": 2, "одна": 1})
+    for digit, word in enumerate(units[0][1:], 1):
+        words["oh " + word] = digit
+    russian_units = ("одной", "двух", "трех", "четырех", "пяти", "шести", "семи", "восьми", "девяти")
+    words.update({word: value for value, word in enumerate(russian_units, 1)})
+    words.update({word: value for value, word in enumerate(("десяти", "одиннадцати", "двенадцати", "тринадцати", "четырнадцати", "пятнадцати", "шестнадцати", "семнадцати", "восемнадцати", "девятнадцати"), 10)})
+    for ten, prefix in enumerate(("двадцати", "тридцати", "сорока", "пятидесяти"), 2):
+        words[prefix] = ten * 10
+        for digit, suffix in enumerate(russian_units, 1):
+            words[prefix + " " + suffix] = ten * 10 + digit
+    return words
+
+
+NUMBERS = _number_words()
+HOURS = {
+    **NUMBERS,
+    "час": 1,
+    "одного": 1, "двух": 2, "трех": 3, "четырех": 4, "пяти": 5,
+    "шести": 6, "семи": 7, "восьми": 8, "девяти": 9,
+    "десяти": 10, "одиннадцати": 11, "двенадцати": 12,
+    "первого": 1, "второго": 2, "третьего": 3, "четвертого": 4,
+    "пятого": 5, "шестого": 6, "седьмого": 7, "восьмого": 8,
+    "девятого": 9, "десятого": 10, "одиннадцатого": 11, "двенадцатого": 12,
+}
+
+
+def _pattern(words: dict[str, int]) -> str:
+    # Long compound numbers must precede their shorter prefixes.
+    return r"(?:-?\d{1,3}|" + "|".join(re.escape(word) for word in sorted(words, key=len, reverse=True)) + ")"
+
+
+HOUR = _pattern(HOURS)
+MINUTE = _pattern(NUMBERS)
+PERIODS = {
+    "am": re.compile(r"(?<![a-z])a\.?\s*m\.?(?![a-z])|\b(?:morning|hommik\w*|утр\w*)\b"),
+    "pm": re.compile(r"(?<![a-z])p\.?\s*m\.?(?![a-z])|\b(?:afternoon|evening|õhtu\w*|pärastlõuna\w*|päeval|вечер\w*|дня|днем)\b"),
+    "night": re.compile(r"\b(?:night|öösel|ööl|ночи|ночью)\b"),
+}
+SPECIAL = re.compile(r"\b(?P<noon>noon|midday|keskpäev\w*|полдень|полудень)|\b(?P<midnight>midnight|kesköö\w*|полночь|полночи)")
+DIGITAL = re.compile(r"(?<![\w:.])(?P<h>\d{1,2})[:.](?P<m>\d{2})(?![\d:.])")
+MALFORMED_DIGITAL = re.compile(r"(?<![\w:.])\d{1,3}[:.]\d+(?!\w)")
+FRACTIONS = (
+    (re.compile(r"\b(?:a\s+)?(?P<m>half|quarter|" + MINUTE + r")\s+(?P<direction>past|to)\s+(?P<h>" + HOUR + r")\b"), "en"),
+    (re.compile(r"\bhalf\s+(?P<h>" + HOUR + r")\b"), "en_half"),
+    (re.compile(r"\b(?P<m>kolmveerand|veerand|pool)\s+(?P<h>" + HOUR + r")\b"), "et"),
+    (re.compile(r"\b(?:пол\s*|половина\s+)(?P<h>" + HOUR + r")\b"), "ru_half"),
+    (re.compile(r"\bчетверть\s+(?P<h>" + HOUR + r")\b"), "ru_quarter"),
+    (re.compile(r"\bбез\s+(?P<m>четверти|" + MINUTE + r")(?:\s+минут\w*)?\s+(?P<h>" + HOUR + r")\b"), "ru_to"),
+)
+PREFIX = re.compile(r"\b(?:at|kell|kella|в|к|около)\s+(?P<h>" + HOUR + r")(?:\s+час(?:а|ов)?)?(?:\s+(?:(?:ja|and|и)\s+)?(?P<m>" + MINUTE + r"))?(?:\s+минут\w*)?(?![\w:.])")
+SUFFIX = re.compile(r"(?<!\w)(?P<h>" + HOUR + r")(?:\s+(?P<m>" + MINUTE + r"))?\s*(?:o'clock|час(?:а|ов)?|[ap]\.?\s*m\.?)(?!\w)")
+BARE = re.compile(r"(?P<h>" + HOUR + r")(?:\s+(?P<m>" + MINUTE + r"))?")
+ALTERNATIVE = re.compile(r"\b(?:or|või|или)\s+" + HOUR + r"\b")
+TIME_RANGE = re.compile(r"\b(?:between|vahemikus|между)\s+" + HOUR + r"\b")
+MERIDIEM = re.compile(r"(?<![a-z])[ap]\.?\s*m\.?(?![a-z])")
+NEGATED_TIME = re.compile(r"\b(?:not|mitte|ei|ära|не)(?:\s+\w+){0,2}\s*$")
+
+
+def _number(value: str, *, hour=False) -> int:
+    return int(value) if value.lstrip("-").isdigit() else (HOURS if hour else NUMBERS)[value]
+
+
+def _period(text: str) -> str | None:
+    values = [period for period, pattern in PERIODS.items() if pattern.search(text)]
+    return values[0] if len(values) == 1 else "conflict" if values else None
+
+
+def _selection(hour: int, minute: int, period: str | None, *, explicit=False, meridiem=False, span=None) -> RequestedTime:
+    if not 0 <= hour <= 23 or not 0 <= minute <= 59 or period == "conflict":
+        return RequestedTime(invalid=True, span=span)
+    if meridiem and (hour > 12 or hour == 0 and explicit):
+        return RequestedTime(invalid=True, span=span)
+    if period:
+        if hour > 12 or (hour == 0 and explicit):
+            compatible = hour < 12 if period == "am" else hour >= 12 if period == "pm" else hour < 6 or hour >= 18
+            if not compatible:
+                return RequestedTime(invalid=True, span=span)
+        else:
+            hour %= 12
+            if period == "pm" or (period == "night" and hour >= 6):
+                hour += 12
+        return RequestedTime(f"{hour:02d}:{minute:02d}", span=span)
+    if explicit or hour > 12:
+        return RequestedTime(f"{hour:02d}:{minute:02d}", span=span)
+    return RequestedTime(candidates=(f"{hour % 12:02d}:{minute:02d}", f"{hour % 12 + 12:02d}:{minute:02d}"), span=span)
+
+
+def parse_spoken_time(
+    text: str, *, pending: tuple[str, str] | None = None, allow_bare: bool = False,
+) -> RequestedTime | None:
+    """Return only clock selectors. Bare numbers require an expected time reply."""
+    if not isinstance(text, str) or len(text) > 2000:
+        return None
+    text = " ".join(unicodedata.normalize("NFC", text.casefold()).replace("ё", "е").replace("’", "'").replace("‘", "'").split())
+    text = re.sub(r"\bo\s*'?\s*clock\b", "o'clock", text)
+    text = re.sub(r"(?<=[a-z])-(?=[a-z])", " ", text)
+    # Dates must never become clock times. Spaces preserve overlap positions.
+    text = re.sub(r"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[./]\d{1,2}[./]\d{2,4})\b", lambda match: " " * len(match[0]), text)
+    period = _period(text)
+    meridiem = bool(MERIDIEM.search(text))
+    found: list[RequestedTime] = []
+    occupied: list[tuple[int, int]] = []
+
+    def add(match, hour, minute=0, explicit=False):
+        start, end = match.span()
+        if any(start < high and end > low for low, high in occupied):
+            return
+        occupied.append((start, end))
+        found.append(_selection(hour, minute, period, explicit=explicit, meridiem=meridiem, span=(start, end)))
+
+    for match in SPECIAL.finditer(text):
+        # Noon/midnight name an exact time, even without a period suffix.
+        start, end = match.span()
+        occupied.append((start, end))
+        found.append(RequestedTime("12:00" if match["noon"] else "00:00", span=(start, end)))
+    for pattern, kind in FRACTIONS:
+        for match in pattern.finditer(text):
+            target = _number(match["h"], hour=True)
+            if not 1 <= target <= 23 or meridiem and target > 12:
+                add(match, 24)
+                continue
+            if kind in {"en_half", "ru_half", "ru_quarter"}:
+                hour = target if kind == "en_half" else (target - 1) % 12 if target <= 12 else target - 1
+                minute = 15 if kind == "ru_quarter" else 30
+            elif kind == "et":
+                hour = (target - 1) % 12 if target <= 12 else target - 1
+                minute = {"pool": 30, "veerand": 15, "kolmveerand": 45}[match["m"]]
+            else:
+                word = match["m"]
+                minute = {"half": 30, "quarter": 15, "четверти": 15}.get(word)
+                minute = _number(word) if minute is None else minute
+                if not 1 <= minute <= 59:
+                    add(match, 24)
+                    continue
+                before = kind == "ru_to" or match["direction"] == "to"
+                hour = (target - 1) % 12 if before and target <= 12 else target - 1 if before else target
+                minute = 60 - minute if before else minute
+            add(match, hour, minute, explicit=target > 12)
+    for match in DIGITAL.finditer(text):
+        hour = int(match["h"])
+        add(match, hour, int(match["m"]), explicit=hour == 0 or hour > 12 or match["h"].startswith("0"))
+    for match in MALFORMED_DIGITAL.finditer(text):
+        add(match, 24)
+    for pattern in (PREFIX, SUFFIX):
+        for match in pattern.finditer(text):
+            hour = _number(match["h"], hour=True)
+            minute = _number(match["m"]) if match["m"] else 0
+            add(match, hour, minute, explicit=hour == 0 or hour > 12)
+    bare = None
+    if not found and allow_bare:
+        bare = text
+        for pattern in PERIODS.values():
+            bare = pattern.sub(" ", bare)
+        bare = re.sub(r"\b(?:in the|in|the|please|palun|пожалуйста)\b", " ", bare)
+        bare = " ".join(bare.strip(" .,!?").split())
+        match = BARE.fullmatch(bare)
+        if match:
+            hour = _number(match["h"], hour=True)
+            found.append(_selection(hour, _number(match["m"]) if match["m"] else 0, period, explicit=hour == 0 or hour > 12, meridiem=meridiem))
+    if not found and pending and period:
+        if any(
+            NEGATED_TIME.search(text[:match.start()])
+            for pattern in PERIODS.values() for match in pattern.finditer(text)
         ):
-            continue
-        raw = match["hour"]
-        hour = int(raw) if raw.lstrip("-").isdecimal() else HOURS[raw.replace("-", " ")]
-        minute = int(match["minutes"][1:]) if match["minutes"] else 0
-        spans.append(match.span())
-        # Alternative/negated times cannot turn into one selected reservation.
-        if re.search(r"\b(?:not|or|and|to|through)\s*$", text[:match.start()]) or re.match(r"\s*(?:or|and|to|through|[-–])\s+", text[match.end():]):
-            invalid = True
-        compound = COMPOUND_TAIL.match(text[match.end():])
-        if compound:
-            invalid = True
-            spans.append((match.end(), match.end() + compound.end()))
-        if not 0 <= hour <= 23 or minute > 59 or (match["minutes"] and len(match["minutes"]) != 3) or ((am or pm) and not 1 <= hour <= 12):
-            invalid = True
-            continue
-        values.append((hour, minute, bool(match["minutes"] and raw.startswith("0"))))
-    if not values and not spans:
-        negated = any(
-            re.search(r"\bnot(?:\s+(?:in|the|at))*\s*$", text[:match.start()])
-            for match in PERIOD.finditer(text)
-        )
-        if periods and (invalid or negated):
-            return TimeResolution(None, candidates, "time_ambiguous", text)
-        if periods == {"noon"}:
-            return TimeResolution("12:00", (), None, "")
-        if periods == {"midnight"}:
-            return TimeResolution("00:00", (), None, "")
-        if not candidates or not periods:
-            return None
-        # A daypart answer resolves the previous exact hour, never a new one.
-        if invalid or len(candidates) != 2:
-            return TimeResolution(None, (), "time_ambiguous", text)
-        if "night" in periods:
-            am, pm = int(candidates[0][:2]) < 6, int(candidates[0][:2]) >= 6
-        selected = candidates[0] if am else candidates[1] if pm else None
-        return TimeResolution(selected, () if selected else candidates, None if selected else "time_ambiguous", "")
-    remaining = list(text)
-    for left, right in spans:
-        remaining[left:right] = " " * (right - left)
-    remainder = "".join(remaining)
-    if invalid or not values or len(set(values)) != 1:
-        return TimeResolution(None, (), "time_invalid" if invalid else "time_ambiguous", remainder)
-    hour, minute, explicit_24h = values[0]
-    if "night" in periods:
-        am, pm = hour < 6 or hour == 12, 6 <= hour < 12
-    if ("noon" in periods or "midnight" in periods) and (hour != 12 or minute != 0):
-        return TimeResolution(None, (), "time_invalid", remainder)
-    if am or pm:
-        hour = hour % 12 + (12 if pm else 0)
-    elif 1 <= hour <= 12 and not explicit_24h:
-        options = (f"{hour % 12:02d}:{minute:02d}", f"{hour % 12 + 12:02d}:{minute:02d}")
-        return TimeResolution(None, options, "time_ambiguous", remainder)
-    return TimeResolution(f"{hour:02d}:{minute:02d}", (), None, remainder)
+            return RequestedTime(candidates=pending, invalid=True)
+        hour, minute = map(int, pending[0].split(":"))
+        return _selection(hour, minute, period, meridiem=meridiem)
+    if not found and period and bare == "":
+        return RequestedTime(invalid=True)
+    if not found:
+        return RequestedTime(invalid=True) if TIME_RANGE.search(text) else None
+    if any(NEGATED_TIME.search(text[:start]) for start, _ in occupied):
+        return RequestedTime(invalid=True)
+    # A date/guest alternative elsewhere in the request is not a clock choice.
+    alternative_time = bool(TIME_RANGE.search(text))
+    for alternative in ALTERNATIVE.finditer(text):
+        for _, end in occupied:
+            if alternative.start() < end:
+                continue
+            gap = text[end:alternative.start()]
+            for pattern in PERIODS.values():
+                gap = pattern.sub(" ", gap)
+            gap = re.sub(r"\b(?:in the|in|the)\b", " ", gap)
+            alternative_time |= not gap.strip(" ,.!?")
+    # Two different offered times are a choice, never authority to pick one.
+    if len({(selection.value, selection.candidates, selection.invalid) for selection in found}) > 1 or alternative_time:
+        return RequestedTime(invalid=True)
+    return found[0]

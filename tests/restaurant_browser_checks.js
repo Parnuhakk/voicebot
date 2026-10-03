@@ -144,6 +144,18 @@ async page => {
       assert.equal(await page.locator('#demo-messages .message').last().locator('span').textContent(), petQuestions[2]);
       assert.equal(await page.evaluate(()=>state.recap), null);
     }
+    const timeQuestions = {
+      en: ["I'd like a table tomorrow at 6 o clock", 'in the evening', 'Do you mean AM or PM?', 'How many of you are coming, including children?'],
+      et: ['Soovin homme lauda kell kuus', 'õhtul', 'Kas mõtled hommikut või õhtut?', 'Mitu teid tuleb, koos lastega?'],
+      ru: ['Хочу столик завтра в шесть часов', 'вечером', 'Утром или вечером?', 'Сколько вас будет, вместе с детьми?'],
+    }[language.code];
+    for (let index = 0; index < 2; index++) {
+      await page.locator('#demo-text').fill(timeQuestions[index]);
+      await page.locator('#demo-send').click();
+      await page.waitForFunction(()=>!state.turnBusy);
+      assert((await page.locator('#demo-messages .message').last().locator('span').textContent()).includes(timeQuestions[index + 2]));
+      assert.equal(await page.evaluate(()=>state.recap), null);
+    }
     await page.locator('#demo-text').fill(language.menu);
     await page.locator('#demo-send').click();
     await page.waitForFunction(()=>!state.turnBusy);
@@ -208,7 +220,7 @@ async page => {
   await send(englishNamedDate);
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('What time'));
   await send('6 o clock');
-  assert((await page.locator('#demo-messages .message').last().textContent()).includes('morning'));
+  assert((await page.locator('#demo-messages .message').last().textContent()).includes('AM or PM'));
   assert.equal(await page.evaluate(()=>state.recap),null,'ambiguous time prepared a booking');
   await send('in the evening');
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('How many'));

@@ -136,6 +136,19 @@ unknown and asks the guest to check with staff. Caller claims never establish
 the rule. The public restaurant API includes the configured policy with the
 other venue data.
 
+Reservation time parsing accepts numeric and spoken clocks in ET/EN/RU:
+`at six o'clock in the evening`, `pool seitse õhtul`, and `полседьмого вечера`,
+including minutes, AM/PM, noon/midnight, half hours and quarter hours. A short
+bare number is a time only when the next missing booking field is the time;
+guest counts and calendar dates stay separate. Ambiguous 12-hour clocks
+without a period prompt for morning/evening. Explicit 24-hour times such as
+`18:30` or `06:30` remain exact; opening hours never decide AM/PM.
+An answer such as `PM`, `õhtul`, or `вечером` resolves the saved numeric choices
+while preserving the date and party size. Invalid times and multiple alternatives
+require an exact new time and cannot reuse an earlier selection. These selectors
+are not caller transcripts and cannot reach a booking tool until resolved.
+The public API supplies `booking_time_examples` in each supported language.
+
 Edit a copy of `data/demo/restaurant-demo.json` and place it on the persistent
 shared volume, for example `/data/restaurant.json`. Set
 `RESTAURANT_CONFIG_PATH=/data/restaurant.json` in web and native worker runtime
