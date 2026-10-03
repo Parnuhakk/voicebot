@@ -221,18 +221,18 @@ def format_schedule(
 
 GUIDANCE = {
     "et": {
-        "duration": "Laud on broneeritud {duration} minutiks.",
-        "children": "Arvesta lapsed broneeringu inimeste arvu sisse.",
-        "groups": "Laua saab broneerida kuni {maximum} inimesele. Suurema grupiga tulek lepi personaliga kokku.",
-        "cancellation_help": "Selles vestluses tehtud broneeringu tühistamiseks ütle „Jah, tühista”.",
-        "changes": "Broneeringu muutmiseks võta ühendust restorani töötajaga.",
-        "late": "Kui hilined, küsi töötajalt, kas laud saab oodata.",
+        "duration": "Lauabroneering kestab {duration} minutit.",
+        "children": "Palun arvestage lapsed külaliste koguarvu sisse.",
+        "groups": "Laua saab broneerida kuni {maximum} inimesele. Suurema seltskonna puhul palun võtke ühendust restorani töötajaga.",
+        "cancellation_help": "Selles vestluses tehtud broneeringu tühistamiseks öelge „Jah, tühista”.",
+        "changes": "Broneeringu muutmiseks palun võtke ühendust restorani töötajaga.",
+        "late": "Kui jääte hiljaks, küsige restorani töötajalt, kas lauda saab teile hoida.",
         "parking": "Parkimisvõimalused täpsustab restorani töötaja.",
-        "pets": "Mul pole lemmikloomade reeglit kirjas. Koeraga tulek küsi restorani töötajalt üle.",
-        "highchair": "Lastetooli olemasolu küsi restorani töötajalt.",
-        "accessibility": "Ligipääsetavus täpsusta restorani töötajaga.",
+        "pets": "Mul pole lemmikloomade reeglit kirjas. Palun küsige koeraga tulek restorani töötajalt üle.",
+        "highchair": "Lastetooli olemasolu oskab öelda restorani töötaja.",
+        "accessibility": "Ligipääsetavust palun täpsustage restorani töötajaga.",
         "terrace": "Terrassikoht tuleb restorani töötajaga kokku leppida.",
-        "extras": "Mul pole selle kohta menüüinfot. Küsi restorani töötajalt.",
+        "extras": "Mul pole selle kohta menüüinfot. Palun küsige restorani töötajalt.",
     },
     "en": {
         "duration": "The table reservation lasts {duration} minutes.",

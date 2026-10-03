@@ -71,6 +71,7 @@ INTENTS = {
         "palun korda",
         "korda uuesti",
         "ma ei saanud aru",
+        "ei saanud aru",
         "palun korda kuupäeva",
         "palun korda kellaaega",
         "mis kuupäev see oli",
@@ -145,19 +146,19 @@ REPLIES = {
         "goodbye": ("Aitäh helistamast. Head päeva!", "Head aega ja kena päeva!"),
         "decline": (
             "Selge. Millega saan veel aidata?",
-            "Hästi. Kas soovid midagi muud küsida?",
+            "Hästi. Kas soovite midagi muud küsida?",
         ),
         "repeat": (
-            "Muidugi. Millist osa soovid uuesti kuulda?",
+            "Muidugi. Millist osa soovite uuesti kuulda?",
             "Milline detail jäi ebaselgeks?",
         ),
         "frustrated": (
-            "Vabandust, see jäi segaseks. Võtame ühe asja korraga. Millega soovid alustada?",
+            "Vabandust, see jäi segaseks. Võtame ühe asja korraga. Millega soovite alustada?",
         ),
         "identity": (
             "Olen Meretuule hotelli ja spaa tehisintellekti abiline. Aitan demo küsimuste ja testbroneeringutega.",
         ),
-        "how_are_you": ("Olen valmis aitama. Mida soovid teha?",),
+        "how_are_you": ("Olen valmis aitama. Kuidas saan aidata?",),
         "human": (
             "Selles demos ei saa kõnet inimesele suunata. Saan vastata demo küsimustele.",
         ),

@@ -16,6 +16,7 @@ from .restaurant_times import parse_spoken_time
 from .restaurant_data import restaurant_demo_profile
 from .restaurant_dates import ESTONIAN_COUNTS, resolve_restaurant_date
 from .restaurant_date_vocabulary import RUSSIAN_COUNTS
+from .providers.speech_delivery import spoken_estonian_date
 from .restaurant_answers import (
     GUIDANCE,
     INFORMATION_TOPICS,
@@ -29,31 +30,31 @@ from .turn import REPEAT_PROMPT, STT_UNAVAILABLE, TURN_UNAVAILABLE
 
 COPY: dict[str, dict[str, str]] = {
     "et": {
-        "greeting": "Tere! Olen restorani AI-abiline. Päris lauda demo ei broneeri. Kuidas saan aidata?",
-        "date": "Mis kuupäevaks soovid lauda?",
-        "date_invalid": "Seda kuupäeva kalendris ei ole. Mis päeva ja kuud mõtled?",
-        "date_ambiguous": "Millist kuupäeva mõtled? Ütle üks päev ja kuu.",
-        "date_incomplete": "Mis kuupäeva mõtled? Ütle ka päev ja kuu.",
-        "time": "Mis kell soovid tulla?",
-        "ambiguous_time": "Kas mõtled hommikut või õhtut? Võid öelda ka aja 24 tunni kujul.",
-        "invalid_time": "Mis täpne kellaaeg sobib? Näiteks kell 18.30.",
-        "party": "Mitu teid tuleb, koos lastega?",
-        "unavailable": "Soovitud ajal sobivat lauda ei ole. Kas soovid teist kellaaega või kuupäeva?",
-        "unknown": "Ma ei saanud kinnitust, kas broneering salvestus. Kontrolli saidi broneeringuid enne uuesti proovimist.",
+        "greeting": "Tere! Olen restorani tehisintellekti abiline. Siin teeme ainult testbroneeringuid. Kuidas saan aidata?",
+        "date": "Mis päevaks soovite lauda?",
+        "date_invalid": "Sellist kuupäeva kalendris ei ole. Palun öelge päev ja kuu uuesti.",
+        "date_ambiguous": "Millist kuupäeva mõtlete? Palun öelge üks päev ja kuu.",
+        "date_incomplete": "Palun täpsustage ka päeva ja kuud.",
+        "time": "Mis kell soovite tulla?",
+        "ambiguous_time": "Kas mõtlete hommikul või õhtul? Palun täpsustage kellaaega.",
+        "invalid_time": "Sellist kellaaega ei ole. Mis kell soovite tulla?",
+        "party": "Mitmele inimesele lauda soovite? Palun arvestage ka lapsed.",
+        "unavailable": "Sel ajal sobivat lauda ei ole. Kas sobiks mõni teine kellaaeg või päev?",
+        "unknown": "Ma ei saanud kinnitust, kas broneering salvestus. Palun kontrollige veebilehel broneeringuid enne uuesti proovimist.",
         "confirmed": "Teie broneering on tehtud. Broneeringu detailid leiate siit lehelt.",
-        "cancelled": "Tehtud! Sinu testbroneering on tühistatud.",
+        "cancelled": "Teie testbroneering on tühistatud.",
         "existing": "See laud on juba broneeritud. Teist broneeringut ma ei teinud.",
         "already_cancelled": "See lauabroneering on juba tühistatud.",
         "staff": "Seda tuleks küsida restorani töötajalt. Selles demos ei saa ma kõnet edasi suunata.",
         "domain": "Aitan restorani lauabroneeringute, menüü ja lahtiolekuaegadega. Milles saan aidata?",
-        "information_unknown": "Mul ei ole selle kohta kinnitatud teavet. Palun täpsusta küsimust või küsi restorani töötajalt.",
-        "price": "Mul pole praegu menüühindu. Täpse hinna saad restorani töötajalt.",
-        "failed": "Broneering ei õnnestunud. Kontrolli kuupäeva ja kellaaega või proovi hiljem uuesti.",
+        "information_unknown": "Seda ma praegu täpselt ei tea. Palun täpsustage küsimust või küsige restorani töötajalt.",
+        "price": "Mul pole praegu menüühindu. Täpse hinna ütleb restorani töötaja.",
+        "failed": "Broneering ei õnnestunud. Palun kontrollige kuupäeva ja kellaaega või proovige hiljem uuesti.",
         "menu": "Menüüs on {items}.",
         "hours": "{hours}.",
         "closed": "suletud",
-        "alternatives": "Sel ajal lauda pole. Samal päeval sobiks {times}. Milline aeg sobib?",
-        "recap": "Testbroneering: {name}, {date} kell {time} Eesti aja järgi, {party} külalist. Laud {duration} minutiks, nimele {guest}. Sobib? Võid öelda „{consent}”"
+        "alternatives": "Sel ajal lauda ei ole. Samal päeval saan pakkuda kell {times}. Milline aeg sobib?",
+        "recap": "Saan pakkuda lauda {date} kell {time} Eesti aja järgi, {party} inimesele restoranis {name}. Broneering kestab {duration} minutit ja on nimele {guest}. Kas kinnitan selle testbroneeringu? Öelge „{consent}”."
     },
     "en": {
         "greeting": "Hello! This is an AI restaurant demo. No real table is booked here. How can I help?",
@@ -148,12 +149,18 @@ def restaurant_spoken_date(value: str, language: str) -> str:
     """Speak the trusted recap's date without depending on the server locale."""
     if language == "en":
         return spoken_date(value)
+    if language == "et":
+        return spoken_estonian_date(value)
     day = datetime.fromisoformat(value)
-    separator = "." if language == "et" else ""
-    return f"{day.day}{separator} {DATE_MONTHS[language][day.month - 1]} {day.year}"
+    return f"{day.day} {DATE_MONTHS[language][day.month - 1]} {day.year}"
 
 
 NUMBER_WORDS = {
+    "kahekesi": 2,
+    "kolmekesi": 3,
+    "neljakesi": 4,
+    "viiekesi": 5,
+    "kuuekesi": 6,
     "one": 1,
     "two": 2,
     "three": 3,
@@ -325,6 +332,11 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
         r"\b(?:there (?:will be|are)|we (?:are|will be)|we['’]re)\s+" + number + r"\b", text
     ) or re.search(r"\b" + number + r"\s+of us\b", text)
     party = party or re.search(
+        r"\b(?:meid on|meid tuleb|me tuleme|tuleme|oleme)\s+" + number + r"\b", text
+    ) or re.search(r"\b(kahekesi|kolmekesi|neljakesi|viiekesi|kuuekesi)\b", text)
+    if not party and not requested_time and "party_size" in inquiry:
+        party = re.fullmatch(r"tegelikult\s+" + number, text.strip(".!?"))
+    party = party or re.search(
         r"\b(ühele|kahele|kolmele|neljale|viiele|kuuele|seitsmele|kaheksale)\b", text
     )
     if party:
@@ -471,6 +483,8 @@ class RestaurantCallTools(CallTools):
             or kwargs.get("recognition_status") in {"stt_unavailable", "input_invalid"}
         ):
             return
+        if self.conversation.intent in {"decline", "goodbye"}:
+            self._restaurant_inquiry = None
         for item in self.restaurant["menu"]:
             if any(name.casefold() in text for name in item["name"].values()):
                 self._restaurant_dish = item["id"]
@@ -534,6 +548,13 @@ class RestaurantCallTools(CallTools):
             booking_request = re.search(BOOKING_REQUEST, text)
             question = re.search(r"^(?:what|where|why|how|do|does|is|are)\b", text)
             prior = self._restaurant_inquiry or {}
+            followup = (
+                parse_restaurant_request(text, prior, expected_field=expected_field)
+                if self._restaurant_inquiry is not None else None
+            )
+            party_followup = followup is not None and question is None and (
+                followup.get("party_size") != prior.get("party_size")
+            )
             time_followup = self._restaurant_inquiry is not None and question is None and parse_spoken_time(
                 text, pending=prior.get("time_candidates"),
                 allow_bare=(
@@ -542,7 +563,7 @@ class RestaurantCallTools(CallTools):
                     else "date" in prior and "start_time" not in prior
                 ),
             ) is not None
-            self._restaurant_unmatched = not booking_request and not time_followup and (
+            self._restaurant_unmatched = not booking_request and not time_followup and not party_followup and (
                 self._restaurant_inquiry is None or not details or question is not None
             )
             if not self._restaurant_unmatched:
@@ -884,6 +905,10 @@ class RestaurantCallTools(CallTools):
 
     def guard_reply(self, text, results):
         reply = self._restaurant_guard_reply(text, results)
+        question_keys = (
+            "date", "time", "party", "ambiguous_time", "invalid_time",
+            "date_invalid", "date_ambiguous", "date_incomplete",
+        )
         self.conversation.remember_reply(reply, self.language)
         if self._restaurant_focus in INFORMATION_TOPICS and reply == self.question_reply():
             self._restaurant_last_response = (
@@ -893,15 +918,15 @@ class RestaurantCallTools(CallTools):
                 self._restaurant_diet,
             )
         elif any(
-            reply == COPY[self.language][key] for key in ("date", "time", "party", "ambiguous_time", "invalid_time")
+            reply == COPY[self.language][key] for key in question_keys
         ):
             key = next(
                 key
-                for key in ("date", "time", "party", "ambiguous_time", "invalid_time")
+                for key in question_keys
                 if reply == COPY[self.language][key]
             )
             self._restaurant_last_response = ("question", key)
-        elif self.conversation.intent != "repeat":
+        elif self.conversation.intent not in {"repeat", "frustrated"}:
             self._restaurant_last_response = None
         return reply
 
@@ -983,7 +1008,7 @@ class RestaurantCallTools(CallTools):
             TURN_UNAVAILABLE[self.language],
         ):
             return text
-        if self.conversation.intent == "repeat" and self._restaurant_last_response:
+        if self.conversation.intent in {"repeat", "frustrated"} and self._restaurant_last_response:
             selection = self._restaurant_last_response
             if selection[0] == "question":
                 return copybook[selection[1]]

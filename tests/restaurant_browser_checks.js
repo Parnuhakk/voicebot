@@ -140,7 +140,7 @@ async page => {
     }
     const timeQuestions = {
       en: ["I'd like a table tomorrow at 6 o clock", 'in the evening', 'Do you mean AM or PM?', 'How many of you are coming, including children?'],
-      et: ['Soovin homme lauda kell kuus', 'õhtul', 'Kas mõtled hommikut või õhtut?', 'Mitu teid tuleb, koos lastega?'],
+      et: ['Soovin homme lauda kell kuus', 'õhtul', 'Kas mõtlete hommikul või õhtul?', 'Mitmele inimesele lauda soovite?'],
       ru: ['Хочу столик завтра в шесть часов', 'вечером', 'Утром или вечером?', 'Сколько вас будет, вместе с детьми?'],
     }[language.code];
     for (let index = 0; index < 2; index++) {

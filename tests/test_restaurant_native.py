@@ -34,6 +34,8 @@ from tests.test_native_booking_terminals import (  # noqa: E402
     [
         ("et", "Soovin homme lauda neljale kell 14.00", "ja kinnitää"),
         ("et", "Soovin lauaks homseks kell 14.00 nelja inimesega", "ja kinnitää"),
+        ("et", "Soovin homme lauda, meid on neli, kell kaks päeval", "ja kinnitää"),
+        ("et", "Soovin homme lauda, tuleme neljakesi, pool kolm päeval", "ja kinnitää"),
         ("et", "named-date", "ja kinnitää"),
         ("en", "A table for four tomorrow at 2 pm", "Yes, please confirm."),
         ("en", "named-date", "Yes, please confirm."),
