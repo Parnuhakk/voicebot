@@ -22,13 +22,17 @@ See [operation and deployment boundaries](../operations/booking-side-questions.m
 Project Python 3.13.15, actual FastAPI routes and temporary SQLite, synthetic
 provider responses/audio:
 
-- New interruption module: **34 passed** covering ET/EN/RU, typed and microphone
+- New interruption module: **38 scenarios** covering ET/EN/RU, typed and microphone
   turns, all three collection stages, repeated questions, summary interruptions,
   hold/expiry/receipt identity, one saved reservation, generated wording and
   provider failure, unknown/numeric/date questions, allergy safety, partial
-  transcripts, expired proposals, and spoken/read delivery boundaries.
+  transcripts, expired proposals, social questions and spoken/read delivery
+  boundaries. The final interruption/conversation/reasoning/session-language
+  run passed **258 tests**.
 - Restaurant conversation/reasoning/HTTP/receipt/consent/session-language checks:
   **576 passed** before the last upstream integration.
+- After upstream integration: interruption/flexible-date/reasoning/session-language
+  checks: **250 passed, 3 skipped**, before adding the four social-question cases.
 - Actual installed LiveKit SDK with local speech/output doubles: **100 passed**,
   including three new multilingual side-question booking scenarios. No live
   recognition, carrier call or paid model/audio generation was used.

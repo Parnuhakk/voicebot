@@ -386,3 +386,17 @@ def test_speech_failure_after_side_question_cannot_authorize_write(client, monke
         client.get("/api/bookings?date=" + tomorrow(), headers=AUTH).json()["items"]
         == []
     )
+
+
+@pytest.mark.parametrize("question", ["Who are you?", "How are you?"])
+@pytest.mark.parametrize("prepared", [False, True])
+def test_social_question_answers_and_returns_to_booking(client, question, prepared):
+    session = start(client)["session_id"]
+    original = turn(client, session, FULL_REQUEST["en"] if prepared else "A table tomorrow at 2 pm")
+    state = client.app.state.demo_sessions.sessions[session].tools
+    retained = state.booking_inquiry
+    side = turn(client, session, question)
+    expected = state.greeting if state.conversation.intent == "identity" else state.conversation.reply
+    assert side["reply"].startswith(expected)
+    assert side["reply"].endswith(original["reply"] if prepared else COPY["en"]["party"])
+    assert state.booking_inquiry == retained and side["booking_changes"] == []

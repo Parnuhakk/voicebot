@@ -724,6 +724,7 @@ class RestaurantCallTools(CallTools):
         question_turn = not agreement and bool(
             self._restaurant_focus
             or self._restaurant_unmatched and SIDE_QUESTION.search(text)
+            or self.conversation.intent in {"identity", "how_are_you"}
         )
         # An imperative change/cancellation must never revive the old proposal.
         changes_booking = bool(re.search(
@@ -734,7 +735,9 @@ class RestaurantCallTools(CallTools):
             # Clarify the new request rather than retaining an obsolete hold or
             # silently re-planning the old details after answering the question.
             self._restaurant_inquiry = None
-        if question_turn and not changes_booking and not self.conversation.intent:
+        if question_turn and not changes_booking and (
+            self.conversation.intent is None or self.conversation.intent in {"identity", "how_are_you"}
+        ):
             self._restaurant_booking_paused = self._restaurant_inquiry is not None
             self._restaurant_alternatives = previous_alternatives
             if self._restaurant_booking_paused or previous_pending:
@@ -797,6 +800,15 @@ class RestaurantCallTools(CallTools):
         if answer.endswith(followup):
             return answer
         return answer + " " + copybook["resume_booking"] + " " + followup
+
+    def _side_question_answer(self) -> str:
+        if self._restaurant_focus:
+            return self.question_reply()
+        if self.conversation.intent == "identity":
+            return self.greeting
+        if self.conversation.intent == "how_are_you" and self.conversation.reply:
+            return self.conversation.reply
+        return COPY[self.language]["information_unknown"]
 
     def inquiry_reply(self) -> str | None:
         if (
@@ -1150,10 +1162,7 @@ class RestaurantCallTools(CallTools):
             question=COPY[self.language]["confirmation_question"],
         )
         if self._restaurant_pending_question:
-            answer = (
-                self.question_reply() if self._restaurant_focus
-                else COPY[self.language]["information_unknown"]
-            )
+            answer = self._side_question_answer()
             return answer + " " + COPY[self.language]["resume_booking"] + " " + recap
         return recap
 
@@ -1284,11 +1293,11 @@ class RestaurantCallTools(CallTools):
             self._restaurant_focus = self._restaurant_question.topics[0]
             return self._resume_booking_reply(self.question_reply())
         if self.conversation.intent == "identity":
-            return self.greeting
+            return self._resume_booking_reply(self.greeting)
         if self.conversation.intent == "human":
             return copybook["staff"]
         if self.conversation.intent and self.conversation.reply:
-            return self.conversation.reply
+            return self._resume_booking_reply(self.conversation.reply)
         if any(
             text == entry.get("answer_" + self.language) for entry in self.demo["faq"]
         ):
