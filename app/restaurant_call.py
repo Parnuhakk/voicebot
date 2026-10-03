@@ -14,6 +14,7 @@ from typing import Any
 from .languages import CONSENT, LANGUAGE_POLICY, spoken_date, spoken_time
 from .restaurant_data import restaurant_demo_profile
 from .restaurant_dates import ESTONIAN_COUNTS, resolve_restaurant_date
+from .restaurant_times import resolve_english_time
 from .restaurant_answers import (
     GUIDANCE,
     INFORMATION_TOPICS,
@@ -33,6 +34,8 @@ COPY: dict[str, dict[str, str]] = {
         "date_ambiguous": "Millist kuupäeva mõtled? Ütle üks päev ja kuu.",
         "date_incomplete": "Mis kuupäeva mõtled? Ütle ka päev ja kuu.",
         "time": "Mis kell soovid tulla?",
+        "time_invalid": "Palun ütle üks kehtiv kellaaeg, näiteks kell 18.",
+        "time_ambiguous": "Kas mõtled hommikul või õhtul?",
         "party": "Mitu teid tuleb, koos lastega?",
         "unavailable": "Soovitud ajal sobivat lauda ei ole. Kas soovid teist kellaaega või kuupäeva?",
         "unknown": "Ma ei saanud kinnitust, kas broneering salvestus. Kontrolli saidi broneeringuid enne uuesti proovimist.",
@@ -58,6 +61,8 @@ COPY: dict[str, dict[str, str]] = {
         "date_ambiguous": "Which date do you mean? Please give one day and month.",
         "date_incomplete": "What date do you mean? Please include the day and month.",
         "time": "What time would you like to come?",
+        "time_invalid": "Please give one valid time, for example 6 pm.",
+        "time_ambiguous": "Do you mean in the morning or in the afternoon or evening? All times are local to Tallinn.",
         "party": "How many of you are coming, including children?",
         "unavailable": "There is no suitable table at that time. Would you like another time or date?",
         "unknown": "I couldn't check whether the reservation was saved. Please check the reservations on the website before trying again.",
@@ -83,6 +88,8 @@ COPY: dict[str, dict[str, str]] = {
         "date_ambiguous": "Какую дату вы имеете в виду? Назовите один день и месяц.",
         "date_incomplete": "Какую дату вы имеете в виду? Назовите день и месяц.",
         "time": "Во сколько хотите прийти?",
+        "time_invalid": "Назовите одно время, например 18:00.",
+        "time_ambiguous": "Вы имеете в виду утром или вечером?",
         "party": "Сколько вас будет, вместе с детьми?",
         "unavailable": "На это время подходящего столика нет. Вы хотите другое время или дату?",
         "unknown": "Не удалось проверить, сохранилась ли бронь. Посмотрите бронирования на сайте, прежде чем пробовать снова.",
@@ -260,7 +267,7 @@ BOOKING_REQUEST = (
 )
 
 
-def parse_restaurant_request(text, previous=None, *, now=None):
+def parse_restaurant_request(text, previous=None, *, now=None, language=None, expected_field=None):
     """Parse requested details only: never infer availability, contacts or consent."""
     if not isinstance(text, str) or len(text) > 2000:
         return None
@@ -280,7 +287,25 @@ def parse_restaurant_request(text, previous=None, *, now=None):
     # Date words/numerals must not become a time or a guest count, especially
     # when a caller uses the wrong case: "neljale oktoobrile" is still a date.
     text = " ".join(resolved.remaining_text.split())
-    clock = re.search(
+    parsed_time = None
+    if language == "en":
+        parsed_time = resolve_english_time(
+            text,
+            candidates=tuple(inquiry.get("time_candidates", ())),
+            expected_time=expected_field == "time",
+        )
+        if parsed_time is not None:
+            inquiry.pop("start_time", None)
+            inquiry.pop("time_candidates", None)
+            inquiry.pop("time_issue", None)
+            if parsed_time.value:
+                inquiry["start_time"] = parsed_time.value
+            if parsed_time.candidates:
+                inquiry["time_candidates"] = list(parsed_time.candidates)
+            if parsed_time.issue:
+                inquiry["time_issue"] = parsed_time.issue
+            text = " ".join(parsed_time.remaining_text.split())
+    clock = None if parsed_time is not None else re.search(
         r"\b(\d{1,2})[:.](\d{2})(?:\s*(a\.?m\.?|p\.?m\.?))?(?!\d|\.\d)", text
     )
     if clock:
@@ -292,7 +317,7 @@ def parse_restaurant_request(text, previous=None, *, now=None):
             inquiry["start_time"] = f"{hour:02d}:{minute:02d}"
         else:
             inquiry.pop("start_time", None)
-    else:
+    elif parsed_time is None:
         hours = {**NUMBER_WORDS, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12}
         hour_words = "|".join(map(re.escape, hours))
         hour_only = re.search(
@@ -448,6 +473,7 @@ class RestaurantCallTools(CallTools):
         return False
 
     def observe_user_text(self, text, **kwargs):
+        previous_response = self._restaurant_last_response
         previous_question = self._restaurant_question
         previous_language = self.language
         previous_dish, previous_diet = self._restaurant_dish, self._restaurant_diet
@@ -522,21 +548,30 @@ class RestaurantCallTools(CallTools):
             and not self.conversation.intent
         ):
             # An unrelated question must not silently replay a complete plan.
-            details = parse_restaurant_request(text, {})
+            expected_field = (
+                previous_response[1]
+                if previous_response and previous_response[0] == "question"
+                else None
+            )
+            details = parse_restaurant_request(text, {}, language=self.language, expected_field=expected_field)
+            updated = parse_restaurant_request(text, self._restaurant_inquiry, language=self.language, expected_field=expected_field)
+            time_followup = bool(
+                self._restaurant_inquiry
+                and self._restaurant_inquiry.get("time_candidates")
+                and updated != self._restaurant_inquiry
+            )
             booking_request = re.search(BOOKING_REQUEST, text)
             question = re.search(r"^(?:what|where|why|how|do|does|is|are)\b", text)
             self._restaurant_unmatched = not booking_request and (
-                self._restaurant_inquiry is None or not details or question is not None
+                self._restaurant_inquiry is None or (not details and not time_followup) or question is not None
             )
             if not self._restaurant_unmatched:
-                self._restaurant_inquiry = parse_restaurant_request(
-                    text, self._restaurant_inquiry
-                )
-                clock = re.search(r"\b(\d{1,2}):\d{2}\s*(a\.?m\.?|p\.?m\.?)?\b", text)
-                if self.language == "en" and clock and 1 <= int(clock[1]) <= 12 and not clock[2]:
+                self._restaurant_inquiry = updated
+                if updated and updated.get("time_issue") == "time_ambiguous":
                     self.clarification = "ambiguous_time"
-                    if self._restaurant_inquiry:
-                        self._restaurant_inquiry.pop("start_time", None)
+                elif updated and (updated.get("time_issue") == "time_invalid" or "start_time" in updated):
+                    if self.clarification == "ambiguous_time":
+                        self.clarification = None
 
     def inquiry_reply(self) -> str | None:
         if (
@@ -558,6 +593,8 @@ class RestaurantCallTools(CallTools):
         if inquiry is not None:
             if inquiry.get("date_issue"):
                 return COPY[self.language][inquiry["date_issue"]]
+            if inquiry.get("time_issue"):
+                return COPY[self.language][inquiry["time_issue"]]
             for field, key in (
                 ("date", "date"),
                 ("start_time", "time"),
@@ -712,7 +749,7 @@ class RestaurantCallTools(CallTools):
         if (
             name == "plan_restaurant_reservation"
             and self._restaurant_inquiry
-            and self._restaurant_inquiry.get("date_issue")
+            and (self._restaurant_inquiry.get("date_issue") or self._restaurant_inquiry.get("time_issue"))
         ):
             return {"error": "clarification_required"}
         if isinstance(args, str):

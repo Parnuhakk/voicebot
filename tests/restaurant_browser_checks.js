@@ -198,9 +198,18 @@ async page => {
   const send = async text => {await page.locator('#demo-text').fill(text);await page.locator('#demo-send').click();await page.waitForFunction(()=>!state.turnBusy);};
   await send("I'd like to reserve a table");
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('What date'));
-  await send('tomorrow');
+  const englishDate = await page.evaluate(() => {
+    const date = new Date(tallinnDay(1) + 'T12:00:00Z');
+    const day = date.getUTCDate();
+    const suffix = day >= 11 && day <= 13 ? 'th' : ({1:'st',2:'nd',3:'rd'}[day % 10] || 'th');
+    return day + suffix + ' ' + new Intl.DateTimeFormat('en', {month:'long',timeZone:'UTC'}).format(date);
+  });
+  await send(englishDate);
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('What time'));
-  await send('at 16:00');
+  await send('6 o clock');
+  assert((await page.locator('#demo-messages .message').last().textContent()).includes('morning'));
+  assert.equal(await page.evaluate(()=>state.recap),null,'ambiguous time prepared a booking');
+  await send('in the evening');
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('How many'));
   await send('for two adults and two children');
   assert(await page.locator('#demo-recap-read').isVisible());
@@ -218,7 +227,7 @@ async page => {
   assert(voiceBooking && voiceBooking.date===await page.evaluate(()=>tallinnDay(1)));
   assert.equal(await page.locator('#booking-page').textContent(),'1');
   assert.equal(await page.locator('#bookings .booking-recent').getAttribute('data-booking-id'),voiceBooking.id);
-  await assertReceipt(page.locator('#demo-messages'), '16:00–17:30', voiceBooking.id);
+  await assertReceipt(page.locator('#demo-messages'), '18:00–19:30', voiceBooking.id);
   await page.locator('#demo-messages .booking-receipt').last().scrollIntoViewIfNeeded();
   await page.screenshot({path:'output/playwright/booking-confirmation-desktop.png',fullPage:true});
   await page.setViewportSize({width:320,height:844});
@@ -230,7 +239,7 @@ async page => {
   assert.equal(await page.locator('#booking-date').inputValue(),voiceBooking.date);
   await send('Yes, cancel.');
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('cancelled'));
-  await assertReceipt(page.locator('#demo-messages'), '16:00–17:30', voiceBooking.id, 'cancelled');
+  await assertReceipt(page.locator('#demo-messages'), '18:00–19:30', voiceBooking.id, 'cancelled');
   assert.equal(await page.locator('.booking-receipt[data-action="confirmed"]').count(),0,'cancellation left a stale confirmed receipt');
   await page.evaluate(()=>{HTMLMediaElement.prototype.play=restaurantOriginalPlay;});
   await page.evaluate(()=>{
@@ -336,5 +345,5 @@ async page => {
   assert.equal(await page.locator('html').evaluate(element=>getComputedStyle(element).backgroundColor),'rgb(245, 249, 246)','public restaurant palette changed');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'public mobile horizontal overflow');
   assert.deepEqual(errors,[]);
-  return {languages:3,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,publicDemoUnchanged:true,pageErrors:errors.length};
+  return {languages:3,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,englishOrdinalDates:true,englishClockClarification:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,publicDemoUnchanged:true,pageErrors:errors.length};
 }

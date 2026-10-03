@@ -118,6 +118,31 @@ MONTH_FORMS = {
     for base in bases
     for ending in CASE_ENDINGS + ("il", "ile", "iks", "ist", "iga", "ini")
 }
+ENGLISH_UNITS = (
+    "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+    "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+    "seventeen", "eighteen", "nineteen",
+)
+ENGLISH_ORDINALS = (
+    "first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth",
+    "ninth", "tenth", "eleventh", "twelfth", "thirteenth", "fourteenth",
+    "fifteenth", "sixteenth", "seventeenth", "eighteenth", "nineteenth",
+)
+for number, forms in enumerate(zip(ENGLISH_UNITS, ENGLISH_ORDINALS), 1):
+    DAY_FORMS.update(dict.fromkeys(forms, number))
+for tens, cardinal, ordinal in ((20, "twenty", "twentieth"), (30, "thirty", "thirtieth")):
+    DAY_FORMS.update(dict.fromkeys((cardinal, ordinal), tens))
+    for units in range(1, 10):
+        for ending in (ENGLISH_UNITS[units - 1], ENGLISH_ORDINALS[units - 1]):
+            for separator in (" ", "-"):
+                DAY_FORMS[cardinal + separator + ending] = tens + units
+for number, forms in enumerate((
+    ("january", "jan"), ("february", "feb"), ("march", "mar"),
+    ("april", "apr"), ("may",), ("june", "jun"), ("july", "jul"),
+    ("august", "aug"), ("september", "sep", "sept"), ("october", "oct"),
+    ("november", "nov"), ("december", "dec"),
+), 1):
+    MONTH_FORMS.update(dict.fromkeys(forms, number))
 
 
 def _alternatives(forms: dict[str, int]) -> str:
@@ -127,20 +152,20 @@ def _alternatives(forms: dict[str, int]) -> str:
     )
 
 
-DAY_PATTERN = r"(?:\d{1,2}\.?|" + _alternatives(DAY_FORMS) + ")"
+DAY_PATTERN = r"(?:\d{1,2}(?:st|nd|rd|th|\.)?|" + _alternatives(DAY_FORMS) + ")"
 MONTH_PATTERN = "(?:" + _alternatives(MONTH_FORMS) + ")"
 NAMED_DATES = (
     re.compile(
         r"(?<!\w)(?P<day>"
         + DAY_PATTERN
-        + r")\s*(?P<month>"
+        + r")\s*(?:of\s+)?(?P<month>"
         + MONTH_PATTERN
         + r")(?!\w)"
     ),
     re.compile(
         r"(?<!\w)(?P<month>"
         + MONTH_PATTERN
-        + r")\s+(?P<day>"
+        + r")\.?\s+(?:the\s+)?(?P<day>"
         + DAY_PATTERN
         + r")(?!\w)"
     ),
@@ -256,14 +281,18 @@ def resolve_restaurant_date(
             record(*match.span(), value, error)
     for pattern in NAMED_DATES:
         for match in pattern.finditer(text):
-            raw_day = match["day"].rstrip(".")
+            raw_day = match["day"]
+            if raw_day[0].isdecimal():
+                raw_day = re.sub(r"(?:st|nd|rd|th|\.)$", "", raw_day)
             day = int(raw_day) if raw_day.isdecimal() else DAY_FORMS[raw_day]
             end = match.end()
+            if text[end:end + 1] == ".":
+                end += 1
             start = match.start()
             year = None
             error = None
             # Do not consume a neighbouring guest count as a year.
-            year_match = re.match(r"\s+(\d{2,4})(?!\d)", text[end:])
+            year_match = re.match(r"(?:\s*,\s*|\s+)(\d{2,4})(?![\w:.])", text[end:])
             if year_match and not re.match(
                 r"\s+(?:inimes|külalis|külalist|täiskasvan|last|lapse|people|guests|adults|children)\w*\b",
                 text[end + year_match.end() :],
@@ -282,7 +311,7 @@ def resolve_restaurant_date(
                     year = int(preceding_year[1])
             # Unsupported larger compound numbers must not become their units.
             if re.search(
-                r"\b(?:\w*(?:kümmend|kümne|sada|saja)|\d+)[ -]+$", text[: match.start()]
+                r"\b(?:\w*(?:kümmend|kümne|sada|saja)|forty|fifty|sixty|seventy|eighty|ninety|hundred|\d+)[ -]+$", text[: match.start()]
             ):
                 error = "date_invalid"
             if ALTERNATIVE_DAY.search(text[: match.start()]):
@@ -296,6 +325,8 @@ def resolve_restaurant_date(
             offset = (WEEKDAYS[match["base"]] - now.weekday()) % 7 or 7
             record(*match.span(), now.date() + timedelta(days=offset))
     for match in MONTHS.finditer(text):
+        if match[0] == "may" and re.match(r"\s+(?:i|we|you)\b", text[match.end():]):
+            continue
         if not any(
             match.start() < right and match.end() > left for left, right in spans
         ):

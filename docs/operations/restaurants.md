@@ -148,6 +148,12 @@ The shared web and phone policy answers from reviewed restaurant facts,
 preserves booking details across information questions, and asks for clarification
 when information is unavailable. English times from 1 to 12 without AM or PM
 require clarification; invalid times never reuse a previous requested time.
+English calendar dates accept numeric and spoken ordinals, for example
+"4th October", "the fourth of October" and "October fourth". Spoken clocks such
+as "6 o clock" and "six o'clock" retain the requested hour while the assistant
+asks for morning or evening. A later "pm" or "in the evening" resolves that hour
+without losing the date or party size. A bare number is treated as a time only
+when answering the time question; guest counts keep their existing meaning.
 An unrelated question cannot replay a previous booking plan. Confirmation still
 requires a delivered recap and a later explicit confirmation.
 
