@@ -30,6 +30,8 @@ PROFILES = {
     "azure-male-warm": ("Kert (lively) / Andrew / Dmitry (lively)", ("et", "en", "ru"), True),
     "azure-brian": ("Brian (American English)", ("en",), True),
     "azure-ryan": ("Ryan (British English)", ("en",), True),
+    "azure-conversational": ("Anu / Emma (conversational)", ("et", "en", "ru"), True),
+    "azure-conversational-male": ("Kert / Andrew (conversational)", ("et", "en", "ru"), True),
 }
 
 

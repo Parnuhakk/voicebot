@@ -13,6 +13,7 @@ from xml.sax.saxutils import quoteattr
 from ..languages import CONSENT
 from ..restaurant_consent import CONFIRMATION_QUESTIONS
 from . import russian_speech
+from .azure_voices import MULTILINGUAL_LOCALES
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,7 @@ class SpeechDelivery:
     rate: float = 0.98
     recap_rate: float = 0.94
     sentence_pause_ms: int = 180
+    native_timing: bool = False
 
     def __post_init__(self) -> None:
         if (
@@ -30,6 +32,7 @@ class SpeechDelivery:
             or isinstance(self.sentence_pause_ms, bool)
             or not isinstance(self.sentence_pause_ms, int)
             or not 100 <= self.sentence_pause_ms <= 500
+            or not isinstance(self.native_timing, bool)
         ):
             raise ValueError("invalid speech delivery configuration")
 
@@ -244,8 +247,11 @@ def speech_markup(
 ) -> str:
     # All model/backend text is literal. Only this renderer can introduce tags.
     text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", " ", text)
+    # Multilingual voices need an explicit locale even in neutral mode.
+    multilingual = voice in MULTILINGUAL_LOCALES
     if delivery.mode == "neutral":
-        return escape(text, quote=False)
+        body = escape(text, quote=False)
+        return f'<lang xml:lang={quoteattr(language)}>{body}</lang>' if multilingual else body
     body = _pronounced_text(text, language)
     rate = delivery.effective_rate(recap=recap)
     body = f'<prosody rate="{rate:.2f}">{body}</prosody>'
@@ -258,9 +264,9 @@ def speech_markup(
     # provider's default pauses so dates and consent remain easy to follow.
     # Russian neural voices keep their own sentence timing and question
     # intonation. An identical forced pause after every sentence flattens it.
-    if not recap and language != "ru-RU":
+    if not recap and language != "ru-RU" and not delivery.native_timing and not multilingual:
         body = (
             f'<mstts:silence type="Sentenceboundary-exact" '
             f'value="{delivery.sentence_pause_ms}ms"/>' + body
         )
-    return body
+    return f'<lang xml:lang={quoteattr(language)}>{body}</lang>' if multilingual else body
