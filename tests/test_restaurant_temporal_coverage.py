@@ -251,11 +251,8 @@ def test_incomplete_date_cannot_dispatch_a_stale_booking(make_state, language, b
 @pytest.mark.parametrize("language,month,day", [("et", "oktoober", "neljas"), ("en", "October", "fourth"), ("ru", "октябрь", "четвертого")])
 def test_http_month_and_day_followups_retain_context(client, language, month, day):
     session_id = start(client, language)["session_id"]
-    initial = {
-        "et": "laud kell 18:00 neljale",
-        "en": "table at 18:00 for four",
-        "ru": "столик в 18:00 для четырёх человек",
-    }[language]
+    # The first caller utterance establishes the conversation language.
+    initial = {"et": "Soovin lauda kell 18:00 neljale", "en": "table at 18:00 for four", "ru": "Столик в 18:00 на четверых"}[language]
     for text, key in [(initial, "date"), (month, "date_incomplete")]:
         response = turn(client, session_id, text, language=language)
         assert response["reply"] == COPY[language][key] and response["booking_changes"] == []

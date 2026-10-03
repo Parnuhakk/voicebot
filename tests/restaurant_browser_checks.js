@@ -296,10 +296,9 @@ async page => {
   await send("I'd like to reserve a table");
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('What date'));
   const englishNamedDate = await page.evaluate(()=>{
-    const date = new Date(tallinnDay(1) + 'T12:00:00+03:00');
     const words = ['first','second','third','fourth','fifth','sixth','seventh','eighth','ninth','tenth','eleventh','twelfth','thirteenth','fourteenth','fifteenth','sixteenth','seventeenth','eighteenth','nineteenth','twentieth','twenty-first','twenty-second','twenty-third','twenty-fourth','twenty-fifth','twenty-sixth','twenty-seventh','twenty-eighth','twenty-ninth','thirtieth','thirty-first'];
     const day = Number(tallinnDay(1).slice(-2));
-    const month = new Intl.DateTimeFormat('en-US',{month:'long',timeZone:'Europe/Tallinn'}).format(date);
+    const month = 'Janury Februry Marhc Aprli Maay Juune Jully Augsut Septmber Octobre Novembr Decemeber'.split(' ')[Number(tallinnDay(1).slice(5,7))-1];
     return 'the ' + words[day-1] + ' of ' + month;
   });
   await send(englishNamedDate);
@@ -368,10 +367,9 @@ async page => {
   await page.waitForFunction(()=>state.sessionId && !state.turnBusy);
   await page.evaluate(()=>{HTMLMediaElement.prototype.play=function(){return Promise.reject(new Error('fixture autoplay denied'));};});
   const russianNamedDate = await page.evaluate(()=>{
-    const date = new Date(tallinnDay(1) + 'T12:00:00+03:00');
     const words = ['первому','второму','третьему','четвёртому','пятому','шестому','седьмому','восьмому','девятому','десятому','одиннадцатому','двенадцатому','тринадцатому','четырнадцатому','пятнадцатому','шестнадцатому','семнадцатому','восемнадцатому','девятнадцатому','двадцатому','двадцать первому','двадцать второму','двадцать третьему','двадцать четвёртому','двадцать пятому','двадцать шестому','двадцать седьмому','двадцать восьмому','двадцать девятому','тридцатому','тридцать первому'];
     const day = Number(tallinnDay(1).slice(-2));
-    const month = new Intl.DateTimeFormat('ru-RU',{month:'long',timeZone:'Europe/Tallinn'}).format(date);
+    const month = 'янврая феврля марат аперля маай июння июлля авгусат сентябаря октябиря ноябрья декабяря'.split(' ')[Number(tallinnDay(1).slice(5,7))-1];
     return words[day-1] + ' ' + month;
   });
   await send('Забронируйте столик на ' + russianNamedDate + ' в 15:00 для четырёх гостей');
@@ -392,7 +390,13 @@ async page => {
   await page.locator('#demo-start').click();
   await page.waitForFunction(()=>state.sessionId && !state.turnBusy);
   await page.evaluate(()=>{HTMLMediaElement.prototype.play=function(){return Promise.reject(new Error('fixture autoplay denied'));};});
-  await send('Soovin lauaks homseks kell 17.00 nelja inimesega');
+  const estonianImperfectDate = await page.evaluate(()=>{
+    const day = tallinnDay(1);
+    const month = 'jaanar veebrur maerts april maai juunu juulu auguts septembr oktobte noveber detsembr'.split(' ')[Number(day.slice(5,7))-1];
+    return Number(day.slice(-2)) + ' ' + month;
+  });
+  await send('Soovin lauaks ' + estonianImperfectDate + ' kell 17.00 nelja inimesega');
+  assert(await page.locator('#demo-recap-read').isVisible(), 'Estonian imperfect date: ' + await page.locator('#demo-messages .message').last().textContent());
   await page.locator('#demo-recap-read').click();
   await send('ja kinnitää');
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('Teie broneering on tehtud.'));
@@ -467,5 +471,5 @@ async page => {
     assert.equal(retired.headers().location,undefined,'retired hostname redirected');
   }
   assert.deepEqual(errors,[]);
-  return {languages:3,groundedAnswers:3,multilingualStepwiseDateTimeAndParty:true,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,englishSpokenDates:true,englishClockClarification:true,russianMixedDateCases:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,retiredHostDenied:true,pageErrors:errors.length};
+  return {languages:3,groundedAnswers:3,calendarSpellingRepair:true,multilingualStepwiseDateTimeAndParty:true,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,englishSpokenDates:true,englishClockClarification:true,russianMixedDateCases:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,retiredHostDenied:true,pageErrors:errors.length};
 }
