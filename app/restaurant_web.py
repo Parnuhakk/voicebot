@@ -11,6 +11,7 @@ from .dashboard.api import _require_operator
 from .hackathon import operator_scope, read_session_language
 from .languages import CONSENT
 from .restaurant_answers import format_schedule
+from .restaurant_reasoning import reasoning_enabled
 from .restaurant_times import TIME_INPUT_EXAMPLES
 
 CANCEL = {"et": "Jah, tühista.", "en": "Yes, cancel.", "ru": "Да, отмените."}
@@ -36,6 +37,8 @@ def add_restaurant_routes(app, sessions):
                 for language in ("et", "en", "ru")
             },
             "table_booking_ready": app.state.capabilities["slot_booking_ready"],
+            "answer_policy_version": "grounded-restaurant-v1",
+            "grounded_answers_ready": reasoning_enabled(app.state.stack["llm_primary"]),
             "booking_access": "operator_demo",
             "allergy_safety_verified": False,
         }

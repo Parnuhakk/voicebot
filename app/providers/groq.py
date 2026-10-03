@@ -10,6 +10,8 @@ Sync requests are sent through the HTTP turn controller's thread boundary.
 
 from __future__ import annotations
 
+from typing import Any
+
 import httpx
 
 from .transcription import Transcription, parse_transcription
@@ -30,6 +32,8 @@ DEFAULT_BASE_URL = "https://api.groq.com"
 
 
 class GroqClient:
+    supports_restaurant_reasoning = True
+
     def __init__(
         self,
         api_key: str,
@@ -135,6 +139,9 @@ class GroqClient:
         messages: list[dict],
         model: str | None = None,
         tools: list[dict] | None = None,
+        *,
+        response_format: dict[str, Any] | None = None,
+        timeout: float | None = None,
     ) -> dict:
         """Chat completion. Returns the assistant message dict
         (may carry tool_calls for booking function-calling)."""
@@ -147,7 +154,12 @@ class GroqClient:
         if tools:
             body["tools"] = tools
             body["parallel_tool_calls"] = False
-        response = self._post("/openai/v1/chat/completions", "groq.chat", json=body)
+        if response_format is not None:
+            body["response_format"] = response_format
+        options = {"timeout": timeout} if timeout is not None else {}
+        response = self._post(
+            "/openai/v1/chat/completions", "groq.chat", json=body, **options
+        )
         try:
             payload = response.json()
             choice = payload["choices"][0]
