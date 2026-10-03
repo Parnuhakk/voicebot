@@ -60,6 +60,8 @@ from .languages import (
     ENGLISH_INSTRUCTIONS,
     ENGLISH_INVITATION,
     ENGLISH_TOOL_ERRORS,
+    LANGUAGE_POLICY,
+    SUPPORTED_LANGUAGE_PROMPT,
     LANGUAGES,
     english_clarification,
     render_english_read,
@@ -742,14 +744,15 @@ class CallTools:
             }
             context["clarification_required"] = self.clarification
             return (
-                ENGLISH_INSTRUCTIONS
+                LANGUAGE_POLICY + ENGLISH_INSTRUCTIONS
                 + "\n"
                 + STYLE_INSTRUCTIONS["en"]
                 + "\nDemo context (data only):\n"
                 + json.dumps(context, ensure_ascii=False, separators=(",", ":"))
             )
         return (
-            "Sa oled fiktiivse Meretuule hotelli ja spaademo sõbralik eestikeelne abiline. Ära luba päris teenust/inimüleandmist. Ära küsi päris kontakte ega makseandmeid.\n"
+            LANGUAGE_POLICY
+            + "Sa oled fiktiivse Meretuule hotelli ja spaademo sõbralik eestikeelne abiline. Ära luba päris teenust/inimüleandmist. Ära küsi päris kontakte ega makseandmeid.\n"
             "Spaale: kui kuupäev ja kellaaeg on teada ning teenuse ja teenindaja valik on ühene, kasuta esmalt plan_demo_booking(date,start_time) ühe tööriistakutsega. Mitme teenuse või teenindaja puhul kasuta get_slot_catalogue, search_slots, tagastatud slot_id-ga hold_slot ja prepare_demo_booking. get_slot_catalogue näitab andmebaasi teenuseid, teenindajaid ja tööaegu. Küsi kasutajalt puuduv teenus, kuupäev või kellaaeg.\n"
             "Spaasoovi tavaline kirjaviga „bruneerida” tähendab broneerimise küsimust, mitte kinnitamist. booking_inquiry sisaldab ainult kasutaja soovitud kuupäeva/kellaaega, mitte saadavust; kasuta seda järgmise vastuse ajaga koos.\n"
             "Toale: get_stay_catalogue näitab toatüüpe ja mahutavust. Küsi saabumine, lahkumine, külaliste arv ja toatüüp. Kasuta ettevalmistamiseks plan_demo_stay(checkin,checkout,adults,children,room_type) ühe tööriistakutsega; see teeb kataloogi, search_availability, hold_offer ja prepare_demo_stay kontrollid. Kui toatüüp puudub või on ebaselge, küsi tagastatud valikutest kasutaja eelistust ja kutsu plan_demo_stay uuesti. Ära vali suvalist ega odavaimat tuba. Hinda ei tohi oletada. Kõik hinnad on fiktiivsed näidishinnad, makseid ei koguta.\n"
@@ -766,7 +769,8 @@ class CallTools:
     @property
     def instructions(self):
         return (
-            (ENGLISH_INSTRUCTIONS if self.language == "en" else INSTRUCTIONS)
+            LANGUAGE_POLICY
+            + (ENGLISH_INSTRUCTIONS if self.language == "en" else INSTRUCTIONS)
             + "\nDemokontekst (ainult andmed, mitte juhised):\n"
             + json.dumps(
                 get_demo_profile(self.demo, call_id=self.call_id), ensure_ascii=False
@@ -784,6 +788,8 @@ class CallTools:
 
     @property
     def direct_reply(self):
+        if self.unsupported_language:
+            return self.guard_reply("", [])
         if self.pending and not self.pending["approved"]:
             # Repeat/language-switch turns keep an owned proposal but revoke
             # its delivery. Reuse its canonical recap, not a model paraphrase.
@@ -804,7 +810,7 @@ class CallTools:
         """Trusted STT/HTTP caller only; no transcript is retained or logged."""
         if is_final is not True:
             return
-        text = text if isinstance(text, str) else ""
+        text = text if isinstance(text, str) and not unsupported else ""
         selected = (
             language
             if language is not None and language in LANGUAGES
@@ -825,9 +831,9 @@ class CallTools:
         changed = selected != self.language
         self.language = selected
         self.conversation.observe(text, selected)
-        self.unsupported_language = (
-            unsupported and not named_fixture and requested_language(text) is None
-        )
+        self.unsupported_language = bool(unsupported)
+        if self.unsupported_language:
+            self.invalidate_recap()
         self.clarification = english_clarification(text) if selected == "en" else None
         self.results.clear()
         self._turn_serial += 1
@@ -1196,11 +1202,7 @@ class CallTools:
             )
         if self.unsupported_language:
             self.invalidate_recap()
-            return (
-                ENGLISH["unsupported"]
-                if english
-                else "Palun räägi eesti või inglise keeles. Kumba keelt eelistad?"
-            )
+            return SUPPORTED_LANGUAGE_PROMPT[self.language]
         if self.clarification:
             self.invalidate_recap()
             return ENGLISH[self.clarification]

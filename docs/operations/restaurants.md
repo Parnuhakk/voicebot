@@ -60,6 +60,21 @@ Questions, quoted examples, declines and mixed changes are not consent. A
 current owned recap must still have been delivered before a later final turn;
 partial recognition and expired or interrupted recaps cannot confirm a table.
 
+Date requests understand Estonian case forms such as `homseks`, `homsele`,
+`ülehomseks`, `esmaspäevaks`, `neljas oktoober`, `neljandal oktoobril` and
+`neljandaks oktoobriks`. Bounded mixed-case forms such as `neljale oktoobrile`
+also resolve to a date, not a guest count. Calendar days 1–31, compound ordinal
+numbers, all twelve months and explicit numeric years are supported. A missing
+year means the next occurrence of the date; the configured advance window still
+applies. Impossible dates, alternatives, ranges and declined dates require
+clarification. A corrected date replaces the old one while retaining the time
+and guest count. Date words are masked only during preference extraction, never
+in the displayed transcript or consent recognition. Schedule questions reuse
+the same date vocabulary. Guest counts also accept forms such as `nelja
+inimesega` and `kahe täiskasvanu ja kahe lapsega`, without requesting a staff
+handoff. Grammar references: [EKI number inflection](https://teatmik.eki.ee/teatmik/arvsonade-kaanamine/)
+and [EKI number spelling](https://teatmik.eki.ee/teatmik/arvsonade-kokku-ja-lahkukirjutamine/).
+
 Successful demo confirmations and cancellations refresh the website's
 authenticated reservation list, select the actual reservation date, reset its
 page and mark the affected row. A `View reservation` button in the conversation
@@ -119,6 +134,17 @@ unavailable facts get staff-verification guidance. The demo does not transfer a
 real call, promise a callback, take payment or place a food order.
 
 ## Deployment
+
+Speech accepts only Estonian, Russian and English. Browser and native Groq
+recognition detect the original audio language with `verbose_json` before the
+server processes a request. Choosing a reply language does not force Whisper
+to decode another language as that language. Detected Finnish and other
+unsupported speech receives a supported-language prompt without model or
+booking calls; it also invalidates pending recap consent. Automatic mode chooses
+ET/EN/RU from the source-language metadata; a selected language controls replies.
+Missing source metadata fails as unavailable recognition. Very short utterances,
+names and words shared across languages can still be misclassified by Whisper;
+this policy cannot guarantee perfect acoustic language identification.
 
 ```dotenv
 VOICEBOT_BUSINESS_TYPE=restaurant

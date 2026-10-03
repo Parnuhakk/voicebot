@@ -16,6 +16,11 @@ from __future__ import annotations
 import asyncio
 import json
 import re
+from dataclasses import dataclass
+from inspect import getattr_static
+
+from .languages import SUPPORTED_LANGUAGE_PROMPT
+from .providers.transcription import Transcription
 
 from .providers.errors import (
     ProviderError,
@@ -45,17 +50,40 @@ TURN_UNAVAILABLE = {
 
 
 async def recognize_audio(stt, audio: bytes, language: str) -> tuple[str, str]:
+    result = await recognize_audio_result(stt, audio, language)
+    return result.text, result.status
+
+
+@dataclass(frozen=True)
+class Recognition:
+    text: str
+    status: str
+    detected_language: str | None = None
+
+
+async def recognize_audio_result(stt, audio: bytes, language: str) -> Recognition:
     """Return final text and a closed diagnostic code, never provider details."""
     if not audio:
-        return "", "no_speech"
+        return Recognition("", "no_speech")
     lang = language if language in ("auto", "et", "en", "ru") else "et"
     try:
+        if callable(getattr_static(stt, "transcribe_with_metadata", None)):
+            result = await asyncio.to_thread(
+                stt.transcribe_with_metadata, audio, language=lang
+            )
+            if not isinstance(result, Transcription):
+                return Recognition("", "stt_unavailable")
+            if not result.text.strip():
+                return Recognition("", "no_speech")
+            if result.unsupported:
+                return Recognition("", "unsupported_language")
+            return Recognition(result.text, "recognized", result.language)
         text = await asyncio.to_thread(stt.transcribe, audio, language=lang)
         if not isinstance(text, str):
-            return "", "stt_unavailable"
+            return Recognition("", "stt_unavailable")
     except Exception:
-        return "", "stt_unavailable"
-    return text, "recognized" if text.strip() else "no_speech"
+        return Recognition("", "stt_unavailable")
+    return Recognition(text, "recognized" if text.strip() else "no_speech")
 
 
 FILLER = {
@@ -182,6 +210,16 @@ async def run_turn(
                 "input_status": "no_speech",
             }
         text, recognition_status = await recognize_audio(stt, audio, lang)
+    if recognition_status == "unsupported_language":
+        prompt = SUPPORTED_LANGUAGE_PROMPT[lang]
+        return {
+            "text_heard": "",
+            "reply": prompt,
+            "audio": await _speak(tts, prompt),
+            "tool_results": [],
+            "fallback_used": False,
+            "input_status": "unsupported_language",
+        }
     if recognition_status == "stt_unavailable":
         prompt = STT_UNAVAILABLE[lang]
         return {

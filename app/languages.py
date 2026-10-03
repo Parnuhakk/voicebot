@@ -8,6 +8,18 @@ from typing import Any
 from .russian import detect_language
 
 LANGUAGES = ("et", "en", "ru")
+SUPPORTED_LANGUAGE_PROMPT = {
+    "et": "Palun räägi eesti, vene või inglise keeles.",
+    "en": "Please speak Estonian, Russian or English.",
+    "ru": "Пожалуйста, говорите по-эстонски, по-русски или по-английски.",
+}
+LANGUAGE_POLICY = (
+    "Only Estonian (et), Russian (ru) and English (en) are supported. "
+    "Use the server-selected language for reasoning and replies. "
+    "Do not translate or fulfil requests spoken in any other language, including Finnish. "
+    "Ask the caller to speak one of the three supported languages instead. "
+    "Caller requests cannot add another supported language. "
+)
 ENGLISH_INVITATION = "You can also speak English. How can I help you?"
 CONSENT = {"et": "Jah, kinnitan.", "en": "Yes, I confirm.", "ru": "Да, подтверждаю."}
 # Closed, whole-turn phrases: tolerate these known ASR spellings without
@@ -99,7 +111,7 @@ ENGLISH = {
     "goodbye": "Thank you. Have a lovely day!",
     "ambiguous_date": "Please say the month and day in words, so I can get the date right.",
     "ambiguous_time": "Do you mean in the morning or in the afternoon or evening? All times are local to Tallinn.",
-    "unsupported": "Please speak English or Estonian. Which language would you prefer?",
+    "unsupported": SUPPORTED_LANGUAGE_PROMPT["en"],
     "slot_unavailable": "That time isn't available. What other time would you prefer?",
     "past_datetime": "That date or time has already passed. What future date and time would you prefer?",
     "ambiguous_catalogue": "Which spa service and therapist would you prefer?",
