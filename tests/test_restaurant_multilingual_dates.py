@@ -162,7 +162,10 @@ def test_guest_nouns_after_month_are_not_a_date_range(text):
 def test_invalid_unclear_and_negated_dates_remove_previous_date(text, issue):
     previous = {"date": "2026-10-06", "start_time": "14:00", "party_size": 4}
     result = parse_restaurant_request(text, previous, now=NOW)
-    assert result == {"start_time": "14:00", "party_size": 4, "date_issue": issue}
+    expected = {"start_time": "14:00", "party_size": 4, "date_issue": issue}
+    if text in {"October", "in May", "в октябре"}:
+        expected["date_month"] = 5 if text == "in May" else 10
+    assert result == expected
     assert previous["date"] == "2026-10-06"
 
 

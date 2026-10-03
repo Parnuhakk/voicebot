@@ -48,6 +48,9 @@ from tests.test_native_booking_terminals import (  # noqa: E402
         ("ru", ("Столик на четверых завтра полседьмого", "вечером"), "Да, подтверждаю."),
         ("ru", "named-date", "Да, подтверждаю."),
         ("ru", "mixed-date", "Да, подтверждаю."),
+        ("et", ("Soovin lauda neljale", "kahe päeva pärast", "kell kuueks õhtul"), "ja kinnitää"),
+        ("en", ("A table for four", "in two days", "at six and a half PM"), "Yes, please confirm."),
+        ("ru", ("Столик на четверых", "через два дня", "в половине седьмого вечера"), "Да, подтверждаю."),
     ],
 )
 def test_native_sdk_confirmation_is_visible_in_the_restaurant_database(
@@ -83,9 +86,12 @@ def test_native_sdk_confirmation_is_visible_in_the_restaurant_database(
                     await native_turn(session, agent, request_text)
                     if index < len(requests) - 1:
                         assert state.pending is None and not state.bookings
-                        assert agent.chat_ctx.items[-1].text_content == COPY[language]["ambiguous_time"]
+                        question = ("date", "time")[index] if len(requests) == 3 else "ambiguous_time"
+                        assert agent.chat_ctx.items[-1].text_content == COPY[language][question]
                 assert state.language == language
                 assert state.pending["delivery"] and not state.pending["approved"]
+                if len(requests) == 3:
+                    assert datetime.fromisoformat(state.pending["recap"]["start"]).strftime("%H:%M") == ("18:00" if language == "et" else "18:30")
                 await native_turn(session, agent, confirmation)
                 assert len(state.bookings) == 1
                 assert (
@@ -98,7 +104,7 @@ def test_native_sdk_confirmation_is_visible_in_the_restaurant_database(
         # connection to the durable database rather than the call's memory.
         reader = RestaurantAdapter(path, data=data, allow_writes=False)
         day = (
-            datetime.now(ZoneInfo("Europe/Tallinn")).date() + timedelta(days=1)
+            datetime.now(ZoneInfo("Europe/Tallinn")).date() + timedelta(days=2 if len(requests) == 3 else 1)
         ).isoformat()
         rows = (await reader.get_operator_bookings(day))["items"]
         assert len(rows) == 1 and rows[0]["status"] == "confirmed"
