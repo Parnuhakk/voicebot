@@ -11,7 +11,7 @@ from app.languages import CONSENT
 from app.providers.groq import GroqClient
 from app.providers.voice_config import VoiceConfig
 from app.restaurant_call import COPY
-from app.restaurant_reasoning import reasoned_reply, safe_wording
+from app.restaurant_reasoning import reasoned_reply, restaurant_facts, safe_wording
 from tests.test_restaurant_http import (
     AUTH,
     client as http_client,
@@ -494,6 +494,52 @@ def test_guest_instructions_cannot_add_facts_or_authorize_an_action(client):
     review_data = json.loads(model.calls[1]["messages"][1]["content"])
     assert "wine" not in review_data["facts"]["menu_items"]
     assert "UNTRUSTED DATA" in model.calls[1]["messages"][0]["content"]
+
+
+@pytest.mark.parametrize(
+    "language,unwanted",
+    [
+        ("et", "Selles demos soovitan köögiviljasuppi."),
+        (
+            "et",
+            "See on fiktiivne restoran testbroneeringute tegemiseks. Köögiviljasupp on vegan.",
+        ),
+        ("en", "In this demo, I'd recommend vegetable soup."),
+        ("en", "This fictional restaurant is for testing. Try the vegetable soup."),
+        ("ru", "В этой демонстрации я предложу овощной суп."),
+        (
+            "ru",
+            "Это вымышленный ресторан для тестового бронирования. Выберите овощной суп.",
+        ),
+        ("et", "See restoran on kõneabilise ja lauabroneeringute katsetamiseks."),
+        ("en", "This is a test restaurant for trying a voice assistant."),
+        ("ru", "Этот ресторан предназначен для проверки голосового помощника."),
+    ],
+)
+def test_generated_test_narration_falls_back_before_speech(client, language, unwanted):
+    model = Model(unwanted, language)
+    model.candidate["fact_ids"] = ["venue", "menu_items"]
+    client.app.state.stack["llm_primary"] = model
+    session = start(client, language)["session_id"]
+    result = turn(client, session, QUESTIONS[language], language=language)
+    assert result["reply"] != unwanted
+    assert result["reply"] == client.provider.spoken[-1]
+    assert len(model.calls) == 1 and not safe_wording(unwanted, language)
+    assert result["booking_changes"] == []
+    assert result["warnings"] == [
+        {"stage": "llm", "code": "grounded_reply_unavailable"}
+    ]
+
+
+@pytest.mark.parametrize("language", ["et", "en", "ru"])
+def test_ordinary_generation_facts_use_venue_name_not_testing_description(
+    make_state, language
+):
+    state = make_state(language)
+    state.observe_user_text(QUESTIONS[language], language=language)
+    facts = restaurant_facts(state)
+    assert facts["venue"] == "Meretuule"
+    assert state.restaurant["description"][language] not in facts.values()
 
 
 @pytest.mark.parametrize(

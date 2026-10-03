@@ -112,12 +112,12 @@ def capability_booking_clause(text: str) -> str | None:
 PATTERNS = {
     "allergens": MEDICAL_FOOD_CONCERN
     + r"|allerg|allergeen|аллерг|глютен|glut(?:ee|e)n|peanut|pähkl|орех|laktoos|lactose|лактоз|sisald|contain|koostis|ingredients|содерж|состав",
-    "price": r"\b(?:price|cost|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maksab|цен\w*|стоим\w*|сколько(?:\s+\w+){0,2}\s+сто(?:ит|ят|ить))\b",
+    "price": r"\b(?:price|cost|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maks(?:ab|avad|ma)|цен\w*|стоим\w*|сколько(?:\s+\w+){0,2}\s+сто(?:ит|ят|ить))\b",
     "menu": r"menüü|menu|меню|vegan|веган|vegetarian|taimetoit|вегетар|\b(?:dishes|serve|roogi|блюд\w*)\b|mis.*süüa|mida.*(?:süüa|pakute)",
     "kitchen": r"kitchen|köök|köögi|кухн|(?:kell|kellaajani|millal).*süüa|when.*(?:food|eat)|(?:до скольки|когда).*еда",
     "hours": r"\b(?:hours|open\w*|close\w*|shut|lahtiole\w*|avatud|avate|lahti|kinni|sulge\w*|tööa\w*|откры\w*|закры\w*|работа\w*|часы\s+работы)\b",
     "location": r"\b(?:where are you|where is (?:the )?restaurant|where is it|address|location|located|aadress|asute|asub|kus|где|адрес|находит\w*)\b",
-    "duration": r"(?:how long|kui kaua|сколько времени|как долго).*(?:table|stay|keep|laua|broneering|стол|брон)|(?:reservation|broneering|брон\w*).*(?:last|kest|длит)",
+    "duration": r"(?:how long|kui kaua|сколько времени|как долго).*(?:table|stay|keep|laua|laud|broneering|стол|брон)|(?:reservation|broneering|брон\w*).*(?:last|kest|длит)",
     "groups": r"\b(?:group\w*|grup\w*|seltskonn\w*|firmapidu|sünnipäev\w*|групп\w*|компани\w*)\b",
     "children": r"\b(?:children|kids?|child|lapsed|lastega|laste|laps|дети|детей|детьми|реб[её]н\w*)\b",
     "cancellation_help": r"(?:how|kuidas|как).*(?:cancel|tühista|отмен)|(?:can|kas|можно).*(?:cancel|tühista|отмен)",
@@ -129,7 +129,7 @@ PATTERNS = {
     "accessibility": r"wheelchair|accessible|accessibility|ratastool|ligipääs|инвалид|коляск|доступн",
     "terrace": r"terrac|terrass|outside seating|outdoor seating|террас",
     "extras": r"dessert|magustoit|magustoitu|drinks?|vein|wine|jook|joog|напит|десерт",
-    "staff": r"\b(?:staff|human|transfer|callback|personali\w*|teenindaja\w*|персонал\w*|сотрудник\w*|оператор\w*|перевед\w*)\b|\b(?:order|delivery|takeaway|tellim\w*|kojuvedu|достав\w*|заказ\w*)\b|\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b.*\binimese\w*\b|\binimese\w*\b.*\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b",
+    "staff": r"\b(?:staff|human|transfer|callback|personali\w*|teenindaja\w*|töötaja\w*|персонал\w*|сотрудник\w*|оператор\w*|перевед\w*)\b|\b(?:order|delivery|takeaway|tellim\w*|kojuvedu|достав\w*|заказ\w*)\b|\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b.*\binimese\w*\b|\binimese\w*\b.*\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b",
     "policies": r"polic|reegl|tingimus|правил",
 }
 
@@ -481,13 +481,13 @@ def format_schedule(
 GUIDANCE = {
     "et": {
         "duration": "Lauabroneering kestab {duration} minutit.",
-        "children": "Palun arvestage lapsed külaliste koguarvu sisse.",
+        "children": "Palun arvestage ka lapsed külaliste koguarvu hulka.",
         "groups": "Laua saab broneerida kuni {maximum} inimesele. Suurema seltskonna puhul palun võtke ühendust restorani töötajaga.",
         "cancellation_help": "Selles vestluses tehtud broneeringu tühistamiseks öelge „Jah, tühista”.",
         "changes": "Broneeringu muutmiseks palun võtke ühendust restorani töötajaga.",
         "late": "Kui jääte hiljaks, küsige restorani töötajalt, kas lauda saab teile hoida.",
         "parking": "Parkimisvõimalused täpsustab restorani töötaja.",
-        "pets": "Mul pole lemmikloomade reeglit kirjas. Palun küsige koeraga tulek restorani töötajalt üle.",
+        "pets": "Mul pole lemmikloomade kohta kinnitatud infot. Palun küsige restorani töötajalt, kas lemmikloomaga võib tulla.",
         "highchair": "Lastetooli olemasolu oskab öelda restorani töötaja.",
         "accessibility": "Ligipääsetavust palun täpsustage restorani töötajaga.",
         "terrace": "Terrassikoht tuleb restorani töötajaga kokku leppida.",
