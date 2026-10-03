@@ -14,7 +14,9 @@ const state = {
   turnController: null,
   recap: null,
   demoVoice: "azure",
+  voiceSelected: false,
   voiceCatalog: null,
+  voicesLoading: false,
   previewBusy: false,
   endpointingMs: 650,
   mic: null,
@@ -573,10 +575,10 @@ function controls() {
       ? demoCopy().languageLocked
       : demoCopy().languageHelp;
   $("demo-start").disabled =
-    !state.connected || !state.voiceReady || !!state.sessionId || locked;
+    !state.connected || !state.voiceReady || state.voicesLoading || !!state.sessionId || locked;
   $("demo-end").disabled = !state.sessionId || locked;
   $("demo-voice").disabled =
-    !state.connected || !!state.sessionId || locked || !!state.mic;
+    !state.connected || state.voicesLoading || !!state.sessionId || locked || !!state.mic;
   $("demo-voice-preview").disabled =
     $("demo-voice").disabled || !Array.from($("demo-voice").options).some(
       option => option.value === state.demoVoice && !option.disabled,
@@ -585,7 +587,7 @@ function controls() {
     ? demoCopy().voicePreviewLoading : demoCopy().voicePreview;
   for (const id of ["demo-text", "demo-send"])
     $(id).disabled = !state.sessionId || locked || !!state.mic;
-  $("demo-mic").disabled = !state.connected || !state.audioReady || locked;
+  $("demo-mic").disabled = !state.connected || !state.audioReady || state.voicesLoading || locked;
   if (!state.mic)
     $("demo-mic").textContent = state.sessionId
       ? demoCopy().micReady
@@ -630,7 +632,9 @@ function requireDemoConnection() {
   return false;
 }
 const VOICE_LABELS = {
-  azure: ["Loomulik hääl", "Natural voice", "Естественный голос"],
+  azure: ["Tavahääl", "Standard voice", "Обычный голос"],
+  "azure-conversational": ["Anu · vestluslik", "Emma · conversational", "Эмма · разговорный"],
+  "azure-conversational-male": ["Kert · vestluslik", "Andrew · conversational", "Эндрю · разговорный"],
   "azure-male": ["Kert · meeshääl", "Guy · male voice", "Дмитрий · мужской голос"],
   "azure-calm": ["Anu · rahulik", "Jenny · calm", "Светлана · спокойный"],
   "azure-male-calm": ["Kert · rahulik meeshääl", "Davis · calm male voice", "Дмитрий · спокойный"],
@@ -669,6 +673,8 @@ function renderVoices() {
 }
 async function loadVoices() {
   const generation = state.generation;
+  state.voicesLoading = true;
+  controls();
   try {
     const data = await api("/api/demo/voices");
     if (generation !== state.generation || !state.connected) return;
@@ -692,6 +698,10 @@ async function loadVoices() {
     )
       throw new Error("Invalid voice catalog");
     state.voiceCatalog = data.voices;
+    if (!state.sessionId && !state.voiceSelected && data.voices.some(
+      profile => profile.id === "azure-conversational" && profile.available &&
+        profile.languages.includes(uiLanguage()),
+    )) state.demoVoice = "azure-conversational";
     state.endpointingMs =
       Number.isInteger(data.endpointing_ms) &&
       data.endpointing_ms >= 300 &&
@@ -701,6 +711,8 @@ async function loadVoices() {
   } catch (_) {
     if (generation !== state.generation || !state.connected) return;
     state.voiceCatalog = null;
+  } finally {
+    if (generation === state.generation) state.voicesLoading = false;
   }
   renderVoices();
   controls();
@@ -733,6 +745,7 @@ $("demo-voice").addEventListener("change", () => {
   if (selected) {
     stopAudio();
     state.demoVoice = selected.value;
+    state.voiceSelected = true;
     $("demo-voice-result").textContent = "";
   }
   renderVoices();
@@ -861,7 +874,9 @@ function logout() {
   state.hasMore = false;
   state.latestBooking = null;
   state.demoVoice = "azure";
+  state.voiceSelected = false;
   state.voiceCatalog = null;
+  state.voicesLoading = false;
   clearReservation();
   for (const id of ["demo-messages", "bookings", "call-history"])
     $(id).replaceChildren();

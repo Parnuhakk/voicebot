@@ -329,6 +329,30 @@ voice delta `e53de15` has a clear independent static review; normal integration 
 owner tests still remain. No current master, physical-microphone or PSTN readiness
 is inferred from these earlier checkpoints.
 
+### Conversational-voice integration checkpoint
+
+Normal `97684ad` integration committed `ff7f052`, followed by the independently
+reviewed `e53de15` conversational voice delta. Its only textual merge conflict was
+the restaurant asset versions; current generated-answer, capture, release-expiry
+and voice-selection logic remain together. Fresh combined verification:
+
+- Full core: **11,396 passed / 74 skipped / 36 subtests**, 123.40 seconds.
+- Full media, run sequentially afterward: **11,783 passed / 6 skipped / 36
+  subtests**, 140.74 seconds. Existing Starlette/httpx and audioop warnings only.
+- All **nine** Chromium journeys and **24** delivery/status cases passed.
+- Isolated actual Docker packaging: **5 passed**, 14.50 seconds.
+- 188 Python AST, 21 JavaScript syntax, JSON, six current restaurant asset hashes
+  and cumulative credential/conflict/whitespace scans are clean.
+
+The fresh pre-publication preservation snapshot at 22:31:34 UTC confirms healthy
+services, database integrity, the current owned incoming route, original protected
+checkout/diff/19 status entries and 23 unrelated running-service identities.
+There was **one active native room**, so no rollout was initiated. Upstream had
+advanced to `0487c2e`, including family facilities, booking side questions,
+capability guidance, contextual clocks and faster speech. That exact immutable
+delta is being independently reviewed and normally integrated; these passing
+counts attest the `e53de15` checkpoint, not the newer combined source or live RTC.
+
 ## Pre-rollout preservation qualification
 
 Read-only hash-only snapshot at 2026-10-03 20:34:39 UTC records healthy web,
