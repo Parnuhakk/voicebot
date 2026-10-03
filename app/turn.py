@@ -4,7 +4,8 @@ One inbound turn: transcribe audio, chat with tool-calling, execute any
 tool calls via Dispatcher (errors become tool results, never call drops),
 render the final reply through the price gate, synthesize it.
 Primary LLM 429/retryable failure fails over to the secondary once.
-Empty transcription returns a repeat-prompt without spending LLM/TTS.
+Empty or rejected transcription uses the session's recovery prompt, skipping
+the model and booking tools.
 History is sanitized (role allowlist, turn/char caps, tool output is
 untrusted data). Price-like tokens in the final reply must match a
 quoted_total from THIS turn's tool results or the reply is replaced
