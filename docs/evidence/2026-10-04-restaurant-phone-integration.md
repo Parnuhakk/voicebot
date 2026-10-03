@@ -53,6 +53,14 @@ that had passed a global "some negation survives" check. It now checks every
 required refusal separately. Its 39 offline checks pass without provider calls;
 that result is not live-audio acceptance.
 
+A further concrete Codex P1 probe found passive special-request acceptance.
+Five new HTTP candidates plus a final-state bypass reproduced that omission,
+then the same shared guard conservatively excluded special-request/note wording
+(including Russian passive requests). The 157 phone/reasoning checks pass.
+The private checker now also protects staff verification, fictional-booking
+status and the tested allergen-list facts; 48 offline checks pass. Earlier full
+counts below predate this final correction and are not final publication proof.
+
 ## Combined verification
 
 ```bash

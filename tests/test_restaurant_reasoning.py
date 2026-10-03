@@ -400,6 +400,9 @@ def test_guest_instructions_cannot_add_facts_or_authorize_an_action(client):
         ("en", QUESTIONS["en"], "I can save your special request."),
         ("en", QUESTIONS["en"], "Your food order is accepted."),
         ("en", QUESTIONS["en"], "Delivery is arranged."),
+        ("en", QUESTIONS["en"], "Your special request has been accepted."),
+        ("en", QUESTIONS["en"], "Your special request will be fulfilled."),
+        ("en", QUESTIONS["en"], "Your note has been taken."),
         ("et", QUESTIONS["et"], "Teatan köögile teie allergiast."),
         ("et", QUESTIONS["et"], "Panen teie erisoovi kirja."),
         ("et", QUESTIONS["et"], "Võtan teie toidutellimuse vastu."),
@@ -410,6 +413,8 @@ def test_guest_instructions_cannot_add_facts_or_authorize_an_action(client):
         ("ru", QUESTIONS["ru"], "Ваш заказ принят."),
         ("ru", QUESTIONS["ru"], "Доставка организована."),
         ("ru", QUESTIONS["ru"], "Я могу это сделать."),
+        ("ru", QUESTIONS["ru"], "Ваше особое пожелание принято."),
+        ("ru", QUESTIONS["ru"], "Особая просьба будет исполнена."),
     ],
 )
 def test_generated_capability_promises_are_rejected_for_any_question(
@@ -431,6 +436,7 @@ def test_generated_capability_promises_are_rejected_for_any_question(
     "language,unsafe",
     [
         ("en", "I will inform the kitchen."),
+        ("en", "Your special request has been accepted."),
         ("et", "Teatan köögile teie allergiast."),
         ("ru", "Я уведомлю кухню о вашей аллергии."),
     ],
