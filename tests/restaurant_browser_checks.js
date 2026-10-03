@@ -247,13 +247,34 @@ async page => {
     await page.waitForFunction(()=>!reservation.sessionId && !reservation.busy);
     assert(!(await page.getByRole('radio', {name:'Eesti', exact:true}).isDisabled()));
   }
+  const send = async text => {await page.locator('#demo-text').fill(text);await page.locator('#demo-send').click();await page.waitForFunction(()=>!state.turnBusy);};
+  // First caller speech selects English despite the initial Estonian picker.
+  await chooseLanguage('et');
+  await page.locator('#demo-start').click();
+  await page.waitForFunction(()=>state.sessionId && !state.turnBusy);
+  for (const [text, expected] of [
+    ['Hi! I would like to book a table.', 'What date'],
+    ['Tomorrow', 'What time'],
+    ['At 2 pm', 'How many'],
+    ['Milline on menüü?', 'Vegetable soup'],
+  ]) {
+    await send(text);
+    assert.equal(await page.evaluate(()=>state.replyLanguage),'en');
+    assert((await page.locator('#demo-messages .message').last().textContent()).includes(expected));
+    assert.equal(await page.evaluate(()=>state.demoLanguage),'et');
+    assert.equal(await page.evaluate(()=>state.recap),null);
+  }
+  await send('Please speak Russian');
+  assert.equal(await page.evaluate(()=>state.replyLanguage),'ru');
+  assert((await page.locator('#demo-messages .message').last().textContent()).includes('Сколько вас будет'));
+  await page.locator('#demo-end').click();
+  await page.waitForFunction(()=>!state.sessionId && !state.turnBusy);
   // Real browser capture, filtering and 16k mono WAV encoding; recognition is a double.
   await chooseLanguage('en');
   await page.locator('#demo-start').click();
   await page.waitForFunction(()=>state.sessionId && !state.turnBusy);
   assert(await page.locator('#demo-voice').isDisabled(),'voice selection changed an active conversation');
   await page.evaluate(()=>{window.restaurantOriginalPlay=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=function(){return Promise.reject(new Error('fixture autoplay denied'));};});
-  const send = async text => {await page.locator('#demo-text').fill(text);await page.locator('#demo-send').click();await page.waitForFunction(()=>!state.turnBusy);};
   await send("I'd like to reserve a table");
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('What date'));
   const englishNamedDate = await page.evaluate(()=>{

@@ -11,7 +11,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Any
 
-from .languages import ENGLISH_INVITATION, LANGUAGE_POLICY, english_clarification, spoken_date, spoken_time
+from .languages import ENGLISH_INVITATION, LANGUAGE_POLICY, english_clarification, requested_language, spoken_date, spoken_time
 from .restaurant_consent import CONFIRMATION_QUESTIONS, is_restaurant_confirmation
 from .restaurant_times import NUMBERS, parse_spoken_time
 from .restaurant_data import restaurant_demo_profile
@@ -556,6 +556,10 @@ class RestaurantCallTools(CallTools):
             self.mutation_uncertain or self.unsupported_language or self.input_recovery_reply
             or kwargs.get("recognition_status") in {"stt_unavailable", "input_invalid"}
         ):
+            return
+        if requested_language(text):
+            # Keep requested details when explicitly changing language. The
+            # shared guard already revoked delivery of any pending recap.
             return
         if self.conversation.intent in {"decline", "goodbye"}:
             self._restaurant_inquiry = None
