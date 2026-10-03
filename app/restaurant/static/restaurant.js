@@ -33,6 +33,7 @@ const state = {
   voiceReady: false,
   audioReady: false,
   bookingReady: false,
+  telephoneRelease: null,
   bookingView: 0,
   latestBooking: null,
 };
@@ -46,6 +47,26 @@ const reservation = {
   date: null,
 };
 const TEXT = {
+  telephoneInSync: [
+    "Telefoniroboti versioon ühtib veebiga viimase kontrolli järgi.",
+    "The telephone assistant matches the website as of the last check.",
+    "По последней проверке телефонный помощник использует ту же версию, что и сайт.",
+  ],
+  telephoneOutOfSync: [
+    "Telefonirobot kasutab teist versiooni või seadistust.",
+    "The telephone assistant has a different version or configuration.",
+    "У телефонного помощника другая версия или настройки.",
+  ],
+  telephoneStale: [
+    "Telefoniroboti versioon vajab uut kontrolli.",
+    "The telephone assistant version needs a fresh check.",
+    "Версию телефонного помощника нужно проверить снова.",
+  ],
+  telephoneUnverified: [
+    "Telefoniroboti versiooni vastavus pole veel kinnitatud.",
+    "The telephone assistant version has not been verified yet.",
+    "Соответствие версии телефонного помощника пока не подтверждено.",
+  ],
   demoWebsite: ["Vaata restorani demo ↗", "Visit the restaurant demo ↗", "Открыть демонстрацию ресторана ↗"],
   voice: ["Abilise hääl", "Assistant voice", "Голос помощника"],
   voicePreview: ["Kuula häält", "Listen to voice", "Послушать голос"],
@@ -1395,6 +1416,30 @@ function renderInformation() {
   $("service-status").textContent = state.voiceReady
     ? demoCopy().voiceConfigured
     : demoCopy().voiceMissing;
+  renderTelephoneStatus();
+}
+function renderTelephoneStatus() {
+  const release = state.telephoneRelease;
+  let key = "telephoneUnverified";
+  if (release?.status === "out_of_sync") key = "telephoneOutOfSync";
+  else if (release?.status === "stale") key = "telephoneStale";
+  else if (release?.status === "in_sync") {
+    const age = Date.now() / 1000 - release.verified_at;
+    key = Number.isFinite(age) && age >= -5 && age <= release.max_age_seconds
+      ? "telephoneInSync"
+      : "telephoneStale";
+  }
+  $("telephone-status").textContent = demoCopy()[key];
+}
+async function refreshTelephoneStatus() {
+  try {
+    const response = await fetch("/api/status", { cache: "no-store" });
+    if (!response.ok) throw new Error("unavailable");
+    state.telephoneRelease = (await response.json()).telephone?.release ?? null;
+  } catch (_) {
+    state.telephoneRelease = null;
+  }
+  renderTelephoneStatus();
 }
 async function loadPublic() {
   try {
@@ -1409,6 +1454,7 @@ async function loadPublic() {
     state.bookingReady = data.table_booking_ready === true;
     state.voiceReady = services.capabilities.text_turn_ready === true;
     state.audioReady = services.capabilities.audio_turn_ready === true;
+    state.telephoneRelease = services.telephone?.release ?? null;
     renderInformation();
     controls();
     if (!state.bookingReady)
@@ -1417,6 +1463,9 @@ async function loadPublic() {
     status("information-status", demoCopy().failed, "error");
   }
 }
+setInterval(() => {
+  if (!document.hidden) refreshTelephoneStatus();
+}, 60000);
 $("auth-form").addEventListener("submit", (event) => {
   event.preventDefault();
   connect();
