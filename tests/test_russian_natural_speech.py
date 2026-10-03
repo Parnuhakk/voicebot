@@ -12,7 +12,7 @@ from app.languages import CONSENT
 from app.providers.azure_tts import AzureTtsClient, ssml
 from app.providers.russian_speech import duration, guest_count, spoken_date, spoken_time
 from app.providers.speech_delivery import SpeechDelivery
-from app.restaurant_answers import format_schedule
+from app.restaurant_answers import format_schedule, match_question
 from app.restaurant_call import COPY, RestaurantCallTools
 from app.booking.tools import Dispatcher
 from app.restaurant_data import load_restaurant_data
@@ -150,6 +150,21 @@ def test_alternative_times_are_clear_but_not_a_booking_confirmation():
     assert state.pending is None and not state.bookings
 
 
+@pytest.mark.parametrize("text,topic", [
+    ("Сколько стоит суп?", "price"),
+    ("Сколько он стоит?", "price"),
+    ("Сколько будет стоить ужин?", "price"),
+    ("Сколько стоят блюда?", "price"),
+    ("Стоит ли прийти с собакой?", "pets"),
+    ("Где стоит столик?", "location"),
+])
+def test_cost_questions_are_distinct_from_advice_or_location(text, topic):
+    question = match_question(text, has_dish="суп" in text)
+    assert question and question.topics[0] == topic
+    if topic != "price":
+        assert "price" not in question.topics
+
+
 def test_russian_http_replies_recap_audio_and_booking_approval(client):
     requests = []
 
@@ -171,9 +186,11 @@ def test_russian_http_replies_recap_audio_and_booking_approval(client):
         identifier = session["session_id"]
         for question, expected in [
             ("Можно прийти с собакой?", "Да, можно прийти с собакой."),
+            ("Стоит ли прийти с собакой?", "Да, можно прийти с собакой."),
             ("На сколько времени можно забронировать столик?", "Столик будет за вами на полтора часа."),
             ("Где находится ресторан?", "Это деморесторан, поэтому настоящего адреса у него нет."),
             ("Сколько стоит суп?", COPY["ru"]["price"]),
+            ("Сколько стоят блюда?", COPY["ru"]["price"]),
         ]:
             answer = turn(client, identifier, question, language="ru")
             assert answer["reply"] == expected
