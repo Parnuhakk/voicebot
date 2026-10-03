@@ -219,3 +219,112 @@ def test_unicode_time_reply_and_period_only_response_keep_booking_context(make_s
     state.observe_user_text("in the evening", language="en")
     assert trusted_booking_response(state) == {"content": COPY["en"]["invalid_time"]}
     assert "start_time" not in state.booking_inquiry
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("at 1800", "18:00"),
+        ("at 1830", "18:30"),
+        ("kell 1800", "18:00"),
+        ("kella 0130", "01:30"),
+        ("в 1830", "18:30"),
+        ("к 1230", "12:30"),
+    ],
+)
+def test_compact_transcribed_clocks_require_explicit_time_context(text, expected):
+    selection = parse_spoken_time(text)
+    assert selection and selection.value == expected
+    assert selection.candidates is None and not selection.invalid
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "at 2460",
+        "kell 1870",
+        "в 2400",
+        "at 1800 am",
+        "at 1800 pm",
+        "at 1800 or 1900",
+        "at 1800 or at 1900",
+        "between 1800 and 1900",
+        "from 1800 to 1900",
+        "not at 1800",
+        "mitte kell 1800",
+        "не в 1800",
+        "around at 1800",
+        "umbes kell 1800",
+        "примерно в 1800",
+        "at 1800 guests",
+        "at 1800 30",
+        "at 18000",
+        "at 1800.5",
+    ],
+)
+def test_compact_invalid_approximate_or_conflicting_clocks_never_select(text):
+    selection = parse_spoken_time(text)
+    assert selection is None or selection.invalid and selection.value is None
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["1800", "2026", "2026-10-06", "06.10.2026", "1800 guests", "for 1800 people"],
+)
+def test_unprompted_compact_numbers_dates_and_guest_counts_are_not_clocks(text):
+    assert parse_spoken_time(text) is None
+
+
+@pytest.mark.parametrize("text,expected", [("1800", "18:00"), ("0130", "01:30")])
+def test_compact_bare_clock_requires_a_time_question(text, expected):
+    assert parse_spoken_time(text) is None
+    assert parse_spoken_time(text, allow_bare=True).value == expected
+
+
+@pytest.mark.parametrize(
+    "language,text",
+    [
+        ("en", "Please reserve a table tomorrow at 1800 for two guests total."),
+        ("et", "Soovin homme lauda kahele inimesele kell 1800."),
+        ("ru", "Забронируйте столик завтра в 1800 для двух гостей."),
+    ],
+)
+def test_compact_request_preserves_date_and_total_party(make_state, language, text):
+    state = make_state(language)
+    state.observe_user_text(text, language=language)
+    inquiry = state.booking_inquiry
+    assert inquiry["start_time"] == "18:00" and inquiry["party_size"] == 2
+    assert trusted_booking_response(state) == {
+        "name": "plan_restaurant_reservation",
+        "arguments": inquiry,
+    }
+    assert state.pending is None and not state.bookings
+
+
+@pytest.mark.parametrize(
+    "text", ["at 1800 and 1900", "kell 1800 ja 1900", "в 1800 и 1900"]
+)
+def test_coordinated_compact_clocks_require_clarification(text):
+    selection = parse_spoken_time(text)
+    assert selection and selection.invalid and selection.value is None
+
+
+@pytest.mark.parametrize(
+    "language,text",
+    [
+        ("en", "Reserve a table tomorrow at 1800 and 1900 for two guests."),
+        ("et", "Soovin homme lauda kahele kell 1800 ja 1900."),
+        ("ru", "Столик завтра в 1800 и 1900 для двух гостей."),
+    ],
+)
+def test_coordinated_compact_request_cannot_plan_a_chosen_clock(
+    make_state, language, text
+):
+    state = make_state(language)
+    state.observe_user_text(text, language=language)
+    assert state.booking_inquiry["party_size"] == 2
+    assert state.booking_inquiry["date"] and "start_time" not in state.booking_inquiry
+    assert trusted_booking_response(state) == {
+        "content": COPY[language]["invalid_time"]
+    }
+    assert state.pending is None and not state.bookings

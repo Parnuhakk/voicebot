@@ -12,7 +12,11 @@ from typing import Any, Protocol
 from zoneinfo import ZoneInfo
 
 from .languages import LANGUAGE_POLICY
-from .restaurant_answers import INFORMATION_TOPICS, format_schedule
+from .restaurant_answers import (
+    INFORMATION_TOPICS,
+    MEDICAL_FOOD_CONCERN,
+    format_schedule,
+)
 
 MAX_REPLY = 650
 REQUEST_TIMEOUT = 8.0
@@ -156,6 +160,10 @@ def safe_wording(reply: str, language: str) -> bool:
         re.I,
     ):
         return False
+    # Medical outcomes and cross-contact stay canonical regardless of polarity
+    # or reviewer approval. Benign diet facts such as "contains milk" are allowed.
+    if re.search(MEDICAL_FOOD_CONCERN, reply, re.I):
+        return False
     # Success, prices, real contact collection and allergy guarantees are always
     # controlled outside generated prose, even if a model reviewer approves it.
     blocked = (
@@ -179,6 +187,22 @@ def safe_wording(reply: str, language: str) -> bool:
     )
     if re.search(blocked, reply, re.I):
         return False
+    # Capability operations belong to canonical replies, even when negated.
+    # Do not infer action/negation scope from generated prose or model approval.
+    capability_operations = (
+        r"\b(?:kitchen|chef\w*|sav(?:e|ed|ing)|record\w*|notif\w*|inform\w*|"
+        r"messag\w*|relay\w*|forward\w*|submit\w*|order\w*|takeaway|deliver\w*|"
+        r"special requests?|notes?)\b|"
+        r"\b(?:i|we)(?:\s+(?:will|shall|can|am going to|are going to)\b|['’](?:ll|ve)\b)|"
+        r"\b(?:köök|köögi(?:le|s|st|ga|ks|ta)?|koka\w*|erisoov\w*|salvesta\w*|teavita\w*|"
+        r"teata\w*|edasta\w*|tellim\w*|toidutellim\w*|kohaletoimet\w*)\b|"
+        r"\b(?:ma|me)\s+(?:saan|saame|võin|võime|teen|teeme)\b|"
+        r"\b(?:кухн\w*|повар\w*|уведом\w*|сообщ\w*|переда\w*|отправ\w*|"
+        r"запиш\w*|запис\w*|заказ\w*|достав\w*|пожелан\w*|особ\w*\s+просьб\w*)\b|"
+        r"\b(?:я|мы)\s+(?:могу|можем|буду|будем|сделаю|сделаем)\b"
+    )
+    if re.search(capability_operations, reply, re.I):
+        return False
     cyrillic = re.search(r"[А-Яа-яЁё]", reply)
     return bool(cyrillic) if language == "ru" else not cyrillic
 
@@ -187,6 +211,8 @@ def reasoned_reply(
     state: RestaurantState, messages: list[dict[str, Any]], client: ReasoningClient
 ) -> str | None:
     """One generation and a separate review, then a turn-bound approval."""
+    if not state.reasoning_allowed:
+        return None
     serial, language = state._turn_serial, state.language
     facts = restaurant_facts(state)
     digest = facts_digest(facts)

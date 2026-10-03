@@ -45,7 +45,7 @@ def test_legacy_session_start_keeps_estonian_greeting(client, body):
     result = client.post(
         "/api/demo/session",
         headers=AUTH,
-        **({"json": body} if body is not None else {})
+        **({"json": body} if body is not None else {}),
     )
     assert result.status_code == 200 and result.json()["greeting"].startswith("Tere!")
 
@@ -136,6 +136,7 @@ def test_selected_english_recognition_and_audio_reply(client):
         },
     )
     assert result.status_code == 200 and result.json()["language"] == "en"
+    # Initial greeting/UI language is not yet the caller's selected language.
     recognizer.transcribe.assert_called_once_with(b"RIFF-fixture", language="auto")
     assert (
         base64.b64decode(result.json()["audio_b64"]).decode() == result.json()["reply"]

@@ -21,6 +21,8 @@ QUESTIONS = {
         "recap": "Soovin homme lauda neljale kell 14.00",
         "real": "Kas see on päris restoran?",
         "cancel": "Palun tühista broneering, mille just selles kõnes tegime",
+        "special_requests": "Kas saate mu allergia broneeringule kirja panna?",
+        "food_orders": "Kas saan toitu kaasa tellida?",
     },
     "en": {
         "staff": "Can I speak to a member of staff?",
@@ -29,6 +31,8 @@ QUESTIONS = {
         "recap": "A table for four tomorrow at 14:00",
         "real": "Is this a real restaurant?",
         "cancel": "Please cancel the booking we just made in this call",
+        "special_requests": "Can you record an allergy note?",
+        "food_orders": "Can I order takeaway?",
     },
     "ru": {
         "staff": "Можно поговорить с сотрудником ресторана?",
@@ -37,13 +41,25 @@ QUESTIONS = {
         "recap": "Столик на четверых завтра в 14:00",
         "real": "Это настоящий ресторан?",
         "cancel": "Пожалуйста отмените бронирование которое мы только что сделали в этом звонке",
+        "special_requests": "Можете записать мою аллергию в бронирование?",
+        "food_orders": "Можно заказать еду навынос?",
     },
 }
 
 
 @pytest.mark.parametrize("language", ["et", "en", "ru"])
 @pytest.mark.parametrize(
-    "stage", ["greeting", "staff", "policies", "location", "recap", "cancelled"]
+    "stage",
+    [
+        "greeting",
+        "staff",
+        "policies",
+        "location",
+        "recap",
+        "cancelled",
+        "special_requests",
+        "food_orders",
+    ],
 )
 def test_browser_call_speaks_no_internal_test_labels(client, language, stage):
     session = start(client, language)["session_id"]
@@ -69,10 +85,37 @@ def test_browser_call_speaks_no_internal_test_labels(client, language, stage):
     spoken = client.provider.spoken[-1]
     assert spoken and not re.search(INTERNAL_FRAMING, spoken, re.I), spoken
     if stage == "recap":
-        details = ("четырёх гостей", "полтора часа") if language == "ru" else ("4", "90")
+        details = (
+            ("четырёх гостей", "полтора часа") if language == "ru" else ("4", "90")
+        )
         assert all(value in spoken for value in ("Meretuule", "Külaline", *details))
         assert answer["recap_delivery_id"]
         assert client.app.state.demo_sessions.sessions[session].tools.bookings == set()
+
+
+@pytest.mark.parametrize("language", ["et", "en", "ru"])
+@pytest.mark.parametrize("capability", ["special_requests", "food_orders"])
+def test_capability_booking_recap_has_no_testing_narration_and_requires_receipt(
+    client, language, capability
+):
+    requests = {
+        "et": "Broneeri laud homme kell 14:00 neljale.",
+        "en": "Book a table tomorrow at 14:00 for four.",
+        "ru": "Забронируйте столик завтра в 14:00 на четверых.",
+    }
+    session = start(client, language)["session_id"]
+    answer = turn(
+        client,
+        session,
+        QUESTIONS[language][capability] + " " + requests[language],
+        language=language,
+    )
+    state = client.app.state.demo_sessions.sessions[session].tools
+    assert answer["reply"] == client.provider.spoken[-1] == state.render_recap()
+    assert state.pending and answer["recap_delivery_id"] and not state.bookings
+    assert not re.search(INTERNAL_FRAMING, answer["reply"], re.I)
+    denied = turn(client, session, CONSENT[language], language=language)
+    assert denied["booking_changes"] == [] and not state.bookings
 
 
 @pytest.mark.parametrize(

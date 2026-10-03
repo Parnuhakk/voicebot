@@ -64,7 +64,9 @@ prices, address and write outcomes remain unknown; no transfer, payment or
 allergy guarantee is invented. Grounded browser candidates that narrate internal
 test/demo labels are rejected whole and use the approved fallback, never a
 word-stripped recap. Ordinary generation receives the venue name, not its
-internal testing description. Estonian duration/price/staff questions accept `laud/lauda`,
+internal testing description. Capability answers also omit routine demo framing,
+while explicitly refusing special-request storage, kitchen notifications and
+food/takeaway/delivery orders. Estonian duration/price/staff questions accept `laud/lauda`,
 `maksavad/maksma` and `töötajaga`; children, closure and recommendation prompts
 use consistent polite address. Dog policy does not grant permission for cats
 or other unverified pets.
