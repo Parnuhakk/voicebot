@@ -29,12 +29,11 @@ before a booking write. Availability and the advance booking window still apply.
 
 - Final restaurant suite plus English calendar/clock regressions: **8304 passed**
   in the project's pinned Python 3.13 media environment.
-- The full repository run initially had **11311 passed, 14 failed, 10 skipped,
-  36 subtests passed**. Comparing those failures with pristine upstream
-  `afe1e0c` reproduced **11 existing failures** in hotel/spa language/provider
-  fixtures. The three introduced Russian evening failures were repaired and
-  passed in the final restaurant run above. The repository-wide suite is not
-  fully green.
+- Final full repository run: **11315 passed, 11 failed, 10 skipped,
+  36 subtests passed**. All 11 failures were separately reproduced on pristine
+  upstream `afe1e0c` in hotel/spa language/provider fixtures. The introduced
+  Russian evening ambiguity was repaired and passed in both final runs.
+  The repository-wide suite is not fully green.
 - The two existing multilingual month/day fixture failures were separately
   reproduced on upstream. Their initial utterances now use the intended caller
   language, matching the current first-caller-language policy.
