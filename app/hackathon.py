@@ -670,15 +670,18 @@ async def run_demo_turn(
     tts_override=None,
     emit=None,
 ):
-    from .turn import MAX_HISTORY_TURNS, recognize_audio, run_turn
+    from .turn import MAX_HISTORY_TURNS, recognize_audio_result, run_turn
 
     started = time.perf_counter()
     # Receipt validation precedes paid recognition and observation of this input.
     session.consume_recap_delivery(recap_delivery_id)
     stt_started = started
     recognition_status = "typed"
+    detected_language = None
     if audio:
-        text, recognition_status = await recognize_audio(stack["stt"], audio, language)
+        recognition = await recognize_audio_result(stack["stt"], audio, language)
+        text, recognition_status = recognition.text, recognition.status
+        detected_language = recognition.detected_language
     stt_failed = recognition_status == "stt_unavailable"
     stt_ms = (time.perf_counter() - stt_started) * 1000 if audio else 0.0
     if not isinstance(text, str) or len(text) > 500:
@@ -689,6 +692,8 @@ async def run_demo_turn(
         text,
         is_final=True,
         language=None if language == "auto" else language,
+        detected_language=detected_language,
+        unsupported=recognition_status == "unsupported_language",
     )
     language = session.tools.language
     callslog.history_safe(

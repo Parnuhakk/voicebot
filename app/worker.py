@@ -82,7 +82,7 @@ class TelephoneAgent(Agent):
                 data = event.alternatives[0]
                 if data.text.strip():
                     self._detected_language = str(data.language)
-                    self._unsupported_language = bool(
+                    self._unsupported_language |= bool(
                         (data.metadata or {}).get("unsupported_language")
                     )
             yield event
@@ -99,6 +99,10 @@ class TelephoneAgent(Agent):
             ),
             unsupported=self._unsupported_language,
         )
+        if self.state.unsupported_language and new_message.role == "user":
+            # The SDK persists this message after the hook. Rejected speech
+            # must not reach the model through history on a later allowed turn.
+            new_message.content = []
         self._detected_language = None
         self._unsupported_language = False
         message_id = getattr(new_message, "id", None)
@@ -111,7 +115,9 @@ class TelephoneAgent(Agent):
         await self.update_instructions(self.state.conversation_instructions)
         if self.state.history_enabled and new_message.role == "user":
             status = (
-                "recognized"
+                "unsupported_language"
+                if self.state.unsupported_language
+                else "recognized"
                 if (new_message.text_content or "").strip()
                 else "no_speech"
             )

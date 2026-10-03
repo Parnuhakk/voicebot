@@ -1037,14 +1037,16 @@ async function sendTurn(input) {
     });
     if (generation !== state.generation) return;
     state.replyLanguage = data.language;
-    const heard = addMessage(demoCopy().you, data.text_heard);
+    const heard = data.text_heard ? addMessage(demoCopy().you, data.text_heard) : null;
     const message =
       data._stream?.replyNode || addMessage(demoCopy().assistant, data.reply);
-    if (data._stream) $("demo-messages").insertBefore(heard, message);
+    if (data._stream && heard) $("demo-messages").insertBefore(heard, message);
     $("demo-text").value = "";
     status(
       "demo-status",
-      data.outcome === "unknown_outcome"
+      data.input_status === "unsupported_language"
+        ? data.reply
+        : data.outcome === "unknown_outcome"
         ? demoCopy().unknown
         : data.tts_failed
           ? demoCopy().textFallback
