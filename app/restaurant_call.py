@@ -516,6 +516,7 @@ class RestaurantCallTools(CallTools):
         self._restaurant_last_response = None
         self._restaurant_question = None
         self._restaurant_unmatched = False
+        self._reasoned_reply: tuple[int, str, str, str] | None = None
 
         # Selector identities only; carry disclosures through booking followups.
         self._restaurant_capability_topics = ()
@@ -620,6 +621,7 @@ class RestaurantCallTools(CallTools):
         super().observe_user_text(text, **kwargs)
         if kwargs.get("is_final", True) is not True:
             return
+        self._reasoned_reply = None
         self._booking_inquiry = None
         self.faq_entries = ()
         self._faq_unmatched = False
@@ -684,7 +686,8 @@ class RestaurantCallTools(CallTools):
                     for topic in self._restaurant_question.topics
                 )
                 and (
-                    DETAIL_FOLLOWUP.fullmatch(text)
+                    self._restaurant_question.recommendation
+                    or DETAIL_FOLLOWUP.fullmatch(text)
                     or re.search(
                         r"\b(?:aga|see|seda|selle|sellest|and|it|this|that|а|это|он|она|него|неё)\b",
                         text,
@@ -692,7 +695,16 @@ class RestaurantCallTools(CallTools):
                 )
             ):
                 explicit_dish = self._restaurant_dish is not None
-                if self._restaurant_dish is None:
+                explicit_diet = self._restaurant_diet is not None
+                refers_to_dish = DETAIL_FOLLOWUP.fullmatch(text) or re.search(
+                    r"\b(?:see|seda|selle|sellest|it|this|that|это|он|она|него|неё)\b",
+                    text,
+                )
+                if self._restaurant_dish is None and (
+                    refers_to_dish
+                    or not explicit_diet
+                    and not self._restaurant_question.recommendation
+                ):
                     self._restaurant_dish = previous_dish
                 if self._restaurant_diet is None and not explicit_dish:
                     self._restaurant_diet = previous_diet
@@ -985,6 +997,28 @@ class RestaurantCallTools(CallTools):
                 return {"name": "plan_restaurant_reservation", "arguments": inquiry}
         return None
 
+    @property
+    def reasoning_allowed(self) -> bool:
+        """Free wording is read-only; all consequential state stays canonical."""
+        topics = self._restaurant_question.topics if self._restaurant_question else ()
+        return bool(
+            (self._restaurant_focus or self._restaurant_unmatched)
+            and self._restaurant_focus not in {"staff", "domain", "demo"}
+            and "allergens" not in topics
+            and not any(topic in CAPABILITIES for topic in topics)
+            and not (
+                self.pending
+                or self.cancel_approval
+                or self.turn_mutation
+                or self.mutation_uncertain
+                or self.clarification
+                or self.unsupported_language
+                or self.input_recovery_reply
+                or self.conversation.intent
+                or self.results
+            )
+        )
+
     async def _dispatch(self, name, args):
         if name not in self.names:
             return {"error": "not_allowed"}
@@ -1274,6 +1308,24 @@ class RestaurantCallTools(CallTools):
         if text in (STT_UNAVAILABLE[self.language], TURN_UNAVAILABLE[self.language]):
             self.invalidate_recap()
             return text
+        if self._reasoned_reply and self.reasoning_allowed:
+            serial, language, approved, digest = self._reasoned_reply
+            if (
+                text == approved
+                and serial == self._turn_serial
+                and language == self.language
+            ):
+                from .restaurant_reasoning import (
+                    facts_digest,
+                    restaurant_facts,
+                    safe_wording,
+                )
+
+                if (
+                    safe_wording(approved, self.language)
+                    and facts_digest(restaurant_facts(self)) == digest
+                ):
+                    return approved
         reply = self.inquiry_reply()
         if reply:
             return reply

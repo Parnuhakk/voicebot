@@ -1,6 +1,7 @@
 """Reviewed capability disclosures, mixed planning and real consent boundaries."""
 
 import asyncio
+import json
 
 import pytest
 
@@ -375,4 +376,39 @@ def test_mixed_clarification_also_discloses_the_unsupported_action(
         "content": notice + " " + COPY[language][key]
     }
     assert state.guard_reply("untrusted", []) == notice + " " + COPY[language][key]
+    assert not state.holds and not state.bookings
+
+
+@pytest.mark.parametrize(
+    "question,topic,claim,expected",
+    [
+        (CASES[1][1], "special_requests", "I will inform the kitchen.", CASES[1][2]),
+        (CASES[4][1], "food_orders", "I will take your food order.", CASES[4][2]),
+    ],
+)
+def test_capability_disclosure_is_not_delegated_to_free_wording(
+    client, question, topic, claim, expected
+):
+    class UntrustedReasoner:
+        supports_restaurant_reasoning = True
+        calls = 0
+
+        def chat(self, messages, tools=None, **kwargs):
+            self.calls += 1
+            body = (
+                {"reply": claim, "fact_ids": ["policy." + topic], "language": "en"}
+                if self.calls == 1
+                else {"approved": True, "language": "en"}
+            )
+            return {"content": json.dumps(body)}
+
+    model = UntrustedReasoner()
+    client.app.state.stack["llm_primary"] = model
+    session = start(client, "en")["session_id"]
+    response = client.post(
+        "/api/turn", headers=AUTH, json={"session_id": session, "text": question}
+    )
+    assert response.status_code == 200
+    assert response.json()["reply"] == expected and model.calls == 0
+    state = client.app.state.demo_sessions.sessions[session].tools
     assert not state.holds and not state.bookings

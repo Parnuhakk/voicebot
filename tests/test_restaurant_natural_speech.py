@@ -105,7 +105,8 @@ def test_detail_followups_do_not_reuse_stale_or_other_language_topics(make_state
     state = make_state("et")
     state.observe_user_text("Milline on menüü?", language="et")
     state.guard_reply("", [])
-    state.observe_user_text("Please speak English")
+    state.observe_user_text("Please speak English", language="en")
+    assert state.language == "en"
     state.observe_user_text("Tell me more", language="en")
     assert state._restaurant_question is None
     state.observe_user_text("Milline on menüü?", language="et")
@@ -113,6 +114,49 @@ def test_detail_followups_do_not_reuse_stale_or_other_language_topics(make_state
     state.observe_user_text("Tere", language="et")
     state.observe_user_text("Räägi sellest lähemalt", language="et")
     assert state._restaurant_question is None
+
+
+@pytest.mark.parametrize(
+    "language,preference,recommendation",
+    [
+        ("et", "Olen vegan", "Mida soovitad?"),
+        ("en", "I'm vegan", "What do you recommend?"),
+        ("ru", "Я веган", "Что посоветуете?"),
+    ],
+)
+def test_recommendation_follows_preference_in_previous_turn(
+    make_state, language, preference, recommendation
+):
+    state = make_state(language)
+    state.observe_user_text(preference, language=language)
+    state.guard_reply("", [])
+    state.observe_user_text(recommendation, language=language)
+    answer = state.guard_reply("", [])
+    assert state.restaurant["menu"][0]["name"][language] in answer
+    assert state.restaurant["menu"][1]["name"][language] not in answer
+    assert state.restaurant["menu"][2]["name"][language] not in answer
+    assert state._restaurant_diet == "vegan"
+
+
+@pytest.mark.parametrize(
+    "language,dish,new_preference",
+    [
+        ("et", "Kas teil lõhet on?", "Aga veganitele?"),
+        ("en", "Do you have salmon?", "And for vegans?"),
+        ("ru", "Есть лосось?", "А для веганов?"),
+    ],
+)
+def test_new_diet_request_clears_previously_named_dish(
+    make_state, language, dish, new_preference
+):
+    state = make_state(language)
+    state.observe_user_text(dish, language=language)
+    state.guard_reply("", [])
+    state.observe_user_text(new_preference, language=language)
+    answer = state.guard_reply("", [])
+    assert state.restaurant["menu"][0]["name"][language] in answer
+    assert state.restaurant["menu"][1]["name"][language] not in answer
+    assert state._restaurant_dish is None
 
 
 @pytest.mark.parametrize(
