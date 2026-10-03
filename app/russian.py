@@ -15,7 +15,8 @@ def detect_language(text: str, default: str = "et") -> str:
     if re.search(
         r"[õäöü]|\b(?:tere|jah|ei|kinnitan|palun|soovin|sooviks|tahaks|aitäh|"
         r"tänan|tühista|broneering|broneerida|hotelli|tuba|mis|kas|kuidas|kus|"
-        r"millal|millist|kaua|kestab|maksab)\b",
+        r"millal|millist|kaua|kestab|maksab|meid|oleme|tuleme|kell|homme|"
+        r"kahekesi|kolmekesi|neljakesi|viiekesi|kuuekesi)\b",
         text,
         re.I,
     ):

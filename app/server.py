@@ -301,6 +301,7 @@ def create_app():
         "stay_booking_ready": "search_availability" in advertised,
         "slot_booking_ready": "search_slots" in advertised,
         "booking_read_ready": stack["booking_reader"] is not None,
+        "restaurant_english_dates_times_ready": stack.get("business_type") == "restaurant",
         "booking_view_source": (
             stack.get("business_type", "hotel_spa")
             if stack.get("business_type") == "restaurant"
@@ -360,6 +361,7 @@ def create_app():
                     "model": config.stt_model,
                     "language": "auto",
                     "languages": ["et", "en", "ru"],
+                    "reject_unsupported_languages": True,
                 },
                 "llm": {"provider": "groq", "model": config.chat_model},
                 "tts": {
@@ -478,6 +480,44 @@ def create_app():
         return {
             "voices": rows,
             "endpointing_ms": silence_ms if 300 <= silence_ms <= 2000 else 650,
+        }
+
+    preview_slots = asyncio.Semaphore(2)
+
+    @app.post("/api/demo/voices/preview")
+    async def preview_voice(
+        request: Request, authorization: str | None = Header(default=None)
+    ):
+        import base64
+        from fastapi import HTTPException
+
+        from .hackathon import choose_speaker, read_session_settings, voice_metadata
+        from .turn import _speak
+
+        dashboard_api._require_operator(authorization)
+        language, voice_id = await read_session_settings(request)
+        language = "et" if language == "auto" else language
+        speaker = choose_speaker(app.state.stack, voice_id)
+        if callable(getattr_static(speaker, "for_language", None)):
+            speaker = speaker.for_language(language)
+        text = {
+            "et": "Tere! Aitan sul lauda leida ja restorani kohta küsida. Mis kell sulle sobiks?",
+            "en": "Hello! I can help you find a table and answer questions about the restaurant. What time works for you?",
+            "ru": "Здравствуйте! Помогу вам найти столик и отвечу на вопросы о ресторане. Какое время вам подходит?",
+        }[language]
+        if preview_slots.locked():
+            raise HTTPException(429, "voice_preview_busy", headers={"Retry-After": "2"})
+        # Fixed audition text never creates a session, calls the model or books.
+        async with preview_slots:
+            audio = await _speak(speaker, text)
+        if not audio:
+            raise HTTPException(503, "voice_preview_unavailable")
+        return {
+            "text": text,
+            "language": language,
+            "audio_b64": base64.b64encode(audio).decode(),
+            "audio_type": "audio/mpeg",
+            "voice": voice_metadata(speaker, language, voice_id),
         }
 
     @app.post("/api/turn")

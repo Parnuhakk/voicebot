@@ -44,9 +44,20 @@ async function capture(page) {
 }
 
 for (const input of ['form', 'example']) test(`${input} text retires earlier capture before a new recap`, async (page, f) => {
-  await start(page); await capture(page);
-  if (input === 'form') await send(page);
-  else {await page.locator('[data-example=reservation]').click(); await page.waitForFunction(() => !state.turnBusy);}
+  await start(page);
+  if (input === 'form') await page.locator('#demo-text').fill('A table for four tomorrow at 14:00');
+  await capture(page);
+  if (input === 'form') {
+    assert(await page.locator('#demo-text').isDisabled(), 'active capture did not lock ordinary text input');
+    await page.locator('#demo-form').evaluate(form => form.requestSubmit());
+    await page.waitForFunction(() => !state.turnBusy);
+  }
+  else {
+    const example = page.locator('[data-example=reservation]');
+    assert(await example.isDisabled(), 'active capture did not lock ordinary example input');
+    await example.evaluate(button => button.dispatchEvent(new MouseEvent('click', {bubbles:true})));
+    await page.waitForFunction(() => !state.turnBusy);
+  }
   await page.locator('#demo-recap-read').click();
   assert.equal(await page.evaluate(() => state.recapDeliveryId), receipt);
   await page.evaluate(async () => {if (state.mic) await toggleMic();});
@@ -236,7 +247,7 @@ for (const statusCode of [200, 503]) test(`private ${statusCode} JSON is retired
         await page.goto(origin, {waitUntil:'networkidle'});
         assert.equal(await page.locator('#menu-list li').count(), 3, 'published public menu did not load before authentication');
         assert.equal(await page.locator('#reservation-duration').textContent(), '90 min');
-        await page.locator('#demo-language').selectOption('en');
+        await page.locator('.language-option').filter({has:page.locator('input[value="en"]')}).click();
         await page.locator('#operator-token').fill('restaurant-fixture-operator'); await page.locator('#connect').click();
         await page.waitForFunction(() => state.connected && !state.readBusy && state.voiceCatalog);
         await run(page, f); assert.deepEqual(errors, []); assert.deepEqual(external, []); passed++; console.log('PASS ' + name);

@@ -18,12 +18,16 @@ class SpeechDelivery:
     mode: str = "natural"
     rate: float = 0.98
     recap_rate: float = 0.94
+    sentence_pause_ms: int = 180
 
     def __post_init__(self) -> None:
         if (
             self.mode not in {"natural", "neutral"}
             or not 0.85 <= self.rate <= 1.15
             or not 0.85 <= self.recap_rate <= 1.15
+            or isinstance(self.sentence_pause_ms, bool)
+            or not isinstance(self.sentence_pause_ms, int)
+            or not 100 <= self.sentence_pause_ms <= 500
         ):
             raise ValueError("invalid speech delivery configuration")
 
@@ -35,6 +39,7 @@ class SpeechDelivery:
                 mode=env.get("VOICEBOT_SPEAKING_STYLE", "natural").strip(),
                 rate=float(env.get("VOICEBOT_SPEECH_RATE", "0.98")),
                 recap_rate=float(env.get("VOICEBOT_RECAP_RATE", "0.94")),
+                sentence_pause_ms=int(env.get("VOICEBOT_SENTENCE_PAUSE_MS", "180")),
             )
         except (TypeError, ValueError):
             raise ValueError("invalid speech delivery configuration") from None
@@ -78,7 +83,7 @@ def spoken_estonian_date(value: str) -> str:
 
 
 _PRONUNCIATION = re.compile(
-    r"(?<!\w)(?:\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2})?)?|kell \d{2}:\d{2}|ajavöönd Europe/Tallinn|Europe/Tallinn)(?!\w)"
+    r"(?<!\w)(?:\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2})?)?|kell \d{1,2}(?::\d{2})?|ajavöönd Europe/Tallinn|Europe/Tallinn)(?![\w:]|\.\d)"
 )
 
 
@@ -128,7 +133,8 @@ def _pronounced_text(text: str, language: str) -> str:
             if "Europe/Tallinn" in original:
                 alias = "Tallinna aja järgi"
             elif original.startswith("kell "):
-                hour, minute = map(int, original[5:].split(":"))
+                clock = original[5:].split(":")
+                hour, minute = int(clock[0]), int(clock[1]) if len(clock) == 2 else 0
                 alias = "kell " + spoken_estonian_time(hour, minute)
             else:
                 date = datetime.fromisoformat(original)
@@ -160,7 +166,14 @@ def speech_markup(
     body = _pronounced_text(text, language)
     rate = delivery.effective_rate(recap=recap)
     body = f'<prosody rate="{rate:.2f}">{body}</prosody>'
-    # Jenny's supported styles are documented; other voices keep their default.
-    if voice == "en-US-JennyNeural" and language == "en-US":
+    # Use only documented styles; Anu/Kert keep their native intonation.
+    if voice in {"en-US-JennyNeural", "en-US-GuyNeural"} and language == "en-US":
         body = f'<mstts:express-as style="friendly" styledegree="0.8">{body}</mstts:express-as>'
+    # Short sentence pauses keep replies conversational. Recaps retain the
+    # provider's default pauses so dates and consent remain easy to follow.
+    if not recap:
+        body = (
+            f'<mstts:silence type="Sentenceboundary-exact" '
+            f'value="{delivery.sentence_pause_ms}ms"/>' + body
+        )
     return body

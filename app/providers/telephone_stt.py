@@ -21,7 +21,8 @@ from livekit.agents import (
 )
 from livekit.agents.utils import AudioBuffer
 
-from ..languages import LANGUAGES, language_code
+from ..languages import LANGUAGES
+from .transcription import parse_transcription
 
 
 class TelephoneSTT(stt.STT[str]):
@@ -69,8 +70,6 @@ class TelephoneSTT(stt.STT[str]):
             "response_format": "verbose_json",
             "temperature": "0",
         }
-        if self.mode != "auto":
-            data["language"] = self.mode
         try:
             response = await self._http.post(
                 "/openai/v1/audio/transcriptions",
@@ -95,38 +94,14 @@ class TelephoneSTT(stt.STT[str]):
                 "telephone transcription rejected", status_code=response.status_code
             ) from None
         try:
-            payload = response.json()
-            text = payload["text"]
-            raw_language = payload.get("language")
-            code = language_code(raw_language)
-            if not isinstance(text, str) or (
-                self.mode == "auto"
-                and (not isinstance(raw_language, str) or not raw_language.strip())
-            ):
-                raise ValueError
-            # Missing/malformed language is a provider failure, never an ET guess.
-            if self.mode != "auto":
-                code = self.mode
-            segments = payload.get("segments", [])
-            if not isinstance(segments, list):
-                raise ValueError
-            # Suppress silence hallucinations, especially a fabricated consent.
-            if segments and all(
-                isinstance(s, dict)
-                and isinstance(s.get("no_speech_prob"), (int, float))
-                and s["no_speech_prob"] >= 0.85
-                and isinstance(s.get("avg_logprob"), (int, float))
-                and s["avg_logprob"] < -1.0
-                for s in segments
-            ):
-                text = ""
+            result = parse_transcription(response.json())
             return stt.SpeechEvent(
                 type=stt.SpeechEventType.FINAL_TRANSCRIPT,
                 alternatives=[
                     stt.SpeechData(
-                        text=text,
-                        language=LanguageCode(code or "und"),
-                        metadata={"unsupported_language": code is None},
+                        text=result.text,
+                        language=LanguageCode(result.language or "und"),
+                        metadata={"unsupported_language": result.unsupported},
                     )
                 ],
             )

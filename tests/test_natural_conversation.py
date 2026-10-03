@@ -456,6 +456,10 @@ def test_ssml_escapes_payload_and_pronounces_estonian_dates_without_changing_the
         ("kell 23:00", ["kell kakskümmend kolm"]),
         ("kell 24:00", []),
         ("kell 10:60", []),
+        ("kell 9 kuni kell 17", ["kell üheksa", "kell seitseteist"]),
+        ("kell 9:30", ["kell üheksa kolmkümmend"]),
+        ("kell 9:3", []),
+        ("kell 123", []),
     ],
 )
 def test_estonian_clock_times_keep_the_exact_recap_text(text, aliases):
@@ -468,6 +472,7 @@ def test_estonian_clock_times_keep_the_exact_recap_text(text, aliases):
     "voice,language,styled",
     [
         ("en-US-JennyNeural", "en-US", True),
+        ("en-US-GuyNeural", "en-US", True),
         ("en-GB-SoniaNeural", "en-GB", False),
         ("et-EE-AnuNeural", "et-EE", False),
     ],

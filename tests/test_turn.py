@@ -84,7 +84,7 @@ def scripted_chat(script):
 
 def groq_stt(text="Tere, tahan broneerida."):
     def handler(request):
-        return httpx.Response(200, json={"text": text})
+        return httpx.Response(200, json={"text": text, "language": "estonian"})
 
     return GroqClient("k", transport=httpx.MockTransport(handler))
 
@@ -209,7 +209,7 @@ class TestFullTurn(unittest.TestCase):
         llm = scripted_chat([{"content": "never"}])
         dispatcher = Dispatcher(stay=FakeStay())
         result = run(turn.run_turn(b"", groq_stt("   "), llm, azure_tts(), dispatcher))
-        self.assertIn("korrake", result["reply"])
+        self.assertIn("korda", result["reply"])
         self.assertEqual(llm.calls, 0)
         self.assertEqual(result["tool_results"], [])
 

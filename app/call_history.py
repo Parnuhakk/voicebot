@@ -17,7 +17,7 @@ from typing import Any
 DB_LOCK = threading.RLock()
 
 CHANNELS = {"browser", "telephone"}
-INPUTS = {"typed", "recognized", "no_speech", "stt_unavailable"}
+INPUTS = {"typed", "recognized", "no_speech", "stt_unavailable", "unsupported_language"}
 OUTCOMES = {
     "in_progress",
     "completed",

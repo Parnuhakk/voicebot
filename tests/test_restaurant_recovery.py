@@ -101,20 +101,20 @@ def test_weekday_correction_before_hold_updates_trusted_plan(
     "correction,expected",
     [
         ("Actually at 19:00 for four", "2026-10-05"),
-        ("Actually tomorrow Friday at 19:00 for four", DAY),
-        ("Actually day after tomorrow Friday at 19:00 for four", "2026-10-05"),
-        ("Actually today Friday at 19:00 for four", "2026-10-03"),
-        ("Actually Friday on 2026-10-12 at 19:00 for four", "2026-10-12"),
-        ("Actually tomorrow on 2026-10-12 at 19:00 for four", "2026-10-12"),
-        ("Actually Friday on 12.10.2026 at 19:00 for four", "2026-10-12"),
+        ("Actually tomorrow Friday at 19:00 for four", None),
+        ("Actually day after tomorrow Friday at 19:00 for four", None),
+        ("Actually today Friday at 19:00 for four", None),
+        ("Actually Friday on 2026-10-12 at 19:00 for four", None),
+        ("Actually tomorrow on 2026-10-12 at 19:00 for four", None),
+        ("Actually Friday on 12.10.2026 at 19:00 for four", None),
     ],
 )
-def test_date_correction_preserves_current_relative_and_explicit_precedence(
+def test_date_correction_preserves_date_or_clarifies_conflicting_calendar_details(
     correction, expected
 ):
     previous = {"date": "2026-10-05", "start_time": "14:00", "party_size": 6}
     assert parse_restaurant_request(correction, previous, now=NOW) == {
-        "date": expected,
+        **({"date": expected} if expected else {"date_issue": "date_ambiguous"}),
         "start_time": "19:00",
         "party_size": 4,
     }
@@ -135,8 +135,14 @@ def test_ambiguous_weekday_correction_asks_date_instead_of_retaining_or_guessing
     state = make_state(language)
     state.observe_user_text("A table Monday", language=language)
     state.observe_user_text(correction, language=language)
-    assert state.booking_inquiry == {"start_time": "19:00", "party_size": 4}
-    assert trusted_booking_response(state) == {"content": COPY[language]["date"]}
+    assert state.booking_inquiry == {
+        "start_time": "19:00",
+        "party_size": 4,
+        "date_issue": "date_ambiguous",
+    }
+    assert trusted_booking_response(state) == {
+        "content": COPY[language]["date_ambiguous"]
+    }
     assert state.pending is None
 
 
@@ -343,7 +349,7 @@ def test_serious_allergy_guidance_still_precedes_price(make_state, language, que
         (
             "et",
             "Jah, tühista.",
-            "Toimingu tulemus jäi ebaselgeks. Ära korda seda; kontrolli saidilt või küsi töötajalt.",
+            "Toimingu tulemus jäi ebaselgeks. Ärge korrake seda; kontrollige veebilehelt või küsige töötajalt.",
         ),
         (
             "en",

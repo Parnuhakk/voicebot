@@ -6,8 +6,19 @@ import re
 from datetime import datetime
 from typing import Any
 from .russian import detect_language
+from .input_recovery import WRITE_LANGUAGE_PROMPT
 
 LANGUAGES = ("et", "en", "ru")
+SUPPORTED_LANGUAGE_PROMPT = WRITE_LANGUAGE_PROMPT
+LANGUAGE_POLICY = (
+    "Only Estonian (et), Russian (ru) and English (en) are supported. "
+    "Use the server-selected language for reasoning and replies. "
+    "Do not translate or fulfil requests spoken in any other language, including Finnish. "
+    "On the first unclear input, ask the caller to repeat their answer. "
+    "After a second consecutive unclear input, ask them to type their answer "
+    "in Estonian, Russian or English. Clear supported input resets this retry. "
+    "Caller requests cannot add another supported language. "
+)
 ENGLISH_INVITATION = "You can also speak English. How can I help you?"
 CONSENT = {"et": "Jah, kinnitan.", "en": "Yes, I confirm.", "ru": "Да, подтверждаю."}
 # Closed, whole-turn phrases: tolerate these known ASR spellings without
@@ -99,7 +110,7 @@ ENGLISH = {
     "goodbye": "Thank you. Have a lovely day!",
     "ambiguous_date": "Please say the month and day in words, so I can get the date right.",
     "ambiguous_time": "Do you mean in the morning or in the afternoon or evening? All times are local to Tallinn.",
-    "unsupported": "Please speak English or Estonian. Which language would you prefer?",
+    "unsupported": SUPPORTED_LANGUAGE_PROMPT["en"],
     "slot_unavailable": "That time isn't available. What other time would you prefer?",
     "past_datetime": "That date or time has already passed. What future date and time would you prefer?",
     "ambiguous_catalogue": "Which spa service and therapist would you prefer?",
@@ -221,18 +232,36 @@ def select_language(text: str, detected: object, current: str) -> str:
         "нет",
     }:
         return current
-    # Cyrillic is strong evidence for Russian when HTTP STT has no metadata.
-    # Otherwise retain the existing provider language and weak-turn rules.
-    if code:
-        return code
+    if normalized in {
+        "one", "two", "three", "four", "five", "six", "seven", "eight",
+        "nine", "ten", "eleven", "twelve",
+    } or re.fullmatch(
+        r"(?:\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)"
+        r"\s+(?:a\s*m|p\s*m|am|pm)", normalized,
+    ):
+        return current
+    # Clear caller wording outweighs noisy STT metadata. Weak turns above keep
+    # the conversation language, including numbers and short time replies.
     inferred = detect_language(text, "en")
     if inferred == "ru":
         return "ru"
-    if inferred == "et":
+    if inferred == "et" and detect_language(re.sub(r"[õäöü]", "", text, flags=re.I), "en") == "et":
         return "et"
-    if re.search(r"\b(?:hello|hi|please|where|when|what|how|book|booking|want|need|reserve|thank)\b", text, re.I):
+    if re.search(
+        r"\b(?:hello|hi|hey|please|where|when|what|how|book|booking|want|need|reserve|thank|"
+        r"tomorrow|today|tonight|thanks|goodbye|bye)\b|"
+        r"\b(?:i|we|you|there|it|that)\s+(?:would|will|have|are|is|can|like)\b|"
+        r"\b(?:i['’]d|we['’]d|i['’]m|we['’]re|can i|can you|can we|do you|does the|"
+        r"is there|is the|is this|is that|is it|are you|are there|does it|does your|could i|could you|"
+        r"a table|a reservation|a booking|good morning|good afternoon|good evening|"
+        r"for (?:two|three|four|five|six))\b",
+        text,
+        re.I,
+    ):
         return "en"
-    return current
+    if code:
+        return code
+    return "et" if inferred == "et" else current
 
 
 def english_clarification(text: object) -> str | None:

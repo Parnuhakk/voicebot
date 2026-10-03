@@ -74,5 +74,9 @@ def test_azure_sends_natural_hours_without_changing_display_text_on_retry():
     finally:
         client.close()
     assert len(bodies) == 2 and bodies[0] == bodies[1]
-    assert "9 kuni kell 17, paus 12:30 kuni kell 13" in bodies[0]
+    root = ET.fromstring(bodies[0])
+    assert "9 kuni kell 17, paus 12:30 kuni kell 13" in "".join(root.itertext())
+    assert [node.get("alias") for node in root.iter("{http://www.w3.org/2001/10/synthesis}sub")] == [
+        "kell seitseteist", "kell kolmteist",
+    ]
     assert display_text == "Esmaspäev: 09:00–17:00, paus 12:30–13:00."

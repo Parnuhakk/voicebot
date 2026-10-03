@@ -50,6 +50,15 @@ count toward capacity. Ambiguous component counts prompt for the total.
 
 ## Natural conversation and visible demo reservations
 
+Estonian replies use consistent polite wording and recap dates such as
+`pühapäeval, 4. oktoobril 2026`. Clock pronunciation also handles `kell 9`
+and `kell 9:30` without changing the displayed or stored values. Party details
+include `meid on neli`, `meid tuleb neli` and `tuleme neljakesi`; a standalone
+`tegelikult viis` corrects an existing guest count. Corrections require a new
+delivered recap before consent. Repetition or confusion repeats the last
+approved question or restaurant fact. A standalone decline clears the proposed
+booking details without claiming to cancel a saved booking.
+
 The assistant uses short questions in all three languages and speaks recap
 dates with month names. Estonian confirmation accepts a closed list of explicit
 whole-turn phrases, including `Jah, kinnitan.`, `kinnitan`, `jah palun kinnita`
@@ -60,16 +69,125 @@ Questions, quoted examples, declines and mixed changes are not consent. A
 current owned recap must still have been delivered before a later final turn;
 partial recognition and expired or interrupted recaps cannot confirm a table.
 
+Date requests understand Estonian case forms such as `homseks`, `homsele`,
+`ülehomseks`, `esmaspäevaks`, `neljas oktoober`, `neljandal oktoobril` and
+`neljandaks oktoobriks`. Bounded mixed-case forms such as `neljale oktoobrile`
+also resolve to a date, not a guest count. Calendar days 1–31, compound ordinal
+numbers, all twelve months and explicit numeric years are supported. A missing
+year means the next occurrence of the date; the configured advance window still
+applies. Impossible dates, alternatives, ranges and declined dates require
+clarification. A corrected date replaces the old one while retaining the time
+and guest count. Date words are masked only during preference extraction, never
+in the displayed transcript or consent recognition. Schedule questions reuse
+the same date vocabulary. Guest counts also accept forms such as `nelja
+inimesega` and `kahe täiskasvanu ja kahe lapsega`, without requesting a staff
+handoff. Grammar references: [EKI number inflection](https://teatmik.eki.ee/teatmik/arvsonade-kaanamine/)
+and [EKI number spelling](https://teatmik.eki.ee/teatmik/arvsonade-kokku-ja-lahkukirjutamine/).
+
+English and Russian use the same calendar resolver for days 1–31 and all twelve
+months. English accepts both `the fourth of October` and `October fourth`,
+cardinal days, hyphenated/spaced compound numbers, month abbreviations and
+numeric ordinal endings (`4th`). Russian accepts nominative, genitive, dative,
+instrumental and prepositional day/month forms, including clear mixed cases:
+`четвёртого октября`, `четвёртое октября`, `четвёртому октябрю`. Both `ё` and `е`
+spellings work. Relative requests include `for tomorrow`, `the day after
+tomorrow`, `на завтрашний день`, `к завтрашнему дню` and `на послезавтра`.
+Russian guest-count cases, such as `для четырёх гостей`, are separate from dates.
+The same invalid-date, range, negation, year and clarification rules apply in
+all three languages. English modal `May I book a table?` does not request May.
+Ambiguous numeric-only date conventions still require clarification; this
+change does not choose between day/month and month/day slash dates or parse
+spoken years. References: [Cambridge English dates](https://dictionary.cambridge.org/grammar/british-grammar/dates)
+and [Voronezh State University numeral grammar](https://interedu.vsu.ru/rvc/mats/refs/redkina-rusgramm/redkina-rusgramm.pdf).
+
 Successful demo confirmations and cancellations refresh the website's
 authenticated reservation list, select the actual reservation date, reset its
-page and mark the affected row. A `View reservation` button in the conversation
-opens that list. Direct-form confirmations use the same behavior. Ending a
+page and mark the affected row. The assistant announces success only after the
+backend write succeeds. A receipt appears immediately in the conversation or
+direct form with the saved date, Tallinn time interval, party size, configured
+table name and reservation number. Cancellation updates visible receipts.
+Receipt fields come from the committed record, never assistant prose or editable
+form values. Missing optional metadata preserves the write result and list link;
+unknown outcomes do not show a success receipt or automatically repeat a write.
+A `View reservation` button opens the list. Ending a
 conversation or reloading the page does not delete its saved reservation;
 reconnect with the operator token and choose its date to see it again. Logout
 clears private browser data. The underlying reservations remain in the shared
 SQLite database; they do not reserve tables at a real restaurant.
 
 ## Restaurant knowledge
+
+Routine replies use short approved sentences. Identical hours on consecutive
+days are spoken as a range; different hours, closed days and the kitchen closing
+offset remain separate. A requested weekday or weekend limits the answer to
+those days. Today, tomorrow and an explicit ISO date also check date-specific
+closures. A follow-up such as "Aga köök?" retains the preceding hours selection.
+The public restaurant API exposes the same `opening_hours_summary` and
+`kitchen_hours_summary` in ET/EN/RU for deployment readback.
+
+Reviewed question matching also covers menu wording, declared ingredients and
+allergens, prices, location, children, group size, reservation duration,
+cancellation guidance, changes, late arrival, parking, pets, highchairs,
+accessibility, terrace seating and additional menu information. Unknown venue
+facts receive brief staff guidance; these replies do not establish amenities,
+real transfers, modification support or allergy safety. Up to three recognized
+information topics can be answered together without creating a reservation.
+Only bounded topic, day, date, dish and diet selectors survive a relevant
+follow-up; unrelated turns discard that context. General menu replies omit the
+long allergy notice, while allergy/ingredient questions retain it.
+
+An optional `pet_policy` object supplies a short approved answer in `et`, `en`
+and `ru` to questions about bringing dogs or other pets. For example, an operator
+can specify that dogs are allowed, not allowed, or allowed only on the terrace.
+All three translations must be nonempty; malformed policies fail configuration
+validation. If this field is absent, the assistant explicitly says the rule is
+unknown and asks the guest to check with staff. Caller claims never establish
+the rule. The public restaurant API includes the configured policy with the
+other venue data.
+
+Reservation time parsing accepts numeric and spoken clocks in ET/EN/RU:
+`at six o'clock in the evening`, `pool seitse õhtul`, and `полседьмого вечера`,
+including minutes, AM/PM, noon/midnight, half hours and quarter hours. A short
+bare number is a time only when the next missing booking field is the time;
+guest counts and calendar dates stay separate. Ambiguous 12-hour clocks
+without a period prompt for morning/evening. Explicit 24-hour times such as
+`18:30` or `06:30` remain exact; opening hours never decide AM/PM.
+An answer such as `PM`, `õhtul`, or `вечером` resolves the saved numeric choices
+while preserving the date and party size. Invalid times and multiple alternatives
+require an exact new time and cannot reuse an earlier selection. These selectors
+are not caller transcripts and cannot reach a booking tool until resolved.
+The public API supplies `booking_time_examples` in each supported language.
+
+The calendar also understands day/week offsets (`kahe päeva pärast`,
+`in two days`, `через два дня`) and explicitly qualified calendar weeks
+(`järgmise nädala reedel`, `next week on Friday`,
+`на следующей неделе в пятницу`). Calendar weeks start on Monday; an explicitly
+requested day in the current week can be in the past and is rejected later by
+availability validation. An unqualified weekday retains next-occurrence behavior.
+`tonight` names today's date. Month/day ordering in a short numeric date reply
+such as `4.10` still requires clarification.
+
+Day, month and optional year may arrive in separate date-question answers.
+Only bounded numeric selectors survive that clarification; they are discarded
+after an exact date, an invalid alternative or a new vague period. A day-only
+answer to a date question cannot become a guest count. Month-only and week-only
+requests invalidate an earlier selected date until clarified.
+
+Spoken time forms additionally include `kell kuueks õhtul`, `kuus läbi viisteist`,
+`six and a half PM` and `в половине седьмого вечера`. Approximate times and
+ranges require an exact answer instead of silently choosing a clock. Minute
+phrases also accept `five minutes past six` and fractions around named noon
+or midnight, including `quarter to midnight`, `viisteist minutit enne keskpäeva`
+and `без четверти полночь`; conflicting day periods still require clarification. Guest
+answers include `meid tuleb neli`, `for a party of four`, and `нас будет четверо`.
+Guest alternatives and contradictory adult/child totals invalidate the prior
+count and cannot reach reservation planning before clarification.
+
+The temporal coverage tests exercise all calendar days in all months, every
+minute of a day in the three supported languages, local year/leap-day/DST
+boundaries, and multi-turn browser/HTTP/native SDK workflows. Recognition and
+speech providers are doubles in those checks. They do not establish live
+acoustic accuracy, caller-accent coverage or deployment readiness.
 
 Edit a copy of `data/demo/restaurant-demo.json` and place it on the persistent
 shared volume, for example `/data/restaurant.json`. Set
@@ -90,7 +208,42 @@ Large parties, accessibility, highchairs, special seating, complaints and
 unavailable facts get staff-verification guidance. The demo does not transfer a
 real call, promise a callback, take payment or place a food order.
 
+## English callers
+
+Automatic language selection recognizes natural English requests such as
+"I'd like a table" and keeps English for short replies such as "Four" or
+"Two pm", even when speech recognition supplies noisy language metadata.
+The shared web and phone policy answers from reviewed restaurant facts,
+preserves booking details across information questions, and asks for clarification
+when information is unavailable. English times from 1 to 12 without AM or PM
+require clarification; invalid times never reuse a previous requested time.
+English calendar dates accept numeric and spoken ordinals, for example
+"4th October", "the fourth of October" and "October fourth". Spoken clocks such
+as "6 o clock" and "six o'clock" retain the requested hour while the assistant
+asks for morning or evening. A later "pm" or "in the evening" resolves that hour
+without losing the date or party size. A bare number is treated as a time only
+when answering the time question; guest counts keep their existing meaning.
+An unrelated question cannot replay a previous booking plan. Confirmation still
+requires a delivered recap and a later explicit confirmation.
+
 ## Deployment
+
+Speech accepts only Estonian, Russian and English. Browser and native Groq
+recognition detect the original audio language with `verbose_json` before the
+server processes a request. Choosing a reply language does not force Whisper
+to decode another language as that language. Detected Finnish and other
+unsupported or empty speech first receives a brief request to repeat the answer.
+A second consecutive unclear turn asks the caller to write their answer in
+Estonian, Russian or English; further unclear turns keep that same request.
+A clear supported answer resets the counter. The counter belongs to the call,
+not the provider or a global session; partial speech and repeated rendering do
+not advance it. Unclear input skips model and booking calls and invalidates
+pending recap consent. Provider failures receive the technical failure message
+without advancing or resetting the counter. Automatic mode chooses
+ET/EN/RU from the source-language metadata; a selected language controls replies.
+Missing source metadata fails as unavailable recognition. Very short utterances,
+names and words shared across languages can still be misclassified by Whisper;
+this policy cannot guarantee perfect acoustic language identification.
 
 ```dotenv
 VOICEBOT_BUSINESS_TYPE=restaurant

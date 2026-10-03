@@ -17,6 +17,7 @@ from app.booking.restaurant import RestaurantAdapter  # noqa: E402
 from app.business import restaurant_dispatcher  # noqa: E402
 from app.call_factory import make_call_tools  # noqa: E402
 from app.restaurant_data import load_restaurant_data  # noqa: E402
+from app.input_recovery import REPEAT_PROMPT, WRITE_LANGUAGE_PROMPT  # noqa: E402
 from livekit.agents import AgentSession  # noqa: E402
 from tests.test_native_booking_terminals import (  # noqa: E402
     Playback,
@@ -27,22 +28,49 @@ from tests.test_native_booking_terminals import (  # noqa: E402
 )
 
 
+@pytest.mark.parametrize("initial_language", ["et", "en", "ru"])
 @pytest.mark.parametrize(
     "language,utterance,confirmation",
     [
         ("et", "Soovin homme lauda neljale kell 14.00", "ja kinnitää"),
+        ("et", "Soovin lauaks homseks kell 14.00 nelja inimesega", "ja kinnitää"),
+        ("et", "Soovin homme lauda, meid on neli, kell kaks päeval", "ja kinnitää"),
+        ("et", "Soovin homme lauda, tuleme neljakesi, pool kolm päeval", "ja kinnitää"),
+        ("et", "named-date", "ja kinnitää"),
         ("en", "A table for four tomorrow at 2 pm", "Yes, please confirm."),
+        ("en", "named-date", "Yes, please confirm."),
         ("ru", "Столик на четверых завтра в 14:00", "Да, подтверждаю."),
+        ("en", "A table for four tomorrow at six o'clock in the evening", "Yes, please confirm."),
+        ("et", "Soovin homme lauda neljale pool seitse õhtul", "ja kinnitää"),
+        ("ru", "Столик на четверых завтра в шесть тридцать вечера", "Да, подтверждаю."),
+        ("en", ("A table for four tomorrow at 6 o clock", "in the evening"), "Yes, please confirm."),
+        ("et", ("Soovin homme lauda neljale pool seitse", "õhtul"), "ja kinnitää"),
+        ("ru", ("Столик на четверых завтра полседьмого", "вечером"), "Да, подтверждаю."),
+        ("ru", "named-date", "Да, подтверждаю."),
+        ("ru", "mixed-date", "Да, подтверждаю."),
+        ("et", ("Soovin lauda neljale", "kahe päeva pärast", "kell kuueks õhtul"), "ja kinnitää"),
+        ("en", ("A table for four", "in two days", "at six and a half PM"), "Yes, please confirm."),
+        ("ru", ("Столик на четверых", "через два дня", "в половине седьмого вечера"), "Да, подтверждаю."),
     ],
 )
 def test_native_sdk_confirmation_is_visible_in_the_restaurant_database(
-    tmp_path, language, utterance, confirmation
+    tmp_path, language, utterance, confirmation, initial_language
 ):
     async def run():
+        request_text = utterance
+        if request_text in {"named-date", "mixed-date"}:
+            from tests.test_restaurant_http import spoken_tomorrow
+
+            day = spoken_tomorrow(language, mixed_case=request_text == "mixed-date")
+            request_text = {
+                "et": f"Soovin lauda {day} kell 14 nelja külalisega",
+                "en": f"I'd like a table {day} at 2 pm for four",
+                "ru": f"Забронируйте столик {day} в 14:00 для четырёх гостей",
+            }[language]
         data = load_restaurant_data()
         path = str(tmp_path / "shared-restaurant.db")
         adapter = RestaurantAdapter(path, data=data, allow_writes=True)
-        state = make_call_tools(restaurant_dispatcher(adapter, data), language=language)
+        state = make_call_tools(restaurant_dispatcher(adapter, data), language=initial_language)
         agent = worker.TelephoneAgent(state)
         model = UnusedModel()
         session = AgentSession(
@@ -53,8 +81,17 @@ def test_native_sdk_confirmation_is_visible_in_the_restaurant_database(
         with patch("livekit.agents.Agent.default.tts_node", synthesize):
             await session.start(agent=agent, record=False)
             try:
-                await native_turn(session, agent, utterance)
+                requests = request_text if isinstance(request_text, tuple) else (request_text,)
+                for index, request_text in enumerate(requests):
+                    await native_turn(session, agent, request_text)
+                    if index < len(requests) - 1:
+                        assert state.pending is None and not state.bookings
+                        question = ("date", "time")[index] if len(requests) == 3 else "ambiguous_time"
+                        assert agent.chat_ctx.items[-1].text_content == COPY[language][question]
+                assert state.language == language
                 assert state.pending["delivery"] and not state.pending["approved"]
+                if len(requests) == 3:
+                    assert datetime.fromisoformat(state.pending["recap"]["start"]).strftime("%H:%M") == ("18:00" if language == "et" else "18:30")
                 await native_turn(session, agent, confirmation)
                 assert len(state.bookings) == 1
                 assert (
@@ -67,12 +104,44 @@ def test_native_sdk_confirmation_is_visible_in_the_restaurant_database(
         # connection to the durable database rather than the call's memory.
         reader = RestaurantAdapter(path, data=data, allow_writes=False)
         day = (
-            datetime.now(ZoneInfo("Europe/Tallinn")).date() + timedelta(days=1)
+            datetime.now(ZoneInfo("Europe/Tallinn")).date() + timedelta(days=2 if len(requests) == 3 else 1)
         ).isoformat()
         rows = (await reader.get_operator_bookings(day))["items"]
         assert len(rows) == 1 and rows[0]["status"] == "confirmed"
         assert rows[0]["service_id"] == 4
         assert str(rows[0]["id"]) in state.bookings
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("language", ["et", "en", "ru"])
+def test_native_sdk_repeats_once_then_requests_writing_and_resets(tmp_path, language):
+    async def run():
+        data = load_restaurant_data()
+        adapter = RestaurantAdapter(str(tmp_path / "recovery.db"), data=data, allow_writes=True)
+        state = make_call_tools(restaurant_dispatcher(adapter, data), language=language)
+        agent = worker.TelephoneAgent(state)
+        model = UnusedModel()
+        session = AgentSession(llm=model, tts=UnusedTTS(), turn_handling={"turn_detection": "manual"})
+        session.output.audio = Playback()
+        with patch("livekit.agents.Agent.default.tts_node", synthesize):
+            await session.start(agent=agent, record=False)
+            try:
+                for expected in (REPEAT_PROMPT[language], WRITE_LANGUAGE_PROMPT[language]):
+                    agent._unsupported_language = True
+                    await native_turn(session, agent, "private-rejected-language-fixture")
+                    assert agent.chat_ctx.items[-1].text_content == expected
+                    assert not state.bookings and state.pending is None
+                greeting = {"et": "Tere", "en": "Hello", "ru": "Здравствуйте"}[language]
+                await native_turn(session, agent, greeting)
+                assert state.input_recovery_reply is None
+                agent._unsupported_language = True
+                await native_turn(session, agent, "private-rejected-language-fixture")
+                assert agent.chat_ctx.items[-1].text_content == REPEAT_PROMPT[language]
+                assert model.calls == 0
+                assert not any("private-rejected" in (item.text_content or "") for item in agent.chat_ctx.items if getattr(item, "role", None) == "user")
+            finally:
+                await session.aclose()
 
     asyncio.run(run())
 

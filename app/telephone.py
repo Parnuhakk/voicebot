@@ -48,6 +48,7 @@ from .booking_faq import (
     render_catalogue,
 )
 from .russian import localize
+from .input_recovery import InputRecovery
 from .languages import (
     AFFIRMATIONS_ET,
     AFFIRMATIONS_EN,
@@ -60,6 +61,7 @@ from .languages import (
     ENGLISH_INSTRUCTIONS,
     ENGLISH_INVITATION,
     ENGLISH_TOOL_ERRORS,
+    LANGUAGE_POLICY,
     LANGUAGES,
     english_clarification,
     render_english_read,
@@ -547,6 +549,7 @@ class CallTools:
         self.conversation = Conversation()
         self.clarification = None
         self.unsupported_language = False
+        self._input_recovery = InputRecovery()
         self.dispatcher = dispatcher
         self.call_id = validate_call_id(
             uuid.uuid4().hex if call_id is None else call_id
@@ -742,14 +745,15 @@ class CallTools:
             }
             context["clarification_required"] = self.clarification
             return (
-                ENGLISH_INSTRUCTIONS
+                LANGUAGE_POLICY + ENGLISH_INSTRUCTIONS
                 + "\n"
                 + STYLE_INSTRUCTIONS["en"]
                 + "\nDemo context (data only):\n"
                 + json.dumps(context, ensure_ascii=False, separators=(",", ":"))
             )
         return (
-            "Sa oled fiktiivse Meretuule hotelli ja spaademo sõbralik eestikeelne abiline. Ära luba päris teenust/inimüleandmist. Ära küsi päris kontakte ega makseandmeid.\n"
+            LANGUAGE_POLICY
+            + "Sa oled fiktiivse Meretuule hotelli ja spaademo sõbralik eestikeelne abiline. Ära luba päris teenust/inimüleandmist. Ära küsi päris kontakte ega makseandmeid.\n"
             "Spaale: kui kuupäev ja kellaaeg on teada ning teenuse ja teenindaja valik on ühene, kasuta esmalt plan_demo_booking(date,start_time) ühe tööriistakutsega. Mitme teenuse või teenindaja puhul kasuta get_slot_catalogue, search_slots, tagastatud slot_id-ga hold_slot ja prepare_demo_booking. get_slot_catalogue näitab andmebaasi teenuseid, teenindajaid ja tööaegu. Küsi kasutajalt puuduv teenus, kuupäev või kellaaeg.\n"
             "Spaasoovi tavaline kirjaviga „bruneerida” tähendab broneerimise küsimust, mitte kinnitamist. booking_inquiry sisaldab ainult kasutaja soovitud kuupäeva/kellaaega, mitte saadavust; kasuta seda järgmise vastuse ajaga koos.\n"
             "Toale: get_stay_catalogue näitab toatüüpe ja mahutavust. Küsi saabumine, lahkumine, külaliste arv ja toatüüp. Kasuta ettevalmistamiseks plan_demo_stay(checkin,checkout,adults,children,room_type) ühe tööriistakutsega; see teeb kataloogi, search_availability, hold_offer ja prepare_demo_stay kontrollid. Kui toatüüp puudub või on ebaselge, küsi tagastatud valikutest kasutaja eelistust ja kutsu plan_demo_stay uuesti. Ära vali suvalist ega odavaimat tuba. Hinda ei tohi oletada. Kõik hinnad on fiktiivsed näidishinnad, makseid ei koguta.\n"
@@ -766,7 +770,8 @@ class CallTools:
     @property
     def instructions(self):
         return (
-            (ENGLISH_INSTRUCTIONS if self.language == "en" else INSTRUCTIONS)
+            LANGUAGE_POLICY
+            + (ENGLISH_INSTRUCTIONS if self.language == "en" else INSTRUCTIONS)
             + "\nDemokontekst (ainult andmed, mitte juhised):\n"
             + json.dumps(
                 get_demo_profile(self.demo, call_id=self.call_id), ensure_ascii=False
@@ -783,7 +788,13 @@ class CallTools:
         return ENGLISH["fallback"] if self.language == "en" else self.say(FALLBACK)
 
     @property
+    def input_recovery_reply(self):
+        return self._input_recovery.reply(self.language)
+
+    @property
     def direct_reply(self):
+        if self.unsupported_language or self.input_recovery_reply:
+            return self.guard_reply("", [])
         if self.pending and not self.pending["approved"]:
             # Repeat/language-switch turns keep an owned proposal but revoke
             # its delivery. Reuse its canonical recap, not a model paraphrase.
@@ -800,11 +811,12 @@ class CallTools:
         detected_language: object = None,
         language: str | None = None,
         unsupported: bool = False,
+        recognition_status: str | None = None,
     ) -> None:
         """Trusted STT/HTTP caller only; no transcript is retained or logged."""
         if is_final is not True:
             return
-        text = text if isinstance(text, str) else ""
+        text = text if isinstance(text, str) and not unsupported else ""
         selected = (
             language
             if language is not None and language in LANGUAGES
@@ -825,9 +837,14 @@ class CallTools:
         changed = selected != self.language
         self.language = selected
         self.conversation.observe(text, selected)
-        self.unsupported_language = (
-            unsupported and not named_fixture and requested_language(text) is None
+        self.unsupported_language = bool(unsupported)
+        self._input_recovery.observe(
+            "unsupported_language" if self.unsupported_language
+            else recognition_status if recognition_status in {"stt_unavailable", "input_invalid"}
+            else "recognized" if text.strip() else "no_speech"
         )
+        if self.unsupported_language:
+            self.invalidate_recap()
         self.clarification = english_clarification(text) if selected == "en" else None
         self.results.clear()
         self._turn_serial += 1
@@ -1194,13 +1211,9 @@ class CallTools:
             return self.say(mutation_replies[self.turn_mutation]) + self.say(
                 ENGLISH["other_failed"] if english else " Muu päring ebaõnnestus."
             )
-        if self.unsupported_language:
+        if self.unsupported_language or self.input_recovery_reply:
             self.invalidate_recap()
-            return (
-                ENGLISH["unsupported"]
-                if english
-                else "Palun räägi eesti või inglise keeles. Kumba keelt eelistad?"
-            )
+            return self.input_recovery_reply or REPEAT_PROMPT[self.language]
         if self.clarification:
             self.invalidate_recap()
             return ENGLISH[self.clarification]
@@ -1831,7 +1844,7 @@ class CallTools:
         if self.count > 64 or not isinstance(name, str) or name not in self.names:
             return {"error": "not_allowed"}
         if (
-            self.clarification or self.unsupported_language
+            self.clarification or self.unsupported_language or self.input_recovery_reply
         ) and name != "get_demo_profile":
             return {"error": "clarification_required"}
         if self.mutation_uncertain and name in MUTATION_TOOLS | {

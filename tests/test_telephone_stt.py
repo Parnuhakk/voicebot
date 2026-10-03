@@ -9,9 +9,9 @@ import pytest
 
 pytest.importorskip("livekit.agents")
 from livekit import rtc  # noqa: E402
-from livekit.agents import APIError, APIConnectOptions  # noqa: E402
+from livekit.agents import APIError, APIConnectOptions, llm, stt  # noqa: E402
 
-from app.languages import ENGLISH  # noqa: E402
+from app.input_recovery import REPEAT_PROMPT, WRITE_LANGUAGE_PROMPT  # noqa: E402
 from app.providers.telephone_stt import TelephoneSTT  # noqa: E402
 from app.telephone import CallTools  # noqa: E402
 from app.worker import TelephoneAgent  # noqa: E402
@@ -60,8 +60,8 @@ def test_auto_stt_omits_hint_and_preserves_provider_language(reported, expected)
     asyncio.run(run())
 
 
-@pytest.mark.parametrize("mode", ["en", "et"])
-def test_fixed_mode_sends_explicit_accuracy_hint(mode):
+@pytest.mark.parametrize("mode", ["en", "et", "ru"])
+def test_fixed_reply_mode_still_detects_original_audio_language(mode):
     async def run():
         seen = []
 
@@ -79,8 +79,8 @@ def test_fixed_mode_sends_explicit_accuracy_hint(mode):
             event = await provider.recognize(
                 audio_frame(), conn_options=APIConnectOptions(max_retry=0)
             )
-            assert str(event.alternatives[0].language) == mode
-            assert ('name="language"\r\n\r\n' + mode).encode() in seen[0].content
+            assert str(event.alternatives[0].language) == "en"
+            assert b'name="language"' not in seen[0].content
         finally:
             await provider.aclose()
 
@@ -138,14 +138,17 @@ def test_silence_hallucination_cannot_fabricate_a_consent_transcript():
     asyncio.run(run())
 
 
-def test_unsupported_language_asks_supported_language_and_blocks_tools():
+@pytest.mark.parametrize("mode", ["auto", "et", "en", "ru"])
+@pytest.mark.parametrize("source", ["finnish", "french", "german"])
+def test_unsupported_language_asks_supported_language_and_blocks_tools(mode, source):
     async def run():
         provider = TelephoneSTT(
             api_key="fixture",
             model="whisper-large-v3",
+            mode=mode,
             transport=httpx.MockTransport(
                 lambda _: httpx.Response(
-                    200, json={"text": "Bonjour", "language": "french"}
+                    200, json={"text": "Bonjour", "language": source}
                 )
             ),
         )
@@ -167,7 +170,7 @@ def test_unsupported_language_asks_supported_language_and_blocks_tools():
         await agent.on_user_turn_completed(
             None, NS(role="user", text_content="Bonjour")
         )
-        assert state.guard_reply("Anything", []) == ENGLISH["unsupported"]
+        assert state.guard_reply("Anything", []) == REPEAT_PROMPT["en"]
         assert (await state.dispatch("get_slot_catalogue", {}))[
             "error"
         ] == "clarification_required"
@@ -225,5 +228,34 @@ def test_disconnect_cancels_inflight_transcription_and_releases_client():
             await task
         await provider.aclose()
         assert cancelled.is_set() and provider._http.is_closed
+
+    asyncio.run(run())
+
+
+def test_unsupported_fragment_is_not_hidden_by_later_supported_fragment():
+    async def run():
+        state = CallTools(Slots(), language="en")
+        agent = TelephoneAgent(state)
+        message = llm.ChatMessage(role="user", content=["Bonjour. Hello there."])
+
+        async def events(*args):
+            for text, code, unsupported in [("Bonjour", "und", True), ("Hello there", "en", False)]:
+                yield stt.SpeechEvent(
+                    type=stt.SpeechEventType.FINAL_TRANSCRIPT,
+                    alternatives=[stt.SpeechData(text=text, language=code, metadata={"unsupported_language": unsupported})],
+                )
+
+        with patch("livekit.agents.Agent.default.stt_node", events):
+            assert len([event async for event in agent.stt_node(None, None)]) == 2
+        await agent.on_user_turn_completed(None, message)
+        assert state.unsupported_language
+        assert message.text_content is None
+        with patch("livekit.agents.Agent.default.llm_node", side_effect=AssertionError("model called")):
+            replies = [chunk async for chunk in agent.llm_node(llm.ChatContext(items=[message]), [], NS())]
+        assert replies == [REPEAT_PROMPT["en"]]
+        assert not state.dispatcher.calls
+        assert not agent._unsupported_language
+        await agent.on_user_turn_completed(None, llm.ChatMessage(role="user", content=[""]))
+        assert state.direct_reply == WRITE_LANGUAGE_PROMPT["en"]
 
     asyncio.run(run())
