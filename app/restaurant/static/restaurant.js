@@ -14,7 +14,9 @@ const state = {
   turnController: null,
   recap: null,
   demoVoice: "azure",
+  voiceSelected: false,
   voiceCatalog: null,
+  voicesLoading: false,
   previewBusy: false,
   endpointingMs: 650,
   mic: null,
@@ -31,6 +33,7 @@ const state = {
   voiceReady: false,
   audioReady: false,
   bookingReady: false,
+  telephoneRelease: null,
   bookingView: 0,
   latestBooking: null,
 };
@@ -44,6 +47,26 @@ const reservation = {
   date: null,
 };
 const TEXT = {
+  telephoneInSync: [
+    "Telefoniroboti versioon ühtib veebiga viimase kontrolli järgi.",
+    "The telephone assistant matches the website as of the last check.",
+    "По последней проверке телефонный помощник использует ту же версию, что и сайт.",
+  ],
+  telephoneOutOfSync: [
+    "Telefonirobot kasutab teist versiooni või seadistust.",
+    "The telephone assistant has a different version or configuration.",
+    "У телефонного помощника другая версия или настройки.",
+  ],
+  telephoneStale: [
+    "Telefoniroboti versioon vajab uut kontrolli.",
+    "The telephone assistant version needs a fresh check.",
+    "Версию телефонного помощника нужно проверить снова.",
+  ],
+  telephoneUnverified: [
+    "Telefoniroboti versiooni vastavus pole veel kinnitatud.",
+    "The telephone assistant version has not been verified yet.",
+    "Соответствие версии телефонного помощника пока не подтверждено.",
+  ],
   demoWebsite: ["Vaata restorani demo ↗", "Visit the restaurant demo ↗", "Открыть демонстрацию ресторана ↗"],
   voice: ["Abilise hääl", "Assistant voice", "Голос помощника"],
   voicePreview: ["Kuula häält", "Listen to voice", "Послушать голос"],
@@ -547,10 +570,10 @@ function controls() {
       ? demoCopy().languageLocked
       : demoCopy().languageHelp;
   $("demo-start").disabled =
-    !state.connected || !state.voiceReady || !!state.sessionId || locked;
+    !state.connected || !state.voiceReady || state.voicesLoading || !!state.sessionId || locked;
   $("demo-end").disabled = !state.sessionId || locked;
   $("demo-voice").disabled =
-    !state.connected || !!state.sessionId || locked || !!state.mic;
+    !state.connected || state.voicesLoading || !!state.sessionId || locked || !!state.mic;
   $("demo-voice-preview").disabled =
     $("demo-voice").disabled || !Array.from($("demo-voice").options).some(
       option => option.value === state.demoVoice && !option.disabled,
@@ -559,7 +582,7 @@ function controls() {
     ? demoCopy().voicePreviewLoading : demoCopy().voicePreview;
   for (const id of ["demo-text", "demo-send"])
     $(id).disabled = !state.sessionId || locked || !!state.mic;
-  $("demo-mic").disabled = !state.connected || !state.audioReady || locked;
+  $("demo-mic").disabled = !state.connected || !state.audioReady || state.voicesLoading || locked;
   if (!state.mic)
     $("demo-mic").textContent = state.sessionId
       ? demoCopy().micReady
@@ -600,7 +623,9 @@ function requireDemoConnection() {
   return false;
 }
 const VOICE_LABELS = {
-  azure: ["Loomulik hääl", "Natural voice", "Естественный голос"],
+  azure: ["Tavahääl", "Standard voice", "Обычный голос"],
+  "azure-conversational": ["Anu · vestluslik", "Emma · conversational", "Эмма · разговорный"],
+  "azure-conversational-male": ["Kert · vestluslik", "Andrew · conversational", "Эндрю · разговорный"],
   "azure-male": ["Kert · meeshääl", "Guy · male voice", "Дмитрий · мужской голос"],
   "azure-calm": ["Anu · rahulik", "Jenny · calm", "Светлана · спокойный"],
   "azure-male-calm": ["Kert · rahulik meeshääl", "Davis · calm male voice", "Дмитрий · спокойный"],
@@ -639,6 +664,8 @@ function renderVoices() {
 }
 async function loadVoices() {
   const generation = state.generation;
+  state.voicesLoading = true;
+  controls();
   try {
     const data = await api("/api/demo/voices");
     if (generation !== state.generation || !state.connected) return;
@@ -662,6 +689,10 @@ async function loadVoices() {
     )
       throw new Error("Invalid voice catalog");
     state.voiceCatalog = data.voices;
+    if (!state.sessionId && !state.voiceSelected && data.voices.some(
+      profile => profile.id === "azure-conversational" && profile.available &&
+        profile.languages.includes(uiLanguage()),
+    )) state.demoVoice = "azure-conversational";
     state.endpointingMs =
       Number.isInteger(data.endpointing_ms) &&
       data.endpointing_ms >= 300 &&
@@ -671,6 +702,8 @@ async function loadVoices() {
   } catch (_) {
     if (generation !== state.generation || !state.connected) return;
     state.voiceCatalog = null;
+  } finally {
+    if (generation === state.generation) state.voicesLoading = false;
   }
   renderVoices();
   controls();
@@ -703,6 +736,7 @@ $("demo-voice").addEventListener("change", () => {
   if (selected) {
     stopAudio();
     state.demoVoice = selected.value;
+    state.voiceSelected = true;
     $("demo-voice-result").textContent = "";
   }
   renderVoices();
@@ -810,7 +844,9 @@ function logout() {
   state.hasMore = false;
   state.latestBooking = null;
   state.demoVoice = "azure";
+  state.voiceSelected = false;
   state.voiceCatalog = null;
+  state.voicesLoading = false;
   clearReservation();
   for (const id of ["demo-messages", "bookings", "call-history"])
     $(id).replaceChildren();
@@ -1380,6 +1416,30 @@ function renderInformation() {
   $("service-status").textContent = state.voiceReady
     ? demoCopy().voiceConfigured
     : demoCopy().voiceMissing;
+  renderTelephoneStatus();
+}
+function renderTelephoneStatus() {
+  const release = state.telephoneRelease;
+  let key = "telephoneUnverified";
+  if (release?.status === "out_of_sync") key = "telephoneOutOfSync";
+  else if (release?.status === "stale") key = "telephoneStale";
+  else if (release?.status === "in_sync") {
+    const age = Date.now() / 1000 - release.verified_at;
+    key = Number.isFinite(age) && age >= -5 && age <= release.max_age_seconds
+      ? "telephoneInSync"
+      : "telephoneStale";
+  }
+  $("telephone-status").textContent = demoCopy()[key];
+}
+async function refreshTelephoneStatus() {
+  try {
+    const response = await fetch("/api/status", { cache: "no-store" });
+    if (!response.ok) throw new Error("unavailable");
+    state.telephoneRelease = (await response.json()).telephone?.release ?? null;
+  } catch (_) {
+    state.telephoneRelease = null;
+  }
+  renderTelephoneStatus();
 }
 async function loadPublic() {
   try {
@@ -1394,6 +1454,7 @@ async function loadPublic() {
     state.bookingReady = data.table_booking_ready === true;
     state.voiceReady = services.capabilities.text_turn_ready === true;
     state.audioReady = services.capabilities.audio_turn_ready === true;
+    state.telephoneRelease = services.telephone?.release ?? null;
     renderInformation();
     controls();
     if (!state.bookingReady)
@@ -1402,6 +1463,9 @@ async function loadPublic() {
     status("information-status", demoCopy().failed, "error");
   }
 }
+setInterval(() => {
+  if (!document.hidden) refreshTelephoneStatus();
+}, 60000);
 $("auth-form").addEventListener("submit", (event) => {
   event.preventDefault();
   connect();

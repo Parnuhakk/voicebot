@@ -64,6 +64,8 @@ def test_empty_configuration_catalog_is_safe_and_default_azure_is_late_bound():
             "azure-male-warm",
             "azure-brian",
             "azure-ryan",
+            "azure-conversational",
+            "azure-conversational-male",
         ]
         assert all(
             set(row)

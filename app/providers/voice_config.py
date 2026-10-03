@@ -14,6 +14,7 @@ import os
 import re
 
 from ..languages import LANGUAGES
+from .azure_voices import validated_voice
 
 STT_MODEL = "whisper-large-v3"
 CHAT_MODEL = "openai/gpt-oss-120b"
@@ -43,13 +44,16 @@ class SpeechConfig:
         if (
             mode not in {"auto", *LANGUAGES}
             or et_locale != "et-EE"
-            or not re.fullmatch(r"et-EE-[A-Za-z0-9]+Neural", et_voice)
             or not re.fullmatch(r"en-[A-Z]{2}", en_locale)
-            or not re.fullmatch(re.escape(en_locale) + r"-[A-Za-z0-9]+Neural", en_voice)
             or ru_locale != "ru-RU"
-            or not re.fullmatch(re.escape(ru_locale) + r"-[A-Za-z0-9]+Neural", ru_voice)
         ):
             raise ValueError("invalid telephone speech configuration")
+        try:
+            et_voice, et_locale = validated_voice(et_voice, et_locale)
+            en_voice, en_locale = validated_voice(en_voice, en_locale)
+            ru_voice, ru_locale = validated_voice(ru_voice, ru_locale)
+        except ValueError:
+            raise ValueError("invalid telephone speech configuration") from None
         return cls(mode, et_voice, en_voice, en_locale, ru_voice, ru_locale)
 
     @property
