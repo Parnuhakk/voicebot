@@ -11,6 +11,7 @@ from .dashboard.api import _require_operator
 from .hackathon import operator_scope, read_session_language
 from .languages import CONSENT
 from .restaurant_answers import format_schedule
+from .restaurant_family import family_reply
 from .restaurant_reasoning import reasoning_enabled
 from .restaurant_times import TIME_INPUT_EXAMPLES
 
@@ -27,6 +28,9 @@ def add_restaurant_routes(app, sessions):
             "business_type": "restaurant",
             "restaurant": data,
             "supported_languages": ["et", "en", "ru"],
+            "family_facilities_summary": {
+                language: family_reply(data, language) for language in ("et", "en", "ru")
+            },
             "booking_time_examples": copy.deepcopy(TIME_INPUT_EXAMPLES),
             "opening_hours_summary": {
                 language: format_schedule(data, language) + "."
