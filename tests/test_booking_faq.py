@@ -528,6 +528,8 @@ def test_an_english_topic_paraphrase_selects_english_in_auto_mode(client, previo
 )
 def test_short_planning_continuations_keep_the_approved_next_question(client, language, text, next_detail):
     session, state, dispatcher, model = setup_session(client, language)
+    # These are continuations after a greeting in the caller's own language.
+    state.observe_user_text({"et": "Tere", "en": "Hello", "ru": "Здравствуйте"}[language])
     expected = QUESTIONS[language][next_detail][0]
     model.reply = expected
     assert match_question(text, language) == ()
@@ -551,6 +553,7 @@ def test_short_planning_continuations_keep_the_approved_next_question(client, la
 )
 def test_mixed_faq_and_booking_detail_reaches_planning_with_the_complete_utterance(client, language, text, next_detail):
     session, state, dispatcher, model = setup_session(client, language)
+    state.observe_user_text({"et": "Tere", "en": "Hello", "ru": "Здравствуйте"}[language])
     assert match_question(text, language) == ()
     expected = QUESTIONS[language][next_detail][0]
     model.reply = expected
