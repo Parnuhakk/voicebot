@@ -11,6 +11,7 @@ import re
 from xml.sax.saxutils import quoteattr
 
 from ..languages import CONSENT
+from ..restaurant_consent import CONFIRMATION_QUESTIONS
 
 
 @dataclass(frozen=True)
@@ -51,7 +52,9 @@ class SpeechDelivery:
 
 
 def is_recap(text: str) -> bool:
-    return any(consent in text for consent in CONSENT.values())
+    return any(consent in text for consent in CONSENT.values()) or any(
+        text.rstrip().endswith(question) for question in CONFIRMATION_QUESTIONS.values()
+    )
 
 
 def spoken_estonian_date(value: str) -> str:
@@ -167,8 +170,10 @@ def speech_markup(
     rate = delivery.effective_rate(recap=recap)
     body = f'<prosody rate="{rate:.2f}">{body}</prosody>'
     # Use only documented styles; Anu/Kert keep their native intonation.
-    if voice in {"en-US-JennyNeural", "en-US-GuyNeural"} and language == "en-US":
+    if voice in {"en-US-JennyNeural", "en-US-GuyNeural", "en-US-DavisNeural"} and language == "en-US":
         body = f'<mstts:express-as style="friendly" styledegree="0.8">{body}</mstts:express-as>'
+    elif voice == "en-GB-RyanNeural" and language == "en-GB":
+        body = f'<mstts:express-as style="chat" styledegree="0.8">{body}</mstts:express-as>'
     # Short sentence pauses keep replies conversational. Recaps retain the
     # provider's default pauses so dates and consent remain easy to follow.
     if not recap:

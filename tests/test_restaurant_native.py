@@ -28,6 +28,51 @@ from tests.test_native_booking_terminals import (  # noqa: E402
 )
 
 
+@pytest.mark.parametrize("initial", ["et", "en", "ru"])
+@pytest.mark.parametrize("selected,utterances", [
+    ("et", ["Tere! Soovin lauda broneerida.", "Homme", "Kell 14", "Meid on neli"]),
+    ("en", ["Hi! I would like to book a table.", "Tomorrow", "2 pm", "Four"]),
+    ("ru", ["Здравствуйте! Я хочу забронировать столик.", "Завтра", "В 14:00", "Нас будет четверо"]),
+])
+def test_native_session_keeps_first_caller_language_and_voice(tmp_path, initial, selected, utterances):
+    from app.languages import CONSENT
+    from app.providers.voice_config import SpeechConfig
+
+    async def run():
+        data = load_restaurant_data()
+        adapter = RestaurantAdapter(str(tmp_path / "language.db"), data=data, allow_writes=True)
+        state = make_call_tools(restaurant_dispatcher(adapter, data), language=initial)
+        updates = []
+        config = SpeechConfig(mode=initial)
+        provider = NS(update_options=lambda **options: updates.append(options))
+        agent = worker.TelephoneAgent(state, speech_config=config, speech_provider=provider)
+        model = UnusedModel()
+        session = AgentSession(llm=model, tts=UnusedTTS(), turn_handling={"turn_detection": "manual"})
+        session.output.audio = Playback()
+        session.on("conversation_item_added", agent.on_conversation_item_added)
+        with patch("livekit.agents.Agent.default.tts_node", synthesize):
+            await session.start(agent=agent, record=False)
+            try:
+                for text, metadata in zip(utterances, [initial, "ru", "en", "et"]):
+                    agent._detected_language = metadata
+                    await native_turn(session, agent, text)
+                    assert state.language == selected and state.language_locked
+                    assert f"Reply only in {selected}" in agent.instructions
+                    voice, locale = config.voice_for(selected)
+                    assert updates[-1] == {"voice": voice, "language": locale}
+                assert state.pending["recap"]["party_size"] == 4
+                assert state.booking_inquiry["start_time"] == "14:00"
+                assert state.pending["delivery"] and not state.bookings
+                agent._detected_language = "et" if selected != "et" else "en"
+                await native_turn(session, agent, CONSENT[selected])
+                assert state.language == selected and len(state.bookings) == 1
+                assert agent.chat_ctx.items[-1].text_content == COPY[selected]["confirmed"]
+                assert model.calls == 0
+            finally:
+                await session.aclose()
+    asyncio.run(run())
+
+
 @pytest.mark.parametrize("initial_language", ["et", "en", "ru"])
 @pytest.mark.parametrize(
     "language,utterance,confirmation",
@@ -38,6 +83,14 @@ from tests.test_native_booking_terminals import (  # noqa: E402
         ("et", "Soovin homme lauda, tuleme neljakesi, pool kolm päeval", "ja kinnitää"),
         ("et", "named-date", "ja kinnitää"),
         ("en", "A table for four tomorrow at 2 pm", "Yes, please confirm."),
+        ("et", "Soovin homme lauda neljale kell 14.00", "jah"),
+        ("et", "Soovin homme lauda neljale kell 14.00", "sobib"),
+        ("et", "Soovin homme lauda neljale kell 14.00", "Jah, super!"),
+        ("et", "Soovin homme lauda neljale kell 14.00", "See sobib mulle väga hästi, aitäh!"),
+        ("en", "A table for four tomorrow at 2 pm", "yes"),
+        ("en", "A table for four tomorrow at 2 pm", "That works for me, thank you!"),
+        ("ru", "Столик на четверых завтра в 14:00", "да"),
+        ("ru", "Столик на четверых завтра в 14:00", "Да, всё отлично, спасибо большое!"),
         ("en", "named-date", "Yes, please confirm."),
         ("ru", "Столик на четверых завтра в 14:00", "Да, подтверждаю."),
         ("en", "A table for four tomorrow at six o'clock in the evening", "Yes, please confirm."),

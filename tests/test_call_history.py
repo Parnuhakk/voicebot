@@ -177,7 +177,11 @@ def test_read_enforces_retention_without_reopening_database(db):
 
 @pytest.fixture
 def client(db, monkeypatch):
-    with patch.dict("os.environ", {"OPERATOR_TOKEN": "fixture-operator", "VOICEBOT_BUSINESS_TYPE": "hotel_spa"}, clear=True):
+    with patch.dict(
+        "os.environ",
+        {"OPERATOR_TOKEN": "fixture-operator", "VOICEBOT_BUSINESS_TYPE": "hotel_spa"},
+        clear=True,
+    ):
         monkeypatch.setattr(callslog, "get_default", lambda: db)
         app = create_app()
         app.state.stack.update(llm_primary=Mock(), tts=Mock())
@@ -267,7 +271,7 @@ def test_canonical_response_keeps_session_history_and_private_call_metadata(
     assert result["warnings"] == []
     if input_kind == "recognized":
         client.app.state.stack["stt"].transcribe.assert_called_once_with(
-            b"RIFF-fixture", language="auto" if language is None else "et"
+            b"RIFF-fixture", language="auto"
         )
     assert result["language"] == "et"
     client.app.state.stack["llm_primary"].chat.assert_not_called()

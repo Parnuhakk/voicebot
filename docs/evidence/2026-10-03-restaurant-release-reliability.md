@@ -191,6 +191,59 @@ These are overlapping suites, not a summed test total. Live rollout/provider
 metrics are recorded in the persistent goal evidence after delivery; these local
 checks do not establish physical-microphone or carrier acceptance.
 
+### Further published natural-conversation integration
+
+Master advanced during publication and rejected the direct push. The tested
+`a41ddcc` checkpoint was pushed to the isolated recovery branch instead; no
+force-push or contributor overwrite occurred. Normal integration of `f8edaa1`
+retains natural complete-turn agreement, initial caller-language selection,
+additional voices and grounded dietary recommendation context. A later natural
+affirmative now intentionally confirms the current delivered owned proposal;
+premature agreement, questions, conditions and declines remain unauthorized.
+
+Independent review found and owner regressions reproduced:
+
+- Unpunctuated "Do I confirm the reservation" was treated as agreement. The
+  compositional recognizer now rejects auxiliary/subject inversion while keeping
+  "I do confirm"; actual prepared/delivered SQLite tests assert denied approval,
+  `consent_required` and no booking.
+- A number-only first input could permanently lock a language from misleading
+  ASR metadata. Selection now reuses the existing ET/EN/RU numeric vocabulary
+  before inference; 18 cases remain unlocked until a meaningful English opener.
+- Validated allergen and group-policy detail followups lost inherited topics.
+  The two fresh-utterance filters now exempt validated followups only; same-language
+  and stale-context guards remain. Six cases preserve exact approved answers,
+  allergen/dish selectors and allergy notices without any booking side effect.
+
+These regressions produced **26 expected failures and 4 existing passes** before
+the minimal repairs; the complete affected consent/language/natural-speech scope
+then passed **413 cases**. Narrow independent static rechecks closed all findings.
+Older fixtures were corrected to use an appropriate initial session/utterance,
+auto recognition before language selection and a locked hint afterward. Recovery
+tests now explicitly prove undelivered agreement cannot write, then require fresh
+delivery and subsequent consent. The affected legacy/HTTP/recovery/date scope
+passed **7,325 cases**; no runtime guard was weakened to satisfy old fixtures.
+
+The owned RTC runner follows the current full confirmation-question suffix and
+tests premature yes, a delivered conditional answer, decline, a fresh recap,
+later natural agreement and cancellation. Real ET/EN/RU CallTools/SQLite cases
+preserve foreign/baseline rows and history. The lane reports **74 media passes,
+68 core passes/6 SDK skips**; ownership and lifecycle/process helpers are unchanged.
+Parent execution and review of this alignment remain part of the final gate.
+
+Current `f8edaa1` main-source core checkpoint, excluding the two-file probe lane:
+**10,956 passed, 63 skipped, 36 subtests passed**, 91.77 seconds. All nine local
+Chromium journeys and 21 delivery cases passed again, with zero external requests
+or page errors. Newer published `fc5c4ae` Russian speech/grounded-answer changes
+are being independently reviewed before normal integration. These checkpoint
+counts do not verify that later combined source or live provider acceptance.
+
+The matching `f8edaa1` main media run, also excluding the scoped probe, passed
+**11,332 cases, 6 skips and 36 subtests** in 118.97 seconds. Parent then executed
+all **74** current probe cases successfully in 17.85 seconds. The probe-alignment
+static review is clear; syntax, assets, credential/conflict patterns and
+whitespace checks passed before recording this integration checkpoint.
+
 ## Pre-rollout preservation qualification
 
 Read-only hash-only snapshot at 2026-10-03 20:34:39 UTC records healthy web,

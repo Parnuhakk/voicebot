@@ -681,7 +681,10 @@ async def run_demo_turn(
     recognition_status = "typed"
     detected_language = None
     if audio:
-        recognition = await recognize_audio_result(stack["stt"], audio, language)
+        recognition = await recognize_audio_result(
+            stack["stt"], audio,
+            session.tools.language if session.tools.language_locked else "auto",
+        )
         text, recognition_status = recognition.text, recognition.status
         detected_language = recognition.detected_language
     stt_failed = recognition_status == "stt_unavailable"
@@ -693,7 +696,6 @@ async def run_demo_turn(
     session.tools.observe_user_text(
         text,
         is_final=True,
-        language=None if language == "auto" else language,
         detected_language=detected_language,
         unsupported=recognition_status == "unsupported_language",
         recognition_status=recognition_status,

@@ -19,6 +19,7 @@ class RestaurantQuestion:
     days: tuple[int, ...] | None = None
     date: str | None = None
     date_issue: str | None = None
+    recommendation: bool = False
 
 
 INFORMATION_TOPICS = (
@@ -79,6 +80,19 @@ DAY_PATTERNS = (
 BOOKING_REQUEST = re.compile(
     r"broneer|reserve|reservation|book|lau[ad]|table|брон|столик"
 )
+RECOMMENDATION = re.compile(
+    r"^(?:mida (?:te )?soovit(?:ad|ate)(?: süüa)?|"
+    r"what (?:would|do) you recommend(?: to eat)?|"
+    r"что (?:вы )?(?:посоветуете|порекомендуете)(?: поесть)?)[.!?]*$|"
+    r"(?:soovit|recommend|посовет|порекоменд).*(?:menüü|menu|süüa|eat|dish|rooga|food|vegan|vegetarian|поесть|блюд)|"
+    r"(?:vegan|vegetarian|taimetoit|веган|вегетар).*\b(?:soovit\w*|recommend\w*|посовет\w*|порекоменду\w*)"
+)
+DETAIL_FOLLOWUP = re.compile(
+    r"^(?:räägi (?:sellest |selle kohta )?lähemalt|palun täpsusta|"
+    r"(?:please )?tell me more(?: about (?:it|that|this))?|"
+    r"(?:please )?explain (?:it|that|this)|"
+    r"расскажите (?:об этом )?подробнее|можно подробнее)[.!?]*$"
+)
 
 
 def match_question(
@@ -98,18 +112,28 @@ def match_question(
         if (match := re.search(pattern, text))
     ]
     topics = [topic for _, topic in sorted(matches)]
+    recommendation = bool(RECOMMENDATION.search(text))
+    if recommendation and "menu" not in topics:
+        topics.append("menu")
+    detail_followup = bool(not topics and previous and DETAIL_FOLLOWUP.fullmatch(text))
+    if detail_followup and previous:
+        topics = list(previous.topics)
     # An English question about an unlisted dish or a non-food "contain"
     # must not receive an unrelated menu/allergen answer.
-    if "allergens" in topics and not (
-        has_dish
-        or has_diet
-        or previous
-        and re.search(r"\b(?:it|this|that)\b", text)
-        and any(topic in {"menu", "allergens"} for topic in previous.topics)
-        or re.search(
-            r"allerg|allergeen|аллерг|глютен|glut|peanut|pähkl|орех|laktoos|lactose|лактоз|"
-            r"food|dish|ingredient|milk|fish|celery|sisald|koostis|содерж|состав",
-            text,
+    if (
+        "allergens" in topics
+        and not detail_followup
+        and not (
+            has_dish
+            or has_diet
+            or previous
+            and re.search(r"\b(?:it|this|that)\b", text)
+            and any(topic in {"menu", "allergens"} for topic in previous.topics)
+            or re.search(
+                r"allerg|allergeen|аллерг|глютен|glut|peanut|pähkl|орех|laktoos|lactose|лактоз|"
+                r"food|dish|ingredient|milk|fish|celery|sisald|koostis|содерж|состав",
+                text,
+            )
         )
     ):
         topics.remove("allergens")
@@ -127,8 +151,9 @@ def match_question(
             text,
         )
     )
-    if not policy_question or re.search(
-        r"\b(?:book|reserve|broneeri\w*|заброниру\w*)\b", text
+    if not detail_followup and (
+        not policy_question
+        or re.search(r"\b(?:book|reserve|broneeri\w*|заброниру\w*)\b", text)
     ):
         topics = [topic for topic in topics if topic not in {"children", "groups"}]
     if "kitchen" in topics:
@@ -173,7 +198,7 @@ def match_question(
         and not resolved.value
         and not resolved.issue
         and previous
-        and re.search(r"^(?:aga|ja|and|what about|а|и)\b", text)
+        and (detail_followup or re.search(r"^(?:aga|ja|and|what about|а|и)\b", text))
         and any(topic in {"hours", "kitchen"} for topic in topics)
         and any(topic in {"hours", "kitchen"} for topic in previous.topics)
     ):
@@ -186,7 +211,7 @@ def match_question(
         elif resolved.issue:
             date_issue = resolved.issue
     return RestaurantQuestion(
-        tuple(topics[:3]), days or None, requested_date, date_issue
+        tuple(topics[:3]), days or None, requested_date, date_issue, recommendation
     )
 
 

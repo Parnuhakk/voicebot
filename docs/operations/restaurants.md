@@ -60,11 +60,16 @@ approved question or restaurant fact. A standalone decline clears the proposed
 booking details without claiming to cancel a saved booking.
 
 The assistant uses short questions in all three languages and speaks recap
-dates with month names. Estonian confirmation accepts a closed list of explicit
-whole-turn phrases, including `Jah, kinnitan.`, `kinnitan`, `jah palun kinnita`
-and the known recognition spelling `ja kinnitää`. These variants also guide
-language selection when recognition metadata is wrong. This is transcript
-handling, not speech-model training or a measured change in recognition accuracy.
+dates with month names. Restaurant recaps end with `Kas teile sobib?`,
+`Does that work for you?` or `Вам подходит?`. A subsequent natural affirmative
+answer confirms the current proposal immediately through the verified backend:
+`jah`, `sobib`, `kinnitan`, `jah super`, `yes`, `sounds good`, `да` and
+`подходит` are examples. Recognition combines affirmative expressions, emphasis
+and ordinary politeness rather than enumerating complete replies. Known
+recognition spellings such as `ja kinnitää` remain supported. Short agreement
+retains the current recap language despite noisy recognition metadata.
+This is transcript handling, not speech-model training or a measured change in
+recognition accuracy. Unsupported or ambiguous wording still needs clarification.
 Questions, quoted examples, declines and mixed changes are not consent. A
 current owned recap must still have been delivered before a later final turn;
 partial recognition and expired or interrupted recaps cannot confirm a table.
@@ -210,6 +215,16 @@ real call, promise a callback, take payment or place a food order.
 
 ## English callers
 
+The first clear supported caller utterance selects ET, EN or RU for the entire
+session, including model instructions, spoken replies and consent checks.
+For example, `Hi! I would like to book a table.` selects English even when the
+browser picker or telephone greeting initially uses Estonian. Subsequent short
+answers, names, numbers and changing supported STT language tags do not switch
+the conversation. Each new session selects its own language. Empty, partial,
+rejected and weak first inputs leave selection pending. Only a whole-turn
+explicit request such as `Please speak Russian` changes a selected language;
+an existing proposal then requires a new recap and delivery before consent.
+
 Automatic language selection recognizes natural English requests such as
 "I'd like a table" and keeps English for short replies such as "Four" or
 "Two pm", even when speech recognition supplies noisy language metadata.
@@ -239,8 +254,12 @@ A clear supported answer resets the counter. The counter belongs to the call,
 not the provider or a global session; partial speech and repeated rendering do
 not advance it. Unclear input skips model and booking calls and invalidates
 pending recap consent. Provider failures receive the technical failure message
-without advancing or resetting the counter. Automatic mode chooses
-ET/EN/RU from the source-language metadata; a selected language controls replies.
+without advancing or resetting the counter. The initial picker or telephone
+language setting controls the greeting. The first clear caller wording and
+supported source metadata select the conversation language; later supported
+metadata cannot replace it. Browser recognition starts with `auto`, then passes
+the selected session language to the recognition interface. Groq's source-language
+validation remains automatic so unsupported speech is never forced into a supported language.
 Missing source metadata fails as unavailable recognition. Very short utterances,
 names and words shared across languages can still be misclassified by Whisper;
 this policy cannot guarantee perfect acoustic language identification.

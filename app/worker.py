@@ -107,9 +107,6 @@ class TelephoneAgent(Agent):
             new_message.text_content if new_message.role == "user" else "",
             is_final=True,
             detected_language=self._detected_language,
-            language=(
-                self.speech_config.mode if self.speech_config.mode != "auto" else None
-            ),
             unsupported=self._unsupported_language,
         )
         if self.state.unsupported_language and new_message.role == "user":

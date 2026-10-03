@@ -25,7 +25,6 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).parent))
-from app.languages import CONSENT
 from app.restaurant_call import COPY
 
 REPLY_TIMEOUT = 60
@@ -312,7 +311,9 @@ def scenario(language, day):
             "voice": "et-EE-KertNeural",
             "locale": "et-EE",
             "request": f"Palun broneeri laud kokku 4 inimesele {date} kell 18:00.",
-            "bare_yes": "Jah.",
+            "premature_yes": "Jah.",
+            "conditional": "Jah, kui saame istuda akna ääres.",
+            "consent": "Jah, sobib.",
             "decline": "Ei, ära kinnita broneeringut.",
             "cancel": "Jah, tühista.",
             "details": {
@@ -325,7 +326,9 @@ def scenario(language, day):
             "voice": "en-US-GuyNeural",
             "locale": "en-US",
             "request": f"Please reserve a table for 4 people on {date} at 18:00.",
-            "bare_yes": "Yes.",
+            "premature_yes": "Yes.",
+            "conditional": "Yes, if we can sit by the window.",
+            "consent": "Yes, that works for me.",
             "decline": "No, do not confirm the booking.",
             "cancel": "Please cancel this test booking.",
             "details": {
@@ -338,7 +341,9 @@ def scenario(language, day):
             "voice": "ru-RU-DmitryNeural",
             "locale": "ru-RU",
             "request": f"Пожалуйста, забронируйте столик на 4 человека {date} в 18:00.",
-            "bare_yes": "Да.",
+            "premature_yes": "Да.",
+            "conditional": "Да, если мы можем сесть у окна.",
+            "consent": "Да, подходит.",
             "decline": "Нет, не подтверждайте бронирование.",
             "cancel": "Да, отмените.",
             "details": {"date": date, "time": "В 18:00.", "party": "Всего 4 человека."},
@@ -346,7 +351,6 @@ def scenario(language, day):
     }[language]
     return {
         **phrases,
-        "consent": CONSENT[language],
         "party_size": 4,
         "expected_time": "18:00",
         "recap_marker": COPY[language]["recap"].split("{", 1)[0],
@@ -358,7 +362,9 @@ def complete_recap(text, language):
     return (
         isinstance(text, str)
         and text.strip().startswith(template.split("{", 1)[0])
-        and text.strip().endswith(CONSENT[language] + template.split("{consent}", 1)[1])
+        and text.strip().endswith(
+            COPY[language]["confirmation_question"] + template.split("{question}", 1)[1]
+        )
     )
 
 
@@ -383,7 +389,8 @@ def failure_message(error):
         "probe_no_recap",
         "probe_detail_limit",
         "probe_premature_write",
-        "probe_bare_yes_write",
+        "probe_premature_yes_write",
+        "probe_conditional_write",
         "probe_decline_write",
         "probe_confirm_unproven",
         "probe_cancel_unproven",
@@ -421,9 +428,11 @@ async def exercise(speak, read, phrases, language, day):
             extra_turns += 1
             reply = await speak(phrases["details"][field])
 
+    await speak(phrases["premature_yes"])
+    assert not await read(), "probe_premature_yes_write"
     await request_recap()
-    await speak(phrases["bare_yes"])
-    assert not await read(), "probe_bare_yes_write"
+    await speak(phrases["conditional"])
+    assert not await read(), "probe_conditional_write"
     await speak(phrases["decline"])
     assert not await read(), "probe_decline_write"
     await request_recap()
@@ -446,7 +455,8 @@ async def exercise(speak, read, phrases, language, day):
     return {
         "extra_detail_turns": extra_turns,
         "before_consent_empty": True,
-        "bare_yes_no_write": True,
+        "premature_yes_no_write": True,
+        "conditional_no_write": True,
         "decline_no_write": True,
         "ledger_booking_verified": True,
         "ledger_cancel_verified": True,

@@ -22,13 +22,23 @@ import pytest
 from app.booking.restaurant import RestaurantAdapter
 from app.business import restaurant_dispatcher
 from app.demo import load_demo_data, scoped_guest
-from app.languages import CONSENT
 from app.restaurant_data import load_restaurant_data
 
 ROOT = Path(__file__).resolve().parents[1]
 SCOPE, FOREIGN = "a" * 32, "b" * 32
 NOW = datetime(2026, 10, 3, 10, tzinfo=ZoneInfo("Europe/Tallinn"))
 DAY = (NOW + timedelta(days=14)).date()
+NATURAL_CONSENT = {
+    "et": "Jah, sobib.",
+    "en": "Yes, that works for me.",
+    "ru": "Да, подходит.",
+}
+CONDITIONAL_REPLY = {
+    "et": "Jah, kui saame istuda akna ääres.",
+    "en": "Yes, if we can sit by the window.",
+    "ru": "Да, если мы можем сесть у окна.",
+}
+PREMATURE_YES = {"et": "Jah.", "en": "Yes.", "ru": "Да."}
 
 
 def load_probe():
@@ -50,7 +60,10 @@ def transport_probe(monkeypatch):
     # Only transport fault tests isolate policy. Actual renders below use the
     # real current canonical constructor/COPY, not this deliberately fake text.
     copybook = {
-        language: {"recap": "Fixture {name}: {consent}"}
+        language: {
+            "recap": "Fixture {name}: {question}",
+            "confirmation_question": f"Fixture {language} question?",
+        }
         for language in ("et", "en", "ru")
     }
     with monkeypatch.context() as local:
@@ -122,7 +135,7 @@ def native_confirmation(probe, ledger, monkeypatch):
         assert not prepared.get("error")
         hold = prepared["hold_id"]
         assert state.mark_recap_delivered(hold)
-        state.observe_user_text(CONSENT[language], language=language)
+        state.observe_user_text(NATURAL_CONSENT[language], language=language)
         arguments = {"hold_id": hold}
         result = await state.dispatch("confirm_slot_booking", arguments)
         assert result.get("ok") is True, result
@@ -400,9 +413,10 @@ def test_actual_native_confirmation_is_visible_and_cleanup_preserves_other_histo
 @pytest.mark.parametrize(
     "phase,turn,code",
     [
-        ("request", 1, "probe_premature_write"),
-        ("bare_yes", 2, "probe_bare_yes_write"),
-        ("decline", 3, "probe_decline_write"),
+        ("premature_yes", 1, "probe_premature_yes_write"),
+        ("request", 2, "probe_premature_write"),
+        ("conditional", 3, "probe_conditional_write"),
+        ("decline", 4, "probe_decline_write"),
     ],
 )
 def test_actual_native_write_cannot_hide_from_zero_write_checks(
@@ -424,9 +438,15 @@ def test_actual_native_write_cannot_hide_from_zero_write_checks(
     with pytest.raises(AssertionError, match=code):
         asyncio.run(probe.exercise(speak, read, phrases, "en", DAY))
     assert (
-        spoken == [phrases["request"], phrases["bare_yes"], phrases["decline"]][:turn]
+        spoken
+        == [
+            phrases["premature_yes"],
+            phrases["request"],
+            phrases["conditional"],
+            phrases["decline"],
+        ][:turn]
     )
-    assert CONSENT["en"] not in spoken
+    assert NATURAL_CONSENT["en"] not in spoken
 
 
 @pytest.mark.parametrize(
@@ -487,6 +507,146 @@ def test_actual_native_spoken_cancellation_remains_independently_visible(
     assert snapshot(ledger) == before
 
 
+@pytest.mark.parametrize("language", ["et", "en", "ru"])
+def test_actual_natural_consent_exercise_requires_current_delivered_proposal(
+    probe, ledger, monkeypatch, language
+):
+    from app import restaurant_call
+
+    class FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return NOW.astimezone(tz) if tz else NOW.replace(tzinfo=None)
+
+    monkeypatch.setattr(restaurant_call, "datetime", FixedDateTime)
+    foreign, _ = book(ledger, FOREIGN)
+    baseline, _ = book(ledger, FOREIGN, key="baseline-confirm")
+    before = snapshot(ledger)
+    phrases, spoken, delivered = probe.scenario(language, DAY), [], []
+    state = restaurant_call.RestaurantCallTools(
+        restaurant_dispatcher(ledger.adapter, ledger.data),
+        language=language,
+        call_id=SCOPE,
+    )
+
+    async def read():
+        result = owned(probe, ledger)
+        assert result.returncode == 0, result.stderr
+        return json.loads(result.stdout)["items"]
+
+    async def prepare():
+        proposal = await state.dispatch(
+            "plan_restaurant_reservation",
+            {
+                "date": DAY.isoformat(),
+                "start_time": "18:00",
+                "party_size": 4,
+            },
+        )
+        assert not proposal.get("error"), proposal
+        assert (
+            state.pending
+            and not state.pending["delivery"]
+            and not state.pending["approved"]
+        )
+        assert not await read(), "preparation alone must not write"
+        return proposal["hold_id"]
+
+    async def run():
+        # Try confirmation even when a model requests it: native policy must
+        # deny an undelivered yes, a delivered condition and a delivered decline.
+        for text, delivery in (
+            (PREMATURE_YES[language], False),
+            (CONDITIONAL_REPLY[language], True),
+            (phrases["decline"], True),
+        ):
+            state.observe_user_text(phrases["request"], language=language)
+            hold = await prepare()
+            if delivery:
+                assert state.mark_recap_delivered(hold)
+            snapshot_before = snapshot(ledger)
+            state.observe_user_text(text, language=language)
+            assert not state.pending or not state.pending["approved"]
+            denied = await state.dispatch("confirm_slot_booking", {"hold_id": hold})
+            assert denied.get("error") == "consent_required", denied
+            assert not await read()
+            assert snapshot(ledger) == snapshot_before
+
+        async def speak(text):
+            spoken.append(text)
+            state.observe_user_text(text, language=language)
+            if text == phrases["request"]:
+                current_hold = await prepare()
+                recap = state.render_recap(current_hold)
+                assert recap.endswith(
+                    restaurant_call.COPY[language]["confirmation_question"]
+                )
+                assert state.mark_recap_delivered(current_hold)
+                delivered.append(state.pending)
+                return recap
+            if text == NATURAL_CONSENT[language]:
+                assert len(delivered) == 2 and delivered[0] is not delivered[1]
+                assert state.pending is delivered[-1]
+                assert state.pending["delivery"] and state.pending["approved"]
+                result = await state.dispatch(
+                    "confirm_slot_booking", {"hold_id": state.pending["hold_id"]}
+                )
+                assert result.get("ok") is True, result
+                assert len(await read()) == 1
+                return restaurant_call.COPY[language]["confirmed"]
+            if text == phrases["cancel"]:
+                assert (
+                    state.cancel_approval
+                    and state.cancel_approval["booking_id"] == state.last_booking
+                )
+                result = await state.dispatch(
+                    "cancel_slot_booking", {"booking_id": state.last_booking}
+                )
+                assert result.get("ok") is True, result
+                return restaurant_call.COPY[language]["cancelled"]
+            assert not state.pending or not state.pending["approved"]
+            snapshot_before = snapshot(ledger)
+            denied = await state.dispatch("confirm_slot_booking", {"hold_id": hold})
+            assert denied.get("error") == "consent_required", denied
+            assert not await read()
+            assert snapshot(ledger) == snapshot_before
+            return state.direct_reply or restaurant_call.COPY[language]["domain"]
+
+        checks = await probe.exercise(speak, read, phrases, language, DAY)
+        assert checks["premature_yes_no_write"] and checks["conditional_no_write"]
+        assert checks["decline_no_write"] and checks["extra_detail_turns"] == 0
+        assert spoken == [
+            PREMATURE_YES[language],
+            phrases["request"],
+            CONDITIONAL_REPLY[language],
+            phrases["decline"],
+            phrases["request"],
+            NATURAL_CONSENT[language],
+            phrases["cancel"],
+        ]
+        assert len(spoken) == 7 and probe.CONVERSATION_TIMEOUT == 240
+        (item,) = await read()
+        assert item["status"] == "cancelled" and item["party_size"] == 4
+        assert item["start"] == DAY.isoformat() + "T18:00:00"
+        result = owned(probe, ledger, cleanup=True)
+        assert result.returncode == 0
+        return item["id"]
+
+    owned_id = asyncio.run(run())
+    after = snapshot(ledger)
+    assert {row[0]: row[-1] for row in after["restaurant_reservations"]} == {
+        foreign: "confirmed",
+        baseline: "confirmed",
+        owned_id: "cancelled",
+    }
+    assert [
+        row for row in after["restaurant_reservations"] if row[0] != owned_id
+    ] == before["restaurant_reservations"]
+    assert set(before["restaurant_actions"]) <= set(after["restaurant_actions"])
+    assert len(after["restaurant_actions"]) == len(before["restaurant_actions"]) + 2
+    assert set(before["restaurant_holds"]) <= set(after["restaurant_holds"])
+
+
 @pytest.mark.parametrize("failure", ["exit", "json", "timeout"])
 def test_docker_errors_do_not_expose_private_output(probe, monkeypatch, failure):
     command = (
@@ -519,7 +679,9 @@ def test_actual_constructor_render_and_fixed_clock_scenario(
     phrases = probe.scenario(language, DAY)
     fields = restaurant_call.parse_restaurant_request(phrases["request"], now=NOW)
     assert fields == {"date": DAY.isoformat(), "start_time": "18:00", "party_size": 4}
-    assert phrases["consent"] == CONSENT[language]
+    assert phrases["consent"] == NATURAL_CONSENT[language]
+    assert phrases["premature_yes"] == PREMATURE_YES[language]
+    assert phrases["conditional"] == CONDITIONAL_REPLY[language]
     assert (
         phrases["recap_marker"]
         == restaurant_call.COPY[language]["recap"].split("{", 1)[0]
@@ -537,6 +699,10 @@ def test_actual_constructor_render_and_fixed_clock_scenario(
     text = asyncio.run(render())
     assert probe.complete_recap(text, language)
     assert not probe.complete_recap(phrases["recap_marker"] + "unfinished", language)
+    question = restaurant_call.COPY[language]["confirmation_question"]
+    assert text.endswith(question)
+    assert not probe.complete_recap(text[:-1], language)
+    assert not probe.complete_recap(text.removesuffix(question), language)
     assert all(
         not probe.complete_recap(text, other)
         for other in ("et", "en", "ru")
@@ -559,7 +725,7 @@ def rendered(language):
         party=4,
         duration=90,
         guest="Fixture Guest",
-        consent=CONSENT[language],
+        question=COPY[language]["confirmation_question"],
     )
 
 
@@ -572,6 +738,7 @@ def test_dialogue_only_missing_details_later_consent_and_independent_cancellatio
     phrases = probe.scenario(language, DAY)
     replies = iter(
         [
+            "no proposal",
             COPY[language]["date"],
             COPY[language]["time"],
             rendered(language),
@@ -606,16 +773,19 @@ def test_dialogue_only_missing_details_later_consent_and_independent_cancellatio
     result = asyncio.run(probe.exercise(speak, read, phrases, language, DAY))
     assert result["extra_detail_turns"] == 2
     assert spoken == [
+        phrases["premature_yes"],
         phrases["request"],
         phrases["details"]["date"],
         phrases["details"]["time"],
-        phrases["bare_yes"],
+        phrases["conditional"],
         phrases["decline"],
         phrases["request"],
-        CONSENT[language],
+        NATURAL_CONSENT[language],
         phrases["cancel"],
     ]
-    assert reads == list(range(1, 9))
+    assert reads == list(range(1, 10))
+    assert result["premature_yes_no_write"] and result["conditional_no_write"]
+    assert "bare_yes_no_write" not in result
 
 
 @pytest.mark.parametrize(
@@ -625,7 +795,8 @@ def test_dialogue_only_missing_details_later_consent_and_independent_cancellatio
         "partial",
         "stale",
         "limit",
-        "bare_yes_write",
+        "premature_yes_write",
+        "conditional_write",
         "decline_write",
         "wrong_time",
         "wrong_party",
@@ -659,7 +830,9 @@ def test_dialogue_failures_do_not_invent_consent_or_accept_unproven_results(
             "start": DAY.isoformat() + "T18:00:00",
             "status": "confirmed",
         }
-        if mode == "bare_yes_write" and spoken[-1] == phrases["bare_yes"]:
+        if mode == "premature_yes_write" and spoken[-1] == phrases["premature_yes"]:
+            return [item]
+        if mode == "conditional_write" and spoken[-1] == phrases["conditional"]:
             return [item]
         if mode == "decline_write" and spoken[-1] == phrases["decline"]:
             return [item]
@@ -678,9 +851,9 @@ def test_dialogue_failures_do_not_invent_consent_or_accept_unproven_results(
     with pytest.raises(AssertionError, match="probe_"):
         asyncio.run(probe.exercise(speak, read, phrases, "en", DAY))
     if mode not in {"wrong_time", "wrong_party", "wrong_status", "foreign_cancel"}:
-        assert CONSENT["en"] not in spoken
+        assert NATURAL_CONSENT["en"] not in spoken
     if mode == "limit":
-        assert len(spoken) == 4
+        assert len(spoken) == 5
 
 
 def test_wait_requires_final_text_audio_and_end_of_playback(probe, monkeypatch):
@@ -995,7 +1168,7 @@ def test_cli_never_prints_pass_on_cleanup_failure_and_reserves_total_budget(
 def test_copy_detection_does_not_assume_name_is_first(transport_probe):
     probe = transport_probe
     probe.COPY["et"]["recap"] = (
-        "Fixture {date} at {time}, {party} at {name}. Say {consent}!"
+        "Fixture {date} at {time}, {party} at {name}. {question}!"
     )
     phrases = probe.scenario("et", DAY)
     text = probe.COPY["et"]["recap"].format(
@@ -1003,7 +1176,7 @@ def test_copy_detection_does_not_assume_name_is_first(transport_probe):
         time="18:00",
         party=4,
         name="Fixture",
-        consent=CONSENT["et"],
+        question=probe.COPY["et"]["confirmation_question"],
     )
     assert phrases["recap_marker"] == "Fixture "
     assert probe.complete_recap(text, "et")

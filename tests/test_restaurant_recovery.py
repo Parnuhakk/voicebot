@@ -149,7 +149,7 @@ def test_ambiguous_weekday_correction_asks_date_instead_of_retaining_or_guessing
 @pytest.mark.parametrize(
     "language,ambiguous", [("et", "jah"), ("en", "yes"), ("ru", "да")]
 )
-def test_ambiguous_consent_reprepares_same_live_owned_hold_without_auto_write(
+def test_undelivered_agreement_reprepares_same_live_owned_hold_without_auto_write(
     make_state, language, ambiguous
 ):
     async def run():
@@ -157,7 +157,7 @@ def test_ambiguous_consent_reprepares_same_live_owned_hold_without_auto_write(
         first = await plan_turn(state, REQUESTS[language])
         assert first.get("ok"), first
         original = state.pending
-        assert state.mark_recap_delivered(first["hold_id"])
+        assert not state.pending["delivery"]
         before = inventory(state.dispatcher._slot)
         assert before == ({first["hold_id"]}, [], 0)
         for _ in range(3):
@@ -171,7 +171,7 @@ def test_ambiguous_consent_reprepares_same_live_owned_hold_without_auto_write(
             assert state.bookings == set()
             assert inventory(state.dispatcher._slot) == before
             original = state.pending
-            assert state.mark_recap_delivered(first["hold_id"])
+            assert not state.pending["delivery"]
 
     asyncio.run(run())
 
@@ -181,7 +181,7 @@ def test_recovered_hold_requires_fresh_delivery_and_later_exact_consent(make_sta
         state = make_state()
         first = await plan_turn(state, REQUESTS["en"])
         assert first.get("ok"), first
-        assert state.mark_recap_delivered(first["hold_id"])
+        assert not state.pending["delivery"]
         recovered = await plan_turn(state, "yes")
         assert recovered.get("ok"), recovered
         state.observe_user_text(CONSENT["en"], language="en")
@@ -214,7 +214,7 @@ def test_recovery_rechecks_durable_hold_instead_of_replaying_local_snapshot(
         state = make_state()
         first = await plan_turn(state, REQUESTS["en"])
         assert first.get("ok"), first
-        assert state.mark_recap_delivered(first["hold_id"])
+        assert not state.pending["delivery"]
         adapter = state.dispatcher._slot
         if invalidated == "expired":
             adapter._now = lambda: NOW + timedelta(seconds=121)
@@ -258,7 +258,7 @@ def test_recovery_revalidates_current_restaurant_rules(make_state):
         state = make_state()
         first = await plan_turn(state, REQUESTS["en"])
         assert first.get("ok"), first
-        assert state.mark_recap_delivered(first["hold_id"])
+        assert not state.pending["delivery"]
         adapter = state.dispatcher._slot
         adapter.data["closures"][DAY] = {
             language: "Closed fixture" for language in ("et", "en", "ru")

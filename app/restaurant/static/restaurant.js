@@ -60,9 +60,9 @@ const TEXT = {
     "Не удалось подготовить образец. Попробуйте ещё раз или выберите другой голос.",
   ],
   voiceSelectorHelp: [
-    "Vali ja kuula häält enne vestlust. Rahulik variant räägib aeglasemalt.",
-    "Choose and listen before starting. The calm option speaks more slowly.",
-    "Выберите и послушайте голос до начала разговора. Спокойный вариант говорит медленнее.",
+    "Vali ja kuula häält enne vestlust. Kerti variandid muudavad kõnestiili; inglise keeles saad valida eri meeshääli.",
+    "Choose and listen before starting. English offers different male speakers; Kert and Dmitry also have calm and lively delivery options.",
+    "Выберите и послушайте голос до разговора. У Дмитрия есть спокойный и более живой варианты; разные мужские голоса доступны на английском.",
   ],
   voiceFallback: [
     "Kasutati varuhäält",
@@ -175,9 +175,9 @@ const TEXT = {
     "Попробуйте голосового помощника",
   ],
   voiceHelp: [
-    "Küsi laua, menüü või lahtiolekuaegade kohta.",
-    "Ask about a table, the menu or opening hours.",
-    "Спросите о столике, меню или часах работы.",
+    "Küsi laua, menüü või lahtiolekuaegade kohta. Toidusoovituseks ütle oma eelistus.",
+    "Ask about a table, the menu or opening hours. Mention your dietary preferences for menu suggestions.",
+    "Спросите о столике, меню или часах работы. Для рекомендации блюда расскажите о своих предпочтениях.",
   ],
   voiceBadge: ["Tekst ja mikrofon", "Text and microphone", "Текст и микрофон"],
   start: ["Alusta vestlust", "Start conversation", "Начать разговор"],
@@ -526,9 +526,9 @@ function localize() {
     ? copy.connected
     : copy.disconnected;
   $("consent-help").textContent = {
-    et: "Kuula või loe täpne kokkuvõte. Alles seejärel ütle „Jah, kinnitan.” või vajuta eraldi kinnitamisnuppu. „Jah, tühista.” tühistab ainult selles vestluses loodud broneeringu. Ära sisesta päris kontakte.",
-    en: 'Listen to or read the exact recap. Then say "Yes, confirm." or press the separate confirmation button. "Yes, cancel." cancels only a reservation created in this conversation. Do not enter real contacts.',
-    ru: "Прослушайте или прочитайте точный итог. Затем скажите «Да, подтверждаю.» или нажмите отдельную кнопку подтверждения. «Да, отмените.» отменяет только бронирование из этого разговора. Не вводите настоящие контакты.",
+    et: "Kuula või loe broneeringu kokkuvõte. Kui see sobib, vasta jaatavalt või vajuta kinnitamisnuppu. „Jah, tühista.” tühistab ainult selles vestluses loodud broneeringu. Ära sisesta päris kontakte.",
+    en: 'Listen to or read the reservation recap. If it works for you, answer affirmatively or press the confirmation button. "Yes, cancel." cancels only a reservation created in this conversation. Do not enter real contacts.',
+    ru: "Прослушайте или прочитайте итог бронирования. Если всё подходит, ответьте утвердительно или нажмите кнопку подтверждения. «Да, отмените.» отменяет только бронирование из этого разговора. Не вводите настоящие контакты.",
   }[uiLanguage()];
   renderInformation();
   renderVoices();
@@ -611,6 +611,10 @@ const VOICE_LABELS = {
   azure: ["Loomulik hääl", "Natural voice", "Естественный голос"],
   "azure-male": ["Kert · meeshääl", "Guy · male voice", "Дмитрий · мужской голос"],
   "azure-calm": ["Anu · rahulik", "Jenny · calm", "Светлана · спокойный"],
+  "azure-male-calm": ["Kert · rahulik meeshääl", "Davis · calm male voice", "Дмитрий · спокойный"],
+  "azure-male-warm": ["Kert · elavam meeshääl", "Andrew · warm male voice", "Дмитрий · более живой"],
+  "azure-brian": ["Brian · inglise keel (USA)", "Brian · American English", "Брайан · английский (США)"],
+  "azure-ryan": ["Ryan · inglise keel (UK)", "Ryan · British English", "Райан · английский (Британия)"],
   elevenlabs: ["ElevenLabs", "ElevenLabs", "ElevenLabs"],
   google: ["Google Chirp", "Google Chirp", "Google Chirp"],
   cartesia: ["Cartesia Sonic", "Cartesia Sonic", "Cartesia Sonic"],
@@ -992,9 +996,9 @@ function appendBookingReceipt(container, change) {
 }
 function recapPlayedMessage() {
   return {
-    et: "Kokkuvõte esitatud. Kinnitamiseks ütle „Jah, kinnitan.”",
-    en: 'Recap delivered. To confirm, say "Yes, confirm."',
-    ru: "Итог озвучен. Для подтверждения скажите «Да, подтверждаю.»",
+    et: "Kokkuvõte esitatud. Kui broneering sobib, vasta jaatavalt.",
+    en: 'Recap delivered. If the reservation works for you, answer affirmatively.',
+    ru: "Итог озвучен. Если бронирование подходит, ответьте утвердительно.",
   }[state.replyLanguage];
 }
 async function startDemo() {

@@ -19,6 +19,191 @@ from tests.test_restaurant_http import client  # noqa: F401
 
 
 @pytest.mark.parametrize(
+    "language,question,followup",
+    [
+        ("et", "Olen vegan, mida soovitad?", "Räägi sellest lähemalt"),
+        ("en", "I'm vegan. What do you recommend?", "Tell me more about it"),
+        ("ru", "Я веган, что посоветуете?", "Расскажите об этом подробнее"),
+    ],
+)
+def test_recommendations_and_followups_keep_diet_without_inventing_facts(
+    make_state, language, question, followup
+):
+    state = make_state(language)
+    state.observe_user_text(question, language=language)
+    answer = state.guard_reply("", [])
+    soup = state.restaurant["menu"][0]["name"][language]
+    assert soup in answer
+    assert state.restaurant["menu"][1]["name"][language] not in answer
+    assert state.restaurant["menu"][2]["name"][language] not in answer
+    assert state._restaurant_question.recommendation
+    state.observe_user_text(followup, language=language)
+    answer = state.guard_reply("", [])
+    assert soup in answer
+    assert state._restaurant_diet == "vegan"
+    assert state.restaurant["menu"][1]["name"][language] not in answer
+    assert state.pending is None and not state.bookings
+
+
+@pytest.mark.parametrize(
+    "language,question,followup",
+    [
+        ("et", "Mis kell te pühapäeval lahti olete?", "Palun täpsusta"),
+        ("en", "What are your Sunday opening hours?", "Please tell me more"),
+        ("ru", "Когда вы открыты в воскресенье?", "Можно подробнее"),
+    ],
+)
+def test_explicit_detail_followup_retains_schedule_day(
+    make_state, language, question, followup
+):
+    state = make_state(language)
+    state.observe_user_text(question, language=language)
+    answer = state.guard_reply("", [])
+    state.observe_user_text(followup, language=language)
+    assert state.guard_reply("", []) == answer
+    assert state._restaurant_question.days == (6,)
+
+
+@pytest.mark.parametrize(
+    "language,question,followup",
+    [
+        ("et", "Kas lõhe sisaldab piima?", "Räägi sellest lähemalt"),
+        ("en", "Does salmon contain milk?", "Please tell me more"),
+        ("ru", "Лосось содержит молоко?", "Можно подробнее"),
+    ],
+)
+def test_allergen_detail_followup_keeps_dish_declarations_and_safety_notice(
+    make_state, language, question, followup
+):
+    state = make_state(language)
+    state.observe_user_text(question, language=language)
+    answer = state.guard_reply("", [])
+    assert state.restaurant["allergy_notice"][language] in answer
+    state.observe_user_text(followup, language=language)
+    assert state.guard_reply("", []) == answer
+    assert state._restaurant_dish == "salmon"
+    assert state._restaurant_question.topics == ("allergens",)
+    assert state.pending is None and not state.bookings
+
+
+@pytest.mark.parametrize(
+    "language,question,followup",
+    [
+        ("et", "Kas suuremaid gruppe võetakse vastu?", "Palun täpsusta"),
+        ("en", "Do you accept larger groups?", "Please tell me more"),
+        ("ru", "Вы принимаете большие группы?", "Можно подробнее"),
+    ],
+)
+def test_group_policy_detail_followup_keeps_staff_guidance(
+    make_state, language, question, followup
+):
+    state = make_state(language)
+    state.observe_user_text(question, language=language)
+    answer = state.guard_reply("", [])
+    assert state._restaurant_question.topics == ("groups",)
+    state.observe_user_text(followup, language=language)
+    assert state.guard_reply("", []) == answer
+    assert state._restaurant_question.topics == ("groups",)
+    assert state.pending is None and not state.bookings
+
+
+@pytest.mark.parametrize(
+    "language,diet_question,new_dish",
+    [
+        ("et", "Mida veganitele pakute?", "Aga lõhe?"),
+        ("en", "What is your vegan menu?", "And salmon?"),
+        ("ru", "Что есть в веганском меню?", "А лосось?"),
+    ],
+)
+def test_explicit_new_dish_replaces_previous_diet_filter(
+    make_state, language, diet_question, new_dish
+):
+    state = make_state(language)
+    state.observe_user_text(diet_question, language=language)
+    state.guard_reply("", [])
+    state.observe_user_text(new_dish, language=language)
+    answer = state.guard_reply("", [])
+    assert state.restaurant["menu"][1]["name"][language] in answer
+    assert state._restaurant_dish == "salmon" and state._restaurant_diet is None
+
+
+@pytest.mark.parametrize(
+    "language,question",
+    [
+        ("et", "Mis toitu soovitad piimaallergia korral?"),
+        ("en", "What food do you recommend for a milk allergy?"),
+        ("ru", "Какое блюдо порекомендуете при аллергии на молоко?"),
+    ],
+)
+def test_allergy_recommendation_keeps_staff_safety_guidance(
+    make_state, language, question
+):
+    state = make_state(language)
+    state.observe_user_text(question, language=language)
+    answer = state.guard_reply("", [])
+    assert state.restaurant["allergy_notice"][language] in answer
+    assert state.pending is None and not state.bookings
+
+
+def test_detail_followups_do_not_reuse_stale_or_other_language_topics(make_state):
+    state = make_state("et")
+    state.observe_user_text("Milline on menüü?", language="et")
+    state.guard_reply("", [])
+    state.observe_user_text("Please speak English", language="en")
+    assert state.language == "en"
+    state.observe_user_text("Tell me more", language="en")
+    assert state._restaurant_question is None
+    state.observe_user_text("Milline on menüü?", language="et")
+    state.guard_reply("", [])
+    state.observe_user_text("Tere", language="et")
+    state.observe_user_text("Räägi sellest lähemalt", language="et")
+    assert state._restaurant_question is None
+
+
+@pytest.mark.parametrize(
+    "language,preference,recommendation",
+    [
+        ("et", "Olen vegan", "Mida soovitad?"),
+        ("en", "I'm vegan", "What do you recommend?"),
+        ("ru", "Я веган", "Что посоветуете?"),
+    ],
+)
+def test_recommendation_follows_preference_in_previous_turn(
+    make_state, language, preference, recommendation
+):
+    state = make_state(language)
+    state.observe_user_text(preference, language=language)
+    state.guard_reply("", [])
+    state.observe_user_text(recommendation, language=language)
+    answer = state.guard_reply("", [])
+    assert state.restaurant["menu"][0]["name"][language] in answer
+    assert state.restaurant["menu"][1]["name"][language] not in answer
+    assert state.restaurant["menu"][2]["name"][language] not in answer
+    assert state._restaurant_diet == "vegan"
+
+
+@pytest.mark.parametrize(
+    "language,dish,new_preference",
+    [
+        ("et", "Kas teil lõhet on?", "Aga veganitele?"),
+        ("en", "Do you have salmon?", "And for vegans?"),
+        ("ru", "Есть лосось?", "А для веганов?"),
+    ],
+)
+def test_new_diet_request_clears_previously_named_dish(
+    make_state, language, dish, new_preference
+):
+    state = make_state(language)
+    state.observe_user_text(dish, language=language)
+    state.guard_reply("", [])
+    state.observe_user_text(new_preference, language=language)
+    answer = state.guard_reply("", [])
+    assert state.restaurant["menu"][0]["name"][language] in answer
+    assert state.restaurant["menu"][1]["name"][language] not in answer
+    assert state._restaurant_dish is None
+
+
+@pytest.mark.parametrize(
     "language,expected",
     [
         (

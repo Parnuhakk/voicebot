@@ -69,9 +69,9 @@ async page => {
   const bookingGate=new Promise(resolve=>{releaseBookings=resolve;});
   await page.route('**/api/bookings?**',async route=>{if(gatedBookings)await bookingGate;await route.continue();});
   await page.waitForFunction(()=>state.voiceCatalog);
-  assert.equal(await page.locator('#demo-voice option:not(:disabled)').count(), 3);
+  assert.equal(await page.locator('#demo-voice option:not(:disabled)').count(), 5);
   await chooseLanguage('et');
-  for (const profile of ['azure-male', 'azure-calm']) {
+  for (const profile of ['azure-male', 'azure-calm', 'azure-male-calm', 'azure-male-warm']) {
     await page.locator('#demo-voice').selectOption(profile);
     await page.locator('#demo-voice-preview').click();
     await page.waitForFunction(()=>!state.previewBusy && !document.getElementById('demo-audio').hidden);
@@ -79,8 +79,22 @@ async page => {
     assert.equal(requests.at(-1).body.voice, profile);
     assert.equal(await page.evaluate(()=>state.sessionId), null, 'audition created a conversation');
     await page.waitForFunction(()=>document.getElementById('demo-audio').duration > 0);
-    assert((await page.locator('#demo-voice-result').textContent()).includes(profile==='azure-male' ? 'Kert' : 'Anu'));
+    assert((await page.locator('#demo-voice-result').textContent()).includes(profile==='azure-calm' ? 'Anu' : 'Kert'));
   }
+  assert(await page.locator('#demo-voice option[value="azure-brian"]').isDisabled());
+  assert(await page.locator('#demo-voice option[value="azure-ryan"]').isDisabled());
+  await chooseLanguage('en');
+  assert.equal(await page.locator('#demo-voice option:not(:disabled)').count(), 7);
+  for (const [profile, name] of [['azure-male-calm','Davis'], ['azure-male-warm','Andrew'], ['azure-brian','Brian'], ['azure-ryan','Ryan']]) {
+    await page.locator('#demo-voice').selectOption(profile);
+    await page.locator('#demo-voice-preview').click();
+    await page.waitForFunction(()=>!state.previewBusy && !document.getElementById('demo-audio').hidden);
+    assert.equal(requests.at(-1).body.language, 'en');
+    assert((await page.locator('#demo-voice-result').textContent()).includes(name));
+  }
+  await chooseLanguage('et');
+  assert.equal(await page.locator('#demo-voice').inputValue(), 'azure');
+  await page.locator('#demo-voice').selectOption('azure-male-calm');
   await page.screenshot({path:'output/playwright/natural-voices-desktop.png',fullPage:true});
   await page.setViewportSize({width:390,height:844});
   assert(await page.locator('#demo-voice-preview').isVisible());
@@ -194,6 +208,22 @@ async page => {
     assert(temporalRecap && /4\s+(?:guests|külalist|inimesele|гостей)/.test(temporalRecap));
     assert(temporalRecap.includes({et:'18:00',en:'6:30 PM',ru:'18:30'}[language.code]));
     assert(await page.locator('#demo-recap-read').isVisible(), 'new booking recap is missing');
+    assert(temporalRecap.endsWith({et:'Kas teile sobib?',en:'Does that work for you?',ru:'Вам подходит?'}[language.code]));
+    await page.locator('#demo-recap-read').click();
+    const affirmative = {et:'Jah, super, see sobib mulle väga hästi!',en:'Absolutely, that works for me, thank you!',ru:'Да, всё отлично, спасибо большое!'}[language.code];
+    for (let index = 0; index < 2; index++) {
+      await page.locator('#demo-text').fill(affirmative);
+      await page.locator('#demo-send').click();
+      await page.waitForFunction(()=>!state.turnBusy && !state.readBusy);
+      if (!index) assert.equal(await page.locator('#demo-messages .booking-receipt[data-action="confirmed"]').count(),1);
+      assert.equal(await page.locator('#bookings .booking-recent').count(),1);
+    }
+    const naturalBooking = await page.evaluate(()=>state.latestBooking);
+    assert(naturalBooking && naturalBooking.date === await page.evaluate(()=>tallinnDay(2)));
+    assert.equal(await page.locator('#bookings .booking-recent').getAttribute('data-booking-id'),naturalBooking.id);
+    await page.locator('#demo-text').fill({et:'Jah, tühista.',en:'Yes, cancel.',ru:'Да, отмените.'}[language.code]);
+    await page.locator('#demo-send').click();
+    await page.waitForFunction(()=>!state.turnBusy);
     await page.locator('#demo-end').click();
     await page.waitForFunction(()=>!state.sessionId && !state.turnBusy);
     await page.locator('#reservation-time').fill('14:00');
@@ -238,13 +268,34 @@ async page => {
     await page.waitForFunction(()=>!reservation.sessionId && !reservation.busy);
     assert(!(await page.getByRole('radio', {name:'Eesti', exact:true}).isDisabled()));
   }
+  const send = async text => {await page.locator('#demo-text').fill(text);await page.locator('#demo-send').click();await page.waitForFunction(()=>!state.turnBusy);};
+  // First caller speech selects English despite the initial Estonian picker.
+  await chooseLanguage('et');
+  await page.locator('#demo-start').click();
+  await page.waitForFunction(()=>state.sessionId && !state.turnBusy);
+  for (const [text, expected] of [
+    ['Hi! I would like to book a table.', 'What date'],
+    ['Tomorrow', 'What time'],
+    ['At 2 pm', 'How many'],
+    ['Milline on menüü?', 'Vegetable soup'],
+  ]) {
+    await send(text);
+    assert.equal(await page.evaluate(()=>state.replyLanguage),'en');
+    assert((await page.locator('#demo-messages .message').last().textContent()).includes(expected));
+    assert.equal(await page.evaluate(()=>state.demoLanguage),'et');
+    assert.equal(await page.evaluate(()=>state.recap),null);
+  }
+  await send('Please speak Russian');
+  assert.equal(await page.evaluate(()=>state.replyLanguage),'ru');
+  assert((await page.locator('#demo-messages .message').last().textContent()).includes('Сколько вас будет'));
+  await page.locator('#demo-end').click();
+  await page.waitForFunction(()=>!state.sessionId && !state.turnBusy);
   // Real browser capture, filtering and 16k mono WAV encoding; recognition is a double.
   await chooseLanguage('en');
   await page.locator('#demo-start').click();
   await page.waitForFunction(()=>state.sessionId && !state.turnBusy);
   assert(await page.locator('#demo-voice').isDisabled(),'voice selection changed an active conversation');
   await page.evaluate(()=>{window.restaurantOriginalPlay=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=function(){return Promise.reject(new Error('fixture autoplay denied'));};});
-  const send = async text => {await page.locator('#demo-text').fill(text);await page.locator('#demo-send').click();await page.waitForFunction(()=>!state.turnBusy);};
   await send("I'd like to reserve a table");
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('What date'));
   const englishNamedDate = await page.evaluate(()=>{
@@ -269,7 +320,7 @@ async page => {
   const voiceReceipt=await page.evaluate(()=>state.recapDeliveryId);
   assert(voiceReceipt);
   await page.evaluate(()=>{state.page=2;document.getElementById('booking-date').value=tallinnDay();});
-  await send('Yes, confirm.');
+  await send('Yes, that works for me!');
   const confirmedVoice=requests.findLast(request=>request.body.recap_delivery_id);
   assert.equal(confirmedVoice.body.recap_delivery_id,voiceReceipt);
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('confirmed'));
@@ -347,7 +398,7 @@ async page => {
   await send('Забронируйте столик на ' + russianNamedDate + ' в 15:00 для четырёх гостей');
   assert(await page.locator('#demo-recap-read').isVisible());
   await page.locator('#demo-recap-read').click();
-  await send('Да, подтверждаю.');
+  await send('Да, всё отлично!');
   assert.equal(await page.evaluate(()=>state.latestBooking.date),await page.evaluate(()=>tallinnDay(1)));
   const russianBooking=await page.evaluate(()=>state.latestBooking.id);
   await waitBooking(russianBooking,'подтверждено');
