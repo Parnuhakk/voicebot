@@ -14,7 +14,6 @@ SSML tags other than break/phoneme count as billable — keep SSML lean.
 
 from __future__ import annotations
 
-import re
 import time
 from dataclasses import replace
 
@@ -22,6 +21,7 @@ import httpx
 from xml.sax.saxutils import quoteattr
 
 from .speech_delivery import SpeechDelivery, is_recap, speech_markup
+from .azure_voices import validated_voice
 
 from .errors import (
     ProviderError,
@@ -40,9 +40,23 @@ from .modern_tts import (
 
 TOKEN_TTL_SECONDS = 9 * 60
 
-# Native voices for each language; a lower pitch is not a substitute for a male
-# voice. Profiles share the authenticated client without mutating its settings.
+# Profiles share the authenticated client without mutating its settings.
+# The multilingual voices explicitly support Russian; locale must be selected
+# with <lang>, rather than inferred from the voice's English name.
+CONVERSATIONAL_PROFILES = frozenset({
+    "azure-conversational", "azure-conversational-male",
+})
 AZURE_PRESETS = {
+    "azure-conversational": {
+        "et": ("et-EE-AnuNeural", "et-EE"),
+        "en": ("en-US-EmmaMultilingualNeural", "en-US"),
+        "ru": ("en-US-EmmaMultilingualNeural", "ru-RU"),
+    },
+    "azure-conversational-male": {
+        "et": ("et-EE-KertNeural", "et-EE"),
+        "en": ("en-US-AndrewMultilingualNeural", "en-US"),
+        "ru": ("en-US-AndrewMultilingualNeural", "ru-RU"),
+    },
     "azure-male": {
         "et": ("et-EE-KertNeural", "et-EE"),
         "en": ("en-US-GuyNeural", "en-US"),
@@ -66,16 +80,6 @@ AZURE_PRESETS = {
     "azure-brian": {"en": ("en-US-BrianNeural", "en-US")},
     "azure-ryan": {"en": ("en-GB-RyanNeural", "en-GB")},
 }
-
-
-def validated_voice(voice, lang):
-    voice = voice.strip() if isinstance(voice, str) else ""
-    lang = lang.strip() if isinstance(lang, str) else ""
-    if (
-        lang not in {"et-EE", "ru-RU"} and not re.fullmatch(r"en-[A-Z]{2}", lang)
-    ) or not re.fullmatch(re.escape(lang) + r"-[A-Za-z0-9]+Neural", voice):
-        raise ValueError("supported speech voice required")
-    return voice, lang
 
 
 class _LanguageSpeaker:
@@ -107,7 +111,9 @@ class _ProfileSpeaker:
         if language not in AZURE_PRESETS[self.profile]:
             raise ValueError("unsupported speech language")
         delivery = self.client._delivery
-        if self.profile in {"azure-calm", "azure-male-calm"} and delivery.mode == "natural":
+        if self.profile in CONVERSATIONAL_PROFILES:
+            delivery = replace(delivery, native_timing=True)
+        elif self.profile in {"azure-calm", "azure-male-calm"} and delivery.mode == "natural":
             delivery = replace(
                 delivery,
                 rate=max(0.85, delivery.rate - 0.04),
