@@ -10,7 +10,8 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from typing import Any
 
-from .languages import CONSENT, spoken_date, spoken_time
+from .languages import CONSENT, english_clarification, spoken_date, spoken_time
+from .restaurant_times import parse_spoken_time
 from .restaurant_data import restaurant_demo_profile
 from .restaurant_answers import (
     GUIDANCE,
@@ -28,6 +29,8 @@ COPY: dict[str, dict[str, str]] = {
         "greeting": "Tere! Olen restorani AI-abiline. Päris lauda demo ei broneeri. Kuidas saan aidata?",
         "date": "Mis kuupäevaks soovid lauda?",
         "time": "Mis kell soovid tulla?",
+        "ambiguous_time": "Kas mõtled hommikut või õhtut? Võid öelda ka aja 24 tunni kujul.",
+        "invalid_time": "Mis täpne kellaaeg sobib? Näiteks kell 18.30.",
         "party": "Mitu teid tuleb, koos lastega?",
         "unavailable": "Soovitud ajal sobivat lauda ei ole. Kas soovid teist kellaaega või kuupäeva?",
         "unknown": "Ma ei saanud kinnitust, kas broneering salvestus. Kontrolli saidi broneeringuid enne uuesti proovimist.",
@@ -49,6 +52,8 @@ COPY: dict[str, dict[str, str]] = {
         "greeting": "Hello! This is an AI restaurant demo. No real table is booked here. How can I help?",
         "date": "What date would you like a table?",
         "time": "What time would you like to come?",
+        "ambiguous_time": "Do you mean AM or PM? You can also give the time in 24-hour format.",
+        "invalid_time": "What exact time works for you? For example, 6:30 PM.",
         "party": "How many of you are coming, including children?",
         "unavailable": "There is no suitable table at that time. Would you like another time or date?",
         "unknown": "I couldn't check whether the reservation was saved. Please check the reservations on the website before trying again.",
@@ -70,6 +75,8 @@ COPY: dict[str, dict[str, str]] = {
         "greeting": "Здравствуйте! Я ИИ-помощник деморесторана. Настоящий столик здесь не бронируется. Чем помочь?",
         "date": "На какую дату нужен столик?",
         "time": "Во сколько хотите прийти?",
+        "ambiguous_time": "Утром или вечером? Можно назвать время в 24-часовом формате.",
+        "invalid_time": "Какое точное время вам подходит? Например, 18:30.",
         "party": "Сколько вас будет, вместе с детьми?",
         "unavailable": "На это время подходящего столика нет. Вы хотите другое время или дату?",
         "unknown": "Не удалось проверить, сохранилась ли бронь. Посмотрите бронирования на сайте, прежде чем пробовать снова.",
@@ -298,33 +305,27 @@ def parse_restaurant_request(text, previous=None, *, now=None):
         inquiry["date"] = (
             f"{local_date[3]}-{int(local_date[2]):02d}-{int(local_date[1]):02d}"
         )
-    clock = re.search(
-        r"\b(\d{1,2})[:.](\d{2})(?:\s*(a\.?m\.?|p\.?m\.?))?(?!\d|\.\d)", text
+    requested_time = parse_spoken_time(
+        text, pending=inquiry.get("time_candidates"),
+        allow_bare="date" in inquiry and "start_time" not in inquiry,
     )
-    if clock and not (
-        local_date and local_date.start() <= clock.start() < local_date.end()
-    ):
-        hour, minute = int(clock[1]), int(clock[2])
-        suffix = (clock[3] or "").replace(".", "")
-        if suffix and 1 <= hour <= 12:
-            hour = hour % 12 + (12 if suffix == "pm" else 0)
-        if 0 <= hour <= 23 and 0 <= minute <= 59:
-            inquiry["start_time"] = f"{hour:02d}:{minute:02d}"
-    else:
-        hour_only = re.search(
-            r"\b(?:at|kell|в)\s+(\d{1,2})\s*(am|pm|a\.m\.|p\.m\.)?\b", text
-        )
-        if hour_only:
-            hour = int(hour_only[1])
-            suffix = (hour_only[2] or "").replace(".", "")
-            if suffix and 1 <= hour <= 12:
-                hour = hour % 12 + (12 if suffix == "pm" else 0)
-            # English bare 1..12 remains ambiguous; shared clarification asks.
-            if 0 <= hour <= 23 and (suffix or hour > 12 or "at" not in hour_only[0]):
-                inquiry["start_time"] = f"{hour:02d}:00"
+    if requested_time:
+        inquiry.pop("start_time", None)
+        inquiry.pop("time_candidates", None)
+        inquiry.pop("time_invalid", None)
+        if requested_time.value:
+            inquiry["start_time"] = requested_time.value
+        elif requested_time.candidates:
+            inquiry["time_candidates"] = requested_time.candidates
+        else:
+            inquiry["time_invalid"] = True
     words = "|".join(map(re.escape, NUMBER_WORDS))
     number = r"(\d{1,2}|" + words + r")"
     party = re.search(r"\b(?:for|на|для|kokku|total)\s+" + number + r"\b", text)
+    if party and requested_time and requested_time.span:
+        low, high = requested_time.span
+        if party.start() < high and party.end() > low:
+            party = None
     party = party or re.search(
         r"\b"
         + number
@@ -338,9 +339,9 @@ def parse_restaurant_request(text, previous=None, *, now=None):
         inquiry["party_size"] = (
             int(party[1]) if party[1].isdigit() else NUMBER_WORDS[party[1]]
         )
-    elif text.strip(".!?") in NUMBER_WORDS and "party_size" not in inquiry:
+    elif not requested_time and text.strip(".!?") in NUMBER_WORDS and "party_size" not in inquiry:
         inquiry["party_size"] = NUMBER_WORDS[text.strip(".!?")]
-    elif re.fullmatch(r"\d{1,2}", text) and "party_size" not in inquiry:
+    elif not requested_time and re.fullmatch(r"\d{1,2}", text) and "party_size" not in inquiry:
         inquiry["party_size"] = int(text)
     # A component count is not the total. Include children explicitly rather
     # than silently reserving for only the first number in the sentence.
@@ -427,6 +428,7 @@ class RestaurantCallTools(CallTools):
             "You help with dining table reservations, approved menu information, opening/kitchen hours and restaurant policies. "
             "Do not offer hotel rooms, spa treatments, food ordering, payments or an unimplemented call transfer/callback. "
             "Before planning a table ask for date, exact Tallinn local time and total party size INCLUDING children. "
+            "Clarify morning/evening for an ambiguous hour. Retain parsed date and party size while asking; never infer AM/PM from opening hours. "
             "Never assume a party size, select a different requested time, or confuse kitchen hours with table availability. "
             "Use plan_restaurant_reservation for the requested details; the backend assigns a table with sufficient capacity. "
             "Read the exact server recap. A reservation is confirmed only after delivered recap, a subsequent explicit caller confirmation, and backend success. "
@@ -521,6 +523,19 @@ class RestaurantCallTools(CallTools):
             self._restaurant_inquiry = parse_restaurant_request(
                 text, self._restaurant_inquiry
             )
+            # Restaurant clock parsing owns AM/PM across all three languages.
+            if self.clarification == "ambiguous_time":
+                self.clarification = None
+            elif self.clarification == "ambiguous_date":
+                # The shared English date guard can mistake 'at 7.05' for a date.
+                without_clock = re.sub(r"\bat\s+\d{1,2}\.\d{2}(?![\d.])", "", text)
+                self.clarification = english_clarification(without_clock)
+            inquiry = self._restaurant_inquiry or {}
+            if self.clarification is None:
+                if inquiry.get("time_candidates"):
+                    self.clarification = "ambiguous_time"
+                elif inquiry.get("time_invalid"):
+                    self.clarification = "invalid_time"
 
     def inquiry_reply(self) -> str | None:
         if (
@@ -534,6 +549,8 @@ class RestaurantCallTools(CallTools):
             return None
         if self.conversation.intent:
             return None
+        if self.clarification in {"ambiguous_time", "invalid_time"}:
+            return COPY[self.language][self.clarification]
         if self._restaurant_focus:
             return self.question_reply()
         inquiry = self._restaurant_inquiry
@@ -834,11 +851,11 @@ class RestaurantCallTools(CallTools):
                 self._restaurant_diet,
             )
         elif any(
-            reply == COPY[self.language][key] for key in ("date", "time", "party")
+            reply == COPY[self.language][key] for key in ("date", "time", "party", "ambiguous_time", "invalid_time")
         ):
             key = next(
                 key
-                for key in ("date", "time", "party")
+                for key in ("date", "time", "party", "ambiguous_time", "invalid_time")
                 if reply == COPY[self.language][key]
             )
             self._restaurant_last_response = ("question", key)
@@ -869,6 +886,8 @@ class RestaurantCallTools(CallTools):
         ):
             self._unknown_mutation()
             return copybook["unknown"]
+        if not self.unsupported_language and self.clarification in {"ambiguous_time", "invalid_time"}:
+            return copybook[self.clarification]
         if self.clarification or self.unsupported_language:
             return super().guard_reply(text, results)
         if errors:
