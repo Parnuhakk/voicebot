@@ -210,7 +210,14 @@ async page => {
   const send = async text => {await page.locator('#demo-text').fill(text);await page.locator('#demo-send').click();await page.waitForFunction(()=>!state.turnBusy);};
   await send("I'd like to reserve a table");
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('What date'));
-  await send('tomorrow');
+  const englishNamedDate = await page.evaluate(()=>{
+    const date = new Date(tallinnDay(1) + 'T12:00:00+03:00');
+    const words = ['first','second','third','fourth','fifth','sixth','seventh','eighth','ninth','tenth','eleventh','twelfth','thirteenth','fourteenth','fifteenth','sixteenth','seventeenth','eighteenth','nineteenth','twentieth','twenty-first','twenty-second','twenty-third','twenty-fourth','twenty-fifth','twenty-sixth','twenty-seventh','twenty-eighth','twenty-ninth','thirtieth','thirty-first'];
+    const day = Number(tallinnDay(1).slice(-2));
+    const month = new Intl.DateTimeFormat('en-US',{month:'long',timeZone:'Europe/Tallinn'}).format(date);
+    return 'the ' + words[day-1] + ' of ' + month;
+  });
+  await send(englishNamedDate);
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('What time'));
   await send('at 16:00');
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('How many'));
@@ -267,6 +274,30 @@ async page => {
   await page.evaluate(async()=>{restaurantAudio.source.stop();await restaurantAudio.context.close();});
   await page.locator('#demo-end').click();
   await page.waitForFunction(()=>!state.sessionId && !state.turnBusy);
+  // Russian mixed cases use the same real routes and visible SQLite ledger.
+  await chooseLanguage('ru');
+  await page.locator('#demo-start').click();
+  await page.waitForFunction(()=>state.sessionId && !state.turnBusy);
+  await page.evaluate(()=>{HTMLMediaElement.prototype.play=function(){return Promise.reject(new Error('fixture autoplay denied'));};});
+  const russianNamedDate = await page.evaluate(()=>{
+    const date = new Date(tallinnDay(1) + 'T12:00:00+03:00');
+    const words = ['первому','второму','третьему','четвёртому','пятому','шестому','седьмому','восьмому','девятому','десятому','одиннадцатому','двенадцатому','тринадцатому','четырнадцатому','пятнадцатому','шестнадцатому','семнадцатому','восемнадцатому','девятнадцатому','двадцатому','двадцать первому','двадцать второму','двадцать третьему','двадцать четвёртому','двадцать пятому','двадцать шестому','двадцать седьмому','двадцать восьмому','двадцать девятому','тридцатому','тридцать первому'];
+    const day = Number(tallinnDay(1).slice(-2));
+    const month = new Intl.DateTimeFormat('ru-RU',{month:'long',timeZone:'Europe/Tallinn'}).format(date);
+    return words[day-1] + ' ' + month;
+  });
+  await send('Забронируйте столик на ' + russianNamedDate + ' в 15:00 для четырёх гостей');
+  assert(await page.locator('#demo-recap-read').isVisible());
+  await page.locator('#demo-recap-read').click();
+  await send('Да, подтверждаю.');
+  assert.equal(await page.evaluate(()=>state.latestBooking.date),await page.evaluate(()=>tallinnDay(1)));
+  assert.equal(await page.locator('#bookings .booking-recent').getAttribute('data-booking-id'),await page.evaluate(()=>state.latestBooking.id));
+  assert((await page.locator('#demo-messages .message').last().textContent()).includes('подтверждено'));
+  await send('Да, отмените.');
+  assert((await page.locator('#demo-messages .message').last().textContent()).includes('отменено'));
+  await page.locator('#demo-end').click();
+  await page.waitForFunction(()=>!state.sessionId && !state.turnBusy);
+  await page.evaluate(()=>{HTMLMediaElement.prototype.play=restaurantOriginalPlay;});
   // The Estonian ASR spelling uses the actual confirmation route and becomes
   // visible on the website. No external speech provider is used in this fixture.
   await chooseLanguage('et');
@@ -348,5 +379,5 @@ async page => {
   assert.equal(await page.locator('html').evaluate(element=>getComputedStyle(element).backgroundColor),'rgb(245, 249, 246)','public restaurant palette changed');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'public mobile horizontal overflow');
   assert.deepEqual(errors,[]);
-  return {languages:3,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,publicDemoUnchanged:true,pageErrors:errors.length};
+  return {languages:3,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,englishSpokenDates:true,russianMixedDateCases:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,publicDemoUnchanged:true,pageErrors:errors.length};
 }

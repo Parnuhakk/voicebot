@@ -15,6 +15,7 @@ from .languages import CONSENT, LANGUAGE_POLICY, english_clarification, spoken_d
 from .restaurant_times import parse_spoken_time
 from .restaurant_data import restaurant_demo_profile
 from .restaurant_dates import ESTONIAN_COUNTS, resolve_restaurant_date
+from .restaurant_date_vocabulary import RUSSIAN_COUNTS
 from .restaurant_answers import (
     GUIDANCE,
     INFORMATION_TOPICS,
@@ -188,6 +189,9 @@ NUMBER_WORDS = {
     "пять": 5,
     "шесть": 6,
     **ESTONIAN_COUNTS,
+    **RUSSIAN_COUNTS,
+    "nine": 9,
+    "ten": 10,
 }
 
 
