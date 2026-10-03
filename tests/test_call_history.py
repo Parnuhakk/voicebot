@@ -267,7 +267,7 @@ def test_canonical_response_keeps_session_history_and_private_call_metadata(
     assert result["warnings"] == []
     if input_kind == "recognized":
         client.app.state.stack["stt"].transcribe.assert_called_once_with(
-            b"RIFF-fixture", language="auto" if language is None else "et"
+            b"RIFF-fixture", language="auto"
         )
     assert result["language"] == "et"
     client.app.state.stack["llm_primary"].chat.assert_not_called()
