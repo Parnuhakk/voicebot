@@ -22,5 +22,6 @@ Küsimuste valija eristab lastele mõeldud tegevusi, lastemenüüd, täpsustamis
 - Chrome'i brauserikontroll: laste tegevuste ja lastemenüü küsimused kõigis kolmes keeles; lisaks broneerimine, kinnitus, tühistamine, mikrofoni fixture, mobiil ja töölaud. **0 lehe viga, 0 välist päringut**.
 - `flake8.cmd --select E4,E7,E9,F`: läbitud.
 - Uue mooduli `basedpyright.cmd`: **0 viga, 0 hoiatust**.
+- Pärast põhiharu paralleelsete hääle- ja väljalaskemuudatuste liitmist: **466 läbitud, 1 vahele jäetud**; Chrome'i täielik restoranikontroll uuesti läbitud.
 
 Kõne- ja brauserikontrollid kasutavad kohalikke teenusepakkujate fixturesid. Need ei tõesta tegeliku telefonikõne helituvastust, tasulise kõnesünteesi kvaliteeti ega tootmises töötava telefoniprotsessi versiooni. Näidisrestorani broneering ei ole päris restorani tellimus.
