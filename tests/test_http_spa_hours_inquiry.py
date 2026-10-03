@@ -2,6 +2,7 @@
 
 import base64
 from unittest.mock import Mock
+from xml.etree import ElementTree
 
 import httpx
 import pytest
@@ -74,8 +75,18 @@ def test_spa_hours_are_rendered_from_working_plan_without_model(client, audio_in
     assert backend.calls == [("catalogue", {})]
     assert base64.b64decode(result["audio_b64"]) == b"fixture-audio"
     assert len(speech_requests) == 1
-    assert "9 kuni kell 17" in speech_requests[0]
-    assert "12 kuni kell 13" in speech_requests[0]
+    speech = ElementTree.fromstring(speech_requests[0])
+    source_text = "".join(speech.itertext())
+    assert "9 kuni kell 17" in source_text
+    assert "12 kuni kell 13" in source_text
+    pronunciations = {
+        node.text: node.attrib["alias"]
+        for node in speech.iter("{http://www.w3.org/2001/10/synthesis}sub")
+    }
+    assert pronunciations.items() >= {
+        "kell 17": "kell seitseteist",
+        "kell 13": "kell kolmteist",
+    }.items()
     assert result["input_status"] == ("recognized" if audio_input else "typed")
 
 

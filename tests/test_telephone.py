@@ -431,9 +431,10 @@ def test_decline_or_ambiguous_final_transcript_invalidates_approval(text):
         assert (await prepared(state)).get("ok")
         state.observe_user_text(CONSENT)
         state.observe_user_text(text)
+        expected_error = "clarification_required" if not text.strip() else "consent_required"
         assert await state.dispatch(
             "confirm_slot_booking", {"hold_id": "owned-hold"}
-        ) == {"error": "consent_required"}
+        ) == {"error": expected_error}
         # An old recap cannot become approved by a later replayed affirmative.
         state.observe_user_text(CONSENT)
         assert await state.dispatch(

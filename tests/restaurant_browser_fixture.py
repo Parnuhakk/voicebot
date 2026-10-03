@@ -8,11 +8,18 @@ from unittest.mock import patch
 
 from app.server import create_app as server_app
 from app.providers.azure_tts import AzureTtsClient
+from app.providers.transcription import Transcription
 
 _storage = tempfile.TemporaryDirectory(prefix="voicebot-restaurant-browser-")
 
 
 class FixtureSpeech:
+    def transcribe_with_metadata(self, audio, *, language=None):
+        if audio == b"fixture-unsupported-recovery":
+            return Transcription("private-rejected-language-fixture", None)
+        selected = language if language in {"et", "en", "ru"} else "en"
+        return Transcription(self.transcribe(audio, language=language), selected)
+
     def transcribe(self, audio, *, language=None):
         return {"et": "Milline on menüü?", "ru": "Что есть в меню?"}.get(
             language, "What is on the menu?"
@@ -51,6 +58,7 @@ def create_app():
         callslog.get_default()
     os.environ["OPERATOR_TOKEN"] = "restaurant-fixture-operator"
     speech = FixtureSpeech()
+
     def respond(request):
         return httpx.Response(
             200, content=b"fixture-token" if request.url.path.endswith("issueToken")
