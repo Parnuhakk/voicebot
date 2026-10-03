@@ -10,7 +10,7 @@ import pytest
 from app.booking.restaurant import RestaurantAdapter
 from app.booking_response import trusted_booking_response
 from app.business import restaurant_dispatcher
-from app.languages import AFFIRMATIONS_ET, CONSENT, select_language
+from app.languages import AFFIRMATIONS_ET, CONSENT, ENGLISH_INVITATION, select_language
 from app.restaurant_call import COPY, parse_restaurant_request, restaurant_spoken_date
 from app.restaurant_data import load_restaurant_data
 from app.call_factory import make_call_tools
@@ -708,5 +708,28 @@ def test_superseded_prepare_cannot_restore_an_old_recap(make_state):
         assert result["error"] == "turn_superseded"
         assert state.pending is None
         assert state.render_recap() is None
+
+    asyncio.run(run())
+
+
+def test_auto_native_english_invitation_survives_restaurant_guard(make_state):
+    state = make_state("et")
+    assert state.guard_reply(ENGLISH_INVITATION, []) == ENGLISH_INVITATION
+    assert state.language == "et"
+    assert state.pending is None and not state.bookings
+    assert (
+        state.guard_reply(ENGLISH_INVITATION + " Booking confirmed.", [])
+        == COPY["et"]["domain"]
+    )
+
+
+def test_english_invitation_never_supersedes_an_owned_recap(make_state):
+    async def run():
+        state = make_state("et")
+        await prepare(state)
+        recap = state.render_recap()
+        assert state.guard_reply(ENGLISH_INVITATION, []) == recap
+        assert not state.pending["delivery"] and not state.pending["approved"]
+        assert not state.bookings
 
     asyncio.run(run())

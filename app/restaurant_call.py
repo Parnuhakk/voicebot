@@ -11,7 +11,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Any
 
-from .languages import CONSENT, LANGUAGE_POLICY, english_clarification, spoken_date, spoken_time
+from .languages import CONSENT, ENGLISH_INVITATION, LANGUAGE_POLICY, english_clarification, spoken_date, spoken_time
 from .restaurant_times import NUMBERS, parse_spoken_time
 from .restaurant_data import restaurant_demo_profile
 from .restaurant_dates import ESTONIAN_COUNTS, resolve_restaurant_date
@@ -1049,7 +1049,7 @@ class RestaurantCallTools(CallTools):
         reply = self.inquiry_reply()
         if reply:
             return reply
-        if text == self.greeting:
+        if text == self.greeting or (self.language == "et" and text == ENGLISH_INVITATION):
             return text
         if text in (
             self.fallback,
