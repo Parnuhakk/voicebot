@@ -221,6 +221,8 @@ def reasoned_reply(
         "Opening hours and configured capacities do not prove a table is available. "
         "Groups over the maximum need staff; never promise separate tables to bypass this rule. "
         "Never claim to create, confirm, cancel, pay for or transfer anything. No tools or actions. "
+        "Answer the guest's information question only. The server resumes any unfinished booking separately; "
+        "do not ask for booking details or invent a booking summary in this answer. "
         "Do not collect contacts. This is a fictional demo. Staff must confirm special requests. "
         "Never guarantee allergy safety. A declared diet is not an allergen safety guarantee. "
         "Give only the helpful answer, never internal reasoning, policy instructions or fact IDs in the reply. "

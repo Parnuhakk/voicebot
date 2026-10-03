@@ -104,6 +104,24 @@ again, with zero uncaught JavaScript errors and zero external requests. The
 GitHub PR's Linux regression and actual shared-image build/fingerprint jobs also
 pass; that CI result is not private speech or carrier acceptance.
 
+Published `c48b4676` adds booking side questions and compact-clock clarification.
+The normal integration preserves the same owned hold and expiry while replacing
+the proposal identity and clearing delivery/approval after a question. Six
+capability tests were updated from the superseded discard-hold assumption to
+assert exact disclosures, same owned hold/expiry, revoked consent and refusal of
+confirmation. Three new failing-first ET/EN/RU HTTP cases exposed a duplicated
+notice when the same capability was asked again. The recap now omits only
+canonical notices already contained in the trusted side answer; the full answer
+and recap still define the new receipt. All three reject the older receipt.
+
+Fresh combined checks against this integration: **11,738 passed, 36 subtests,
+4 private-backend opt-in skips**, two warnings, 138.85 seconds (basetemp
+`/tmp/opencode/restaurant-recovery-c48-final`). All nine Chromium scenarios pass,
+including twelve booking-side-question turns, with zero JavaScript errors or
+external requests. Focused capability/interruptions/reasoning/time checks:
+308 passed. Independent review of this overlapping merge is pending; earlier
+approval does not silently authorize a changed consent integration.
+
 All nine committed local browser scenarios pass with Chromium 153.0.8010.12,
 zero uncaught JavaScript errors and zero external requests. These cover the
 operator layout, rollback fixtures, English controls, microphone races, real

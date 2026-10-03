@@ -90,10 +90,20 @@ def test_capability_question_cannot_authorize_a_delivered_recap(
     async def run():
         state = make_state(language)
         proposal = await prepare(state)
+        previous_pending = state.pending
+        recap = state.render_recap()
         assert state.mark_recap_delivered(proposal["hold_id"])
         state.observe_user_text(question, language=language)
-        assert trusted_booking_response(state) == {"content": answer}
-        assert not state.pending and not state.bookings
+        # Published side-question handling retains the owned hold, not consent.
+        assert trusted_booking_response(state) is None
+        assert state.guard_reply("untrusted", []) == (
+            answer + " " + COPY[language]["resume_booking"] + " " + recap
+        )
+        assert state.pending is not previous_pending
+        assert state.pending["hold_id"] == proposal["hold_id"]
+        assert state.pending["expires_at"] == previous_pending["expires_at"]
+        assert not state.pending["delivery"] and not state.pending["approved"]
+        assert not state.bookings
         assert (
             await state.dispatch(
                 "confirm_slot_booking", {"hold_id": proposal["hold_id"]}
@@ -332,6 +342,48 @@ def test_mixed_disclosure_survives_detail_followups_and_recap_receipt(client):
     assert prepared["reply"].startswith(CASES[1][2]) and prepared["recap_delivery_id"]
     assert state.pending and not state.bookings
     assert state.render_recap() == prepared["reply"]
+
+
+@pytest.mark.parametrize("language,question,verb,details", MIXED)
+def test_mixed_capability_side_question_discloses_once_and_revokes_old_receipt(
+    client, language, question, verb, details
+):
+    from app.languages import CONSENT
+    from tests.test_restaurant_http import turn
+
+    session = start(client, language)["session_id"]
+    initial = turn(client, session, f"{question} {verb} {details}.", language=language)
+    state = client.app.state.demo_sessions.sessions[session].tools
+    previous = state.pending
+    held = set(state.holds)
+    reply = turn(
+        client,
+        session,
+        question,
+        language=language,
+        receipt=initial["recap_delivery_id"],
+    )
+    disclosure = next(case[2] for case in CASES if case[0] == language)
+    assert reply["reply"].startswith(disclosure + " ")
+    assert reply["reply"].count(disclosure) == 1
+    assert reply["reply"] == client.provider.spoken[-1]
+    assert reply["recap_delivery_id"] != initial["recap_delivery_id"]
+    assert state.pending is not previous and set(state.holds) == held
+    assert state.pending["hold_id"] == previous["hold_id"]
+    assert state.pending["expires_at"] == previous["expires_at"]
+    assert not state.pending["approved"] and not state.pending["delivery"]
+    assert reply["booking_changes"] == [] and not state.bookings
+    stale = client.post(
+        "/api/turn",
+        headers=AUTH,
+        json={
+            "session_id": session,
+            "language": language,
+            "text": CONSENT[language],
+            "recap_delivery_id": initial["recap_delivery_id"],
+        },
+    )
+    assert stale.status_code == 409 and not state.bookings
 
 
 @pytest.mark.parametrize(

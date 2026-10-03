@@ -43,6 +43,11 @@ answers cannot invoke tools or establish booking consent. The separate native
 telephone worker continues to use reviewed restaurant answers. Optional external
 voice dialogue profiles are unchanged.
 
+Information questions while collecting a booking use generated wording with
+the server's next missing prompt appended. Questions during a prepared summary
+use approved venue wording followed by a fresh reading of the same owned
+summary. See [questions during a booking](booking-side-questions.md).
+
 ## Operation and fallback
 
 `VOICEBOT_RESTAURANT_REASONING` defaults to `1`. Set it to `0` and restart the web
