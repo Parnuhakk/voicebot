@@ -74,6 +74,10 @@ def test_actual_catalog_matches_browser_envelope_and_bounds_endpointing(
         "cartesia",
         "azure-male",
         "azure-calm",
+        "azure-male-calm",
+        "azure-male-warm",
+        "azure-brian",
+        "azure-ryan",
     ]
     assert data["voices"][0]["available"] is True
     assert all(not row["available"] for row in data["voices"][1:])

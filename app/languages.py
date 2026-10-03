@@ -13,6 +13,10 @@ SUPPORTED_LANGUAGE_PROMPT = WRITE_LANGUAGE_PROMPT
 LANGUAGE_POLICY = (
     "Only Estonian (et), Russian (ru) and English (en) are supported. "
     "Use the server-selected language for reasoning and replies. "
+    "The first meaningful supported caller utterance selects the conversation language. "
+    "Keep that language for every subsequent reply and interpret short answers in it; "
+    "names, numbers, borrowed words and changing speech-recognition language tags do not switch it. "
+    "Only an explicit caller request to speak another supported language can change it. "
     "Do not translate or fulfil requests spoken in any other language, including Finnish. "
     "On the first unclear input, ask the caller to repeat their answer. "
     "After a second consecutive unclear input, ask them to type their answer "
@@ -197,9 +201,9 @@ def requested_language(text: object) -> str | None:
         return None
     text = " ".join(text.casefold().strip(' .!?"“”').replace(",", " ").split())
     patterns = {
-        "ru": r"(?:russian(?: please)?|(?:please )?(?:speak|answer|continue)(?: to me)? in russian|(?:can|could) (?:we|you) (?:speak|continue)(?: to me)? (?:in )?russian(?: please)?|(?:please )?use russian|(?:palun )?(?:räägi|vastake|vasta|jätka)(?: palun)? vene keeles|(?:palun )?vene keeles|(?:пожалуйста )?(?:говорите|говори|отвечайте|отвечай|продолжайте|продолжай) (?:по-русски|на русском(?: языке)?)(?: пожалуйста)?|(?:по-русски|на русском(?: языке)?|русский)(?: пожалуйста)?)",
-        "en": r"(?:english(?: please)?|(?:please )?(?:speak|answer|continue)(?: to me)? in english|(?:can|could) (?:we|you) (?:speak|continue)(?: to me)? (?:in )?english(?: please)?|(?:please )?use english|(?:palun )?(?:räägi|vastake|vasta|jätka)(?: palun)? inglise keeles|(?:palun )?inglise keeles)",
-        "et": r"(?:estonian(?: please)?|(?:please )?(?:speak|answer|continue)(?: to me)? in estonian|(?:can|could) (?:we|you) (?:speak|continue)(?: to me)? (?:in )?estonian(?: please)?|(?:please )?use estonian|(?:palun )?(?:räägi|vastake|vasta|jätka)(?: palun)? eesti keeles|(?:palun )?eesti keeles)",
+        "ru": r"(?:russian(?: please)?|(?:please )?(?:speak|answer|continue)(?: to me)? (?:in )?russian|(?:can|could) (?:we|you) (?:speak|continue)(?: to me)? (?:in )?russian(?: please)?|(?:please )?use russian|(?:palun )?(?:räägi|vastake|vasta|jätka)(?: palun)? vene keeles|(?:palun )?vene keeles|(?:пожалуйста )?(?:говорите|говори|отвечайте|отвечай|продолжайте|продолжай) (?:по-русски|на русском(?: языке)?)(?: пожалуйста)?|(?:по-русски|на русском(?: языке)?|русский)(?: пожалуйста)?)",
+        "en": r"(?:english(?: please)?|(?:please )?(?:speak|answer|continue)(?: to me)? (?:in )?english|(?:can|could) (?:we|you) (?:speak|continue)(?: to me)? (?:in )?english(?: please)?|(?:please )?use english|(?:palun )?(?:räägi|vastake|vasta|jätka)(?: palun)? inglise keeles|(?:palun )?inglise keeles)",
+        "et": r"(?:estonian(?: please)?|(?:please )?(?:speak|answer|continue)(?: to me)? (?:in )?estonian|(?:can|could) (?:we|you) (?:speak|continue)(?: to me)? (?:in )?estonian(?: please)?|(?:please )?use estonian|(?:palun )?(?:räägi|vastake|vasta|jätka)(?: palun)? eesti keeles|(?:palun )?eesti keeles)",
     }
     return next(
         (lang for lang, pattern in patterns.items() if re.fullmatch(pattern, text)),
@@ -249,7 +253,7 @@ def select_language(text: str, detected: object, current: str) -> str:
         return "et"
     if re.search(
         r"\b(?:hello|hi|hey|please|where|when|what|how|book|booking|want|need|reserve|thank|"
-        r"tomorrow|today|tonight|thanks|goodbye|bye)\b|"
+        r"tomorrow|today|tonight|thanks|goodbye|bye|repeat|understand|confusing)\b|"
         r"\b(?:i|we|you|there|it|that)\s+(?:would|will|have|are|is|can|like)\b|"
         r"\b(?:i['’]d|we['’]d|i['’]m|we['’]re|can i|can you|can we|do you|does the|"
         r"is there|is the|is this|is that|is it|are you|are there|does it|does your|could i|could you|"

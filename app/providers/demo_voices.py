@@ -26,6 +26,10 @@ PROFILES = {
     "cartesia": ("Cartesia Sonic 3.6", ("en", "ru"), True),
     "azure-male": ("Kert / Guy / Dmitry", ("et", "en", "ru"), True),
     "azure-calm": ("Anu / Jenny / Svetlana (calm)", ("et", "en", "ru"), True),
+    "azure-male-calm": ("Kert (calm) / Davis / Dmitry (calm)", ("et", "en", "ru"), True),
+    "azure-male-warm": ("Kert (lively) / Andrew / Dmitry (lively)", ("et", "en", "ru"), True),
+    "azure-brian": ("Brian (American English)", ("en",), True),
+    "azure-ryan": ("Ryan (British English)", ("en",), True),
 }
 
 

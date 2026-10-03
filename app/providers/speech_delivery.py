@@ -170,8 +170,10 @@ def speech_markup(
     rate = delivery.effective_rate(recap=recap)
     body = f'<prosody rate="{rate:.2f}">{body}</prosody>'
     # Use only documented styles; Anu/Kert keep their native intonation.
-    if voice in {"en-US-JennyNeural", "en-US-GuyNeural"} and language == "en-US":
+    if voice in {"en-US-JennyNeural", "en-US-GuyNeural", "en-US-DavisNeural"} and language == "en-US":
         body = f'<mstts:express-as style="friendly" styledegree="0.8">{body}</mstts:express-as>'
+    elif voice == "en-GB-RyanNeural" and language == "en-GB":
+        body = f'<mstts:express-as style="chat" styledegree="0.8">{body}</mstts:express-as>'
     # Short sentence pauses keep replies conversational. Recaps retain the
     # provider's default pauses so dates and consent remain easy to follow.
     if not recap:

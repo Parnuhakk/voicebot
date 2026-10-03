@@ -77,7 +77,10 @@ def test_male_voice_owns_greeting_and_turn_in_each_language(client, azure, langu
 def test_profiles_are_available_without_additional_provider_credentials(client, azure):
     catalog = client.get("/api/demo/voices", headers=AUTH).json()["voices"]
     available = {row["id"] for row in catalog if row["available"]}
-    assert available == {"azure", "azure-male", "azure-calm"}
+    assert available == {
+        "azure", "azure-male", "azure-calm", "azure-male-calm",
+        "azure-male-warm", "azure-brian", "azure-ryan",
+    }
     assert all(row["configured"] for row in catalog if row["id"] in available)
 
 
@@ -168,6 +171,73 @@ def test_neutral_delivery_disables_calm_style_and_pause_adjustments(azure):
     assert selected.synthesize("Tere! Mis kell sobiks?") == MP3
     assert requests[-1].find(".//" + SSML + "prosody") is None
     assert requests[-1].find(".//" + MSTTS + "silence") is None
+
+
+@pytest.mark.parametrize("profile,language,expected,rate,pause", [
+    ("azure-male-calm", "et", "et-EE-KertNeural", "0.94", "240ms"),
+    ("azure-male-calm", "en", "en-US-DavisNeural", "0.94", "240ms"),
+    ("azure-male-calm", "ru", "ru-RU-DmitryNeural", "0.94", "240ms"),
+    ("azure-male-warm", "et", "et-EE-KertNeural", "1.00", "160ms"),
+    ("azure-male-warm", "en", "en-US-AndrewNeural", "1.00", "160ms"),
+    ("azure-male-warm", "ru", "ru-RU-DmitryNeural", "1.00", "160ms"),
+    ("azure-brian", "en", "en-US-BrianNeural", "0.98", "180ms"),
+    ("azure-ryan", "en", "en-GB-RyanNeural", "0.98", "180ms"),
+])
+def test_added_male_profiles_preview_and_session_routing(
+    client, azure, profile, language, expected, rate, pause
+):
+    speaker, requests = azure
+    preview = client.post("/api/demo/voices/preview", headers=AUTH, json={
+        "voice": profile, "language": language,
+    })
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["voice"]["effective"] == profile
+    assert not client.app.state.demo_sessions.sessions
+    document = requests[-1]
+    assert voice(document) == expected
+    assert document.find(".//" + SSML + "prosody").get("rate") == rate
+    assert document.find(".//" + MSTTS + "silence").get("value") == pause
+    started = client.post("/api/demo/session", headers=AUTH, json={
+        "voice": profile, "language": language,
+    })
+    assert started.status_code == 200, started.text
+    reply = client.post("/api/turn", headers=AUTH, json={
+        "session_id": started.json()["session_id"], "voice": "azure",
+        "text": {"et": "Mida soovitad?", "en": "What do you recommend?", "ru": "Что посоветуете?"}[language],
+    })
+    assert reply.status_code == 200, reply.text
+    assert reply.json()["voice"]["effective"] == profile
+    assert all(voice(document) == expected for document in requests)
+    assert speaker._voice == "et-EE-AnuNeural"
+    assert speaker._delivery == SpeechDelivery()
+
+
+@pytest.mark.parametrize("profile", ["azure-brian", "azure-ryan"])
+@pytest.mark.parametrize("language", ["et", "ru"])
+def test_english_only_speakers_use_native_fallback_and_report_it(azure, profile, language):
+    speaker, requests = azure
+    selected = DemoVoices.from_env({}).choose(profile, azure=speaker).for_language(language)
+    assert b"".join(selected.stream("fixture")) == MP3
+    assert voice(requests[-1]) == {"et": "et-EE-AnuNeural", "ru": "ru-RU-SvetlanaNeural"}[language]
+    assert selected.voice_info["effective"] == "azure"
+    assert selected.voice_info["reason"] == "unsupported_language"
+
+
+@pytest.mark.parametrize("profile", ["azure-male-calm", "azure-male-warm", "azure-brian", "azure-ryan"])
+def test_new_profiles_neutral_mode_and_slow_recaps(azure, profile):
+    speaker, requests = azure
+    selected = DemoVoices.from_env({}).choose(profile, azure=speaker).for_language("en")
+    recap = "2026-11-02 at 19:30. " + CONSENT["en"]
+    assert b"".join(selected.stream(recap)) == MP3
+    document = requests[-1]
+    assert "".join(document.itertext()) == recap
+    assert float(document.find(".//" + SSML + "prosody").get("rate")) <= 0.94
+    assert document.find(".//" + MSTTS + "silence") is None
+    speaker._delivery = SpeechDelivery(mode="neutral")
+    assert selected.synthesize("Hello!") == MP3
+    assert requests[-1].find(".//" + SSML + "prosody") is None
+    assert requests[-1].find(".//" + MSTTS + "silence") is None
+    assert requests[-1].find(".//" + MSTTS + "express-as") is None
 
 
 @pytest.mark.parametrize("language", ["et", "en", "ru", "auto"])
