@@ -1,7 +1,7 @@
 """Bounded date vocabulary for restaurant requests, never booking consent.
 
-Estonian/Russian case endings and English date orders are tolerated even when
-the caller mixes cases. Stored caller text and booking consent stay unchanged.
+Estonian/Russian case endings, English date orders and clear spelling errors
+are tolerated in calendar context. Stored caller text and consent stay unchanged.
 """
 
 from __future__ import annotations
@@ -19,9 +19,11 @@ from .restaurant_date_vocabulary import (
     RUSSIAN_MONTH_FORMS,
     RUSSIAN_COUNTS,
 )
+from .restaurant_date_spelling import CalendarSpelling
+from .restaurant_date_years import THOUSAND as THOUSAND_YEAR, SpokenYears
 
 
-CASE_ENDINGS = ("", "l", "le", "ks", "st", "ga", "ni", "s", "sse", "ta", "lt", "t")
+CASE_ENDINGS = ("", "l", "le", "ks", "st", "ga", "ni", "s", "sse", "ta", "lt", "t", "na")
 CARDINAL_BASES = (
     ("üks", "ühe", "üht", "ühte"),
     ("kaks", "kahe", "kaht", "kahte"),
@@ -166,6 +168,7 @@ TRAILING_ALTERNATIVE_DAY = re.compile(
     r"^\s*(?:või|ja|kuni|or|and|through|to|или|и|до|по|[-–])\s*(?:the\s+)?" + DAY_PATTERN + r"(?!\w)"
 )
 ISO_DATE = re.compile(r"\b(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})\b")
+YEAR_FIRST_DATE = re.compile(r"\b(?P<year>\d{4})(?P<sep>[./-])(?P<month>\d{1,2})(?P=sep)(?P<day>\d{1,2})\b")
 LOCAL_DATE = re.compile(r"\b(?P<day>\d{1,2})\.(?P<month>\d{1,2})\.(?P<year>\d{4})\b")
 AMBIGUOUS_NUMERIC_DATE = re.compile(r"\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b")
 GUEST_NOUN = re.compile(
@@ -190,10 +193,19 @@ RELATIVE_FORMS = {
     "tomorrow": 1,
     "day after tomorrow": 2,
     "today": 0,
+    "yesterday": -1,
+    "day before yesterday": -2,
+    "eile": -1,
+    "eilseks": -1,
+    "eilsele": -1,
+    "eilsel": -1,
+    "üleeile": -2,
     "tonight": 0,
     "завтра": 1,
     "послезавтра": 2,
     "сегодня": 0,
+    "вчера": -1,
+    "позавчера": -2,
     "завтрашний день": 1,
     "завтрашнего дня": 1,
     "завтрашнему дню": 1,
@@ -292,6 +304,11 @@ INCOMPLETE_PERIOD = re.compile(
     r"in\s+" + OFFSET_NUMBER + r"\s+months?|" + OFFSET_NUMBER + r"\s+kuu\s+pärast|"
     r"через\s+(?:" + OFFSET_NUMBER + r"\s+)?месяц\w*)\b"
 )
+CALENDAR_SPELLING = CalendarSpelling(
+    MONTH_FORMS, DAY_FORMS, RELATIVE_FORMS, WEEKDAYS,
+    protected=(RELATIVE, WEEKDAY, INCOMPLETE_PERIOD, *OFFSETS, *(pattern for pattern, _ in WEEK_QUALIFIERS)),
+)
+SPOKEN_YEARS = SpokenYears(DAY_FORMS)
 
 
 @dataclass(frozen=True)
@@ -316,9 +333,11 @@ def resolve_restaurant_date(
     Conflicting, negated or impossible dates ask for clarification instead.
     """
     text = " ".join(unicodedata.normalize("NFC", text.casefold()).split())
-    spans: list[tuple[int, int]] = []
+    spelling = CALENDAR_SPELLING.normalize(text, date_reply=allow_bare_day)
+    text = spelling.text
+    spans: list[tuple[int, int]] = list(spelling.ambiguous_spans)
     values: set[str] = set()
-    issue = None
+    issue: str | None = None
     partial_day, partial_month, partial_year = None, None, None
 
     def record(
@@ -339,24 +358,44 @@ def resolve_restaurant_date(
     def calendar(
         day: int, month: int, year: int | None
     ) -> tuple[date | None, str | None]:
-        try:
-            candidate = date(year if year is not None else now.year, month, day)
-            if year is None and candidate < now.date():
-                candidate = date(now.year + 1, month, day)
-            return candidate, None
-        except ValueError:
-            return None, "date_invalid"
+        years = (year,) if year is not None else range(now.year, min(now.year + 9, 10000))
+        for calendar_year in years:
+            try:
+                candidate = date(calendar_year, month, day)
+            except ValueError:
+                continue
+            if year is not None or candidate >= now.date():
+                return candidate, None
+        return None, "date_invalid"
 
-    for pattern in (ISO_DATE, LOCAL_DATE):
+    for pattern in (ISO_DATE, LOCAL_DATE, YEAR_FIRST_DATE):
         for match in pattern.finditer(text):
             value, error = calendar(
                 int(match["day"]), int(match["month"]), int(match["year"])
             )
             record(*match.span(), value, error)
     for match in AMBIGUOUS_NUMERIC_DATE.finditer(text):
-        record(*match.span(), None, "date_ambiguous")
+        numbers = re.split(r"[/-]", match[0])
+        year = int(numbers[2]) if len(numbers) == 3 and len(numbers[2]) == 4 else None
+        if len(numbers) == 3 and year is None:
+            record(*match.span(), None, "date_ambiguous")
+            continue
+        alternatives = {
+            candidate for day, month in ((int(numbers[0]), int(numbers[1])), (int(numbers[1]), int(numbers[0])))
+            if (candidate := calendar(day, month, year)[0]) is not None
+        }
+        record(*match.span(), next(iter(alternatives)) if len(alternatives) == 1 else None,
+               "date_ambiguous" if len(alternatives) > 1 else "date_invalid" if not alternatives else None)
     for pattern in NAMED_DATES:
         for match in pattern.finditer(text):
+            # In "October two thousand twenty-seven", "two" starts a year,
+            # not the second day of October. Leave this for the partial-month
+            # parser. "October twenty-first" still names a calendar day.
+            if match.start("month") < match.start("day"):
+                fragment = text[match.end("month"):]
+                spoken_year = SPOKEN_YEARS.after(fragment)
+                if spoken_year and (spoken_year.value is not None or THOUSAND_YEAR.match(fragment.lstrip(" ,"))):
+                    continue
             raw_day = match["day"].rstrip(".")
             numeric_day = re.fullmatch(r"(\d{1,2})(?:st|nd|rd|th|-(?:го|е|й|ое|ого|ому|ом))?", raw_day)
             day = int(numeric_day[1]) if numeric_day else DAY_FORMS[raw_day]
@@ -374,6 +413,9 @@ def resolve_restaurant_date(
                     error = "date_ambiguous"
                 else:
                     year = int(year_match[1])
+            elif (spoken_year := SPOKEN_YEARS.after(text[end:])) is not None:
+                end += spoken_year.end
+                year, error = spoken_year.value, spoken_year.issue
             preceding_year = re.search(r"\b(\d{4})\.?\s+(?:aasta(?:l)?|года?|году|year)\s*[,.:]?\s*$", text[:start])
             if preceding_year:
                 start = preceding_year.start()
@@ -381,6 +423,12 @@ def resolve_restaurant_date(
                     error = "date_ambiguous"
                 else:
                     year = int(preceding_year[1])
+            elif (spoken_before := SPOKEN_YEARS.before(text[:start])) is not None:
+                start, spoken_year = spoken_before
+                if spoken_year.issue or (year is not None and year != spoken_year.value):
+                    error = "date_ambiguous"
+                else:
+                    year = spoken_year.value
             # Unsupported larger compound numbers must not become their units.
             if re.search(
                 r"\b(?:\w*(?:kümmend|kümne|sada|saja)|hundred|thousand|сто|ста|тысяч\w*|\d+)(?:[ -]+(?:and|и))?[ -]+$", text[: match.start()]
@@ -450,12 +498,14 @@ def resolve_restaurant_date(
                 record(0, len(text), value, error)
             else:
                 record(0, len(text), None, "date_incomplete")
-    partial_months = set()
+    partial_months: set[int] = set()
     for match in MONTHS.finditer(text):
+        year_match = re.match(r"(?:\s*,\s*|\s+)(\d{4})(?![\w:.])", text[match.end():])
+        spoken_year = SPOKEN_YEARS.after(text[match.end():]) if not year_match else None
         # English "may" is usually a modal, not a request for the month of May.
         # The short "mar" also means ordinary prose; accept these alone only
         # with a month preposition or as the entire answer to a date question.
-        if match[0] in {"may", "mar"} and text.strip(" .!?,") != match[0] and not re.search(
+        if match[0] in {"may", "mar"} and not (allow_bare_day and (year_match or spoken_year)) and text.strip(" .!?,") != match[0] and not re.search(
             r"\b(?:in|during|for|by|until|on)\s+$", text[:match.start()]
         ):
             continue
@@ -464,15 +514,22 @@ def resolve_restaurant_date(
         ):
             partial_month = MONTH_FORMS[match[0]]
             partial_months.add(partial_month)
-            year_match = re.match(r"(?:\s*,\s*|\s+)(\d{4})(?![\w:.])", text[match.end():])
             partial_year = int(year_match[1]) if year_match else pending_year
             end = match.end() + (year_match.end() if year_match else 0)
+            if spoken_year:
+                partial_year = spoken_year.value
+                end = match.end() + spoken_year.end
+                if spoken_year.issue:
+                    record(match.start(), end, None, spoken_year.issue)
+                    continue
             if pending_day is not None and allow_bare_day:
                 value, error = calendar(pending_day, partial_month, partial_year)
                 record(match.start(), end, value, error)
             else:
                 record(match.start(), end, None, "date_incomplete")
     if len(values) > 1 or len(partial_months) > 1:
+        issue = "date_ambiguous"
+    if spelling.ambiguous_spans:
         issue = "date_ambiguous"
     remaining = list(text)
     for left, right in spans:
