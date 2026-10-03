@@ -364,3 +364,33 @@ Only fixture credentials, local synthetic MP3 audio, synthetic microphone input
 and provider doubles are used. The tests exercise the actual API, SQLite,
 microphone filtering/resampling, browser streaming, consent and UI lifecycle;
 they do not measure real speech recognition or provider voice quality.
+
+### Quality verification, 2026-10-04
+
+The quality release was checked after integration with master `b75ba06`:
+
+- Core environment: 11,409 passed, 78 skipped and 36 subtests passed.
+- Media environment: 11,802 passed, 10 skipped and 36 subtests passed.
+- All ten browser suites passed in installed Microsoft Edge 154.0.4258.53,
+  including ET/EN/RU consent, renewal, expiry, mobile controls and uncertain-write
+  recovery. No browser page errors or external provider requests were observed.
+- Flake8, JavaScript syntax checks and full application BasedPyright error-level
+  checks passed. The unfiltered report covered 67 files with zero errors and
+  5,947 warnings, mostly incomplete or unknown dynamic types. Those warnings
+  remain visible; the checker configuration was not weakened.
+- Each Python suite reported the existing Starlette TestClient deprecation
+  warning about its HTTPX integration. Dependency replacement requires a
+  separate compatibility change.
+
+Regression coverage includes absent write journals and lock paths, missing
+pending journal records, invalid trusted booking responses, synchronous read
+adapters and missing native audio handles. Such conditions stop before an
+unverified booking write or close through the existing media error path.
+HTTPX adapter transports now use the asynchronous transport contract described
+in [the HTTPX transport documentation](https://www.python-httpx.org/advanced/transports/#custom-transports).
+
+These results use synthetic restaurant data and provider doubles. Operator
+credentials were unavailable for live private endpoints. Actual carrier calls,
+paid speech-provider quality, Safari and physical mobile devices were not
+verified. Public deployment health and matching web/telephone release receipts
+are separate checks and do not establish real-call quality.
