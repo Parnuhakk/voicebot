@@ -8,7 +8,9 @@ import pytest
 
 from tests.test_browser_audio_stream import AsgiExchange, StreamingSpeaker
 from tests.test_product_demo import AUTH, start
-from tests.test_product_demo import client as client
+from tests import test_product_demo
+
+client = test_product_demo.client
 
 
 def test_stream_fixture_controls_are_authenticated_and_not_shadowed_by_static():
@@ -78,6 +80,8 @@ def test_actual_catalog_matches_browser_envelope_and_bounds_endpointing(
         "azure-male-warm",
         "azure-brian",
         "azure-ryan",
+        "azure-conversational",
+        "azure-conversational-male",
     ]
     assert data["voices"][0]["available"] is True
     assert all(not row["available"] for row in data["voices"][1:])

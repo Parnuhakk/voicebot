@@ -83,6 +83,7 @@ def test_profiles_are_available_without_additional_provider_credentials(client, 
     assert available == {
         "azure", "azure-male", "azure-calm", "azure-male-calm",
         "azure-male-warm", "azure-brian", "azure-ryan",
+        "azure-conversational", "azure-conversational-male",
     }
     assert all(row["configured"] for row in catalog if row["id"] in available)
 
@@ -142,7 +143,8 @@ def test_rejected_male_voice_falls_back_before_audio_and_reports_actual_voice(az
     assert selected.voice_info["reason"] == "provider_failure"
 
 
-def test_partial_male_audio_failure_never_switches_voice(azure):
+@pytest.mark.parametrize("profile", ["azure-male", "azure-conversational", "azure-conversational-male"])
+def test_partial_male_audio_failure_never_switches_voice(azure, profile):
     speaker, requests = azure
     speaker._http.close()
 
@@ -158,13 +160,13 @@ def test_partial_male_audio_failure_never_switches_voice(azure):
         return httpx.Response(200, stream=PartialAudio())
 
     speaker._http = httpx.Client(transport=httpx.MockTransport(respond))
-    selected = DemoVoices.from_env({}).choose("azure-male", azure=speaker).for_language("et")
+    selected = DemoVoices.from_env({}).choose(profile, azure=speaker).for_language("ru")
     stream = selected.stream("Tere!")
     assert next(stream)
     with pytest.raises(ProviderError):
         list(stream)
     assert len(requests) == 1
-    assert selected.voice_info["effective"] == "azure-male"
+    assert selected.voice_info["effective"] == profile
 
 
 def test_neutral_delivery_disables_calm_style_and_pause_adjustments(azure):

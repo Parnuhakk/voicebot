@@ -94,6 +94,16 @@ No remaining concrete P0/P1 was reproduced in the repaired boundaries. This
 review establishes the bounded source safeguards, not universal model
 entailment or live-provider/deployment acceptance.
 
+The last publication ancestry check found newer published `e53de158`
+conversational voice choices. A normal merge preserves those unchanged; none of
+the reviewed restaurant capability modules is changed by that upstream delta.
+Fresh combined verification then passed **11,694 tests, 36 subtests,
+4 private-backend opt-in skips**, with two warnings in 120.42 seconds (basetemp
+`/tmp/opencode/restaurant-recovery-e53-final`). All nine browser scenarios pass
+again, with zero uncaught JavaScript errors and zero external requests. The
+GitHub PR's Linux regression and actual shared-image build/fingerprint jobs also
+pass; that CI result is not private speech or carrier acceptance.
+
 All nine committed local browser scenarios pass with Chromium 153.0.8010.12,
 zero uncaught JavaScript errors and zero external requests. These cover the
 operator layout, rollback fixtures, English controls, microphone races, real

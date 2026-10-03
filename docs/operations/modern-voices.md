@@ -3,7 +3,10 @@
 ## Scope and selection
 
 This feature belongs to the operator-authenticated website demo, not the separate
-telephone worker. Azure remains the default and fallback. Choose a configured
+telephone worker. Azure remains the provider and fallback. The restaurant site
+selects `azure-conversational` for new sign-ins when that profile is configured;
+otherwise it selects the existing Azure voice. An explicit selection persists
+until logout and is never replaced by a catalog refresh. Choose a configured
 voice before starting a conversation; voice and initial language are fixed for
 that owned session. End it to choose another profile.
 
@@ -16,6 +19,8 @@ Unconfigured profiles are disabled in the selector rather than silently enabled.
 | Profile | Languages | Browser delivery |
 | --- | --- | --- |
 | Azure (existing) | Estonian, English, Russian | Incremental REST MP3; retains current voices, pronunciation and 48 kHz / 96 kbps output. |
+| Conversational female voice (website default) | Estonian Anu, English/Russian Emma Multilingual | Existing Azure credentials; native sentence timing in all three languages, explicit locale for multilingual speech. |
+| Conversational male voice | Estonian Kert, English/Russian Andrew Multilingual | Existing Azure credentials; native sentence timing, explicit locale, same guarded replies and slower recaps. |
 | Male voice | Estonian Kert, English Guy, Russian Dmitry | Uses the existing Azure credentials and MP3 streaming. Voice selection is request-local. |
 | Calm female voice | Estonian Anu, English Jenny, Russian Svetlana | Existing Azure credentials; a slower delivery variant of these voices, not another Estonian speaker. |
 | Calm male voice | Estonian Kert, English Davis, Russian Dmitry | Slower delivery, 240 ms sentence pauses in Estonian/English; Russian keeps native timing. Davis uses his documented friendly style. |
@@ -31,6 +36,26 @@ rewrite recaps, execute bookings or supply consent. Provider failure can fall
 back to Azure before output begins. Failure after partial streamed audio stops
 delivery and cannot issue a completed-recap receipt; it does not rerun booking
 operations or automatically retry the turn POST.
+
+The conversational profiles change the English/Russian speaker model rather than
+pitch-shifting Svetlana or Dmitry. The application uses only the documented
+`en-US` and `ru-RU` locales for Emma/Andrew Multilingual, explicitly wrapped in
+`<lang xml:lang>` even in neutral mode. It retains Anu/Kert for Estonian and removes
+the fixed sentence-pause override for these profiles. Speaking rates still honor
+the existing environment settings, including slower canonical booking recaps.
+No unsupported emotion styles, artificial breaths or random pitch changes are
+sent. This is a voice option for listening comparison, not proof of human quality.
+Use **Listen to voice** and compare standard versus conversational in each target
+language. Actual pronunciation/quality requires live Azure access and listening.
+
+The shared native renderer also supports these two multilingual voices if an
+operator configures `AZURE_EN_VOICE` or `AZURE_RU_VOICE`; deployment does not change
+the separate worker's existing voice environment. It does not accept arbitrary
+cross-locale voices or infer language from the speaker's `en-US` name.
+Microsoft's [multilingual locale controls](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice#adjust-speaking-languages)
+and [language/voice support](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=tts)
+were checked 2026-10-04. These profiles use the existing neural REST endpoint and
+output format; no HD/preview model or additional provider account is introduced.
 
 The restaurant interface offers **Listen to voice / Kuula häält** before a
 conversation. The authenticated `POST /api/demo/voices/preview` uses fixed
