@@ -546,6 +546,7 @@ class CallTools:
         if language not in LANGUAGES:
             raise ValueError("unsupported telephone language")
         self.language = language
+        self.language_locked = False
         self.conversation = Conversation()
         self.clarification = None
         self.unsupported_language = False
@@ -817,13 +818,6 @@ class CallTools:
         if is_final is not True:
             return
         text = text if isinstance(text, str) and not unsupported else ""
-        selected = (
-            language
-            if language is not None and language in LANGUAGES
-            else select_language(text, detected_language, self.language)
-        )
-        if language is None and detected_language is None:
-            selected = question_language(text, selected)
         # A saved guest name is a selection, not a request to change language.
         named_fixture = " ".join(text.casefold().strip(" .!?").split()) in {
             *self.demo["guests"],
@@ -832,8 +826,23 @@ class CallTools:
                 for g in self.demo["guests"].values()
             ),
         }
-        if named_fixture and language not in LANGUAGES:
-            selected = self.language
+        selected = self.language
+        explicit = requested_language(text)
+        if explicit:
+            selected = explicit
+            self.language_locked = True
+        elif not self.language_locked and text.strip() and not named_fixture:
+            # An empty fallback distinguishes real language evidence from
+            # numbers, names and ambiguous short answers. They do not lock.
+            candidate = (
+                language if language in LANGUAGES
+                else select_language(text, detected_language, "")
+            )
+            if language is None and detected_language is None:
+                candidate = question_language(text, candidate)
+            if candidate in LANGUAGES:
+                selected = candidate
+                self.language_locked = True
         changed = selected != self.language
         self.language = selected
         self.conversation.observe(text, selected)
@@ -925,14 +934,7 @@ class CallTools:
             and now < self.pending["expires_at"]
             and self.pending["delivery"]
             and not self.unsupported_language
-            and normalized
-            in (
-                AFFIRMATIONS_EN
-                if selected == "en"
-                else AFFIRMATIONS_RU
-                if selected == "ru"
-                else AFFIRMATIONS
-            )
+            and self._is_confirmation(text, selected)
         ):
             self.pending["approved"] = True
         else:
@@ -954,6 +956,15 @@ class CallTools:
                 "booking_id": self.last_booking,
                 "expires_at": now + CONSENT_TIMEOUT_SECONDS,
             }
+
+    def _is_confirmation(self, text, language):
+        normalized = " ".join(re.sub(r"[.,!]", " ", text.casefold()).split())
+        phrases = (
+            AFFIRMATIONS_EN if language == "en"
+            else AFFIRMATIONS_RU if language == "ru"
+            else AFFIRMATIONS
+        )
+        return normalized in phrases
 
     @property
     def spa_hours_inquiry(self):

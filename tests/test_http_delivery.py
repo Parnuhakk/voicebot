@@ -114,6 +114,7 @@ def test_exact_receipt_is_consumed_before_subsequent_final_consent(
     state = client.app.state.demo_sessions.sessions[session_id].tools
     assert state.pending["delivery"] is False
     assert state.pending["approved"] is False
+    assert state.language_locked and state.language == "et"
     delivery_id = receipt(prepared)
     assert delivery_id not in {session_id, state.call_id, state.pending["hold_id"]}
     payload = {"session_id": session_id, "recap_delivery_id": delivery_id}
@@ -121,7 +122,7 @@ def test_exact_receipt_is_consumed_before_subsequent_final_consent(
 
         class Stt:
             def transcribe(self, data, *, language):
-                assert data == b"RIFF-fixture" and language == "auto"
+                assert data == b"RIFF-fixture" and language == "et"
                 return CONSENT
 
         client.app.state.stack["stt"] = Stt()

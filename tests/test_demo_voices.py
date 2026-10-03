@@ -60,6 +60,10 @@ def test_empty_configuration_catalog_is_safe_and_default_azure_is_late_bound():
             "cartesia",
             "azure-male",
             "azure-calm",
+            "azure-male-calm",
+            "azure-male-warm",
+            "azure-brian",
+            "azure-ryan",
         ]
         assert all(
             set(row)

@@ -331,3 +331,48 @@ def test_mixed_disclosure_survives_detail_followups_and_recap_receipt(client):
     assert prepared["reply"].startswith(CASES[1][2]) and prepared["recap_delivery_id"]
     assert state.pending and not state.bookings
     assert state.render_recap() == prepared["reply"]
+
+
+@pytest.mark.parametrize(
+    "language,question,verb,details,key",
+    [
+        ("et", MIXED[0][1], MIXED[0][2], "homme kell 7 neljale", "ambiguous_time"),
+        ("en", MIXED[1][1], MIXED[1][2], "tomorrow at 7 for four", "ambiguous_time"),
+        ("ru", MIXED[2][1], MIXED[2][2], "завтра в 7 на четверых", "ambiguous_time"),
+        ("et", MIXED[0][1], MIXED[0][2], "homme kell 14:90 neljale", "invalid_time"),
+        ("en", MIXED[1][1], MIXED[1][2], "tomorrow at 14:90 for four", "invalid_time"),
+        ("ru", MIXED[2][1], MIXED[2][2], "завтра в 14:90 на четверых", "invalid_time"),
+        (
+            "et",
+            MIXED[0][1],
+            MIXED[0][2],
+            "31. veebruaril kell 14:00 neljale",
+            "date_invalid",
+        ),
+        (
+            "en",
+            MIXED[1][1],
+            MIXED[1][2],
+            "31 February at 14:00 for four",
+            "date_invalid",
+        ),
+        (
+            "ru",
+            MIXED[2][1],
+            MIXED[2][2],
+            "31 февраля в 14:00 на четверых",
+            "date_invalid",
+        ),
+    ],
+)
+def test_mixed_clarification_also_discloses_the_unsupported_action(
+    make_state, language, question, verb, details, key
+):
+    state = make_state(language)
+    state.observe_user_text(f"{question} {verb} {details}.", language=language)
+    notice = next(case[2] for case in CASES if case[0] == language)
+    assert trusted_booking_response(state) == {
+        "content": notice + " " + COPY[language][key]
+    }
+    assert state.guard_reply("untrusted", []) == notice + " " + COPY[language][key]
+    assert not state.holds and not state.bookings

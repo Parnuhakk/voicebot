@@ -40,6 +40,12 @@ from .telephone import (
 )
 from .call_factory import make_call_tools
 
+REJECTED_TRANSCRIPT = {
+    "et": "[Toetamata kõnekeel]",
+    "en": "[Unsupported speech language]",
+    "ru": "[Неподдерживаемый язык речи]",
+}
+
 
 class PrivateLogs(logging.Filter):
     def filter(self, record):
@@ -85,6 +91,12 @@ class TelephoneAgent(Agent):
                     self._unsupported_language |= bool(
                         (data.metadata or {}).get("unsupported_language")
                     )
+                    if self._unsupported_language:
+                        # SDK emits public captions before the finalized-turn hook.
+                        # Keep a nonempty marker to finish the turn without leaking
+                        # foreign speech or losing the normal rejection/retry path.
+                        data.text = REJECTED_TRANSCRIPT[self.state.language]
+                        data.language = self.state.language
             yield event
 
     async def on_user_turn_completed(self, turn_ctx, new_message):
@@ -94,9 +106,6 @@ class TelephoneAgent(Agent):
             new_message.text_content if new_message.role == "user" else "",
             is_final=True,
             detected_language=self._detected_language,
-            language=(
-                self.speech_config.mode if self.speech_config.mode != "auto" else None
-            ),
             unsupported=self._unsupported_language,
         )
         if self.state.unsupported_language and new_message.role == "user":

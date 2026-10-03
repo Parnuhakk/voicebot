@@ -239,10 +239,19 @@ def test_unsupported_fragment_is_not_hidden_by_later_supported_fragment():
         message = llm.ChatMessage(role="user", content=["Bonjour. Hello there."])
 
         async def events(*args):
-            for text, code, unsupported in [("Bonjour", "und", True), ("Hello there", "en", False)]:
+            for text, code, unsupported in [
+                ("Bonjour", "und", True),
+                ("Hello there", "en", False),
+            ]:
                 yield stt.SpeechEvent(
                     type=stt.SpeechEventType.FINAL_TRANSCRIPT,
-                    alternatives=[stt.SpeechData(text=text, language=code, metadata={"unsupported_language": unsupported})],
+                    alternatives=[
+                        stt.SpeechData(
+                            text=text,
+                            language=code,
+                            metadata={"unsupported_language": unsupported},
+                        )
+                    ],
                 )
 
         with patch("livekit.agents.Agent.default.stt_node", events):
@@ -250,12 +259,81 @@ def test_unsupported_fragment_is_not_hidden_by_later_supported_fragment():
         await agent.on_user_turn_completed(None, message)
         assert state.unsupported_language
         assert message.text_content is None
-        with patch("livekit.agents.Agent.default.llm_node", side_effect=AssertionError("model called")):
-            replies = [chunk async for chunk in agent.llm_node(llm.ChatContext(items=[message]), [], NS())]
+        with patch(
+            "livekit.agents.Agent.default.llm_node",
+            side_effect=AssertionError("model called"),
+        ):
+            replies = [
+                chunk
+                async for chunk in agent.llm_node(
+                    llm.ChatContext(items=[message]), [], NS()
+                )
+            ]
         assert replies == [REPEAT_PROMPT["en"]]
         assert not state.dispatcher.calls
         assert not agent._unsupported_language
-        await agent.on_user_turn_completed(None, llm.ChatMessage(role="user", content=[""]))
+        await agent.on_user_turn_completed(
+            None, llm.ChatMessage(role="user", content=[""])
+        )
         assert state.direct_reply == WRITE_LANGUAGE_PROMPT["en"]
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "language,caption",
+    [
+        ("et", "[Toetamata kõnekeel]"),
+        ("en", "[Unsupported speech language]"),
+        ("ru", "[Неподдерживаемый язык речи]"),
+    ],
+)
+def test_rejected_final_is_not_exposed_through_public_sdk_transcription(
+    language, caption
+):
+    from livekit.agents.voice.agent_activity import AgentActivity
+
+    async def run():
+        state = CallTools(Slots(), language=language)
+        agent = TelephoneAgent(state)
+
+        async def events(*args):
+            yield stt.SpeechEvent(
+                type=stt.SpeechEventType.FINAL_TRANSCRIPT,
+                alternatives=[
+                    stt.SpeechData(
+                        text="Bonjour, je voudrais une table.",
+                        language="und",
+                        metadata={"unsupported_language": True},
+                    )
+                ],
+            )
+
+        with patch("livekit.agents.Agent.default.stt_node", events):
+            sanitized = [event async for event in agent.stt_node(None, None)]
+        public = []
+
+        async def cancel_pause(*, old_task):
+            pass
+
+        # Exercise the installed SDK boundary which drops STT metadata before
+        # emitting the public user_input_transcribed event used by RoomIO.
+        activity = NS(
+            llm=None,
+            _session=NS(_user_input_transcribed=public.append),
+            _audio_recognition=None,
+            _cancel_speech_pause_task=None,
+            _cancel_speech_pause=cancel_pause,
+        )
+        AgentActivity.on_final_transcript(activity, sanitized[0])
+        await activity._cancel_speech_pause_task
+        assert len(public) == 1 and public[0].is_final
+        assert public[0].transcript == caption
+        assert str(public[0].language) == language
+        message = llm.ChatMessage(role="user", content=[public[0].transcript])
+        await agent.on_user_turn_completed(None, message)
+        assert state.unsupported_language and message.text_content is None
+        assert state.direct_reply == REPEAT_PROMPT[language]
+        assert not state.dispatcher.calls
 
     asyncio.run(run())
