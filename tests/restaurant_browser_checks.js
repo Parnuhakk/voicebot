@@ -160,9 +160,9 @@ async page => {
       ru: ['Один из нас веган, другой любит грибы. Что вы посоветуете и почему?',
            'Для вегана я предложу овощной суп. Грибное ризотто подходит вегетарианцу, но содержит молоко.'],
     }[language.code];
-    await page.locator('#demo-text').fill(reasoningExample[0]);
-    await page.locator('#demo-send').click();
+    await page.locator('[data-example="recommendation"]').click();
     await page.waitForFunction(()=>!state.turnBusy);
+    assert.equal(await page.locator('#demo-messages .message').nth(-2).locator('span').textContent(), reasoningExample[0]);
     assert.equal(await page.locator('#demo-messages .message').last().locator('span').textContent(), reasoningExample[1]);
     assert.equal(await page.evaluate(()=>state.recap), null, 'reasoning response created a booking proposal');
     assert(await page.getByRole('radio', {name:'Eesti', exact:true}).isDisabled());
@@ -427,5 +427,5 @@ async page => {
     assert.equal(retired.headers().location,undefined,'retired hostname redirected');
   }
   assert.deepEqual(errors,[]);
-  return {languages:3,multilingualStepwiseDateTimeAndParty:true,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,englishSpokenDates:true,englishClockClarification:true,russianMixedDateCases:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,retiredHostDenied:true,pageErrors:errors.length};
+  return {languages:3,groundedAnswers:3,multilingualStepwiseDateTimeAndParty:true,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,englishSpokenDates:true,englishClockClarification:true,russianMixedDateCases:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,retiredHostDenied:true,pageErrors:errors.length};
 }

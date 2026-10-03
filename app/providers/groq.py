@@ -10,6 +10,8 @@ Sync requests are sent through the HTTP turn controller's thread boundary.
 
 from __future__ import annotations
 
+from typing import Any
+
 import httpx
 
 from .transcription import Transcription, parse_transcription
@@ -138,7 +140,7 @@ class GroqClient:
         model: str | None = None,
         tools: list[dict] | None = None,
         *,
-        response_format: dict | None = None,
+        response_format: dict[str, Any] | None = None,
         timeout: float | None = None,
     ) -> dict:
         """Chat completion. Returns the assistant message dict

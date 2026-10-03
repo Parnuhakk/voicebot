@@ -513,7 +513,7 @@ class _TrustedLlm:
             state, after_tool=bool(messages and messages[-1].get("role") == "tool")
         )
         if (
-            response is not None
+            isinstance(response, dict)
             and "content" in response
             and reasoning_enabled(self.client)
             and getattr(state, "reasoning_allowed", False)
@@ -527,7 +527,7 @@ class _TrustedLlm:
             if reply is not None:
                 return {"content": reply}
             self.reasoning_fallback = True
-        if response is not None:
+        if isinstance(response, dict):
             if "content" in response:
                 return response
             return {
