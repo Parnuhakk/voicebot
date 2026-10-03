@@ -459,6 +459,30 @@ mobile spacing. Its independent static review is clear; normal intake preserves
 the owner's additional flex/min-width declarations and recomputes the CSS asset.
 None of these local checkpoints proves live-provider or carrier acceptance.
 
+### Final published spelling intake
+
+Normal integration of `56e7c9f` preserves spoken Estonian `menü`/`menüü` recognition
+and the mobile layout fix alongside the reviewed owner price/allergy guards and
+additional breadcrumb flex/min-width. The resulting CSS hash remains
+`bcee0c7e5fde`; JavaScript `f054ddea9a94`, playback `279720c050cc` and capture
+`fb9adf1eaf2e` are verified against their index references.
+
+Final combined-source core **11,852 passed / 80 skipped / 36 subtests**, 135.37
+seconds, all **ten** Chromium journeys, **24** delivery/status cases and **five**
+isolated packaging cases (10.63 seconds) pass. Syntax/JSON/asset/hygiene checks are
+clean. Final sequential media **12,257 passed / 6 skipped / 36 subtests**, 155.64
+seconds; all pre-publication gates are satisfied.
+
+The reviewed controller was atomically installed under the shared lock, preserving
+the prior installed file privately. Its SHA256 is
+`11674bd00a92490b252e046547f69374293c420ad992b500d33bece849fe4763`.
+This install did not restart native services or change systemd units/settings.
+The fresh pre-publication snapshot at **2026-10-03 23:56:26 UTC** records healthy
+services, the valid current incoming robot POST route, four database integrity
+checks, zero active rooms, unchanged protected checkout/all 19 status entries and
+all 23 unrelated running-service identities. Worker/bridge were already at
+contributor revision `56e7c9f`; that is not this session's final deployment proof.
+
 ## Pre-rollout preservation qualification
 
 Read-only hash-only snapshot at 2026-10-03 20:34:39 UTC records healthy web,

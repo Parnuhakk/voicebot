@@ -1,6 +1,7 @@
 """Reviewed capability disclosures, mixed planning and real consent boundaries."""
 
 import asyncio
+import base64
 import json
 
 import pytest
@@ -44,6 +45,46 @@ CASES = [
         "Я не принимаю заказы еды, навынос или с доставкой. Могу помочь с бронированием столика.",
     ),
 ]
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "Mis on menüs?",
+        "Tere! Soovin teada, mida teie restorani menüs pakutakse?",
+    ],
+)
+def test_estonian_menu_vowel_loss_retains_grounded_native_turn(make_state, question):
+    state = make_state("et")
+    state.observe_user_text(question, is_final=True, detected_language="et")
+    assert trusted_booking_response(state) == {
+        "content": "Menüüs on Köögiviljasupp, Ahjulõhe ning Seenerisoto."
+    }
+    assert not state.holds and not state.bookings and not state.pending
+
+
+def test_estonian_menu_vowel_loss_uses_reviewed_audio_http_reply(client):
+    session = start(client, "auto")["session_id"]
+    client.provider.transcript = (
+        "Tere! Soovin teada, mida teie restorani menüs pakutakse?"
+    )
+    response = client.post(
+        "/api/turn",
+        headers=AUTH,
+        json={
+            "session_id": session,
+            "audio_b64": base64.b64encode(b"RIFF-synthetic-fixture").decode(),
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()
+    assert result["language"] == "et"
+    assert result["reply"] == "Menüüs on Köögiviljasupp, Ahjulõhe ning Seenerisoto."
+    assert result["reply"] == client.provider.spoken[-1]
+    assert result["booking_changes"] == []
+    assert client.provider.recognized_languages == ["auto"]
+    state = client.app.state.demo_sessions.sessions[session].tools
+    assert not state.holds and not state.bookings and not state.pending
 
 
 @pytest.mark.parametrize(
