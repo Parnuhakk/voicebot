@@ -27,8 +27,10 @@ before a booking write. Availability and the advance booking window still apply.
 
 ## Local verification
 
-- Final restaurant suite plus English calendar/clock regressions: **8304 passed**
-  in the project's pinned Python 3.13 media environment.
+- Final restaurant suite plus English calendar/clock and Russian speech
+  regressions: **8384 passed** in the project's pinned Python 3.13 media
+  environment, on a local integration with current master `fc5c4ae`. The
+  branch-only restaurant suite had **8304 passed**.
 - Final full repository run: **11315 passed, 11 failed, 10 skipped,
   36 subtests passed**. All 11 failures were separately reproduced on pristine
   upstream `afe1e0c` in hotel/spa language/provider fixtures. The introduced
