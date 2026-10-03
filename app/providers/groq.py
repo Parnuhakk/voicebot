@@ -136,17 +136,17 @@ class GroqClient:
 
     def chat(
         self,
-        messages: list[dict],
+        messages: list[dict[str, Any]],
         model: str | None = None,
-        tools: list[dict] | None = None,
+        tools: list[dict[str, Any]] | None = None,
         *,
         response_format: dict[str, Any] | None = None,
         timeout: float | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Chat completion. Returns the assistant message dict
         (may carry tool_calls for booking function-calling)."""
         model = model or self.config.chat_model
-        body: dict = {
+        body: dict[str, Any] = {
             "model": model,
             "messages": messages,
             **self.config.chat_options(model),

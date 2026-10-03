@@ -13,6 +13,8 @@ Price utterances require a live price_quote_id from the booking adapter.
 
 from __future__ import annotations
 
+from typing import Any
+
 SUPPORTED_LANGUAGES = ("et", "en", "ru")
 
 # PHASE2_CANDIDATES_NOT_WIRED: ET -> managed neural + local fallbacks.
@@ -47,7 +49,7 @@ def detect_language(partial_transcript: str, default: str = "et") -> str:
     return default if default in SUPPORTED_LANGUAGES else "et"
 
 
-def build_pipeline(language: str = "et") -> dict:
+def build_pipeline(language: str = "et") -> dict[str, Any]:
     """Return non-operational research descriptors for tests/documentation.
 
     This does not assemble Pipecat or LiveKit. Replace it only after the

@@ -12,6 +12,8 @@ Source: docs.mews.com/booking-engine-guide/booking-engine-api.md.
 
 from __future__ import annotations
 
+from typing import Any
+
 from .base import Hold, HoldLedger, StayAdapter, UnknownQuoteError
 from ..providers.errors import ProviderError
 
@@ -27,14 +29,14 @@ class MewsAdapter(StayAdapter):
         }
         self._base = api_base_url.rstrip("/")
         self._holds = HoldLedger()
-        self._quotes: dict[str, dict] = {}
+        self._quotes: dict[str, dict[str, Any]] = {}
 
     def __repr__(self) -> str:
         return "MewsAdapter(redacted)"
 
     async def search_availability(
-        self, checkin: str, checkout: str, party: dict
-    ) -> list[dict]:
+        self, checkin: str, checkout: str, party: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         raise NotImplementedError("wire getAvailability + getPricing")
 
     async def create_hold(self, price_quote_id: str) -> Hold:
@@ -53,7 +55,9 @@ class MewsAdapter(StayAdapter):
             payload={"quote": quote},
         )
 
-    async def confirm(self, hold_id: str, guest: dict, idempotency_key: str) -> dict:
+    async def confirm(
+        self, hold_id: str, guest: dict[str, Any], idempotency_key: str
+    ) -> dict[str, Any]:
         replayed = self._holds.check_replay(idempotency_key)
         if replayed is not None:
             return replayed
@@ -62,7 +66,7 @@ class MewsAdapter(StayAdapter):
             return {"ok": False, "error": "hold_expired_or_unknown"}
         raise NotImplementedError("re-price via /price + group create")
 
-    async def cancel(self, booking_id: str, idempotency_key: str) -> dict:
+    async def cancel(self, booking_id: str, idempotency_key: str) -> dict[str, Any]:
         replayed = self._holds.check_replay(idempotency_key)
         if replayed is not None:
             return replayed
