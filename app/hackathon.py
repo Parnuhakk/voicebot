@@ -20,6 +20,7 @@ from .telephone import CallTools
 from .call_factory import make_call_tools
 from .languages import LANGUAGES
 from .booking_response import trusted_booking_response
+from .restaurant_data import restaurant_booking_details
 from . import call_history, callslog
 from .providers.errors import PROVIDER_FAILURE_REASONS, ProviderError
 from .providers.demo_voices import PROFILES
@@ -443,12 +444,21 @@ class _TurnTools:
                         or start.date() != day
                     ):
                         raise ValueError()
-                    self.session.booking_details[booking_id] = {
+                    details = {
                         "id": booking_id,
                         "date": day.isoformat(),
                         "start_local": slot["start"],
                         "timezone": "Europe/Tallinn",
                     }
+                    restaurant = getattr(self.session.tools, "restaurant", None)
+                    if restaurant is not None:
+                        try:
+                            details = restaurant_booking_details(
+                                result["booking"], restaurant
+                            )
+                        except (KeyError, TypeError, ValueError):
+                            pass  # Optional display fields cannot erase a saved booking.
+                    self.session.booking_details[booking_id] = details
                     self.changes.append(
                         {
                             "action": "confirmed",

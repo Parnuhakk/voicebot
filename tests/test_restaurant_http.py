@@ -221,7 +221,15 @@ def test_browser_voice_policy_books_only_after_recap_receipt(
     row = page["items"][0]
     assert str(row["id"]) == confirmed["booking_changes"][0]["id"]
     assert row["status"] == "confirmed" and row["service_id"] == 4
-    assert row["start_local"] == confirmed["booking_changes"][0]["start_local"]
+    change = confirmed["booking_changes"][0]
+    assert row["start_local"] == change["start_local"]
+    assert row["end_local"] == change["end_local"]
+    assert change["party_size"] == 4
+    assert change["table_name"] == row["provider_name"]
+    assert change["table_id"] == str(row["provider_id"])
+    assert change["timezone"] == "Europe/Tallinn"
+    assert change["synthetic"] is True
+    assert confirmed["reply"] == client.provider.spoken[-1]
 
 
 @pytest.mark.parametrize("channel", ["text", "audio"])
@@ -280,6 +288,81 @@ def test_asr_confirmation_without_delivery_receipt_never_reaches_the_calendar(cl
         client.get("/api/bookings?date=" + tomorrow(), headers=AUTH).json()["items"]
         == []
     )
+
+
+@pytest.mark.parametrize("lost_after_write", [False, True])
+def test_failed_confirmation_never_returns_a_success_receipt(
+    client, monkeypatch, lost_after_write
+):
+    session = start(client, "et")["session_id"]
+    proposal = turn(client, session, "Soovin homme lauda neljale kell 14.00", language="et")
+    dispatcher = client.app.state.stack["dispatcher"]
+    original = dispatcher.dispatch
+    writes = []
+
+    async def failing_write(name, arguments):
+        if name != "confirm_slot_booking":
+            return await original(name, arguments)
+        writes.append(name)
+        if lost_after_write:
+            await original(name, arguments)
+            raise TimeoutError("fixture response lost after commit")
+        return {"error": "slot_unavailable"}
+
+    monkeypatch.setattr(dispatcher, "dispatch", failing_write)
+    result = turn(
+        client, session, CONSENT["et"], language="et",
+        receipt=proposal["recap_delivery_id"],
+    )
+    assert result["booking_changes"] == []
+    assert result["reply"] != COPY["et"]["confirmed"]
+    assert result["reply"] == client.provider.spoken[-1]
+    if lost_after_write:
+        assert result["reply"] == COPY["et"]["unknown"]
+        repeated = turn(client, session, CONSENT["et"], language="et")
+        assert repeated["reply"] == COPY["et"]["unknown"]
+        assert repeated["booking_changes"] == []
+    assert len(writes) == 1
+    rows = client.get("/api/bookings?date=" + tomorrow(), headers=AUTH).json()["items"]
+    assert len(rows) == int(lost_after_write)
+
+
+@pytest.mark.parametrize("direct", [False, True])
+def test_optional_display_metadata_failure_preserves_saved_booking_and_link(
+    client, monkeypatch, direct
+):
+    def unavailable_details(*args):
+        raise ValueError("fixture optional display metadata unavailable")
+
+    monkeypatch.setattr("app.hackathon.restaurant_booking_details", unavailable_details)
+    monkeypatch.setattr("app.booking_web.restaurant_booking_details", unavailable_details)
+    if direct:
+        session, proposal = prepared(client, "et")
+        client.post(
+            "/api/booking/recap",
+            json={"session_id": session, "hold_id": proposal["hold_id"]},
+            headers=AUTH,
+        )
+        response = client.post(
+            "/api/booking/confirm",
+            json={"session_id": session, "hold_id": proposal["hold_id"], "consent": True},
+            headers=AUTH,
+        )
+        assert response.status_code == 200 and response.json()["ok"] is True
+        result = response.json()
+    else:
+        session = start(client, "et")["session_id"]
+        proposal = turn(client, session, "Soovin homme lauda neljale kell 14.00", language="et")
+        result = turn(
+            client, session, CONSENT["et"], language="et",
+            receipt=proposal["recap_delivery_id"],
+        )
+        assert result["reply"] == COPY["et"]["confirmed"]
+    change = result["booking_changes"][0]
+    assert change["action"] == "confirmed" and change["date"] == tomorrow()
+    assert "party_size" not in change
+    row = client.get("/api/bookings?date=" + tomorrow(), headers=AUTH).json()["items"][0]
+    assert str(row["id"]) == change["id"] and row["status"] == "confirmed"
 
 
 def spoken_tomorrow():
@@ -422,12 +505,21 @@ def test_direct_table_booking_recap_confirmation_and_owned_cancel(client, langua
     confirmed = client.post("/api/booking/confirm", json=body, headers=AUTH)
     assert confirmed.status_code == 200 and confirmed.json()["ok"] is True
     identifier = str(confirmed.json()["booking"]["id"])
+    change = confirmed.json()["booking_changes"][0]
+    booking = confirmed.json()["booking"]
+    assert change["id"] == identifier and change["action"] == "confirmed"
+    assert change["start_local"] == booking["start"]
+    assert change["end_local"] == booking["end"]
+    assert change["party_size"] == booking["party_size"] == 4
+    assert change["table_id"] == booking["table_id"]
+    assert change["table_name"] == "Table 3"
     cancelled = client.post(
         "/api/booking/cancel",
         json={"session_id": session, "booking_id": identifier, "consent": True},
         headers=AUTH,
     )
     assert cancelled.status_code == 200 and cancelled.json()["ok"] is True
+    assert cancelled.json()["booking_changes"] == [{**change, "action": "cancelled"}]
     page = client.get("/api/bookings?date=" + tomorrow(), headers=AUTH).json()
     assert page["items"][0]["status"] == "cancelled"
 

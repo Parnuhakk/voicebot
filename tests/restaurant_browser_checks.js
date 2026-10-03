@@ -10,6 +10,18 @@ async page => {
   const chooseLanguage = async code => page.locator('.language-option').filter({
     has: page.locator('input[value="' + code + '"]'),
   }).click();
+  const assertReceipt = async (container, time, identifier, action = 'confirmed') => {
+    const receipt = container.locator('.booking-receipt').last();
+    assert(await receipt.isVisible(), 'saved reservation details were not shown immediately');
+    assert.equal(await receipt.getAttribute('data-action'), action);
+    const details = await receipt.locator('dd').allTextContents();
+    assert.equal(details[0], await page.evaluate(()=>formatBookingDate(tallinnDay(1))));
+    assert.equal(details[1], time);
+    assert.equal(details[2], '4');
+    assert.equal(details[3], 'Table 3');
+    assert.equal(details[4], '#' + identifier);
+    assert.equal(await receipt.locator('dt').count(), 5);
+  };
   assert.equal(await page.getByRole('radio').count(), 3);
   assert(await page.getByRole('radio', {name:'Eesti', exact:true}).isChecked());
   for (const [code, name] of [['en','English'], ['ru','Русский'], ['et','Eesti']]) {
@@ -147,10 +159,13 @@ async page => {
     assert.equal(await page.locator('#booking-page').textContent(),'1');
     assert.equal(await page.locator('#bookings .booking-recent').count(),1);
     assert(await page.locator('#reservation-status .booking-link').isVisible());
+    const formBooking = await page.evaluate(()=>reservation.bookingId);
+    await assertReceipt(page.locator('#reservation-status'), '14:00–15:30', formBooking);
     assert(await page.locator('#reservation-prepare').isDisabled(),'new preparation lost owned cancellation');
     await page.locator('#reservation-cancel').click();
     await page.waitForFunction(()=>!reservation.bookingId && !reservation.busy);
     assert((await page.locator('#bookings').textContent()).includes(language.cancelled));
+    await assertReceipt(page.locator('#reservation-status'), '14:00–15:30', formBooking, 'cancelled');
     await page.locator('#reservation-end').click();
     await page.waitForFunction(()=>!reservation.sessionId && !reservation.busy);
     assert(!(await page.getByRole('radio', {name:'Eesti', exact:true}).isDisabled()));
@@ -184,11 +199,20 @@ async page => {
   assert(voiceBooking && voiceBooking.date===await page.evaluate(()=>tallinnDay(1)));
   assert.equal(await page.locator('#booking-page').textContent(),'1');
   assert.equal(await page.locator('#bookings .booking-recent').getAttribute('data-booking-id'),voiceBooking.id);
+  await assertReceipt(page.locator('#demo-messages'), '16:00–17:30', voiceBooking.id);
+  await page.locator('#demo-messages .booking-receipt').last().scrollIntoViewIfNeeded();
+  await page.screenshot({path:'output/playwright/booking-confirmation-desktop.png',fullPage:true});
+  await page.setViewportSize({width:320,height:844});
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'receipt overflows 320px layout');
+  await page.screenshot({path:'output/playwright/booking-confirmation-mobile.png',fullPage:true});
+  await page.setViewportSize({width:1440,height:1000});
   await page.locator('#demo-messages .booking-link').last().click();
   await page.waitForFunction(()=>document.activeElement?.dataset.bookingId===state.latestBooking.id);
   assert.equal(await page.locator('#booking-date').inputValue(),voiceBooking.date);
   await send('Yes, cancel.');
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('cancelled'));
+  await assertReceipt(page.locator('#demo-messages'), '16:00–17:30', voiceBooking.id, 'cancelled');
+  assert.equal(await page.locator('.booking-receipt[data-action="confirmed"]').count(),0,'cancellation left a stale confirmed receipt');
   await page.evaluate(()=>{HTMLMediaElement.prototype.play=restaurantOriginalPlay;});
   await page.evaluate(()=>{
     const context=new AudioContext(),sink=context.createMediaStreamDestination(),source=context.createOscillator(),gain=context.createGain();
@@ -216,10 +240,11 @@ async page => {
   await send('Soovin lauaks homseks kell 17.00 nelja inimesega');
   await page.locator('#demo-recap-read').click();
   await send('ja kinnitää');
-  assert((await page.locator('#demo-messages .message').last().textContent()).includes('kinnitatud'));
+  assert((await page.locator('#demo-messages .message').last().textContent()).includes('Teie broneering on tehtud.'));
   assert.equal(await page.evaluate(()=>state.latestBooking.date),await page.evaluate(()=>tallinnDay(1)));
   assert.equal(await page.locator('#bookings .booking-recent').count(),1);
   const estonianBooking=await page.evaluate(()=>state.latestBooking.id);
+  await assertReceipt(page.locator('#demo-messages'), '17:00–18:30', estonianBooking);
   await page.locator('#demo-end').click();
   await page.waitForFunction(()=>!state.sessionId && !state.turnBusy);
   await page.reload({waitUntil:'networkidle'});
@@ -231,6 +256,8 @@ async page => {
   await page.locator('#booking-date').dispatchEvent('change');
   await page.waitForFunction(()=>!state.readBusy);
   assert((await page.locator(`#bookings [data-booking-id="${estonianBooking}"]`).textContent()).includes('kinnitatud'));
+  assert((await page.locator(`#bookings [data-booking-id="${estonianBooking}"]`).textContent()).includes('17:00–18:30'));
+  assert((await page.locator(`#bookings [data-booking-id="${estonianBooking}"]`).textContent()).includes('4'));
   await page.screenshot({path:'output/playwright/restaurant-desktop.png',fullPage:true});
   await page.setViewportSize({width:390,height:844});
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'mobile horizontal overflow');
@@ -243,6 +270,20 @@ async page => {
   await page.setViewportSize({width:320,height:844});
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'320px horizontal overflow');
   await page.setViewportSize({width:390,height:844});
+  // A failed mutation cannot display a success receipt or become auto-retryable.
+  await page.locator('#reservation-time').fill('18:00');
+  await page.locator('#reservation-party').fill('4');
+  await page.locator('#reservation-prepare').click();
+  await page.waitForFunction(()=>reservation.holdId && !reservation.busy);
+  await page.locator('#reservation-read').click();
+  await page.waitForFunction(()=>reservation.acknowledged && !reservation.busy);
+  await page.route('**/api/booking/confirm', route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'write_outcome_unknown',ok:false})}));
+  await page.locator('#reservation-confirm').click();
+  await page.waitForFunction(()=>reservation.uncertain && !reservation.busy);
+  assert.equal(await page.locator('#reservation-status .booking-receipt').count(),0);
+  assert(await page.locator('#reservation-confirm').isDisabled());
+  assert((await page.locator('#reservation-status').getAttribute('class')).includes('error'));
+  await page.unroute('**/api/booking/confirm');
   // A late private reply must not restore data after disconnect.
   let release; const gate=new Promise(resolve=>{release=resolve;});
   await page.route('**/api/bookings?**',async route=>{await gate;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({items:[],has_more:false})}).catch(()=>{});});
@@ -252,6 +293,7 @@ async page => {
   await page.waitForFunction(()=>!state.connected && !state.readBusy);
   assert.equal(await page.locator('#bookings .booking-row').count(),0);
   assert.equal(await page.locator('#demo-messages .message').count(),0);
+  assert.equal(await page.locator('.booking-receipt').count(),0);
   assert(await page.locator('#reservation-confirm').isDisabled());
   // Both hosts share one application; only the operator hostname gets the shell.
   await page.setViewportSize({width:801,height:844});
