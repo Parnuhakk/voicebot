@@ -133,7 +133,12 @@ skips**, two warnings, 166.74 seconds, basetemp
 including family facilities and nonblocking/failure-recovering background reads,
 with zero JavaScript errors or external requests. All twelve private probe
 expected replies separately match the real canonical renderer with no holds,
-bookings or provider calls. Additive-family seam review is pending.
+bookings or provider calls.
+The subsequent independent Codex review is **PASS**: 126 family/capability
+combinations, including 42 pending-proposal consent cases. Eighteen combined
+Russian facility/note questions conservatively select `family_details`; the
+capability disclosure and fresh-consent gates remain intact. This is a recorded
+lower-severity topic-selection limitation, not a live restaurant acceptance.
 
 All nine committed local browser scenarios pass with Chromium 153.0.8010.12,
 zero uncaught JavaScript errors and zero external requests. These cover the
@@ -163,11 +168,77 @@ production language/date safeguard was removed to make the suite green.
 
 ## Deployment and acceptance boundary
 
-The final rollout uses the existing Coolify application and original shared
-volume, with the existing release lock, a fresh zero-room check and normal
-non-forced publication. Live activation, source hashes, private authorization,
-data preservation and provider-backed ET/EN/RU results are recorded in the
-session-owned goal evidence after publication, not inferred from these fixtures.
+Reviewed `b9a320e` was normally merged through PR #31 as `a1793f8` under the
+existing release lock with zero active rooms. PR CI run `37158335936` and master
+run `37158531147` passed both Linux regression and shared-image jobs. All 94
+application/demo files matched the healthy web, worker and bridge release; the
+media image IDs agreed. Read-only public browser acceptance passed robot HTTPS,
+asset versions, restaurant content and mobile controls; the removed Meretuule
+host did not publish content. The obsolete draft PR #6 was closed as superseded,
+without deleting its branch or historical commits.
+
+Published descendant `0487c2ec` passed an exact source/health check and nine
+private authorization/no-store checks. Missing/wrong authorization returned 403,
+valid authorization returned 200. Original shared volume and LiveKit/SIP/Redis
+container IDs were preserved. Original restaurant, Easy and Stay row-prefix
+digests matched the premerge baseline; four restaurant reservations and eight
+actions had been added concurrently, so whole restaurant-table equality is not
+claimed. The original records were not overwritten.
+
+Private Estonian speech attempts failed closed on concurrent restaurant-state
+changes, short-input timeout and then a menu-spelling mismatch. Metadata-only
+diagnosis established fresh caller input with 0.991 similarity containing
+`menüs`, no menu topic, and the canonical `information_unknown` reply. These
+attempts are not accepted as provider-backed speech proof.
+
+## Final menu-spelling and mobile-layout correction
+
+Published `2119c343` retained the reviewed restaurant boundaries and added
+operator quality controls. Three new real constructor/recognized-HTTP cases
+failed on the observed single-vowel `menüs` spelling. The existing menu selector
+now accepts both `menü` and `menüü`; no language, booking, allergy, capability or
+consent rule is bypassed. The private check's first Estonian question is now a
+full natural menu question, still with automatic initial language recognition
+and all strict caller/reply/audio/storage checks.
+
+The new quality-browser journey also failed on Russian at 390×844: translated
+header wrapping placed the 69-pixel voice controls at y=799.97. Two mobile-only
+spacing declarations fix the wrapping without hiding wording, changing desktop
+layout or reducing the 44-pixel minimum touch targets. The stylesheet URL has
+the matching content fingerprint. The entire quality journey then passed.
+
+Fresh combined verification on this exact repair tree: **11,895 passed,
+36 subtests passed, 4 private-backend opt-in skips**, two existing warnings,
+131.80 seconds. Full command above with basetemp
+`/tmp/opencode/restaurant-recovery-final-spoken-menu`. All **ten** Chromium
+153.0.8010.12 scenarios passed, zero JavaScript errors and external requests,
+including translated landmarks, first-screen voice controls, expiration,
+renewal/fresh recap consent, uncertain-write protection and logout timers.
+Focused phone/reasoning/interruptions: 221 passed. Private-check offline tests:
+48 passed, zero provider requests.
+
+Independent Codex-account narrow review against `2119c343`: **PASS**, three
+added real-path tests and ten matcher priority/no-booking probes. No concrete
+P0/P1 found. The review did not claim browser, provider or deployment proof and
+could not independently establish the untracked private helper's baseline.
+Private live ET/EN/RU acceptance and deployment of this final correction remain
+pending until recorded against the actual synchronized release.
+
+The normal merge of subsequently published `8123638` preserves its natural
+restaurant replies, the configured name `Meretuule`, guest display names and
+additional Estonian question variants. The only source conflict kept the new
+price selector alongside the reviewed menu-spelling alias. Fresh combined
+verification of this merge: **11,966 passed, 36 subtests passed, 4 private-backend
+opt-in skips**, two warnings, 173.56 seconds; basetemp
+`/tmp/opencode/restaurant-recovery-812-wording-final`. All ten Chromium journeys
+pass again without JavaScript errors or external requests.
+
+All twelve private expectations match the new actual canonical renderer and
+final guard with no holds/bookings/providers. Four new failing-first offline
+probes exposed missing first-person Russian/English refusal forms in the audio
+validator; the validator now covers those forms while retaining historical
+third-person and fictional-booking cases. All 52 offline checks pass. This is
+acceptance-validator verification, not a claim that live speech has passed.
 
 This document does not claim a physical microphone test, a carrier/PSTN call,
 real restaurant acceptance, an allergy-safe meal, a food order or a real booking.
