@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 from .dashboard.api import _require_operator
 from .demo import load_demo_data
 from .hackathon import operator_scope
+from .restaurant_data import restaurant_booking_details
 
 
 async def _body(request):
@@ -95,6 +96,12 @@ def _remember_booking(session, body, result, kind, cancel):
             else:
                 slot = session.tools.held_slots[body["hold_id"]]
                 details.update(date=slot["date"], start_local=slot["start"])
+                restaurant = getattr(session.tools, "restaurant", None)
+                if restaurant is not None:
+                    try:
+                        details.update(restaurant_booking_details(booking, restaurant))
+                    except (KeyError, TypeError, ValueError):
+                        pass  # Preserve the receipt and calendar link after the write.
             session.booking_details[booking_id] = details
             result["booking_id"] = booking_id
             changes.append({"action": "confirmed", **details})
@@ -102,7 +109,7 @@ def _remember_booking(session, body, result, kind, cancel):
             changes.append(
                 {"action": "cancelled", **session.booking_details[body["booking_id"]]}
             )
-    except (KeyError, TypeError, AttributeError):
+    except (KeyError, TypeError, ValueError, AttributeError):
         pass  # Keep the provider's receipt; do not guess its booking date.
     result["booking_changes"] = changes
 
