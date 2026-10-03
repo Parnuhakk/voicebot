@@ -254,7 +254,7 @@ def test_http_month_and_day_followups_retain_context(client, language, month, da
     initial = {
         "et": "laud kell 18:00 neljale",
         "en": "table at 18:00 for four",
-        "ru": "столик на 18:00 на четверых",
+        "ru": "столик в 18:00 для четырёх человек",
     }[language]
     for text, key in [(initial, "date"), (month, "date_incomplete")]:
         response = turn(client, session_id, text, language=language)
