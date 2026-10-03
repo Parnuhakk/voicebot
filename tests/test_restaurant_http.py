@@ -233,7 +233,13 @@ def test_browser_voice_policy_books_only_after_recap_receipt(
     answer = turn(client, data["session_id"], utterance, language=language)
     assert answer["recap_delivery_id"]
     assert COPY[language]["confirmation_question"] in answer["reply"]
-    assert "4" in answer["reply"] and "90" in answer["reply"]
+    if language == "ru":
+        assert "на четырёх гостей" in answer["reply"]
+        assert "на полтора часа" in answer["reply"]
+    else:
+        assert "4" in answer["reply"] and "90" in answer["reply"]
+    recap = client.app.state.demo_sessions.sessions[data["session_id"]].tools.pending["recap"]
+    assert recap["party_size"] == 4 and recap["duration_minutes"] == 90
     assert answer["booking_changes"] == []
     confirmed = turn(
         client,

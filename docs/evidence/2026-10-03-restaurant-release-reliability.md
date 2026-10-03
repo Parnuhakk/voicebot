@@ -244,6 +244,42 @@ all **74** current probe cases successfully in 17.85 seconds. The probe-alignmen
 static review is clear; syntax, assets, credential/conflict patterns and
 whitespace checks passed before recording this integration checkpoint.
 
+### Published Russian speech and grounded answers
+
+Normal integration of `fc5c4ae` preserves both contributor features and prior
+receipt, capture, ownership and uncertainty guards. New independent static
+reviews found two P1s: approving models could speak unverified availability or
+booking success, and an allergy question after three other topics lost its
+safety classification. Actual HTTP/SQLite/SSML cases produced nine expected
+failures and one existing pass before local claim guards, full-input allergy
+priority, shared 600-character speech bounds, candidate normalization and the
+Russian recap introduction were repaired. The affected two files passed 133
+tests. A narrow review then found internal-newline bypass of the recognized
+booking claim: two additional actual HTTP REDs, followed by whitespace-normalized
+guard matching only. Original reviewed/stored/spoken text is not rewritten.
+All independent narrow static findings are now closed; no system-wide semantic
+or human-audio guarantee is claimed.
+
+Fresh combined source verification after the last code repair:
+
+- Core: **11,158 passed, 70 skipped, 36 subtests passed**, 105.63 seconds.
+- Media: **11,541 passed, 6 skipped, 36 subtests passed**, 154.29 seconds.
+- All nine Chromium journeys passed, including three grounded-answer journeys;
+  21 delivery/capture/stale-response cases passed, external requests/page errors 0.
+- 181 Python AST, 21 JavaScript syntax, JSON, six asset hashes, credential and
+  conflict patterns and whitespace checks passed.
+- Isolated Docker packaging: **5 passed**, 14.68 seconds. The first attempt
+  failed because the running worker's backing image ID was absent from the local
+  image store; read-only diagnosis confirmed `No such image`. An explicitly
+  existing local immutable image was used next; no pulls, runtime restarts or
+  configuration changes were made.
+
+These are overlapping suites, not a summed test total. Immediately before
+publication, immutable remote `97684ad` revealed newly published flexible-date
+and release-status receipt changes. They are being independently reviewed for
+normal integration; the counts above attest this `fc5c4ae` integration checkpoint,
+not that newer combined source or live provider acceptance.
+
 ## Pre-rollout preservation qualification
 
 Read-only hash-only snapshot at 2026-10-03 20:34:39 UTC records healthy web,

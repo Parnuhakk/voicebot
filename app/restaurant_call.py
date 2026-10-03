@@ -29,6 +29,7 @@ from .restaurant_data import restaurant_demo_profile
 from .restaurant_dates import ESTONIAN_COUNTS, resolve_restaurant_date
 from .restaurant_date_vocabulary import RUSSIAN_COUNTS
 from .providers.speech_delivery import spoken_estonian_date
+from .providers import russian_speech
 from .restaurant_answers import (
     GUIDANCE,
     INFORMATION_TOPICS,
@@ -99,32 +100,32 @@ COPY: dict[str, dict[str, str]] = {
         "recap": "Your test reservation: {name}, {date} at {time}, for {party} guests. The table is for {duration} minutes, under {guest}. {question}",
     },
     "ru": {
-        "greeting": "Здравствуйте! Я ИИ-помощник деморесторана. Настоящий столик здесь не бронируется. Чем помочь?",
-        "date": "На какую дату нужен столик?",
-        "date_invalid": "Такой даты нет в календаре. Какой день и месяц вы имеете в виду?",
-        "date_ambiguous": "Какую дату вы имеете в виду? Назовите один день и месяц.",
-        "date_incomplete": "Какую дату вы имеете в виду? Назовите день и месяц.",
+        "greeting": "Здравствуйте! Я голосовой помощник ресторана. Здесь можно сделать только тестовую бронь. Чем помочь?",
+        "date": "На какой день нужен столик?",
+        "date_invalid": "Такого дня в календаре нет. Назовите, пожалуйста, день и месяц ещё раз.",
+        "date_ambiguous": "Какой именно день? Назовите, пожалуйста, одну дату.",
+        "date_incomplete": "Подскажите, пожалуйста, день и месяц.",
         "time": "Во сколько хотите прийти?",
-        "ambiguous_time": "Утром или вечером? Можно назвать время в 24-часовом формате.",
-        "invalid_time": "Какое точное время вам подходит? Например, 18:30.",
+        "ambiguous_time": "Вы имеете в виду утром или вечером?",
+        "invalid_time": "Во сколько именно? Например, в 18:30.",
         "party": "Сколько вас будет, вместе с детьми?",
-        "unavailable": "На это время подходящего столика нет. Вы хотите другое время или дату?",
+        "unavailable": "На это время столика нет. Подойдёт другое время или день?",
         "unknown": "Результат действия неизвестен. Не повторяйте его; проверьте на сайте или спросите сотрудника.",
-        "confirmed": "Ваше бронирование подтверждено. Подробности доступны на этой странице.",
-        "cancelled": "Ваше тестовое бронирование столика отменено.",
-        "existing": "Этот столик уже забронирован; новое бронирование не создано.",
-        "already_cancelled": "Это бронирование столика уже отменено.",
-        "staff": "Об этом лучше спросить сотрудника ресторана. В этой демонстрации я не могу перевести звонок.",
-        "domain": "Я помогу с бронированием столика, меню и часами работы ресторана. Чем могу помочь?",
-        "information_unknown": "У меня нет подтверждённых сведений об этом. Уточните вопрос или спросите сотрудника ресторана.",
-        "price": "Сейчас у меня нет цен меню. Точную цену подскажет сотрудник ресторана.",
+        "confirmed": "Готово, бронь подтверждена. Детали есть на этой странице.",
+        "cancelled": "Готово, тестовая бронь отменена.",
+        "existing": "Этот столик уже забронирован. Дублировать бронь не будем.",
+        "already_cancelled": "Эта бронь уже отменена.",
+        "staff": "Это лучше уточнить у сотрудника ресторана. В демоверсии перевести звонок не получится.",
+        "domain": "Могу помочь со столиком, меню или часами работы. Что вас интересует?",
+        "information_unknown": "Пока не знаю. Можете уточнить вопрос или спросить сотрудника ресторана.",
+        "price": "Цен у меня пока нет. Их подскажет сотрудник ресторана.",
         "failed": "Не удалось забронировать столик. Проверьте дату и время или попробуйте позже.",
         "menu": "В меню {items}.",
         "hours": "{hours}.",
         "closed": "закрыто",
-        "alternatives": "На запрошенное время столика нет. Возможное время на ту же дату: {times}. Что вам подходит?",
+        "alternatives": "На это время столика нет. В тот же день есть {times}. Что вам удобнее?",
         "confirmation_question": CONFIRMATION_QUESTIONS["ru"],
-        "recap": "Тестовая бронь: {name}, {date} в {time}, на {party} гостей. Столик на {duration} минут, на имя {guest}. {question}",
+        "recap": "Итак, тестовая бронь: {name}, {date}, в {time}, на {party}. На имя {guest}, столик на {duration}. {question}",
     },
 }
 
@@ -518,6 +519,7 @@ class RestaurantCallTools(CallTools):
         self._restaurant_last_response = None
         self._restaurant_question = None
         self._restaurant_unmatched = False
+        self._reasoned_reply: tuple[int, str, str, str] | None = None
 
     def conversation_tools(self):
         public = {
@@ -563,6 +565,9 @@ class RestaurantCallTools(CallTools):
             LANGUAGE_POLICY
             + "You are the AI receptionist of the RESTAURANT in the trusted context. All reservations are fictional. "
             f"Reply only in {self.language}. Keep replies warm, brief and natural; ask one missing detail at a time. "
+            "In Russian use everyday polite spoken language, usually one or two short sentences. "
+            "Avoid канцелярит such as 'осуществить бронирование', 'на запрошенное время', 'подтверждённые сведения'. "
+            "Do not add filler, invented laughter or claim to be human. Do not repeat the introduction each turn. "
             "You help with dining table reservations, approved menu information, opening/kitchen hours and restaurant policies. "
             "Do not offer hotel rooms, spa treatments, food ordering, payments or an unimplemented call transfer/callback. "
             "Before planning a table ask for date, exact Tallinn local time and total party size INCLUDING children. "
@@ -620,6 +625,7 @@ class RestaurantCallTools(CallTools):
         super().observe_user_text(text, **kwargs)
         if kwargs.get("is_final", True) is not True:
             return
+        self._reasoned_reply = None
         self._booking_inquiry = None
         self.faq_entries = ()
         self._faq_unmatched = False
@@ -847,7 +853,13 @@ class RestaurantCallTools(CallTools):
             return self.restaurant["pet_policy"][self.language]
         if topic in GUIDANCE[self.language]:
             return GUIDANCE[self.language][topic].format(
-                duration=self.restaurant["reservation_duration_minutes"],
+                duration=(
+                    russian_speech.duration(
+                        self.restaurant["reservation_duration_minutes"]
+                    )
+                    if self.language == "ru"
+                    else self.restaurant["reservation_duration_minutes"]
+                ),
                 maximum=self.restaurant["maximum_party_size"],
             )
         if topic == "policies":
@@ -973,6 +985,27 @@ class RestaurantCallTools(CallTools):
             if all(key in inquiry for key in ("date", "start_time", "party_size")):
                 return {"name": "plan_restaurant_reservation", "arguments": inquiry}
         return None
+
+    @property
+    def reasoning_allowed(self) -> bool:
+        """Free wording is read-only; all consequential state stays canonical."""
+        topics = self._restaurant_question.topics if self._restaurant_question else ()
+        return bool(
+            (self._restaurant_focus or self._restaurant_unmatched)
+            and self._restaurant_focus not in {"staff", "domain", "demo"}
+            and "allergens" not in topics
+            and not (
+                self.pending
+                or self.cancel_approval
+                or self.turn_mutation
+                or self.mutation_uncertain
+                or self.clarification
+                or self.unsupported_language
+                or self.input_recovery_reply
+                or self.conversation.intent
+                or self.results
+            )
+        )
 
     async def _dispatch(self, name, args):
         if name not in self.names:
@@ -1165,8 +1198,16 @@ class RestaurantCallTools(CallTools):
                 if self.language == "en"
                 else start.strftime("%H:%M")
             ),
-            party=fields["party_size"],
-            duration=fields["duration_minutes"],
+            party=(
+                russian_speech.guest_count(fields["party_size"])
+                if self.language == "ru"
+                else fields["party_size"]
+            ),
+            duration=(
+                russian_speech.duration(fields["duration_minutes"])
+                if self.language == "ru"
+                else fields["duration_minutes"]
+            ),
             guest=fields["guest_name"],
             question=COPY[self.language]["confirmation_question"],
         )
@@ -1259,7 +1300,21 @@ class RestaurantCallTools(CallTools):
             if row.get("restaurant_unavailable"):
                 times = row.get("alternatives")
                 return (
-                    copybook["alternatives"].format(times=", ".join(times))
+                    copybook["alternatives"].format(
+                        times=(
+                            natural_list(
+                                [
+                                    russian_speech.spoken_time(
+                                        *map(int, value.split(":"))
+                                    )
+                                    for value in times
+                                ],
+                                "ru",
+                            )
+                            if self.language == "ru"
+                            else ", ".join(times)
+                        )
+                    )
                     if times
                     else copybook["unavailable"]
                 )
@@ -1272,6 +1327,17 @@ class RestaurantCallTools(CallTools):
         if text in (STT_UNAVAILABLE[self.language], TURN_UNAVAILABLE[self.language]):
             self.invalidate_recap()
             return text
+        if self._reasoned_reply and self.reasoning_allowed:
+            serial, language, approved, digest = self._reasoned_reply
+            if (
+                text == approved
+                and serial == self._turn_serial
+                and language == self.language
+            ):
+                from .restaurant_reasoning import facts_digest, restaurant_facts
+
+                if facts_digest(restaurant_facts(self)) == digest:
+                    return approved
         reply = self.inquiry_reply()
         if reply:
             return reply
