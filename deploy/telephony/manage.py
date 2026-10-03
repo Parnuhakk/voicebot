@@ -89,6 +89,7 @@ def environment(source, *, bridge_source=None):
         "VOICEBOT_SPEAKING_STYLE",
         "VOICEBOT_SPEECH_RATE",
         "VOICEBOT_RECAP_RATE",
+        "VOICEBOT_SENTENCE_PAUSE_MS",
         "VOICEBOT_AGENT_NAME",
     ):
         if k in source_env:

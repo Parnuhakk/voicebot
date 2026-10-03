@@ -79,6 +79,21 @@ phrasing, the fresh combined result is **11,470 passed, 36 subtests passed,
 Python `audioop` deprecation and
 Starlette's HTTPX test-client deprecation. This run made no provider calls.
 
+Final integration with published `97684ad` (flexible dates and release-channel
+checks) passed **11,661 tests, 36 subtests, 4 private-backend opt-in skips**, with
+the same two warnings in 124.07 seconds. Command above, basetemp
+`/tmp/opencode/restaurant-recovery-97684-final`. The updated restaurant and
+English browser journeys also pass; these retain exact recap, no-write,
+saved-record, unsupported-language, logout and retired-host assertions and add
+calendar-spelling repair. The seven other browser scenarios are unchanged from
+the preceding successful nine-scenario run.
+
+The final independent Codex-account review against `97684ad` is **PASS**, with
+205 scoped tests and additional offline HTTP/final-state/audio mutation probes.
+No remaining concrete P0/P1 was reproduced in the repaired boundaries. This
+review establishes the bounded source safeguards, not universal model
+entailment or live-provider/deployment acceptance.
+
 All nine committed local browser scenarios pass with Chromium 153.0.8010.12,
 zero uncaught JavaScript errors and zero external requests. These cover the
 operator layout, rollback fixtures, English controls, microphone races, real

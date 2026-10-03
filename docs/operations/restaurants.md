@@ -100,10 +100,29 @@ tomorrow`, `на завтрашний день`, `к завтрашнему дн
 Russian guest-count cases, such as `для четырёх гостей`, are separate from dates.
 The same invalid-date, range, negation, year and clarification rules apply in
 all three languages. English modal `May I book a table?` does not request May.
-Ambiguous numeric-only date conventions still require clarification; this
-change does not choose between day/month and month/day slash dates or parse
-spoken years. References: [Cambridge English dates](https://dictionary.cambridge.org/grammar/british-grammar/dates)
+Numeric year/month/day forms also accept slash and dot separators. Day/month
+and month/day slash or dash forms are accepted when only one calendar date is
+possible (for example `13/10/2026` and `10/13/2026`); `04/10/2026` still needs
+clarification. Explicit spoken years include `two thousand twenty-six`,
+`twenty twenty-seven`, `kahe tuhande kahekümne kuuendal aastal` and
+`две тысячи двадцать шестого года`. Incomplete or unsupported compound years
+need clarification. A missing year on February 29 means the next actual leap
+day; an explicit invalid year is rejected. References: [Cambridge English dates](https://dictionary.cambridge.org/grammar/british-grammar/dates)
 and [Voronezh State University numeral grammar](https://interedu.vsu.ru/rvc/mats/refs/redkina-rusgramm/redkina-rusgramm.pdf).
+
+Calendar words tolerate close spelling and recognition errors in ET/EN/RU,
+including `neljanadl oktobte`, `fourth Octobre` and `четвретого октябра`.
+Repair uses the existing inflected calendar vocabulary, diacritic folding,
+adjacent letter transpositions and at most one edit for short words or two
+for longer words. The observed `oktobte` spelling has an explicit October
+alias. Repair needs a date answer, adjacent day selector or bounded calendar
+context; names, guest counts and ordinary business prose are not freely
+rewritten. Competing months such as `juui` require clarification. Numeric
+digits are never repaired. The original displayed and stored transcript stays
+unchanged, and the assistant still reads the resolved date in the reservation
+recap before requesting consent. Partial day/month answers retain an explicit
+year while waiting for the missing component. These rules are shared by the
+web conversation, schedule answers and native final-turn preference parser.
 
 Successful demo confirmations and cancellations refresh the website's
 authenticated reservation list, select the actual reservation date, reset its
