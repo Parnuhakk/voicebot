@@ -16,7 +16,9 @@ SHA = "a" * 40
 @pytest.fixture(autouse=True)
 def clean_environment(monkeypatch):
     for key in list(releases.os.environ):
-        if key.startswith(("VOICEBOT_", "RESTAURANT_", "AZURE_", "GROQ_", "EASY_", "STAY_")):
+        if key.startswith(
+            ("VOICEBOT_", "RESTAURANT_", "AZURE_", "GROQ_", "EASY_", "STAY_")
+        ):
             monkeypatch.delenv(key)
     monkeypatch.delenv("CALLS_DB", raising=False)
 
@@ -51,24 +53,36 @@ def test_stale_receipt_is_not_current_deployment_proof(tmp_path):
     assert releases.status(path=path, now=boundary + 1)["status"] == "stale"
 
 
-@pytest.mark.parametrize("key,value", [
-    ("VOICEBOT_SENTENCE_PAUSE_MS", "240"),
-    ("VOICEBOT_TELEPHONE_LANGUAGE", "en"),
-    ("VOICEBOT_SPEECH_RATE", "1.0"),
-    ("GROQ_CHAT_MODEL", "fixture/new-model"),
-    ("AZURE_EN_VOICE", "en-US-GuyNeural"),
-    ("RESTAURANT_STATE_DB", "/data/another-booking.db"),
-    ("RESTAURANT_DEMO_WRITES", "1"),
-])
-def test_changed_shared_settings_invalidate_old_receipt(tmp_path, monkeypatch, key, value):
+@pytest.mark.parametrize(
+    "key,value",
+    [
+        ("VOICEBOT_SENTENCE_PAUSE_MS", "240"),
+        ("VOICEBOT_TELEPHONE_LANGUAGE", "en"),
+        ("VOICEBOT_SPEECH_RATE", "1.0"),
+        ("GROQ_CHAT_MODEL", "fixture/new-model"),
+        ("AZURE_EN_VOICE", "en-US-GuyNeural"),
+        ("RESTAURANT_STATE_DB", "/data/another-booking.db"),
+        ("RESTAURANT_DEMO_WRITES", "1"),
+    ],
+)
+def test_changed_shared_settings_invalidate_old_receipt(
+    tmp_path, monkeypatch, key, value
+):
     path, _ = receipt(tmp_path)
     monkeypatch.setenv(key, value)
     assert releases.status(path=path)["status"] == "out_of_sync"
 
 
-def test_credentials_and_carrier_configuration_never_enter_receipt(tmp_path, monkeypatch):
+def test_credentials_and_carrier_configuration_never_enter_receipt(
+    tmp_path, monkeypatch
+):
     before = releases.identity()
-    for key in ("AZURE_SPEECH_KEY", "GROQ_API_KEY", "TWILIO_AUTH_TOKEN", "LIVEKIT_API_SECRET"):
+    for key in (
+        "AZURE_SPEECH_KEY",
+        "GROQ_API_KEY",
+        "TWILIO_AUTH_TOKEN",
+        "LIVEKIT_API_SECRET",
+    ):
         monkeypatch.setenv(key, "synthetic-private-never-print")
     assert releases.identity() == before
     path, _ = receipt(tmp_path)
@@ -76,11 +90,14 @@ def test_credentials_and_carrier_configuration_never_enter_receipt(tmp_path, mon
     assert "synthetic-private" not in json.dumps(releases.status(path=path))
 
 
-@pytest.mark.parametrize("revision,fingerprint", [
-    ("branch-name", "b" * 64),
-    (SHA, "invalid"),
-    (SHA, "b" * 64),
-])
+@pytest.mark.parametrize(
+    "revision,fingerprint",
+    [
+        ("branch-name", "b" * 64),
+        (SHA, "invalid"),
+        (SHA, "b" * 64),
+    ],
+)
 def test_invalid_or_mismatched_record_keeps_previous_verified_receipt(
     tmp_path, revision, fingerprint
 ):
@@ -92,15 +109,23 @@ def test_invalid_or_mismatched_record_keeps_previous_verified_receipt(
     assert list(tmp_path.iterdir()) == [path]
 
 
-@pytest.mark.parametrize("change", [
-    {"revision": "master"}, {"revision": None},
-    {"fingerprint": "unknown"}, {"fingerprint": False},
-    {"verified_at": True}, {"verified_at": "today"},
-    {"verified_at": float("nan")}, {"verified_at": float("inf")},
-    {"verified_at": 10 ** 400},
-    {"verified_at": -1}, {"verified_at": time.time() + 3600},
-    {"unexpected": "synthetic-private"},
-])
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"revision": "master"},
+        {"revision": None},
+        {"fingerprint": "unknown"},
+        {"fingerprint": False},
+        {"verified_at": True},
+        {"verified_at": "today"},
+        {"verified_at": float("nan")},
+        {"verified_at": float("inf")},
+        {"verified_at": 10**400},
+        {"verified_at": -1},
+        {"verified_at": time.time() + 3600},
+        {"unexpected": "synthetic-private"},
+    ],
+)
 def test_malformed_receipt_is_unverified_and_not_echoed(tmp_path, change):
     path, payload = receipt(tmp_path)
     payload.update(change)
@@ -109,10 +134,17 @@ def test_malformed_receipt_is_unverified_and_not_echoed(tmp_path, change):
     assert "synthetic-private" not in json.dumps(releases.status(path=path))
 
 
-@pytest.mark.parametrize("payload", [
-    b"", b"[1]", b"null", b"\xff", b"x" * 4097,
-    b"[" * 1500 + b"0" + b"]" * 1500,
-])
+@pytest.mark.parametrize(
+    "payload",
+    [
+        b"",
+        b"[1]",
+        b"null",
+        b"\xff",
+        b"x" * 4097,
+        b"[" * 1500 + b"0" + b"]" * 1500,
+    ],
+)
 def test_corrupt_or_oversized_receipt_does_not_break_public_status(tmp_path, payload):
     path = tmp_path / "telephone-release.json"
     path.write_bytes(payload)
@@ -129,7 +161,9 @@ def test_failed_atomic_replace_preserves_old_receipt_and_removes_temporary(tmp_p
     assert list(tmp_path.iterdir()) == [path]
 
 
-def test_source_digest_tracks_shared_code_and_data_but_ignores_python_caches(tmp_path, monkeypatch):
+def test_source_digest_tracks_shared_code_and_data_but_ignores_python_caches(
+    tmp_path, monkeypatch
+):
     (tmp_path / "app").mkdir()
     (tmp_path / "data/demo").mkdir(parents=True)
     code = tmp_path / "app/example.py"
@@ -149,7 +183,9 @@ def test_source_digest_tracks_shared_code_and_data_but_ignores_python_caches(tmp
         releases.source_digest.cache_clear()
 
 
-def test_public_status_exposes_receipt_without_claiming_real_carrier_verification(tmp_path):
+def test_public_status_exposes_receipt_without_claiming_real_carrier_verification(
+    tmp_path,
+):
     path, _ = receipt(tmp_path)
     actual = releases.status
     with patch.object(releases, "status", side_effect=lambda: actual(path=path)):
@@ -159,7 +195,7 @@ def test_public_status_exposes_receipt_without_claiming_real_carrier_verificatio
     assert response.headers["Cache-Control"] == "no-store"
     telephone = response.json()["telephone"]
     assert telephone["release"]["status"] == "in_sync"
-    assert telephone["sentence_pause_ms"] == 180
+    assert telephone["sentence_pause_ms"] == 120
     assert telephone["carrier_call_verified"] is False
     assert telephone["public_ingress_verified"] is False
 

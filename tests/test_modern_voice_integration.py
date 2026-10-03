@@ -46,14 +46,14 @@ def test_stream_explicitly_disables_proxy_buffering(client):
 @pytest.mark.parametrize(
     "setting,want",
     [
-        (None, 650),
+        (None, 500),
         ("800", 800),
         ("300", 300),
         ("2000", 2000),
-        ("0", 650),
-        ("2001", 650),
-        ("not-a-number", 650),
-        ("650.5", 650),
+        ("0", 500),
+        ("2001", 500),
+        ("not-a-number", 500),
+        ("650.5", 500),
     ],
 )
 def test_actual_catalog_matches_browser_envelope_and_bounds_endpointing(

@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 from .booking_faq import FAQ_PATH, load_faq, normalize
 from .restaurant_data import DAYS
 from .restaurant_dates import resolve_restaurant_date
+from .restaurant_family import family_topic
 
 
 @dataclass(frozen=True)
@@ -46,6 +47,8 @@ INFORMATION_TOPICS = (
     "staff",
     "special_requests",
     "food_orders",
+    "family",
+    "family_details",
 )
 
 CAPABILITIES = {
@@ -173,13 +176,23 @@ def match_question(
         if (match := re.search(pattern, information_text))
     )
     topics = [topic for _, topic in sorted(matches)]
+    family = family_topic(text)
+    if family:
+        # A children's menu is distinct from the reviewed adult dish list, and
+        # toys/drawing questions must not receive only a guest-count reminder.
+        topics = [topic for topic in topics if topic != "children"]
+        if not re.search(r"täiskasvan|adults?|взросл", text):
+            topics = [topic for topic in topics if topic != "menu"]
+        topics.insert(0, family)
     recommendation = bool(RECOMMENDATION.search(text))
     if recommendation and "menu" not in topics:
         topics.append("menu")
     # "Сколько стоят блюда?" asks for prices, not a recital of every dish.
     # Keep explicit additional menu/recommendation requests as separate topics.
     if (
-        "price" in topics and "menu" in topics and not recommendation
+        "price" in topics
+        and "menu" in topics
+        and not recommendation
         and re.match(r"сколько(?:\s+\w+){0,2}\s+сто(?:ит|ят|ить)\b", text)
         and not re.search(r"\b(?:что|какие|покажите|расскажите)\b", text)
     ):
@@ -421,7 +434,8 @@ def format_schedule(
     # neural voice's own pauses rather than one long chain of conjunctions.
     answer = (
         ". ".join(part[:1].upper() + part[1:] for part in parts)
-        if language == "ru" else natural_list(parts, language)
+        if language == "ru"
+        else natural_list(parts, language)
     )
     return answer[:1].upper() + answer[1:]
 

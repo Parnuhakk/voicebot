@@ -306,12 +306,15 @@ def create_app():
         "stay_booking_ready": "search_availability" in advertised,
         "slot_booking_ready": "search_slots" in advertised,
         "booking_read_ready": stack["booking_reader"] is not None,
-        "restaurant_english_dates_times_ready": stack.get("business_type") == "restaurant",
+        "restaurant_english_dates_times_ready": stack.get("business_type")
+        == "restaurant",
         "restaurant_flexible_dates_ready": stack.get("business_type") == "restaurant",
         "booking_view_source": (
             stack.get("business_type", "hotel_spa")
             if stack.get("business_type") == "restaurant"
-            else "easyappointments" if stack["booking_reader"] is not None else None
+            else "easyappointments"
+            if stack["booking_reader"] is not None
+            else None
         ),
         # Dashboard queue is still explicit demo state; never claim a PMS write.
         "operator_hold_commands_ready": False,
@@ -481,12 +484,12 @@ def create_app():
             ]
         )
         try:
-            silence_ms = int(os.environ.get("VOICEBOT_MIC_SILENCE_MS", "650"))
+            silence_ms = int(os.environ.get("VOICEBOT_MIC_SILENCE_MS", "500"))
         except ValueError:
-            silence_ms = 650
+            silence_ms = 500
         return {
             "voices": rows,
-            "endpointing_ms": silence_ms if 300 <= silence_ms <= 2000 else 650,
+            "endpointing_ms": silence_ms if 300 <= silence_ms <= 2000 else 500,
         }
 
     preview_slots = asyncio.Semaphore(2)

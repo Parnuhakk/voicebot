@@ -119,8 +119,21 @@ Fresh combined checks against this integration: **11,738 passed, 36 subtests,
 `/tmp/opencode/restaurant-recovery-c48-final`). All nine Chromium scenarios pass,
 including twelve booking-side-question turns, with zero JavaScript errors or
 external requests. Focused capability/interruptions/reasoning/time checks:
-308 passed. Independent review of this overlapping merge is pending; earlier
-approval does not silently authorize a changed consent integration.
+308 passed. Independent Codex review of this overlapping merge is **PASS** with
+380 scoped checks, including HTTP/native stale delivery and exact recap checks.
+
+The next normal merge preserves published `6dbf78f` family facilities, responsive
+background reads and voice-latency improvements. Both canonical family topics
+and capability topics remain selectable; no older layout, language or provider
+settings replace that work. The upstream five localized date followup cases and
+language assertions are retained rather than the older three-case fixture.
+Fresh full verification: **11,793 passed, 36 subtests, 4 private-backend opt-in
+skips**, two warnings, 166.74 seconds, basetemp
+`/tmp/opencode/restaurant-recovery-6db-final`. All nine Chromium scenarios pass
+including family facilities and nonblocking/failure-recovering background reads,
+with zero JavaScript errors or external requests. All twelve private probe
+expected replies separately match the real canonical renderer with no holds,
+bookings or provider calls. Additive-family seam review is pending.
 
 All nine committed local browser scenarios pass with Chromium 153.0.8010.12,
 zero uncaught JavaScript errors and zero external requests. These cover the

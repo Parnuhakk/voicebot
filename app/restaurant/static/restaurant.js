@@ -18,7 +18,7 @@ const state = {
   voiceCatalog: null,
   voicesLoading: false,
   previewBusy: false,
-  endpointingMs: 650,
+  endpointingMs: 500,
   mic: null,
   micStarting: false,
   micEpoch: 0,
@@ -35,6 +35,7 @@ const state = {
   bookingReady: false,
   telephoneRelease: null,
   bookingView: 0,
+  historyView: 0,
   latestBooking: null,
 };
 const reservation = {
@@ -698,7 +699,7 @@ async function loadVoices() {
       data.endpointing_ms >= 300 &&
       data.endpointing_ms <= 2000
         ? data.endpointing_ms
-        : 650;
+        : 500;
   } catch (_) {
     if (generation !== state.generation || !state.connected) return;
     state.voiceCatalog = null;
@@ -1102,7 +1103,8 @@ async function sendTurn(input) {
     renderVoiceResult(data);
     const change = (data.booking_changes || []).at(-1);
     if (change) appendBookingReceipt(message, change);
-    await Promise.allSettled([loadBookings(), loadHistory()]);
+    // Operator reads must not hold the next voice turn or completed playback.
+    void Promise.allSettled([loadBookings(), loadHistory()]);
   } catch (error) {
     if (generation === state.generation) {
       status(
@@ -1340,10 +1342,11 @@ async function loadBookings() {
 }
 async function loadHistory() {
   if (!state.connected) return;
-  const generation = state.generation;
+  const generation = state.generation,
+    view = ++state.historyView;
   try {
     const data = await api("/api/call-history?page=1&length=10");
-    if (generation !== state.generation) return;
+    if (generation !== state.generation || view !== state.historyView) return;
     $("call-history").replaceChildren();
     for (const call of data.items) {
       const element = document.createElement("div");
@@ -1372,7 +1375,7 @@ async function loadHistory() {
       data.items.length ? `${data.items.length}` : demoCopy().noHistory,
     );
   } catch (error) {
-    if (generation === state.generation)
+    if (generation === state.generation && view === state.historyView)
       status("history-status", demoCopy().failed, "error");
   }
 }
