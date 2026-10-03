@@ -150,6 +150,10 @@ def restaurant_demo_profile(data):
     from .demo import load_demo_data
 
     demo = load_demo_data()
+    # Keep reserved fixture IDs/contacts; only restaurant call display names change.
+    for guest in demo["guests"].values():
+        if guest["firstName"] == "Demo":
+            guest["firstName"], guest["lastName"] = guest["lastName"], "Külaline"
     demo["profile"].update(
         name=data["name"],
         description_et=data["description"]["et"],
@@ -169,9 +173,9 @@ def restaurant_demo_profile(data):
             "question_et": "Kus restoran asub?",
             "question_en": "Where is the restaurant?",
             "question_ru": "Где находится ресторан?",
-            "answer_et": "Restoranidemol ei ole päris aadressi ega külastuskohta.",
-            "answer_en": "The restaurant demo has no real address or visitor location.",
-            "answer_ru": "Это деморесторан, поэтому настоящего адреса у него нет.",
+            "answer_et": "Mul ei ole restorani aadressi kohta kinnitatud infot.",
+            "answer_en": "I don't have verified information about the restaurant's address.",
+            "answer_ru": "Адреса ресторана у меня пока нет.",
         },
     ]
     return demo

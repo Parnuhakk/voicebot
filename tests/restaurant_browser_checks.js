@@ -145,6 +145,7 @@ async page => {
     await page.locator('#demo-start').click();
     await page.waitForFunction(()=>state.sessionId && !state.turnBusy);
     assert((await page.locator('#demo-messages').textContent()).includes(language.greeting));
+    assert(!/demo|testbroneering|test reservation|тестов|демо/i.test(await page.locator('#demo-messages .message').last().locator('span').textContent()), 'greeting narrated internal test status');
     assert.equal(requests.at(-1).body.language,language.code);
     const recoveryPrompts = {
       et: ['Ma ei saanud päris aru. Palun korda oma vastust.', 'Ma ei saanud ikka aru. Palun kirjuta oma vastus eesti, vene või inglise keeles.'],
@@ -174,9 +175,9 @@ async page => {
       assert.equal(await page.evaluate(()=>state.recap), null);
     }
     const petQuestions = {
-      et: ['Tahaks tulla koeraga.', 'Kas kutsuga võib tulla?', 'Jah, koeraga võib tulla.'],
-      en: ['Can I bring my dog?', 'Can we bring a puppy?', 'Yes, dogs are welcome.'],
-      ru: ['Можно прийти с собакой?', 'Можно с питомцем?', 'Да, можно прийти с собакой.'],
+      et: ['Tahaks tulla koeraga.', 'Kas kutsuga võib tulla?', 'Koeraga võib tulla. Teiste lemmikloomade kohta palun küsige restorani töötajalt.'],
+      en: ['Can I bring my dog?', 'Can we bring a puppy?', 'Dogs are welcome. Please ask the restaurant team about other pets.'],
+      ru: ['Можно прийти с собакой?', 'Можно с питомцем?', 'Можно прийти с собакой. О других питомцах спросите сотрудника ресторана.'],
     }[language.code];
     for (const question of petQuestions.slice(0, 2)) {
       await page.locator('#demo-text').fill(question);
@@ -259,6 +260,7 @@ async page => {
       }
     }
     const temporalRecap = await page.evaluate(()=>state.recap && state.recap.reply);
+    assert(!/demo|testbroneering|test reservation|тестов|демо/i.test(temporalRecap), 'recap narrated internal test status');
     assert(temporalRecap && (language.code === 'ru' ? temporalRecap.includes('на четырёх гостей') : /4\s+(?:guests|külalist|inimesele)/.test(temporalRecap)));
     if (language.code === 'ru') {
       assert(temporalRecap.includes('на полтора часа'));
@@ -457,7 +459,7 @@ async page => {
   assert(await page.locator('#demo-recap-read').isVisible(), 'Estonian imperfect date: ' + await page.locator('#demo-messages .message').last().textContent());
   await page.locator('#demo-recap-read').click();
   await send('ja kinnitää');
-  assert((await page.locator('#demo-messages .message').last().textContent()).includes('Teie broneering on tehtud.'));
+   assert((await page.locator('#demo-messages .message').last().textContent()).includes('Teie lauabroneering on kinnitatud.'));
   assert.equal(await page.evaluate(()=>state.latestBooking.date),await page.evaluate(()=>tallinnDay(1)));
   assert.equal(await page.locator('#bookings .booking-recent').count(),1);
   const estonianBooking=await page.evaluate(()=>state.latestBooking.id);
