@@ -141,6 +141,10 @@ async function checks(){
    el('demo-voice').value='azure';run('changeDemoVoice()');assert.equal(run('state.demoVoice'),'elevenlabs','active voice changed');
    run("state.sessionId=null;state.demoLanguage='et';renderVoices()");assert.equal(el('demo-voice').children.find(o=>o.value==='cartesia').disabled,true,'Cartesia offers unsupported Estonian');
    run("state.demoLanguage='auto';renderVoices()");assert(el('demo-voice').children.find(o=>o.value==='cartesia').textContent.includes('Azure'),'AUTO hides Cartesia Estonian fallback');
+   catalog={voices:[...profiles,...['azure-conversational','azure-conversational-male'].map(id=>({id,label:id,languages:['et','en','ru'],configured:true,available:true,disabled_reason:null,streaming:true}))],endpointing_ms:650};
+   await run('loadVoices()');
+   assert.equal(run('state.voiceCatalog.length'),6,'conversational catalog was rejected');
+   for(const id of ['azure-conversational','azure-conversational-male'])assert.equal(el('demo-voice').children.find(o=>o.value===id).disabled,false,'conversational voice remained disabled');
    catalog={};await run('loadVoices()');assert.equal(run('state.demoVoice'),'azure');assert.equal(el('demo-voice').children.filter(o=>!o.disabled).length,1,'legacy catalog optimistically enabled modern providers');
    assert(el('demo-voice-help').textContent.includes('catalog_unavailable'),'legacy readiness is not honest');
    run("state.demoVoice='elevenlabs';renderVoiceResult({})");assert(!el('demo-voice-result').textContent.includes('elevenlabs'),'missing effective metadata pretends selected voice was used');

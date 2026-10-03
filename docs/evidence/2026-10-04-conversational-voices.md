@@ -39,7 +39,11 @@ speaker or grants a completed booking recap receipt.
 These are local fixtures: Azure HTTP requests use synthetic MP3, and the real
 LiveKit plugin's per-sentence request uses simulated PCM. They verify routing,
 markup, failure handling and browser playback, not live provider pronunciation.
-The full repository suite was not rerun for this change.
+After integrating the current master, a full core run found eight instances of
+one stale catalog expectation; 11,104 other cases passed, 72 skipped and 36
+subtests passed. The catalog expectation was expanded to the new profile IDs,
+and the shared legacy dashboard accepts the new catalog as well. The focused
+catalog/UI checks and complete Linux CI cover the corrected integration.
 
 ## Listening boundary and rollback
 
