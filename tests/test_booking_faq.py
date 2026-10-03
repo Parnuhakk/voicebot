@@ -146,6 +146,9 @@ def setup_session(client, language):
     client.app.state.stack.update(dispatcher=dispatcher, llm_primary=model)
     session = start(client)
     state = client.app.state.demo_sessions.sessions[session].tools
+    # Continuation fixtures already have a caller language. A UI hint alone
+    # does not lock the actual first caller language in the current runtime.
+    state.observe_user_text({"et": "Tere", "en": "Hello", "ru": "Здравствуйте"}[language])
     return session, state, dispatcher, model
 
 

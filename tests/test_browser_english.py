@@ -136,7 +136,7 @@ def test_selected_english_recognition_and_audio_reply(client):
         },
     )
     assert result.status_code == 200 and result.json()["language"] == "en"
-    recognizer.transcribe.assert_called_once_with(b"RIFF-fixture", language="en")
+    recognizer.transcribe.assert_called_once_with(b"RIFF-fixture", language="auto")
     assert (
         base64.b64decode(result.json()["audio_b64"]).decode() == result.json()["reply"]
     )

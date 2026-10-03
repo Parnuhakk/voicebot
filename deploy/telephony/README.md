@@ -131,18 +131,22 @@ Russian telephone readiness. Provider references:
 ## Automatic release synchronization
 
 The signed GitHub `master` webhook deploys the web/API through Coolify first.
-On the existing Arle host, `voicebot-release-sync.timer` checks every minute
+Once installed on the Arle host, `voicebot-release-sync.timer` checks every minute
 and reconciles only the native worker and Twilio bridge after the website is
 healthy on the published `master` commit. It uses an immutable Git archive,
 not the potentially dirty working tree, and tags the shared media image with
 that full commit. Both services record `voicebot.release` and
-`voicebot.web-source` labels; an already-current run is a no-op.
+`voicebot.web-source` labels; an already-current run refreshes verification
+without rebuilding or restarting either service. Repository code alone does
+not prove that the timer is installed or enabled on the host.
 
 Language/model/prosody settings come from the trusted web environment using
 the release's existing manager. The bridge keeps its own configured account
 authentication and number in memory, not a stale copy from another service.
 The original web/worker journal volume must match. A running call, different
-web/master revision or concurrent container replacement defers the update.
+web revision outside fetched master history or concurrent container replacement
+defers the update. A healthy published ancestor is allowed when a newer push
+is still queued or uses `[skip cd]`; only the exact published archive is used.
 Ambiguous/untrusted sources and storage/configuration mismatches fail closed.
 Configuration, build or health failures return nonzero
 without printing Docker output or credentials; the next timer run retries.
@@ -164,8 +168,32 @@ observed idle maintenance window; this is not a zero-downtime carrier claim.
 The controller uses `up --no-deps --no-build --wait` with an explicit service
 target. LiveKit, SIP, Redis, booking containers and their volumes are not
 recreated. Infrastructure configuration upgrades still require a planned
-operator deployment. A documentation-only `[skip cd]` push waits for the next
-ordinary successful web release; unmerged branches never deploy.
+operator deployment. A documentation-only `[skip cd]` push leaves the existing
+web release eligible for synchronization; unmerged branches never deploy.
+
+After health, image, configuration and volume checks pass, the controller asks
+the web process for a fingerprint of its common source files and effective
+speech/model/restaurant settings. The worker compares its own fingerprint and
+atomically records `/data/telephone-release.json` in the existing shared volume.
+The public `/api/status` reports this under `telephone.release`, and the site's
+footer shows the result in Estonian, English or Russian:
+
+- `in_sync`: matching fingerprints, privately verified within 180 seconds.
+- `out_of_sync`: source or common behavior settings differ from the receipt.
+- `stale`: the last matching verification is older than 180 seconds.
+- `unverified`: the receipt is missing, invalid, unreadable or from the future.
+
+The receipt contains only a revision, fingerprint and verification time. It
+contains no credentials, phone numbers, recordings, transcripts or bookings.
+It describes the last private controller check, not continuous health or a
+verified carrier call. The timer refreshes it on every successful check; the
+browser refreshes the display once a minute while visible. Missing server
+activation therefore remains visible instead of silently implying deployment.
+
+Shared conversation, languages, dates, confirmation logic, restaurant data and
+speech delivery settings update together. Browser controls and selected demo
+voice previews are channel-specific; infrastructure and provider/account changes
+retain their documented operator deployment requirements.
 
 Install from a reviewed published release on this host (these commands contain
 no credentials):
@@ -187,6 +215,13 @@ prove a real PSTN call or acoustic language quality. To suspend synchronization
 for a planned manual operation, stop the timer and wait for the oneshot to
 finish; restart the timer afterward. Updating controller code or unit files
 requires reinstalling those reviewed files and reloading systemd.
+For this controller upgrade, install the updated `release_sync.py` once as
+above; subsequent application releases are picked up automatically. Updating a
+GitHub Actions workflow does not install a systemd service on the Arle host.
+
+`.github/workflows/voice-release-checks.yml` checks the real Linux locking and
+reconciliation paths plus Docker Compose parsing on pull requests and master
+pushes. It uses synthetic provider fixtures, never deployment or carrier keys.
 
 ## Synthetic proofs
 

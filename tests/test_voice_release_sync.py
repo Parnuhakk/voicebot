@@ -112,6 +112,8 @@ class ExternalCommands:
         self.repository = repository
         self.origin = "https://github.com/Parnuhakk/voicebot.git"
         self.master = SHA
+        self.is_ancestor = False
+        self.receipts = []
         self.source_ids = [WEB]
         self.rooms = [0, 0]
         self.calls = []
@@ -208,6 +210,10 @@ class ExternalCommands:
             elif operation == "archive":
                 assert argv[-1] == SHA
                 out = self.payload
+            elif operation == "merge-base":
+                assert argv[-4:] == ["merge-base", "--is-ancestor", SHA, self.master]
+                if not self.is_ancestor:
+                    raise subprocess.CalledProcessError(1, argv, PRIVATE, PRIVATE)
             else:
                 assert operation == "fetch"
         elif operation == "ps":
@@ -221,11 +227,20 @@ class ExternalCommands:
                 raise subprocess.CalledProcessError(1, argv, PRIVATE, PRIVATE)
             out = json.dumps(copy.deepcopy(selected)).encode()
         elif operation == "exec":
-            assert argv[2] == self.containers[WORKER]["Id"]
-            assert argv[3:5] == ["python", "-c"] and len(argv) == 6
-            out = (str(self.rooms.pop(0)) + "\n").encode()
-            if not self.rooms:
-                self.after_probe()
+            if argv[3:6] == ["python", "-m", "app.release_status"]:
+                if argv[-1] == "identity":
+                    assert argv[2] == WEB
+                    out = ("8" * 64).encode()
+                else:
+                    assert argv[2] == self.containers[WORKER]["Id"]
+                    assert argv[-3:] == ["record", SHA, "8" * 64]
+                    self.receipts.append(argv)
+            else:
+                assert argv[2] == self.containers[WORKER]["Id"]
+                assert argv[3:5] == ["python", "-c"] and len(argv) == 6
+                out = (str(self.rooms.pop(0)) + "\n").encode()
+                if not self.rooms:
+                    self.after_probe()
         elif operation == "image":
             assert argv[2:5] == ["inspect", "--format", "{{.Id}}"]
             assert argv[-1] == "voicebot-telephone:" + SHA
@@ -366,6 +381,7 @@ def test_success_replaces_only_worker_and_bridge_from_exact_archived_revision(
     git_commands = [c for c, _ in lane.external.calls if c[0] == "git"]
     assert any("fetch" in c and "origin" in c for c in git_commands)
     assert any(c[-3:] == ["archive", "--format=tar", SHA] for c in git_commands)
+    assert len(lane.external.receipts) == 1
 
 
 def test_private_service_umask_does_not_make_packaged_modules_unreadable(lane):
@@ -465,6 +481,15 @@ def test_master_mismatch_defers_without_mutation(lane, capsys):
     assert capsys.readouterr().out.strip() == "DEFER: release_master_mismatch"
 
 
+def test_published_master_ancestor_still_deploys_only_published_code(lane, capsys):
+    lane.external.master = "f" * 40
+    lane.external.is_ancestor = True
+    assert lane.run() == 0
+    assert capsys.readouterr().out.strip() == "PASS: release_synced"
+    assert any(c[-3:] == ["archive", "--format=tar", SHA] for c, _ in lane.external.calls)
+    assert len(lane.external.receipts) == 1
+
+
 @pytest.mark.parametrize(
     "target,change",
     [
@@ -526,7 +551,8 @@ def test_already_current_healthy_targets_need_no_build_replacement_or_room_query
         lane.external.containers[name]["Image"] = ARTIFACT
     assert lane.run() == 0
     assert not lane.external.mutations()
-    assert not any("exec" in c for c, _ in lane.external.calls)
+    assert not any("exec" in c and "-c" in c for c, _ in lane.external.calls)
+    assert len(lane.external.receipts) == 1
     assert capsys.readouterr().out.strip() == "PASS: release_current"
 
 
