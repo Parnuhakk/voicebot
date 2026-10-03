@@ -120,6 +120,18 @@ async page => {
       else assert(answer.includes('23') && answer.includes('20') && !answer.includes('21'));
       assert.equal(await page.evaluate(()=>state.recap), null);
     }
+    const petQuestions = {
+      et: ['Tahaks tulla koeraga.', 'Kas kutsuga võib tulla?', 'Jah, koeraga võib tulla.'],
+      en: ['Can I bring my dog?', 'Can we bring a puppy?', 'Yes, dogs are welcome.'],
+      ru: ['Можно прийти с собакой?', 'Можно с питомцем?', 'Да, можно прийти с собакой.'],
+    }[language.code];
+    for (const question of petQuestions.slice(0, 2)) {
+      await page.locator('#demo-text').fill(question);
+      await page.locator('#demo-send').click();
+      await page.waitForFunction(()=>!state.turnBusy);
+      assert.equal(await page.locator('#demo-messages .message').last().locator('span').textContent(), petQuestions[2]);
+      assert.equal(await page.evaluate(()=>state.recap), null);
+    }
     await page.locator('#demo-text').fill(language.menu);
     await page.locator('#demo-send').click();
     await page.waitForFunction(()=>!state.turnBusy);
@@ -220,10 +232,11 @@ async page => {
   await page.locator('#demo-start').click();
   await page.waitForFunction(()=>state.sessionId && !state.turnBusy);
   await page.evaluate(()=>{HTMLMediaElement.prototype.play=function(){return Promise.reject(new Error('fixture autoplay denied'));};});
-  await send('Soovin homme lauda neljale kell 17.00');
+  await send('Soovin lauaks homseks kell 17.00 nelja inimesega');
   await page.locator('#demo-recap-read').click();
   await send('ja kinnitää');
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('kinnitatud'));
+  assert.equal(await page.evaluate(()=>state.latestBooking.date),await page.evaluate(()=>tallinnDay(1)));
   assert.equal(await page.locator('#bookings .booking-recent').count(),1);
   const estonianBooking=await page.evaluate(()=>state.latestBooking.id);
   await page.locator('#demo-end').click();
@@ -276,5 +289,5 @@ async page => {
   assert.equal(await page.locator('html').evaluate(element=>getComputedStyle(element).backgroundColor),'rgb(245, 249, 246)','public restaurant palette changed');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'public mobile horizontal overflow');
   assert.deepEqual(errors,[]);
-  return {languages:3,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,publicDemoUnchanged:true,pageErrors:errors.length};
+  return {languages:3,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,publicDemoUnchanged:true,pageErrors:errors.length};
 }

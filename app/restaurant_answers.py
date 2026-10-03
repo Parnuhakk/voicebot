@@ -9,6 +9,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from .restaurant_data import DAYS
+from .restaurant_dates import resolve_restaurant_date
 
 
 @dataclass(frozen=True)
@@ -17,6 +18,7 @@ class RestaurantQuestion:
     topics: tuple[str, ...]
     days: tuple[int, ...] | None = None
     date: str | None = None
+    date_issue: str | None = None
 
 
 INFORMATION_TOPICS = (
@@ -39,12 +41,12 @@ PATTERNS = {
     "changes": r"(?:change|move|muuta|muutmine|muutmiseks|измен|перенес).*(?:booking|reservation|broneering|брон)|(?:booking|reservation|broneering\w*|брон\w*).*(?:change|move|muuta|muutm|измен|перенес)",
     "late": r"\b(?:late|hiline\w*|опозд\w*)\b",
     "parking": r"parkim|parkida|parking|car park|парков",
-    "pets": r"\b(?:dogs?|pets?|koer\w*|lemmikloom\w*|собак\w*|животн\w*)\b",
+    "pets": r"\b(?:dogs?|pets?|pupp(?:y|ies)|cats?|koer\w*|kutsu\w*|lemmik\w*|kiis\w*|kass(?:i\w*|e\w*|iga|idega)?|собак\w*|животн\w*|питом\w*|щен\w*|кош(?:к|ек|еч)\w*)\b",
     "highchair": r"high\s?chair|high chair|lastetool|детск\w*\s+(?:стул|кресл)",
     "accessibility": r"wheelchair|accessible|accessibility|ratastool|ligipääs|инвалид|коляск|доступн",
     "terrace": r"terrac|terrass|outside seating|outdoor seating|террас",
     "extras": r"dessert|magustoit|magustoitu|drinks?|vein|wine|jook|joog|напит|десерт",
-    "staff": r"\b(?:staff|human|transfer|callback|personali\w*|inimese\w*|teenindaja\w*|персонал\w*|сотрудник\w*|оператор\w*|перевед\w*)\b|\b(?:order|delivery|takeaway|tellim\w*|kojuvedu|достав\w*|заказ\w*)\b",
+    "staff": r"\b(?:staff|human|transfer|callback|personali\w*|teenindaja\w*|персонал\w*|сотрудник\w*|оператор\w*|перевед\w*)\b|\b(?:order|delivery|takeaway|tellim\w*|kojuvedu|достав\w*|заказ\w*)\b|\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b.*\binimese\w*\b|\binimese\w*\b.*\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b",
     "policies": r"polic|reegl|tingimus|правил",
 }
 
@@ -100,36 +102,31 @@ def match_question(
         days = (0, 1, 2, 3, 4)
     elif len(days) == 2 and re.search(r"through|\bto\b|kuni|päevast|reedest|\bпо\b", text):
         days = tuple(range(days[0], days[-1] + 1))
-    relative = next((offset for pattern, offset in (
-        (r"\bülehomme\b|\bday after tomorrow\b|\bпослезавтра\b", 2),
-        (r"\bhomme\b|\btomorrow\b|\bзавтра\b", 1),
-        (r"\btäna\b|\btoday\b|\bсегодня\b", 0),
-    ) if re.search(pattern, text)), None)
+    resolved = resolve_restaurant_date(
+        text, now or datetime.now(ZoneInfo("Europe/Tallinn")), include_weekdays=False
+    )
     requested_date = None
+    date_issue = None
     if not topics and previous and not BOOKING_REQUEST.search(text):
-        if (days or relative is not None) and len(text.split()) <= 8:
+        if (days or resolved.value or resolved.issue) and len(text.split()) <= 8:
             topics = [topic for topic in previous.topics if topic in {"hours", "kitchen"}]
     if not topics:
         return None
     if (
-        not days and relative is None and previous
+        not days and not resolved.value and not resolved.issue and previous
         and re.search(r"^(?:aga|ja|and|what about|а|и)\b", text)
         and any(topic in {"hours", "kitchen"} for topic in topics)
         and any(topic in {"hours", "kitchen"} for topic in previous.topics)
     ):
         days, requested_date = previous.days or (), previous.date
-    if relative is not None and any(topic in {"hours", "kitchen"} for topic in topics):
-        today = (now or datetime.now(ZoneInfo("Europe/Tallinn"))).date()
-        target = today + timedelta(days=relative)
-        requested_date, days = target.isoformat(), (target.weekday(),)
-    explicit_date = re.search(r"\b20\d{2}-\d{2}-\d{2}\b", text)
-    if explicit_date and any(topic in {"hours", "kitchen"} for topic in topics):
-        try:
-            target = datetime.strptime(explicit_date[0], "%Y-%m-%d").date()
-        except ValueError:
-            return None
-        requested_date, days = target.isoformat(), (target.weekday(),)
-    return RestaurantQuestion(tuple(topics[:3]), days or None, requested_date)
+        date_issue = previous.date_issue
+    if any(topic in {"hours", "kitchen"} for topic in topics):
+        if resolved.value:
+            target = datetime.fromisoformat(resolved.value)
+            requested_date, days = resolved.value, (target.weekday(),)
+        elif resolved.issue:
+            date_issue = resolved.issue
+    return RestaurantQuestion(tuple(topics[:3]), days or None, requested_date, date_issue)
 
 
 SINGLES = {
@@ -216,7 +213,7 @@ GUIDANCE = {
         "changes": "Broneeringu muutmiseks võta ühendust restorani töötajaga.",
         "late": "Kui hilined, küsi töötajalt, kas laud saab oodata.",
         "parking": "Parkimisvõimalused täpsustab restorani töötaja.",
-        "pets": "Lemmikloomaga tulek küsi restorani töötajalt üle.",
+        "pets": "Mul pole lemmikloomade reeglit kirjas. Koeraga tulek küsi restorani töötajalt üle.",
         "highchair": "Lastetooli olemasolu küsi restorani töötajalt.",
         "accessibility": "Ligipääsetavus täpsusta restorani töötajaga.",
         "terrace": "Terrassikoht tuleb restorani töötajaga kokku leppida.",
@@ -230,7 +227,7 @@ GUIDANCE = {
         "changes": "Please contact the restaurant team to change a reservation.",
         "late": "If you're running late, ask the team whether they can keep your table.",
         "parking": "Please ask the restaurant team about parking.",
-        "pets": "Please check with the restaurant team before bringing a pet.",
+        "pets": "I don't have the pet policy. Please check with the restaurant team before bringing a pet.",
         "highchair": "Please ask the restaurant team whether a high chair is available.",
         "accessibility": "Please check accessibility with the restaurant team.",
         "terrace": "Please arrange terrace seating with the restaurant team.",
@@ -244,7 +241,7 @@ GUIDANCE = {
         "changes": "Для изменения брони свяжитесь с сотрудником ресторана.",
         "late": "Если опаздываете, уточните у сотрудника, смогут ли придержать столик.",
         "parking": "Уточните возможность парковки у сотрудника ресторана.",
-        "pets": "Приход с питомцем уточните у сотрудника ресторана.",
+        "pets": "У меня нет правил для питомцев. Уточните у сотрудника, можно ли прийти с питомцем.",
         "highchair": "Уточните наличие детского стула у сотрудника ресторана.",
         "accessibility": "Уточните доступность у сотрудника ресторана.",
         "terrace": "Место на террасе согласуйте с сотрудником ресторана.",
