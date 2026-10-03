@@ -145,7 +145,7 @@ def test_pronunciation_preserves_canonical_text_and_native_sentence_timing(
     assert "".join(document.itertext()) == text
     assert not list(document.iter(MSTTS + "silence"))
     assert not list(document.iter(MSTTS + "express-as"))
-    assert document.find(".//" + SSML + "prosody").get("rate") == "0.98"
+    assert document.find(".//" + SSML + "prosody").get("rate") == "1.12"
 
 
 @pytest.mark.parametrize(
@@ -317,7 +317,7 @@ def test_russian_http_replies_recap_audio_and_booking_approval(client):
         assert "в шесть тридцать вечера" in [
             node.get("alias") for node in requests[-1].iter(SSML + "sub")
         ]
-        assert requests[-1].find(".//" + SSML + "prosody").get("rate") == "0.94"
+        assert requests[-1].find(".//" + SSML + "prosody").get("rate") == "1.00"
         state = client.app.state.demo_sessions.sessions[identifier].tools
         assert not state.pending["delivery"] and not state.pending["approved"]
         early = turn(client, identifier, CONSENT["ru"], language="ru")
@@ -382,8 +382,8 @@ def test_native_provider_uses_the_same_russian_markup_and_language_reset():
             requests[0].find(".//" + SSML + "sub").get("alias")
             == "в шесть тридцать вечера"
         )
-        assert requests[1].find(".//" + SSML + "prosody").get("rate") == "0.94"
+        assert requests[1].find(".//" + SSML + "prosody").get("rate") == "1.00"
         assert all(not list(doc.iter(MSTTS + "silence")) for doc in requests[:2])
-        assert requests[2].find(".//" + MSTTS + "silence").get("value") == "180ms"
+        assert requests[2].find(".//" + MSTTS + "silence").get("value") == "120ms"
 
     asyncio.run(run())

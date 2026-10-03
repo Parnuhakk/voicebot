@@ -353,6 +353,71 @@ capability guidance, contextual clocks and faster speech. That exact immutable
 delta is being independently reviewed and normally integrated; these passing
 counts attest the `e53de15` checkpoint, not the newer combined source or live RTC.
 
+### Latest capability, family and booking-side-question integration
+
+The reviewed voice checkpoint committed `da29be5` and is pushed to the recovery
+branch. Normal `0487c2e` integration keeps contributor family facts, capability
+disclosures, side-question continuation and faster speech, while retaining local
+receipt, ownership, allergy, language, capture and uncertain-write protections.
+Eleven textual conflict files were resolved explicitly; updated faster default
+recap-rate fixtures remain aligned with the published source.
+
+Three independent new-delta reviews found five P1s: mandatory capability topics
+could be dropped after three information topics; a positive mixed booking clause
+discarded later cancellation/correction; compact ranges chose an endpoint;
+children's-menu allergens inherited the ordinary catalogue; and a side question
+could restore an obsolete party/date/time proposal after a correction.
+
+Capability repair produced **4 actual HTTP REDs**, then **175** phone/reasoning
+passes in 12.15 seconds. Canonical allergy/capability topics precede optional
+information before truncation. Positive clause extraction accepts only a terminal
+clause, so later unknown instructions are not silently discarded. Both independent
+static closures are clear.
+
+Compact-clock parser/HTTP regressions reproduced **28** prefixed/bare/request
+failures plus **4** recognized-suffix failures. A reserved pytest parameter and an
+unsupported suffix fixture were corrected before production implementation.
+Context-bound compact-range rejection then passed **6,456** date/clock cases.
+Narrow review found attached supported suffixes still selecting 19:00: **8 REDs /
+4 existing passes**. Replacing the trailing word boundary with a digit guard kept
+context containment and passed **6,464** date/clock cases, 23.68 seconds. Final
+narrow independent static closure is clear.
+
+Three actual ET/EN/RU HTTP REDs confirmed the children's-menu allergen mismatch.
+Canonical unknown-detail/safety guidance now uses a full-input family-allergen
+selector independent of the three-topic cap. An additional actual RED covers two
+prior capability questions; neither may hide the unknown children's-menu scope.
+Narrow review found inherited salmon selection still bypassing that guard: three
+ET/EN/RU two-turn REDs preceded blocking previous-dish inheritance for an explicit
+family question. A current explicitly named approved dish remains supported.
+
+The disjoint side-question lane reproduced **22 REDs** and passed **612** scoped
+cases. Corrections in non-information clauses revoke the old proposal, retain
+corrected inquiry details and require a fresh check, exact recap and later consent.
+Narrow review exposed numeric-terminal sentence punctuation: six text/audio
+ET/EN/RU REDs. Recognized question-start separation preserves internal clock/date
+dots and day ordinals. The first scoped run passed 950 but failed two Estonian
+cases because the existing menu fixture starts with `milline`; adding that actual
+question prefix passed **952** scoped cases, 68.78 seconds. All family, clock and
+side-question independent narrow closures are clear; their reviews were static.
+
+Fresh combined `0487c2e` integration verification:
+
+- Core: **11,727 passed / 77 skipped / 36 subtests**, 127.34 seconds.
+- Media, afterward: **12,126 passed / 6 skipped / 36 subtests**, 166.33 seconds.
+- Eight Chromium journeys passed initially; the restaurant journey found that a
+  new fixture's broad `unroute` removed the older gated-readback handler. Removing
+  only its own handlers restored both failure-path checks; the complete restaurant
+  journey then passed, including all languages, 12 side questions and gated reads.
+- All **24** delivery/status cases passed, no external requests or page errors.
+- Isolated Docker packaging **5 passed**, 11.10 seconds; 193 Python AST, 21 JS
+  syntax, JSON, six asset hashes and credential/conflict/whitespace checks clean.
+
+Newly published `8123638` includes natural Estonian wording, medical-food guidance,
+proposal renewal/mobile feedback and runtime type boundaries. That immutable delta
+is in disjoint independent reviews before normal intake. These counts attest the
+`0487c2e` checkpoint, not the newer source or a live-provider/PSTN rollout.
+
 ## Pre-rollout preservation qualification
 
 Read-only hash-only snapshot at 2026-10-03 20:34:39 UTC records healthy web,

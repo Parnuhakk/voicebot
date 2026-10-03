@@ -83,10 +83,14 @@ def test_worker_agent_selection_survives_environment_copy():
 def shared_speech_settings():
     names = set()
     for filename in ("voice_config.py", "speech_delivery.py"):
-        tree = ast.parse((ROOT / "app/providers" / filename).read_text(encoding="utf-8"))
+        tree = ast.parse(
+            (ROOT / "app/providers" / filename).read_text(encoding="utf-8")
+        )
         names.update(
-            node.value for node in ast.walk(tree)
-            if isinstance(node, ast.Constant) and isinstance(node.value, str)
+            node.value
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Constant)
+            and isinstance(node.value, str)
             and node.value.startswith(("VOICEBOT_", "GROQ_", "AZURE_"))
         )
     return sorted(names)
@@ -116,6 +120,7 @@ def test_every_shared_speech_setting_reaches_manager_and_worker_manifest(field):
         ("VOICEBOT_SPEAKING_STYLE", "natural"),
         ("VOICEBOT_SPEECH_RATE", "0.98"),
         ("VOICEBOT_RECAP_RATE", "0.94"),
+        ("VOICEBOT_SENTENCE_PAUSE_MS", "300"),
         ("VOICEBOT_SENTENCE_PAUSE_MS", "240"),
     ],
 )

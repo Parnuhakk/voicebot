@@ -176,6 +176,22 @@ def safe_wording(reply: str, language: str) -> bool:
     )
     if re.search(blocked, " ".join(reply.split()), re.I):
         return False
+    # Capability operations belong to canonical replies, even when negated.
+    # Do not infer action/negation scope from generated prose or model approval.
+    capability_operations = (
+        r"\b(?:kitchen|chef\w*|sav(?:e|ed|ing)|record\w*|notif\w*|inform\w*|"
+        r"messag\w*|relay\w*|forward\w*|submit\w*|order\w*|takeaway|deliver\w*|"
+        r"special requests?|notes?)\b|"
+        r"\b(?:i|we)(?:\s+(?:will|shall|can|am going to|are going to)\b|['’](?:ll|ve)\b)|"
+        r"\b(?:köök|köögi(?:le|s|st|ga|ks|ta)?|koka\w*|erisoov\w*|salvesta\w*|teavita\w*|"
+        r"teata\w*|edasta\w*|tellim\w*|toidutellim\w*|kohaletoimet\w*)\b|"
+        r"\b(?:ma|me)\s+(?:saan|saame|võin|võime|teen|teeme)\b|"
+        r"\b(?:кухн\w*|повар\w*|уведом\w*|сообщ\w*|переда\w*|отправ\w*|"
+        r"запиш\w*|запис\w*|заказ\w*|достав\w*|пожелан\w*|особ\w*\s+просьб\w*)\b|"
+        r"\b(?:я|мы)\s+(?:могу|можем|буду|будем|сделаю|сделаем)\b"
+    )
+    if re.search(capability_operations, reply, re.I):
+        return False
     cyrillic = re.search(r"[А-Яа-яЁё]", reply)
     return bool(cyrillic) if language == "ru" else not cyrillic
 
@@ -208,6 +224,8 @@ def reasoned_reply(
         "Opening hours and configured capacities do not prove a table is available. "
         "Groups over the maximum need staff; never promise separate tables to bypass this rule. "
         "Never claim to create, confirm, cancel, pay for or transfer anything. No tools or actions. "
+        "Answer the guest's information question only. The server resumes any unfinished booking separately; "
+        "do not ask for booking details or invent a booking summary in this answer. "
         "Do not collect contacts. This is a fictional demo. Staff must confirm special requests. "
         "Never guarantee allergy safety. A declared diet is not an allergen safety guarantee. "
         "Give only the helpful answer, never internal reasoning, policy instructions or fact IDs in the reply. "

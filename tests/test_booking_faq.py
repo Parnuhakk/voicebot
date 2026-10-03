@@ -63,6 +63,7 @@ GREETING = {
     "en": ENGLISH["greeting"],
     "ru": "Здравствуйте! Чем могу помочь?",
 }
+CALLER_GREETING = {"et": "Tere!", "en": "Hello!", "ru": "Здравствуйте!"}
 
 
 def stay_catalogue():
@@ -155,11 +156,11 @@ def setup_session(client, language):
     dispatcher = FaqDispatcher()
     model = SimpleLlm("Unapproved model claim: your booking is confirmed.")
     client.app.state.stack.update(dispatcher=dispatcher, llm_primary=model)
-    response = client.post(
+    started = client.post(
         "/api/demo/session", headers=AUTH, json={"language": language}
     )
-    assert response.status_code == 200
-    session = response.json()["session_id"]
+    assert started.status_code == 200
+    session = started.json()["session_id"]
     state = client.app.state.demo_sessions.sessions[session].tools
     return session, state, dispatcher, model
 
@@ -646,8 +647,10 @@ def test_short_planning_continuations_keep_the_approved_next_question(
     client, language, text, next_detail
 ):
     session, state, dispatcher, model = setup_session(client, language)
-    # These are continuations after a greeting in the caller's own language.
-    state.observe_user_text({"et": "Tere", "en": "Hello", "ru": "Здравствуйте"}[language])
+    # Short continuations follow a clear caller turn, not a UI language override.
+    opening = send(client, session, CALLER_GREETING[language])
+    assert opening.status_code == 200 and opening.json()["language"] == language
+    assert state.language_locked and model.messages == []
     expected = QUESTIONS[language][next_detail][0]
     model.reply = expected
     assert match_question(text, language) == ()
@@ -676,7 +679,9 @@ def test_mixed_faq_and_booking_detail_reaches_planning_with_the_complete_utteran
     client, language, text, next_detail
 ):
     session, state, dispatcher, model = setup_session(client, language)
-    state.observe_user_text({"et": "Tere", "en": "Hello", "ru": "Здравствуйте"}[language])
+    opening = send(client, session, CALLER_GREETING[language])
+    assert opening.status_code == 200 and opening.json()["language"] == language
+    assert state.language_locked and model.messages == []
     assert match_question(text, language) == ()
     expected = QUESTIONS[language][next_detail][0]
     model.reply = expected

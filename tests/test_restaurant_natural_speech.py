@@ -153,6 +153,8 @@ def test_detail_followups_do_not_reuse_stale_or_other_language_topics(make_state
     assert state.language == "en"
     state.observe_user_text("Tell me more", language="en")
     assert state._restaurant_question is None
+    state.observe_user_text("Palun räägi eesti keeles", language="et")
+    assert state.language == "et"
     state.observe_user_text("Milline on menüü?", language="et")
     state.guard_reply("", [])
     state.observe_user_text("Tere", language="et")

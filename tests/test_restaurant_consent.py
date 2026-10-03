@@ -404,7 +404,7 @@ def test_natural_question_keeps_clear_recap_speech_delivery(
         recap = state.render_recap()
         assert is_recap(recap)
         markup = ssml(recap, voice, locale, SpeechDelivery())
-        assert '<prosody rate="0.94">' in markup
+        assert '<prosody rate="1.00">' in markup
         assert "Sentenceboundary-exact" not in markup
 
     asyncio.run(run())

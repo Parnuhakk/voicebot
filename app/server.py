@@ -486,12 +486,12 @@ def create_app():
             ]
         )
         try:
-            silence_ms = int(os.environ.get("VOICEBOT_MIC_SILENCE_MS", "650"))
+            silence_ms = int(os.environ.get("VOICEBOT_MIC_SILENCE_MS", "500"))
         except ValueError:
-            silence_ms = 650
+            silence_ms = 500
         return {
             "voices": rows,
-            "endpointing_ms": silence_ms if 300 <= silence_ms <= 2000 else 650,
+            "endpointing_ms": silence_ms if 300 <= silence_ms <= 2000 else 500,
         }
 
     preview_slots = asyncio.Semaphore(2)

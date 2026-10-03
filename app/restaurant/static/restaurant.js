@@ -18,7 +18,7 @@ const state = {
   voiceCatalog: null,
   voicesLoading: false,
   previewBusy: false,
-  endpointingMs: 650,
+  endpointingMs: 500,
   mic: null,
   micStarting: false,
   micEpoch: 0,
@@ -707,7 +707,7 @@ async function loadVoices() {
       data.endpointing_ms >= 300 &&
       data.endpointing_ms <= 2000
         ? data.endpointing_ms
-        : 650;
+        : 500;
   } catch (_) {
     if (generation !== state.generation || !state.connected) return;
     state.voiceCatalog = null;
@@ -1142,6 +1142,7 @@ async function sendTurn(input, capture = null) {
     renderVoiceResult(data);
     const change = (data.booking_changes || []).at(-1);
     if (change) appendBookingReceipt(message, change);
+    // Operator reads must not hold the next voice turn or completed playback.
     void Promise.allSettled([loadBookings(), loadHistory()]);
   } catch (error) {
     if (generation === state.generation && session === state.sessionId) {

@@ -28,6 +28,50 @@ from tests.test_native_booking_terminals import (  # noqa: E402
 )
 
 
+@pytest.mark.parametrize("language,steps,questions", [
+    ("et", ["Soovin lauda", "Homme", "14:00", "4"],
+     ["Mis kell te avatud olete?", "Milline on menüü?", "Kus saab parkida?"]),
+    ("en", ["I'd like a table", "Tomorrow", "2 pm", "4"],
+     ["What are your opening hours?", "What is on the menu?", "Where can I park?"]),
+    ("ru", ["Хочу забронировать столик", "Завтра", "14:00", "4"],
+     ["Какие у вас часы работы?", "Что есть в меню?", "Где парковка?"]),
+])
+def test_native_booking_resumes_after_information_questions(tmp_path, language, steps, questions):
+    from app.languages import CONSENT
+
+    async def run():
+        data = load_restaurant_data()
+        adapter = RestaurantAdapter(str(tmp_path / "interruptions.db"), data=data, allow_writes=True)
+        state = make_call_tools(restaurant_dispatcher(adapter, data), language=language)
+        agent, model = worker.TelephoneAgent(state), UnusedModel()
+        session = AgentSession(llm=model, tts=UnusedTTS(), turn_handling={"turn_detection": "manual"})
+        session.output.audio = Playback()
+        session.on("conversation_item_added", agent.on_conversation_item_added)
+        with patch("livekit.agents.Agent.default.tts_node", synthesize):
+            await session.start(agent=agent, record=False)
+            try:
+                for text, question, key in zip(steps, questions, ["date", "time", "party"]):
+                    await native_turn(session, agent, text)
+                    before = state.booking_inquiry
+                    await native_turn(session, agent, question)
+                    assert agent.chat_ctx.items[-1].text_content.endswith(COPY[language][key])
+                    assert state.booking_inquiry == before
+                await native_turn(session, agent, steps[3])
+                original, recap = state.pending, state.render_recap()
+                assert original["delivery"] and not state.bookings
+                await native_turn(session, agent, questions[1])
+                assert state.pending is not original
+                assert state.pending["hold_id"] == original["hold_id"]
+                assert state.pending["delivery"] and not state.pending["approved"]
+                assert agent.chat_ctx.items[-1].text_content.endswith(recap)
+                await native_turn(session, agent, CONSENT[language])
+                assert len(state.bookings) == 1 and model.calls == 0
+                assert agent.chat_ctx.items[-1].text_content == COPY[language]["confirmed"]
+            finally:
+                await session.aclose()
+    asyncio.run(run())
+
+
 @pytest.mark.parametrize("initial", ["et", "en", "ru"])
 @pytest.mark.parametrize("selected,utterances", [
     ("et", ["Tere! Soovin lauda broneerida.", "Homme", "Kell 14", "Meid on neli"]),
@@ -94,6 +138,8 @@ def test_native_session_keeps_first_caller_language_and_voice(tmp_path, initial,
         ("en", "named-date", "Yes, please confirm."),
         ("ru", "Столик на четверых завтра в 14:00", "Да, подтверждаю."),
         ("en", "A table for four tomorrow at six o'clock in the evening", "Yes, please confirm."),
+        ("en", "Please reserve a table tomorrow at 1800 for four guests total.", "Yes, please confirm."),
+        ("et", "Soovin homme lauda neljale kell 1800", "ja kinnitää"),
         ("et", "Soovin homme lauda neljale pool seitse õhtul", "ja kinnitää"),
         ("ru", "Столик на четверых завтра в шесть тридцать вечера", "Да, подтверждаю."),
         ("en", ("A table for four tomorrow at 6 o clock", "in the evening"), "Yes, please confirm."),

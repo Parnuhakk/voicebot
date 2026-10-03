@@ -8,8 +8,10 @@ from datetime import datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from .booking_faq import FAQ_PATH, load_faq, normalize
 from .restaurant_data import DAYS
 from .restaurant_dates import resolve_restaurant_date
+from .restaurant_family import family_topic
 
 
 @dataclass(frozen=True)
@@ -20,6 +22,7 @@ class RestaurantQuestion:
     date: str | None = None
     date_issue: str | None = None
     recommendation: bool = False
+    family_allergens: bool = False
 
 
 INFORMATION_TOPICS = (
@@ -43,6 +46,10 @@ INFORMATION_TOPICS = (
     "terrace",
     "extras",
     "staff",
+    "special_requests",
+    "food_orders",
+    "family",
+    "family_details",
 )
 
 ALLERGY_SAFETY = (
@@ -51,12 +58,65 @@ ALLERGY_SAFETY = (
     r"перекр[её]стн\w*\s+(?:контакт|загрязн)"
 )
 
+CAPABILITIES = {
+    {"booking-101": "special_requests", "booking-102": "food_orders"}[
+        entry["id"]
+    ]: entry
+    for entry in load_faq(FAQ_PATH.with_name("restaurant-phone-faq.json"))
+}
+CAPABILITY_PATTERNS = {
+    topic: re.compile(
+        r"\b(?:"
+        + "|".join(
+            r"\W+".join(re.escape(word) for word in normalize(phrase).split())
+            for language in ("et", "en", "ru")
+            for phrase in (
+                entry["question_" + language],
+                *entry.get("variants_" + language, []),
+            )
+        )
+        + r")\b"
+    )
+    for topic, entry in CAPABILITIES.items()
+}
+
+
+def capability_booking_clause(text: str) -> str | None:
+    """A capability question is not booking intent; require a positive clause."""
+    if re.search(
+        r'["“”«»`]|\b(?:do not|don[\x27’]t|not|ära|ei|не|instructions?|example|'
+        r"juhis\w*|näide|пример\w*|инструкц\w*)\b",
+        text,
+    ):
+        return None
+    for pattern in CAPABILITY_PATTERNS.values():
+        text = pattern.sub(" ", text)
+    clauses = [
+        clause.strip()
+        for clause in re.split(r"[!?;]+|(?<!\d)\.(?!\d)", text)
+        if clause.strip()
+    ]
+    for index, clause in enumerate(clauses):
+        if re.match(
+            r"^(?:(?:and|ja|и)\s+)?(?:(?:please|palun|пожалуйста)[,\s]+)?"
+            r"(?:(?:can|could|would)\s+(?:you|i)\s+(?:please\s+)?)?"
+            r"(?:book|reserve|broneeri\w*|заброниру\w*|"
+            r"(?:i|we)\s+(?:want|need|would like)\s+to\s+(?:book|reserve)|"
+            r"(?:ma\s+)?(?:soovin|sooviksin|tahan|tahaksin)\s+broneeri\w*|"
+            r"(?:(?:я|мы)\s+)?(?:хочу|хотим)\s+заброниро\w*)\b",
+            clause,
+        ):
+            # Never discard a later correction/cancellation or other detail.
+            return clause if index == len(clauses) - 1 else None
+    return None
+
+
 PATTERNS = {
     "allergens": ALLERGY_SAFETY + r"|sisald|contain|koostis|ingredients|содерж|состав",
     "price": r"\b(?:prices?|costs?|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maksab|цен\w*|стоим\w*|сколько(?:\s+\w+){0,2}\s+сто(?:ит|ят|ить))\b",
     "menu": r"menüü|menu|меню|vegan|веган|vegetarian|taimetoit|вегетар|\b(?:dishes|serve|roogi|блюд\w*)\b|mis.*süüa|mida.*(?:süüa|pakute)",
     "kitchen": r"kitchen|köök|köögi|кухн|(?:kell|kellaajani|millal).*süüa|when.*(?:food|eat)|(?:до скольки|когда).*еда",
-    "hours": r"\b(?:hours|open\w*|close\w*|shut|lahtiole\w*|avatud|avate|lahti|kinni|sulge\w*|tööa\w*|откры\w*|закры\w*|работа\w*)\b",
+    "hours": r"\b(?:hours|open\w*|close\w*|shut|lahtiole\w*|avatud|avate|lahti|kinni|sulge\w*|tööa\w*|откры\w*|закры\w*|работа\w*|часы\s+работы)\b",
     "location": r"\b(?:where are you|where is (?:the )?restaurant|where is it|address|location|located|aadress|asute|asub|kus|где|адрес|находит\w*)\b",
     "duration": r"(?:how long|kui kaua|сколько времени|как долго).*(?:table|stay|keep|laua|broneering|стол|брон)|(?:reservation|broneering|брон\w*).*(?:last|kest|длит)",
     "groups": r"\b(?:group\w*|grup\w*|seltskonn\w*|firmapidu|sünnipäev\w*|групп\w*|компани\w*)\b",
@@ -112,12 +172,30 @@ def match_question(
     text = " ".join(text.casefold().split())
     if not text or len(text) > 2000:
         return None
-    matches = [
+    matches = []
+    information_text = text
+    for topic, pattern in CAPABILITY_PATTERNS.items():
+        if match := pattern.search(text):
+            matches.append((match.start(), topic))
+            # "Tell the kitchen about my allergy" is one capability request,
+            # not a kitchen-hours question plus an allergen catalogue request.
+            information_text = pattern.sub(
+                lambda match: " " * len(match.group()), information_text
+            )
+    matches.extend(
         (match.start(), topic)
         for topic, pattern in PATTERNS.items()
-        if (match := re.search(pattern, text))
-    ]
+        if (match := re.search(pattern, information_text))
+    )
     topics = [topic for _, topic in sorted(matches)]
+    family = family_topic(text)
+    if family:
+        # A children's menu is distinct from the reviewed adult dish list, and
+        # toys/drawing questions must not receive only a guest-count reminder.
+        topics = [topic for topic in topics if topic != "children"]
+        if not re.search(r"täiskasvan|adults?|взросл", text):
+            topics = [topic for topic in topics if topic != "menu"]
+        topics.insert(0, family)
     recommendation = bool(RECOMMENDATION.search(text))
     if recommendation and "menu" not in topics:
         topics.append("menu")
@@ -230,8 +308,21 @@ def match_question(
             requested_date, days = resolved.value, (target.weekday(),)
         elif resolved.issue:
             date_issue = resolved.issue
+    # Canonical safety/capability disclosures precede optional information.
+    priority = [
+        topic for topic in topics if topic == "allergens" or topic in CAPABILITIES
+    ]
+    topics = priority + [topic for topic in topics if topic not in priority]
     return RestaurantQuestion(
-        tuple(topics[:3]), days or None, requested_date, date_issue, recommendation
+        tuple(topics[:3]),
+        days or None,
+        requested_date,
+        date_issue,
+        recommendation,
+        family_allergens=bool(
+            "allergens" in topics
+            and (family or detail_followup and previous and previous.family_allergens)
+        ),
     )
 
 
