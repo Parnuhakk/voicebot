@@ -37,6 +37,12 @@ from tests.test_native_booking_terminals import (  # noqa: E402
         ("en", "A table for four tomorrow at 2 pm", "Yes, please confirm."),
         ("en", "named-date", "Yes, please confirm."),
         ("ru", "Столик на четверых завтра в 14:00", "Да, подтверждаю."),
+        ("en", "A table for four tomorrow at six o'clock in the evening", "Yes, please confirm."),
+        ("et", "Soovin homme lauda neljale pool seitse õhtul", "ja kinnitää"),
+        ("ru", "Столик на четверых завтра в шесть тридцать вечера", "Да, подтверждаю."),
+        ("en", ("A table for four tomorrow at 6 o clock", "in the evening"), "Yes, please confirm."),
+        ("et", ("Soovin homme lauda neljale pool seitse", "õhtul"), "ja kinnitää"),
+        ("ru", ("Столик на четверых завтра полседьмого", "вечером"), "Да, подтверждаю."),
         ("ru", "named-date", "Да, подтверждаю."),
         ("ru", "mixed-date", "Да, подтверждаю."),
     ],
@@ -69,7 +75,12 @@ def test_native_sdk_confirmation_is_visible_in_the_restaurant_database(
         with patch("livekit.agents.Agent.default.tts_node", synthesize):
             await session.start(agent=agent, record=False)
             try:
-                await native_turn(session, agent, request_text)
+                requests = request_text if isinstance(request_text, tuple) else (request_text,)
+                for index, request_text in enumerate(requests):
+                    await native_turn(session, agent, request_text)
+                    if index < len(requests) - 1:
+                        assert state.pending is None and not state.bookings
+                        assert agent.chat_ctx.items[-1].text_content == COPY[language]["ambiguous_time"]
                 assert state.language == language
                 assert state.pending["delivery"] and not state.pending["approved"]
                 await native_turn(session, agent, confirmation)
