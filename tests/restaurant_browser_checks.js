@@ -1,12 +1,16 @@
 async page => {
   const assert = require('node:assert/strict');
   const errors = [], requests = [];
+  const waitBooking=async(id,label)=>page.waitForFunction(({id,label})=>!state.readBusy && Array.from(document.querySelectorAll('#bookings .booking-row')).some(row=>row.dataset.bookingId===id && row.textContent.includes(label)),{id:String(id),label});
   page.on('pageerror', error => errors.push(error.message));
   page.on('request', request => {
     if (request.method() === 'POST' && request.url().includes('/api/')) requests.push({path:new URL(request.url()).pathname,body:request.postDataJSON()});
   });
   await page.setViewportSize({width:1440,height:1000});
   await page.goto('http://127.0.0.1:8766/', {waitUntil:'networkidle'});
+  assert.deepEqual(await page.locator('a.demo-website-link').evaluateAll(links=>links.map(link=>link.href)),[
+    'https://meretuule.arleserver.cfd/', 'https://meretuule.arleserver.cfd/'
+  ]);
   assert(await page.locator('#demo-start').isDisabled());
   assert(await page.locator('#reservation-prepare').isDisabled());
   assert.equal(await page.locator('#menu-list li').count(),3);
@@ -18,6 +22,9 @@ async page => {
   await page.locator('#operator-token').fill('restaurant-fixture-operator');
   await page.locator('#connect').click();
   await page.waitForFunction(()=>state.connected && !state.readBusy);
+  let gatedBookings=false, releaseBookings;
+  const bookingGate=new Promise(resolve=>{releaseBookings=resolve;});
+  await page.route('**/api/bookings?**',async route=>{if(gatedBookings)await bookingGate;await route.continue();});
   for (const language of languages) {
     await page.locator('#demo-language').selectOption(language.code);
     assert.equal(await page.locator('html').getAttribute('lang'),language.code);
@@ -43,12 +50,29 @@ async page => {
     await page.locator('#reservation-read').click();
     await page.waitForFunction(()=>reservation.acknowledged && !reservation.busy);
     assert.equal(requests.at(-1).path,'/api/booking/recap');
+    // A previously selected later page must not hide a newly saved reservation.
+    await page.evaluate(()=>{state.page=2;});
+    gatedBookings=language.code==='en';
     await page.locator('#reservation-confirm').click();
     await page.waitForFunction(()=>reservation.bookingId && !reservation.busy);
-    assert((await page.locator('#bookings').textContent()).includes(language.confirmed));
+    const directBooking=await page.evaluate(()=>reservation.bookingId);
+    try {
+      if(gatedBookings) {
+        assert.equal(await page.evaluate(()=>state.readBusy),true,'post-write read was not gated');
+        assert(await page.locator('#reservation-cancel').isEnabled(),'successful write controls waited for readback');
+        assert.equal(await page.locator(`#bookings [data-booking-id="${directBooking}"]`).count(),0,'gated readback appeared complete');
+      }
+      gatedBookings=false;releaseBookings();
+      await waitBooking(directBooking,language.confirmed);
+      assert((await page.locator('#bookings').textContent()).includes(language.confirmed));
+    } finally {gatedBookings=false;releaseBookings();}
+    assert.equal(await page.locator('#booking-page').textContent(),'1');
+    assert.equal(await page.locator('#bookings .booking-recent').count(),1);
+    assert(await page.locator('#reservation-status .booking-link').isVisible());
     assert(await page.locator('#reservation-prepare').isDisabled(),'new preparation lost owned cancellation');
     await page.locator('#reservation-cancel').click();
     await page.waitForFunction(()=>!reservation.bookingId && !reservation.busy);
+    await waitBooking(directBooking,language.cancelled);
     assert((await page.locator('#bookings').textContent()).includes(language.cancelled));
     await page.locator('#reservation-end').click();
     await page.waitForFunction(()=>!reservation.sessionId && !reservation.busy);
@@ -74,11 +98,21 @@ async page => {
   await page.locator('#demo-recap-read').click();
   const voiceReceipt=await page.evaluate(()=>state.recapDeliveryId);
   assert(voiceReceipt);
+  await page.evaluate(()=>{state.page=2;document.getElementById('booking-date').value=tallinnDay();});
   await send('Yes, confirm.');
   const confirmedVoice=requests.findLast(request=>request.body.recap_delivery_id);
   assert.equal(confirmedVoice.body.recap_delivery_id,voiceReceipt);
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('confirmed'));
+  const voiceBooking=await page.evaluate(()=>state.latestBooking);
+  assert(voiceBooking && voiceBooking.date===await page.evaluate(()=>tallinnDay(1)));
+  await waitBooking(voiceBooking.id,'confirmed');
+  assert.equal(await page.locator('#booking-page').textContent(),'1');
+  assert.equal(await page.locator('#bookings .booking-recent').getAttribute('data-booking-id'),voiceBooking.id);
+  await page.locator('#demo-messages .booking-link').last().click();
+  await page.waitForFunction(()=>document.activeElement?.dataset.bookingId===state.latestBooking.id);
+  assert.equal(await page.locator('#booking-date').inputValue(),voiceBooking.date);
   await send('Yes, cancel.');
+  await waitBooking(voiceBooking.id,'cancelled');
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('cancelled'));
   await page.evaluate(()=>{HTMLMediaElement.prototype.play=restaurantOriginalPlay;});
   await page.evaluate(()=>{
@@ -98,10 +132,37 @@ async page => {
   await page.evaluate(async()=>{restaurantAudio.source.stop();await restaurantAudio.context.close();});
   await page.locator('#demo-end').click();
   await page.waitForFunction(()=>!state.sessionId && !state.turnBusy);
+  // The Estonian ASR spelling uses the actual confirmation route and becomes
+  // visible on the website. No external speech provider is used in this fixture.
+  await page.locator('#demo-language').selectOption('et');
+  await page.locator('#demo-start').click();
+  await page.waitForFunction(()=>state.sessionId && !state.turnBusy);
+  await page.evaluate(()=>{HTMLMediaElement.prototype.play=function(){return Promise.reject(new Error('fixture autoplay denied'));};});
+  await send('Soovin homme lauda neljale kell 17.00');
+  await page.locator('#demo-recap-read').click();
+  await send('ja kinnitää');
+  assert((await page.locator('#demo-messages .message').last().textContent()).includes('kinnitatud'));
+  const estonianBooking=await page.evaluate(()=>state.latestBooking.id);
+  await waitBooking(estonianBooking,'kinnitatud');
+  assert.equal(await page.locator('#bookings .booking-recent').count(),1);
+  await page.locator('#demo-end').click();
+  await page.waitForFunction(()=>!state.sessionId && !state.turnBusy);
+  await page.reload({waitUntil:'networkidle'});
+  assert.equal(await page.locator('#bookings .booking-row').count(),0,'reload exposed private bookings without sign-in');
+  await page.locator('#operator-token').fill('restaurant-fixture-operator');
+  await page.locator('#connect').click();
+  await page.waitForFunction(()=>state.connected && !state.readBusy);
+  await page.locator('#booking-date').fill(await page.evaluate(()=>tallinnDay(1)));
+  await page.locator('#booking-date').dispatchEvent('change');
+  await page.waitForFunction(()=>!state.readBusy);
+  assert((await page.locator(`#bookings [data-booking-id="${estonianBooking}"]`).textContent()).includes('kinnitatud'));
   await page.screenshot({path:'output/playwright/restaurant-desktop.png',fullPage:true});
   await page.setViewportSize({width:390,height:844});
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'mobile horizontal overflow');
   await page.screenshot({path:'output/playwright/restaurant-mobile.png',fullPage:true});
+  await page.setViewportSize({width:320,height:844});
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'320px horizontal overflow');
+  await page.setViewportSize({width:390,height:844});
   // A late private reply must not restore data after disconnect.
   let release; const gate=new Promise(resolve=>{release=resolve;});
   await page.route('**/api/bookings?**',async route=>{await gate;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({items:[],has_more:false})}).catch(()=>{});});
@@ -113,5 +174,5 @@ async page => {
   assert.equal(await page.locator('#demo-messages .message').count(),0);
   assert(await page.locator('#reservation-confirm').isDisabled());
   assert.deepEqual(errors,[]);
-  return {languages:3,confirmed:3,cancelled:3,voiceReservation:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,pageErrors:errors.length};
+  return {languages:3,confirmed:3,cancelled:3,voiceReservation:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,gatedReadback:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,pageErrors:errors.length};
 }

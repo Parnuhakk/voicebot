@@ -76,3 +76,31 @@ Final upstream fan-in, full core/media reruns, commit/push, deployed source/asse
 bounded real-provider restaurant acceptance and preservation comparison are
 recorded separately when verified. Synthetic browser audio does not establish
 physical-microphone, acoustic-quality, PSTN or production-readiness acceptance.
+
+## Verified upstream fan-in
+
+Normal integration of `3af499b` preserves the published canonical Meretuule
+domain, authored short ET/EN/RU recaps/spoken dates, closed explicit Estonian
+confirmation spellings and saved-booking navigation. Conflict resolution retains
+both the new booking links/date/page reset and the repaired nonblocking reads,
+capture ownership and one-use recap controls.
+
+Fresh serial full runs after that integration: core **2,928 passed / 61 skipped**
+(44.09 seconds), media **3,193 passed / 6 skipped** (61.23 seconds), each with
+36 passing subtests. All nine browser journeys and all 21 restaurant delivery
+checks passed again. Restaurant journeys additionally verify ASR confirmation,
+saved bookings after reload and page reset. External requests remained zero.
+
+Restaurant asset digests: JavaScript `9d03bebcf432`, capture `fb9adf1eaf2e`,
+playback `27698f675462`, CSS `34bd7c817179`. Deployment and real-provider results
+are still pending at this versioned pre-rollout checkpoint.
+
+The merge-only review caught a verification race: the published journey checked
+bookings immediately after write controls unlocked. A gated actual booking read
+reproduced the failing assertion. The journey now proves controls unlock while
+the read is held, then waits for the exact booking ID/localized status before
+checking rows, page and highlight. That real SQLite/Chromium journey passed;
+the narrow independent static recheck closed the finding. Production readbacks
+remain nonblocking. Three-language committed-cancellation/lost-response cases
+also reproduced confirmation-specific uncertainty wording; neutral short action
+wording now preserves sticky uncertainty and forbids repeating the mutation.

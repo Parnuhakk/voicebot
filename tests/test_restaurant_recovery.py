@@ -335,3 +335,90 @@ def test_serious_allergy_guidance_still_precedes_price(make_state, language, que
     assert response == {"content": state.information_reply("allergens")}
     assert state.restaurant["allergy_notice"][language] in response["content"]
     assert inventory(state.dispatcher._slot) == (set(), [], 0)
+
+
+@pytest.mark.parametrize(
+    "language,cancellation,expected",
+    [
+        (
+            "et",
+            "Jah, tühista.",
+            "Toimingu tulemus jäi ebaselgeks. Ära korda seda; kontrolli saidilt või küsi töötajalt.",
+        ),
+        (
+            "en",
+            "Yes, cancel.",
+            "The action result is uncertain. Don't repeat it; check the website or ask staff.",
+        ),
+        (
+            "ru",
+            "Да, отмените.",
+            "Результат действия неизвестен. Не повторяйте его; проверьте на сайте или спросите сотрудника.",
+        ),
+    ],
+)
+def test_committed_cancellation_lost_result_uses_neutral_sticky_uncertainty(
+    make_state, language, cancellation, expected
+):
+    from app.providers.errors import ProviderError
+
+    async def run():
+        state = make_state(language)
+        prepared = await plan_turn(state, REQUESTS[language])
+        assert prepared.get("ok"), prepared
+        assert state.mark_recap_delivered(prepared["hold_id"])
+        state.observe_user_text(CONSENT[language], language=language)
+        response = trusted_booking_response(state)
+        assert response == {
+            "name": "confirm_slot_booking",
+            "arguments": {"hold_id": prepared["hold_id"]},
+        }
+        confirmed = await state.dispatch(response["name"], response["arguments"])
+        assert confirmed.get("ok"), confirmed
+        identifier = str(confirmed["booking"]["id"])
+        assert trusted_booking_response(state, after_tool=True) == {
+            "content": COPY[language]["confirmed"]
+        }
+        original = state.dispatcher.dispatch
+        committed_cancellations = []
+
+        async def lost_result(name, arguments):
+            result = await original(name, arguments)
+            if name == "cancel_slot_booking":
+                committed_cancellations.append(result)
+                raise ProviderError(
+                    "Cancellation response lost", reason="transport_error"
+                )
+            return result
+
+        state.dispatcher.dispatch = lost_result
+        state.observe_user_text(cancellation, language=language)
+        response = trusted_booking_response(state)
+        assert response == {
+            "name": "cancel_slot_booking",
+            "arguments": {"booking_id": identifier},
+        }
+        result = await state.dispatch(response["name"], response["arguments"])
+        assert result == {"error": "cancel_outcome_unknown"}
+        assert committed_cancellations == [
+            {"ok": True, "booking_id": identifier, "status": "cancelled"}
+        ]
+        assert inventory(state.dispatcher._slot) == (set(), [("cancelled",)], 2)
+        assert state.mutation_uncertain is True
+        assert state.outcome == "write_outcome_unknown"
+        first_reply = trusted_booking_response(state, after_tool=True)
+
+        state.observe_user_text(cancellation, language=language)
+        assert state.mutation_uncertain is True
+        assert await state.dispatch(
+            "cancel_slot_booking", {"booking_id": identifier}
+        ) == {"error": "cancel_outcome_unknown"}
+        assert len(committed_cancellations) == 1
+        assert inventory(state.dispatcher._slot) == (set(), [("cancelled",)], 2)
+        assert state.pending is None and state.cancel_approval is None
+        assert first_reply == {"content": expected}
+        assert trusted_booking_response(state) == {"content": expected}
+        assert state.guard_reply(COPY[language]["confirmed"], [confirmed]) == expected
+        assert COPY[language]["unknown"] == expected
+
+    asyncio.run(run())
