@@ -411,6 +411,15 @@ audio {
 .reservation-form button {
   margin-top: 8px;
 }
+.reservation-form .helper {
+  margin: 0;
+}
+.reservation-form .reservation-error {
+  color: var(--error);
+}
+.reservation-form [aria-invalid="true"] {
+  border-color: var(--error);
+}
 #reservation-recap {
   border-top: 1px solid var(--line);
   margin-top: 18px;

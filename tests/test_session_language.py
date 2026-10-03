@@ -23,13 +23,20 @@ OPENERS = {
 
 @pytest.mark.parametrize("initial", ["et", "en", "ru"])
 @pytest.mark.parametrize("selected", ["et", "en", "ru"])
-def test_first_clear_turn_selects_language_despite_initial_voice(make_state, initial, selected):
+def test_first_clear_turn_selects_language_despite_initial_voice(
+    make_state, initial, selected
+):
     state = make_state(initial)
     assert not state.language_locked
     state.observe_user_text(OPENERS[selected], detected_language=initial)
     assert state.language == selected and state.language_locked
     assert trusted_booking_response(state) == {"content": COPY[selected]["date"]}
-    for text, metadata in [("Mari Näidis", "et"), ("4", "ru"), ("OK", "en"), ("Tere", "et")]:
+    for text, metadata in [
+        ("Mari Näidis", "et"),
+        ("4", "ru"),
+        ("OK", "en"),
+        ("Tere", "et"),
+    ]:
         state.observe_user_text(text, detected_language=metadata)
         assert state.language == selected
         assert f"Reply only in {selected}" in state.conversation_instructions
@@ -62,14 +69,20 @@ def test_english_booking_details_keep_language_and_values(make_state):
         state.guard_reply("", [])
     state.observe_user_text("Four", detected_language="russian")
     result = trusted_booking_response(state)
-    assert result["arguments"] == {"date": tomorrow(), "start_time": "18:00", "party_size": 4}
+    assert result["arguments"] == {
+        "date": tomorrow(),
+        "start_time": "18:00",
+        "party_size": 4,
+    }
     assert state.language == "en" and state.bookings == set()
 
 
 def test_only_explicit_language_request_changes_a_selected_language(make_state):
     state = make_state()
     state.observe_user_text(OPENERS["en"])
-    state.observe_user_text("Milline on menüü?", detected_language="estonian", language="et")
+    state.observe_user_text(
+        "Milline on menüü?", detected_language="estonian", language="et"
+    )
     assert state.language == "en"
     answer = trusted_booking_response(state)["content"]
     assert answer.startswith(state.information_reply("menu"))
@@ -89,12 +102,17 @@ def test_foreign_confirmation_does_not_switch_language_or_confirm(make_state):
         assert state.mark_recap_delivered(held["hold_id"])
         state.observe_user_text(CONSENT["et"], detected_language="estonian")
         assert state.language == "en"
-        result = await state.dispatch("confirm_slot_booking", {"hold_id": held["hold_id"]})
+        result = await state.dispatch(
+            "confirm_slot_booking", {"hold_id": held["hold_id"]}
+        )
         assert result.get("error") and state.bookings == set()
+
     asyncio.run(run())
 
 
-def test_explicit_switch_preserves_details_and_asks_next_question_in_new_language(make_state):
+def test_explicit_switch_preserves_details_and_asks_next_question_in_new_language(
+    make_state,
+):
     state = make_state()
     state.observe_user_text("Hi! I'd like a table tomorrow at 2 pm.")
     previous = state.booking_inquiry
@@ -104,11 +122,50 @@ def test_explicit_switch_preserves_details_and_asks_next_question_in_new_languag
     assert state.pending is None and not state.bookings
 
 
-@pytest.mark.parametrize("text", ["Hi", "I didn't understand", "Please repeat that", "This is confusing"])
+@pytest.mark.parametrize(
+    "text", ["Hi", "I didn't understand", "Please repeat that", "This is confusing"]
+)
 def test_first_english_social_turn_can_select_english(make_state, text):
     state = make_state()
     state.observe_user_text(text)
     assert state.language == "en" and state.language_locked
+
+
+@pytest.mark.parametrize(
+    "text", ["Do the dishes contain nuts?", "Do the rooms have Wi-Fi? Two adults."]
+)
+def test_first_english_do_the_question_selects_language_without_a_hint(
+    make_state, text
+):
+    state = make_state()
+    assert state.language == "et" and not state.language_locked
+    state.observe_user_text(text)
+    assert state.language == "en" and state.language_locked
+    state.observe_user_text("14:00", detected_language="estonian")
+    assert state.language == "en" and state.pending is None and not state.bookings
+
+
+@pytest.mark.parametrize(
+    "text", ["Do the dishes contain nuts?", "Do the rooms have Wi-Fi? Two adults."]
+)
+def test_http_first_english_do_the_question_overrides_initial_estonian_voice(
+    client, text
+):
+    identifier = start(client, "et")["session_id"]
+    response = client.post(
+        "/api/turn",
+        headers=AUTH,
+        json={
+            "session_id": identifier,
+            "language": "et",
+            "text": text,
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["language"] == "en"
+    assert response.json()["booking_changes"] == []
+    state = client.app.state.demo_sessions.sessions[identifier].tools
+    assert state.language_locked and state.pending is None and not state.bookings
 
 
 class MetadataRecognition:
@@ -125,7 +182,9 @@ class MetadataRecognition:
 @pytest.mark.parametrize("initial", ["auto", "et", "en", "ru"])
 @pytest.mark.parametrize("selected", ["et", "en", "ru"])
 @pytest.mark.parametrize("channel", ["text", "audio"])
-def test_http_uses_first_caller_language_not_repeated_ui_preference(client, initial, selected, channel):
+def test_http_uses_first_caller_language_not_repeated_ui_preference(
+    client, initial, selected, channel
+):
     identifier = start(client, initial)["session_id"]
     stt = MetadataRecognition()
     stt.text, stt.source = OPENERS[selected], selected
@@ -155,11 +214,25 @@ def test_session_language_does_not_leak_to_another_booking(client):
     english = start(client)["session_id"]
     russian = start(client)["session_id"]
     for identifier, selected in [(english, "en"), (russian, "ru")]:
-        result = client.post("/api/turn", headers=AUTH, json={
-            "session_id": identifier, "language": "et", "text": OPENERS[selected],
-        }).json()
-        assert result["language"] == selected and result["reply"] == COPY[selected]["date"]
-    result = client.post("/api/turn", headers=AUTH, json={
-        "session_id": english, "text": "4", "language": "ru",
-    }).json()
+        result = client.post(
+            "/api/turn",
+            headers=AUTH,
+            json={
+                "session_id": identifier,
+                "language": "et",
+                "text": OPENERS[selected],
+            },
+        ).json()
+        assert (
+            result["language"] == selected and result["reply"] == COPY[selected]["date"]
+        )
+    result = client.post(
+        "/api/turn",
+        headers=AUTH,
+        json={
+            "session_id": english,
+            "text": "4",
+            "language": "ru",
+        },
+    ).json()
     assert result["language"] == "en"
