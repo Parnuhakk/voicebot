@@ -280,7 +280,10 @@ def reconcile(repository, state, base):
         profile = {
             k: v
             for k, v in resolved.items()
-            if k.startswith(("AZURE_", "GROQ_", "VOICEBOT_"))
+            if (
+                k.startswith(("AZURE_", "GROQ_", "VOICEBOT_", "RESTAURANT_"))
+                or k == "CALLS_DB"
+            )
             and not k.endswith(("KEY", "SECRET", "TOKEN"))
         }
         require(profile)
@@ -350,6 +353,8 @@ def reconcile(repository, state, base):
                         stopped_id = bridge["Id"]
                     source(base, web["Id"])
                     inspect(name, base, old[1]["Id"], healthy_only=False)
+                force = [] if healthy(existing[index]) else ["--force-recreate"]
+                run(command + UP + force + [service], env, timeout=1200)
             except Exception as error:
                 if stopped_id:
                     try:
@@ -361,8 +366,6 @@ def reconcile(repository, state, base):
                 if isinstance(error, Changed):
                     return "DEFER: release_changed"
                 raise
-            force = [] if healthy(existing[index]) else ["--force-recreate"]
-            run(command + UP + force + [service], env, timeout=1200)
             try:
                 source(base, web["Id"])
             except Changed:

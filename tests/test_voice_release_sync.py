@@ -714,6 +714,55 @@ def test_final_language_model_drift_is_not_reported_as_success(lane, capsys):
     assert capsys.readouterr().out == ""
 
 
+@pytest.mark.parametrize(
+    "field,expected",
+    [
+        ("RESTAURANT_STATE_DB", "/data/restaurant-booking.db"),
+        ("RESTAURANT_CONFIG_PATH", ""),
+        ("RESTAURANT_DEMO_WRITES", "1"),
+        ("CALLS_DB", "/data/calls.db"),
+    ],
+)
+def test_matching_release_does_not_hide_restaurant_configuration_drift(
+    lane, capsys, field, expected
+):
+    lane.external.profiles[field] = expected
+    for name in (WORKER, BRIDGE):
+        config = lane.external.containers[name]["Config"]
+        config["Image"] = "voicebot-telephone:" + SHA
+        config["Labels"].update({"voicebot.release": SHA, "voicebot.web-source": WEB})
+        lane.external.containers[name]["Image"] = ARTIFACT
+    values = lane.external.containers[WORKER]["Config"]["Env"]
+    values[:] = [v for v in values if not v.startswith(field + "=")]
+    values.append(field + "=synthetic-drift")
+    assert lane.run() == 0
+    assert capsys.readouterr().out.strip() == "PASS: release_synced"
+    assert field + "=" + expected in lane.external.containers[WORKER]["Config"]["Env"]
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "RESTAURANT_STATE_DB",
+        "RESTAURANT_CONFIG_PATH",
+        "RESTAURANT_DEMO_WRITES",
+        "CALLS_DB",
+    ],
+)
+def test_final_restaurant_configuration_drift_is_not_success(lane, capsys, field):
+    lane.external.profiles[field] = "synthetic-expected"
+
+    def drift(name):
+        if name == BRIDGE:
+            values = lane.external.containers[WORKER]["Config"]["Env"]
+            values[:] = [v for v in values if not v.startswith(field + "=")]
+            values.append(field + "=synthetic-drift")
+
+    lane.external.after_up = drift
+    assert lane.run() == 1
+    assert capsys.readouterr().out == ""
+
+
 def test_same_sha_new_web_identity_updates_config(lane):
     for name in (WORKER, BRIDGE):
         config = lane.external.containers[name]["Config"]
@@ -847,8 +896,29 @@ def test_external_failure_is_nonzero_and_prints_only_fixed_safe_code(
         assert not any(
             c[-1] == "twilio-bridge" and "up" in c for c, _ in lane.external.calls
         )
+    if stage == "up-twilio-bridge":
+        bridge = lane.external.containers[BRIDGE]
+        assert bridge["Id"] == "c" * 64
+        assert bridge["State"]["Running"] is True
+        assert any(
+            c[:2] == ["docker", "start"] and c[-1] == bridge["Id"]
+            for c, _ in lane.external.calls
+        )
     if stage in ("fetch", "config", "timeout-inspect", "timeout-fetch", "timeout-exec"):
         assert not lane.external.mutations()
+
+
+def test_failed_replacement_never_restarts_a_different_bridge_identity(lane, capsys):
+    def failed_after_replacement(name):
+        if name == BRIDGE:
+            raise subprocess.CalledProcessError(17, ["synthetic-up"], PRIVATE, PRIVATE)
+
+    lane.external.after_up = failed_after_replacement
+    assert lane.run() == 1
+    assert capsys.readouterr().err.strip() == "FAIL: release_sync_failed"
+    assert lane.external.containers[BRIDGE]["Id"] == "e" * 64
+    assert lane.external.containers[BRIDGE]["State"]["Running"] is True
+    assert not any(c[:2] == ["docker", "start"] for c, _ in lane.external.calls)
 
 
 @pytest.mark.parametrize("change", ["health", "image", "labels", "mount"])

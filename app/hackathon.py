@@ -41,6 +41,7 @@ class DemoSession:
     turn_count: int = 0
     expiry: object = None
     recap_delivery: dict | None = None
+    booking_recap_delivery: dict | None = None
     voice_id: str = "azure"
 
     def _recap_is_current(self, pending, text):
@@ -658,6 +659,7 @@ async def run_demo_turn(
     recap_delivery_id=None,
     tts_override=None,
     emit=None,
+    receipt_transport=None,
 ):
     from .turn import MAX_HISTORY_TURNS, recognize_audio, run_turn
 
@@ -731,6 +733,7 @@ async def run_demo_turn(
             "pending": speaker.recap_pending,
             "text": result["reply"],
             "language": session.tools.language,
+            "transport": receipt_transport,
         }
     elif speaker.invalid_audio or result["tts_failed"] or result["fallback_used"]:
         session.tools.pending = None

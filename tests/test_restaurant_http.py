@@ -244,15 +244,26 @@ def test_direct_table_booking_recap_confirmation_and_owned_cancel(client, langua
     denied = client.post("/api/booking/confirm", json=body, headers=AUTH)
     assert denied.status_code == 409
     # Failed early confirmation invalidates the proposal; prepare a fresh recap.
-    tools = client.app.state.demo_sessions.sessions[session].tools
-    refreshed = asyncio_run(
-        tools.dispatch("prepare_demo_booking", {"hold_id": result["hold_id"]})
-    )
+    refreshed = client.post(
+        "/api/restaurant/reservation/prepare",
+        headers=AUTH,
+        json={
+            "session_id": session,
+            "date": tomorrow(),
+            "start_time": "14:00",
+            "party_size": 4,
+        },
+    ).json()
     assert refreshed["ok"]
+    body["hold_id"] = refreshed["hold_id"]
     assert (
         client.post(
             "/api/booking/recap",
-            json={"session_id": session, "hold_id": result["hold_id"]},
+            json={
+                "session_id": session,
+                "hold_id": refreshed["hold_id"],
+                "recap_delivery_id": refreshed["recap_delivery_id"],
+            },
             headers=AUTH,
         ).status_code
         == 200

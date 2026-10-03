@@ -304,7 +304,9 @@ def create_app():
         "booking_view_source": (
             stack.get("business_type", "hotel_spa")
             if stack.get("business_type") == "restaurant"
-            else "easyappointments" if stack["booking_reader"] is not None else None
+            else "easyappointments"
+            if stack["booking_reader"] is not None
+            else None
         ),
         # Dashboard queue is still explicit demo state; never claim a PMS write.
         "operator_hold_commands_ready": False,
@@ -540,6 +542,8 @@ def create_app():
         except BaseException:
             if key is not None:
                 sessions.release(session)
+            else:
+                callslog.history_safe(call_history.end, session.tools.call_id)
             raise
 
         streaming = any(
@@ -550,11 +554,10 @@ def create_app():
         if streaming:
             from .browser_audio import AudioEvents, StreamingSpeaker
 
-            originating_turn = session.turn_count
-
             def invalidate_receipt():
                 with sessions.lock:
-                    if session.turn_count == originating_turn:
+                    receipt = session.recap_delivery
+                    if receipt is not None and receipt.get("transport") is events:
                         session.recap_delivery = None
 
             events = AudioEvents(invalidate_receipt)
@@ -572,6 +575,7 @@ def create_app():
                     recap_delivery_id=recap_delivery_id,
                     tts_override=selected,
                     emit=events.emit if events is not None else None,
+                    receipt_transport=events,
                 )
                 response["session_id"] = key
                 if key is None:

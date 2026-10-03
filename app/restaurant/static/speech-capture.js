@@ -104,7 +104,7 @@ async function toggleMic() {
         state.connected
       ) {
         state.micStarting = false;
-        await sendTurn({ audio_b64: audio });
+        await sendTurn({ audio_b64: audio }, { generation, session, micEpoch });
       }
     } catch (error) {
       if (generation === state.generation && micEpoch === state.micEpoch)

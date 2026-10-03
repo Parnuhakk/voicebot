@@ -211,7 +211,7 @@ def parse_restaurant_request(text, previous=None, *, now=None):
         if any(re.search(r"\b" + re.escape(word) + r"\b", text) for word in words):
             inquiry["date"] = (now.date() + timedelta(days=offset)).isoformat()
             break
-    if "date" not in inquiry:
+    else:
         weekdays = {
             "monday": 0,
             "esmaspäev": 0,
@@ -235,11 +235,17 @@ def parse_restaurant_request(text, previous=None, *, now=None):
             "pühapäev": 6,
             "воскресенье": 6,
         }
-        for word, weekday in weekdays.items():
-            if re.search(r"\b" + word + r"\w*\b", text):
-                offset = (weekday - now.weekday()) % 7 or 7
-                inquiry["date"] = (now.date() + timedelta(days=offset)).isoformat()
-                break
+        requested_weekdays = {
+            weekday
+            for word, weekday in weekdays.items()
+            if re.search(r"\b" + word + r"\w*\b", text)
+        }
+        if len(requested_weekdays) == 1:
+            weekday = requested_weekdays.pop()
+            offset = (weekday - now.weekday()) % 7 or 7
+            inquiry["date"] = (now.date() + timedelta(days=offset)).isoformat()
+        elif requested_weekdays:
+            inquiry.pop("date", None)
     explicit_date = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", text)
     if explicit_date:
         inquiry["date"] = explicit_date[1]
@@ -438,6 +444,8 @@ class RestaurantCallTools(CallTools):
             r"allerg|allergia|allergeen|аллерг|глютен|gluten|peanut|pähkl|орех", text
         ):
             self._restaurant_focus = "allergens"
+        elif re.search(r"\b(price|cost|hind|hinnad|maksab|цен|стоим)\w*", text):
+            self._restaurant_focus = "price"
         elif (
             re.search(
                 r"\b(menu|menüü|меню|vegan|vegetarian|taimetoit|веган|вегетар)\w*", text
@@ -452,8 +460,6 @@ class RestaurantCallTools(CallTools):
             text,
         ):
             self._restaurant_focus = "hours"
-        elif re.search(r"\b(price|cost|hind|hinnad|maksab|цен|стоим)\w*", text):
-            self._restaurant_focus = "price"
         elif re.search(
             r"\b(staff|human|transfer|callback|personali|inimese|teenindaja|персонал|сотрудник|оператор|перевед)\w*",
             text,
@@ -570,7 +576,9 @@ class RestaurantCallTools(CallTools):
                         )
                     ).strftime("%H:%M")
                     if hours and topic == "kitchen"
-                    else hours["end"] if hours else None
+                    else hours["end"]
+                    if hours
+                    else None
                 )
                 values.append(
                     DAY_LABELS[self.language][index]
@@ -685,6 +693,26 @@ class RestaurantCallTools(CallTools):
             tzinfo=ZoneInfo(self.restaurant["timezone"])
         ) <= datetime.now(ZoneInfo(self.restaurant["timezone"])):
             return {"error": "past_datetime"}
+        for hold_id in reversed(self._hold_order):
+            slot = self.held_slots.get(hold_id)
+            if (
+                hold_id not in self.holds
+                or hold_id in self.confirmed_holds
+                or not slot
+                or slot["date"] != date
+                or datetime.fromisoformat(slot["start"]) != requested
+                or slot["serviceId"] != str(party_size)
+            ):
+                continue
+            # Ambiguous consent revokes the recap, not the durable owned table.
+            hold = await self.dispatcher._slot.get_hold(hold_id)
+            if self._turn_serial != turn_serial:
+                return {"error": "turn_superseded"}
+            if hold is not None:
+                return await self.dispatch(
+                    "prepare_demo_booking",
+                    {"hold_id": hold_id, "guest_fixture_id": guest_fixture_id},
+                )
         result = await self.dispatch(
             "search_slots", {"service": str(party_size), "date": date, "provider": "0"}
         )
@@ -733,9 +761,20 @@ class RestaurantCallTools(CallTools):
         hold = await self.dispatcher._slot.get_hold(hold_id)
         if self._turn_serial != turn_serial or self.pending is not pending:
             return {"error": "turn_superseded"}
-        if hold is None:
+        if hold is None or time.monotonic() >= hold.expires_at:
             self.invalidate_recap()
             return {"error": "hold_expired_or_unknown"}
+        if any(
+            hold.payload.get(key) != value
+            for key, value in self.held_slots[hold_id].items()
+        ):
+            self.invalidate_recap()
+            return {"error": "booking_unavailable"}
+        try:
+            self.dispatcher._slot._validate_slot_configuration(hold.payload)
+        except ValueError:
+            self.invalidate_recap()
+            return {"error": "slot_unavailable"}
         result["recap"].update(
             party_size=hold.payload["party_size"],
             duration_minutes=hold.payload["duration_minutes"],
