@@ -84,6 +84,7 @@
   .operator-dashboard .voice-panel .badge { display: none; }
   .operator-dashboard .voice-panel .panel-heading p { display: none; }
   .operator-dashboard:not(.has-voice-session) #demo-end { display: none; }
+  .operator-dashboard.has-voice-session #demo-start { display: none; }
   .operator-dashboard .panel-heading { padding-bottom: 12px; margin-bottom: 12px; }
   .operator-dashboard summary { min-height: 44px; padding: 9px 0; }
   .operator-dashboard footer { padding-inline: 18px; }

@@ -12,6 +12,7 @@ import abc
 import dataclasses
 import time
 import uuid
+from typing import Any
 
 CLOCK = time.monotonic  # TTLs use monotonic time (immune to clock jumps).
 
@@ -35,7 +36,7 @@ class Hold:
     quoted_total: str | None
     currency: str
     expires_at: float
-    payload: dict
+    payload: dict[str, Any]
 
     def expired(self, now: float | None = None) -> bool:
         return (CLOCK() if now is None else now) > self.expires_at
@@ -61,8 +62,8 @@ class HoldLedger:
         self._lock = threading.RLock()
         self._ttl = ttl_seconds
         self._holds: dict[str, Hold] = {}
-        self._idempotent: dict[str, dict] = {}
-        self._memo: dict[str, dict] = {}
+        self._idempotent: dict[str, dict[str, Any]] = {}
+        self._memo: dict[str, dict[str, Any]] = {}
         self._pending: set[str] = set()  # keys with a PMS call in flight
 
     def _evict(self) -> None:
@@ -71,7 +72,7 @@ class HoldLedger:
         while len(self._memo) > self._BOUND:
             self._memo.pop(next(iter(self._memo)))
 
-    def check_replay(self, idempotency_key: str) -> dict | None:
+    def check_replay(self, idempotency_key: str) -> dict[str, Any] | None:
         """Return recorded result if this key was seen, else None."""
         with self._lock:
             return self._idempotent.get(idempotency_key)
@@ -90,7 +91,7 @@ class HoldLedger:
             self._pending.add(idempotency_key)
             return True
 
-    def record(self, idempotency_key: str, result: dict) -> dict:
+    def record(self, idempotency_key: str, result: dict[str, Any]) -> dict[str, Any]:
         with self._lock:
             self._pending.discard(idempotency_key)
             self._idempotent[idempotency_key] = result
@@ -123,7 +124,7 @@ class HoldLedger:
         price_quote_id: str,
         quoted_total: str | None,
         currency: str,
-        payload: dict,
+        payload: dict[str, Any],
     ) -> Hold:
         hold = Hold(
             hold_id="hold_" + uuid.uuid4().hex[:12],
@@ -163,8 +164,8 @@ class StayAdapter(abc.ABC):
 
     @abc.abstractmethod
     async def search_availability(
-        self, checkin: str, checkout: str, party: dict
-    ) -> list[dict]:
+        self, checkin: str, checkout: str, party: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Return live priced offers; each carries a price_quote_id."""
 
     @abc.abstractmethod
@@ -172,7 +173,9 @@ class StayAdapter(abc.ABC):
         """Snapshot offer into TTL hold. Never charge here."""
 
     @abc.abstractmethod
-    async def confirm(self, hold_id: str, guest: dict, idempotency_key: str) -> dict:
+    async def confirm(
+        self, hold_id: str, guest: dict[str, Any], idempotency_key: str
+    ) -> dict[str, Any]:
         """Re-price against PMS truth, then book. Reject on price move.
 
         Implementors MUST copy the Easy pattern: reserve(idempotency_key)
@@ -182,7 +185,7 @@ class StayAdapter(abc.ABC):
         """
 
     @abc.abstractmethod
-    async def cancel(self, booking_id: str, idempotency_key: str) -> dict:
+    async def cancel(self, booking_id: str, idempotency_key: str) -> dict[str, Any]:
         ...
 
 
@@ -194,7 +197,7 @@ class SlotAdapter(abc.ABC):
     @abc.abstractmethod
     async def search_slots(
         self, service: str, date: str, provider: str | None = None
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         ...
 
     @abc.abstractmethod
@@ -203,10 +206,10 @@ class SlotAdapter(abc.ABC):
 
     @abc.abstractmethod
     async def confirm(
-        self, hold_id: str, guest: dict, idempotency_key: str
-    ) -> dict:
+        self, hold_id: str, guest: dict[str, Any], idempotency_key: str
+    ) -> dict[str, Any]:
         ...
 
     @abc.abstractmethod
-    async def cancel(self, booking_id: str, idempotency_key: str) -> dict:
+    async def cancel(self, booking_id: str, idempotency_key: str) -> dict[str, Any]:
         ...

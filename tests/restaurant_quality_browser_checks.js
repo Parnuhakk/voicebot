@@ -22,6 +22,8 @@ async page => {
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     const startButton = await page.locator('#demo-start').boundingBox();
     assert(startButton.y + startButton.height <= 844, `voice controls are below the first mobile screen in ${language}: ${startButton.y}`);
+    const micButton = await page.locator('#demo-mic').boundingBox();
+    assert(micButton.y + micButton.height <= 844, `microphone is below the first mobile screen in ${language}: ${micButton.y}`);
   }
   await choose('en');
   await page.screenshot({path:'output/playwright/quality-mobile-unconnected.png',fullPage:true});
@@ -53,6 +55,11 @@ async page => {
   assert(await page.locator('#reservation-recap-timer').isVisible());
   assert.equal(await page.locator('#reservation-recap-timer').getAttribute('aria-live'),'off');
   assert((await page.locator('#reservation-recap-timer').textContent()).includes('valid for'));
+  await page.evaluate(()=>dispatchEvent(new Event('pagehide')));
+  assert.equal(await page.evaluate(()=>reservation.countdownTimer),null);
+  await page.evaluate(()=>dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true})));
+  assert(await page.evaluate(()=>reservation.countdownTimer!==null));
+  assert(await page.locator('#reservation-recap-timer').isVisible());
   await page.locator('#reservation-read').click();
   await page.waitForFunction(()=>reservation.acknowledged && !reservation.busy);
   assert(await page.locator('#reservation-confirm').isEnabled());
@@ -122,5 +129,5 @@ async page => {
   assert.equal(await page.evaluate(()=>reservation.countdownTimer),null);
   assert(await page.locator('#reservation-renew').isHidden());
   assert.deepEqual(errors,[]);
-  return {languages:3,translatedLandmarks:true,mobileVoiceOnFirstScreen:true,layouts:5,clearAuthErrors:true,serverLifetime:true,monotonicClock:true,expiredConfirmationDenied:true,renewalKeepsTable:true,renewalRequiresNewRead:true,voiceExpiryVisible:true,uncertainMutationCannotRenew:true,logoutStopsTimers:true,pageErrors:0};
+  return {languages:3,translatedLandmarks:true,mobileVoiceOnFirstScreen:true,mobileMicrophoneOnFirstScreen:true,layouts:5,clearAuthErrors:true,serverLifetime:true,monotonicClock:true,pageRestoreResumesTimers:true,expiredConfirmationDenied:true,renewalKeepsTable:true,renewalRequiresNewRead:true,voiceExpiryVisible:true,uncertainMutationCannotRenew:true,logoutStopsTimers:true,pageErrors:0};
 }

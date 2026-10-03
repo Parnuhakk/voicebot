@@ -99,6 +99,25 @@ def test_renew_is_denied_after_an_uncertain_mutation(client):
     assert not state.bookings
 
 
+def test_expired_read_can_recover_by_checking_current_availability(client):
+    session_id, original = prepared(client)
+    state = client.app.state.demo_sessions.sessions[session_id].tools
+    state.pending["expires_at"] = time.monotonic() - 1
+    body = {"session_id": session_id, "hold_id": original["hold_id"]}
+    assert client.post("/api/booking/recap", json=body, headers=AUTH).status_code == 409
+    assert state.pending is None
+    result = renew(client, session_id, original["hold_id"])
+    assert result.status_code == 409 and result.json()["error"] == "hold_expired_or_unknown"
+    fresh = client.post(
+        "/api/restaurant/reservation/prepare",
+        json={"session_id": session_id, "date": tomorrow(), "start_time": "14:00", "party_size": 4},
+        headers=AUTH,
+    )
+    assert fresh.status_code == 200 and fresh.json()["ok"]
+    assert fresh.json()["hold_id"] != original["hold_id"]
+    assert not state.pending["delivery"] and not state.bookings
+
+
 @pytest.mark.parametrize("hold_id", [None, 1, True, [], {}])
 def test_renew_validates_hold_identity(client, hold_id):
     session_id, _ = prepared(client)

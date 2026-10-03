@@ -133,9 +133,11 @@ def add_restaurant_routes(app, sessions):
                 or hold_id not in session.tools.held_slots
                 or hold_id in session.tools.confirmed_holds
                 or session.tools.mutation_uncertain
-                or not pending
-                or pending.get("hold_id") != hold_id
             ):
+                raise HTTPException(409, "booking_proposal_unavailable")
+            if not pending:
+                return _result({"error": "hold_expired_or_unknown"})
+            if pending.get("hold_id") != hold_id:
                 raise HTTPException(409, "booking_proposal_unavailable")
             guest = pending["guest_fixture_id"]
             session.tools.observe_user_text(

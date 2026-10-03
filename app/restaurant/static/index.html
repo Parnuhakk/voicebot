@@ -10,10 +10,10 @@
     <title>Voicebot · Restaurant reception</title>
     <script src="/operator-dashboard.js?v=e2bebda58021"></script>
     <link rel="stylesheet" href="/restaurant.css?v=697d634f4c9c" />
-    <link rel="stylesheet" href="/operator-dashboard.css?v=0b21a785e8f5" />
+    <link rel="stylesheet" href="/operator-dashboard.css?v=fe6ae4c84363" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script src="/speech-playback.js?v=279720c050cc" defer></script>
-    <script src="/restaurant.js?v=b285b4631cba" defer></script>
+    <script src="/restaurant.js?v=65a85af4963d" defer></script>
     <script src="/speech-capture.js?v=09feffb8cdd4" defer></script>
   </head>
   <body>
@@ -142,6 +142,13 @@
             <button id="demo-start" type="button" data-copy="start">
               Alusta vestlust</button
             ><button
+              id="demo-mic"
+              type="button"
+              class="secondary"
+              data-copy="micStart"
+            >
+              Räägi abilisele
+            </button><button
               id="demo-end"
               type="button"
               class="secondary"
@@ -160,6 +167,12 @@
           >
             Ühenda esmalt operaatori tunnusega.
           </p>
+          <div id="mic-feedback" hidden>
+            <label for="mic-level" data-copy="micLevel"
+              >Mikrofoni helitase</label
+            ><meter id="mic-level" min="0" max="1" value="0"></meter
+            ><span id="mic-feedback-text"></span>
+          </div>
           <div
             id="demo-messages"
             class="messages"
@@ -237,20 +250,6 @@
               </button>
             </div>
           </form>
-          <button
-            id="demo-mic"
-            type="button"
-            class="secondary"
-            data-copy="micStart"
-          >
-            Alusta häälvestlust
-          </button>
-          <div id="mic-feedback" hidden>
-            <label for="mic-level" data-copy="micLevel"
-              >Mikrofoni helitase</label
-            ><meter id="mic-level" min="0" max="1" value="0"></meter
-            ><span id="mic-feedback-text"></span>
-          </div>
           <p class="helper" data-copy="micHelp">
             Räägi loomulikult. Kõnepaus saadab heli; teine vajutus saadab kohe.
             Üks salvestis kestab kuni 15 sekundit.

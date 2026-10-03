@@ -326,7 +326,11 @@ native conversation turns; a native deployment still needs release verification.
 Restaurant proposals expose their remaining server lifetime. The direct form
 and voice conversation show a countdown, discard expired read acknowledgements
 and stop their timers on logout. The browser uses a monotonic clock so changing
-the device clock does not extend consent. The countdown has `aria-live="off"`;
+the device clock does not extend consent. Browser suspension can still delay
+timers; the server checks expiry before every read and confirmation. Clock and
+page-restoration behavior follow [MDN's clock documentation](https://developer.mozilla.org/en-US/docs/Web/API/Performance/now)
+and [page-show lifecycle](https://developer.mozilla.org/en-US/docs/Web/API/Window/pageshow_event).
+The countdown has `aria-live="off"`;
 warnings and expiry use the existing status region without announcing every
 second. This follows the [W3C status-message guidance](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html).
 
@@ -339,7 +343,7 @@ and cannot renew or automatically retry confirmation. In a voice conversation,
 the expiry message asks for the date, time and guest count again.
 
 The mobile layout retains 44-pixel language and navigation targets and places
-the conversation start control within a 390-by-844 viewport in all three
+the conversation start and microphone controls within a 390-by-844 viewport in all three
 languages. Sidebar labels and operator-token errors are translated.
 
 ## Local checks

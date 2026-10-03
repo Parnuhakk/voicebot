@@ -259,9 +259,9 @@ const TEXT = {
   ],
   audio: ["Abilise vastus", "Assistant's reply", "Ответ помощника"],
   micStart: [
-    "Alusta häälvestlust",
-    "Start voice conversation",
-    "Начать голосовой разговор",
+    "Räägi abilisele",
+    "Speak to assistant",
+    "Говорить с помощником",
   ],
   micReady: [
     "Luba mikrofon ja räägi",
@@ -618,6 +618,11 @@ function showReservationProposal(data, requestedAt) {
   $("reservation-recap-text").textContent = data.recap_text;
   $("reservation-recap").hidden = false;
   $("reservation-renew").hidden = false;
+  startReservationClock();
+  if (!currentReservationProposal()) expireReservationProposal();
+}
+function startReservationClock() {
+  clearReservationClock();
   const generation = state.generation, holdId = reservation.holdId;
   reservation.countdownTimer = proposalCountdown("reservation-recap-timer", reservation.expiresAt, () => {
     if (!reservation.busy && !reservation.uncertain)
@@ -627,7 +632,6 @@ function showReservationProposal(data, requestedAt) {
     if (generation === state.generation && reservation.holdId === holdId)
       expireReservationProposal();
   }, Math.max(0, reservation.expiresAt - performance.now()));
-  if (!currentReservationProposal()) expireReservationProposal();
 }
 function tallinnDay(offset = 0) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -1788,6 +1792,12 @@ window.addEventListener("pagehide", () => {
   stopAudio();
   clearReservationClock();
   for (const controller of state.controllers) controller.abort();
+});
+window.addEventListener("pageshow", () => {
+  if (!reservation.holdId) return;
+  if (currentReservationProposal()) startReservationClock();
+  else expireReservationProposal();
+  controls();
 });
 $("booking-date").value = tallinnDay();
 $("reservation-date").value = tallinnDay(1);
