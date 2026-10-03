@@ -53,6 +53,18 @@ AZURE_PRESETS = {
         "en": ("en-US-JennyNeural", "en-US"),
         "ru": ("ru-RU-SvetlanaNeural", "ru-RU"),
     },
+    "azure-male-calm": {
+        "et": ("et-EE-KertNeural", "et-EE"),
+        "en": ("en-US-DavisNeural", "en-US"),
+        "ru": ("ru-RU-DmitryNeural", "ru-RU"),
+    },
+    "azure-male-warm": {
+        "et": ("et-EE-KertNeural", "et-EE"),
+        "en": ("en-US-AndrewNeural", "en-US"),
+        "ru": ("ru-RU-DmitryNeural", "ru-RU"),
+    },
+    "azure-brian": {"en": ("en-US-BrianNeural", "en-US")},
+    "azure-ryan": {"en": ("en-GB-RyanNeural", "en-GB")},
 }
 
 
@@ -95,12 +107,18 @@ class _ProfileSpeaker:
         if language not in AZURE_PRESETS[self.profile]:
             raise ValueError("unsupported speech language")
         delivery = self.client._delivery
-        if self.profile == "azure-calm" and delivery.mode == "natural":
+        if self.profile in {"azure-calm", "azure-male-calm"} and delivery.mode == "natural":
             delivery = replace(
                 delivery,
                 rate=max(0.85, delivery.rate - 0.04),
                 recap_rate=max(0.85, delivery.recap_rate - 0.03),
                 sentence_pause_ms=240,
+            )
+        elif self.profile == "azure-male-warm" and delivery.mode == "natural":
+            delivery = replace(
+                delivery,
+                rate=min(1.15, delivery.rate + 0.02),
+                sentence_pause_ms=160,
             )
         return _LanguageSpeaker(
             self.client, *AZURE_PRESETS[self.profile][language], delivery=delivery

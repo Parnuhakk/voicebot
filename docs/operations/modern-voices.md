@@ -18,6 +18,10 @@ Unconfigured profiles are disabled in the selector rather than silently enabled.
 | Azure (existing) | Estonian, English, Russian | Incremental REST MP3; retains current voices, pronunciation and 48 kHz / 96 kbps output. |
 | Male voice | Estonian Kert, English Guy, Russian Dmitry | Uses the existing Azure credentials and MP3 streaming. Voice selection is request-local. |
 | Calm female voice | Estonian Anu, English Jenny, Russian Svetlana | Existing Azure credentials; a slower delivery variant of these voices, not another Estonian speaker. |
+| Calm male voice | Estonian Kert, English Davis, Russian Dmitry | Slower delivery, 240 ms sentence pauses; Davis uses his documented friendly style. |
+| Lively male voice | Estonian Kert, English Andrew, Russian Dmitry | Native intonation, modestly quicker normal replies and 160 ms sentence pauses; recaps retain their slower rate. |
+| Brian | English (United States) | A distinct male speaker using the existing Azure credentials. |
+| Ryan | English (United Kingdom) | A distinct male speaker with a British accent and documented chat style. |
 | ElevenLabs v4 Turbo | Estonian, English, Russian | Documented dialogue WebSocket MP3; requires a configured licensed voice and provider acceptance validation. |
 | Google Chirp 3 HD | Estonian, English, Russian | Buffered REST MP3; this integration does not claim Google's gRPC native streaming. |
 | Cartesia Sonic 3.6 | English, Russian | Incremental HTTP MP3; automatic Estonian turns use Azure and report the fallback. |
@@ -62,11 +66,26 @@ See Microsoft's [pronunciation controls](https://learn.microsoft.com/en-us/azure
 SSML fixture checks establish request contents, not the subjective quality of
 live synthesized audio; listening still requires configured provider access.
 
-The two extra Azure profiles need no new credentials or environment changes.
+The additional Azure profiles need no new credentials or environment changes.
 They become available with the real Azure client, and cannot be selected when
 the speech client is absent or an injected legacy fixture lacks profile support.
 Provider failure may use the existing Azure default before the first audio chunk;
 returned metadata identifies that fallback. A partial stream never switches voices.
+
+The restaurant selector labels Kert and Dmitry variants as delivery options,
+not different speakers. Azure's documented native Estonian speakers remain Anu
+and Kert. English offers Guy, Davis, Andrew, Brian and Ryan as distinct male
+speakers. English-only profiles are disabled for Estonian and Russian in the
+browser; an API request or automatic language switch uses native Azure fallback
+with `unsupported_language` metadata. No foreign voice is forced to pronounce
+Estonian. Neutral delivery also disables the added male pacing/style controls.
+
+Restaurant recommendations select only listed dishes matching declared dietary
+preferences. Explicit short follow-up requests retain their immediately preceding
+topic and menu filters; selecting a new named dish clears an inherited diet filter.
+Recommendations involving allergies retain the approved staff-verification notice.
+These replies use validated restaurant data, do not claim a dish's popularity or
+allergy safety, and cannot confirm or cancel a reservation.
 
 Microsoft contracts checked 2026-10-03:
 [voice and language support](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=tts),

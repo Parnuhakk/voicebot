@@ -215,6 +215,16 @@ real call, promise a callback, take payment or place a food order.
 
 ## English callers
 
+The first clear supported caller utterance selects ET, EN or RU for the entire
+session, including model instructions, spoken replies and consent checks.
+For example, `Hi! I would like to book a table.` selects English even when the
+browser picker or telephone greeting initially uses Estonian. Subsequent short
+answers, names, numbers and changing supported STT language tags do not switch
+the conversation. Each new session selects its own language. Empty, partial,
+rejected and weak first inputs leave selection pending. Only a whole-turn
+explicit request such as `Please speak Russian` changes a selected language;
+an existing proposal then requires a new recap and delivery before consent.
+
 Automatic language selection recognizes natural English requests such as
 "I'd like a table" and keeps English for short replies such as "Four" or
 "Two pm", even when speech recognition supplies noisy language metadata.
@@ -244,8 +254,12 @@ A clear supported answer resets the counter. The counter belongs to the call,
 not the provider or a global session; partial speech and repeated rendering do
 not advance it. Unclear input skips model and booking calls and invalidates
 pending recap consent. Provider failures receive the technical failure message
-without advancing or resetting the counter. Automatic mode chooses
-ET/EN/RU from the source-language metadata; a selected language controls replies.
+without advancing or resetting the counter. The initial picker or telephone
+language setting controls the greeting. The first clear caller wording and
+supported source metadata select the conversation language; later supported
+metadata cannot replace it. Browser recognition starts with `auto`, then passes
+the selected session language to the recognition interface. Groq's source-language
+validation remains automatic so unsupported speech is never forced into a supported language.
 Missing source metadata fails as unavailable recognition. Very short utterances,
 names and words shared across languages can still be misclassified by Whisper;
 this policy cannot guarantee perfect acoustic language identification.

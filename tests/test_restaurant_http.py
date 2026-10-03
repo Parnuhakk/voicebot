@@ -595,7 +595,7 @@ def test_audio_language_is_sent_to_recognition_and_restaurant_reply(client):
         headers=AUTH,
     )
     assert response.status_code == 200
-    assert client.provider.recognized_languages == ["en"]
+    assert client.provider.recognized_languages == ["auto"]
     assert response.json()["language"] == "en"
     assert "Vegetable soup" in response.json()["reply"]
 
