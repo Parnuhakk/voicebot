@@ -77,8 +77,14 @@ and [EKI number spelling](https://teatmik.eki.ee/teatmik/arvsonade-kokku-ja-lahk
 
 Successful demo confirmations and cancellations refresh the website's
 authenticated reservation list, select the actual reservation date, reset its
-page and mark the affected row. A `View reservation` button in the conversation
-opens that list. Direct-form confirmations use the same behavior. Ending a
+page and mark the affected row. The assistant announces success only after the
+backend write succeeds. A receipt appears immediately in the conversation or
+direct form with the saved date, Tallinn time interval, party size, configured
+table name and reservation number. Cancellation updates visible receipts.
+Receipt fields come from the committed record, never assistant prose or editable
+form values. Missing optional metadata preserves the write result and list link;
+unknown outcomes do not show a success receipt or automatically repeat a write.
+A `View reservation` button opens the list. Ending a
 conversation or reloading the page does not delete its saved reservation;
 reconnect with the operator token and choose its date to see it again. Logout
 clears private browser data. The underlying reservations remain in the shared
