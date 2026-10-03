@@ -137,3 +137,12 @@ def test_natural_correction_requires_new_recap_before_confirmation(make_state):
         assert not state.pending or not state.pending["approved"]
         assert state.bookings == set()
     asyncio.run(run())
+
+
+def test_oversized_followup_does_not_replace_requested_details(make_state):
+    state = make_state()
+    state.observe_user_text("Soovin homme kell 14 lauda, meid on neli")
+    previous = state.booking_inquiry
+    state.observe_user_text("x" * 2001)
+    assert state.booking_inquiry == previous
+    assert trusted_booking_response(state) == {"content": COPY["et"]["information_unknown"]}

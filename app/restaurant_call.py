@@ -545,9 +545,12 @@ class RestaurantCallTools(CallTools):
             booking_request = re.search(BOOKING_REQUEST, text)
             question = re.search(r"^(?:what|where|why|how|do|does|is|are)\b", text)
             prior = self._restaurant_inquiry or {}
-            party_followup = self._restaurant_inquiry is not None and question is None and (
-                parse_restaurant_request(text, prior, expected_field=expected_field).get("party_size")
-                != prior.get("party_size")
+            followup = (
+                parse_restaurant_request(text, prior, expected_field=expected_field)
+                if self._restaurant_inquiry is not None else None
+            )
+            party_followup = followup is not None and question is None and (
+                followup.get("party_size") != prior.get("party_size")
             )
             time_followup = self._restaurant_inquiry is not None and question is None and parse_spoken_time(
                 text, pending=prior.get("time_candidates"),
