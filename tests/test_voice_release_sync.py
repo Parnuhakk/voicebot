@@ -112,6 +112,9 @@ class ExternalCommands:
         self.repository = repository
         self.origin = "https://github.com/Parnuhakk/voicebot.git"
         self.master = SHA
+        self.is_ancestor = False
+        self.receipts = []
+        self.web_identity_code = None
         self.source_ids = [WEB]
         self.rooms = [0, 0]
         self.calls = []
@@ -190,6 +193,10 @@ class ExternalCommands:
                 operation = "up-" + argv[-1]
         if operation == "run" and argv[argv.index("--network") + 1] == "none":
             operation = "artifact-check"
+        if operation == "exec" and argv[3:6] == ["python", "-m", "app.release_status"]:
+            operation = "release-" + argv[6]
+        if operation == "exec" and argv[3:] == ["python", "-c", self.web_identity_code]:
+            operation = "release-identity"
         if self.fail == "timeout-" + operation:
             raise subprocess.TimeoutExpired(argv, kwargs["timeout"], PRIVATE, PRIVATE)
         if self.fail == operation:
@@ -208,6 +215,10 @@ class ExternalCommands:
             elif operation == "archive":
                 assert argv[-1] == SHA
                 out = self.payload
+            elif operation == "merge-base":
+                assert argv[-4:] == ["merge-base", "--is-ancestor", SHA, self.master]
+                if not self.is_ancestor:
+                    raise subprocess.CalledProcessError(1, argv, PRIVATE, PRIVATE)
             else:
                 assert operation == "fetch"
         elif operation == "ps":
@@ -220,12 +231,22 @@ class ExternalCommands:
             if not selected:
                 raise subprocess.CalledProcessError(1, argv, PRIVATE, PRIVATE)
             out = json.dumps(copy.deepcopy(selected)).encode()
-        elif operation == "exec":
-            assert argv[2] == self.containers[WORKER]["Id"]
-            assert argv[3:5] == ["python", "-c"] and len(argv) == 6
-            out = (str(self.rooms.pop(0)) + "\n").encode()
-            if not self.rooms:
-                self.after_probe()
+        elif operation in ("exec", "release-identity", "release-record"):
+            if operation == "release-identity":
+                assert argv[2] == self.containers["web"]["Id"]
+                assert argv[3:] == ["python", "-c", self.web_identity_code]
+                compile(self.web_identity_code, "web-loaded-identity", "exec")
+                out = ("8" * 64).encode()
+            elif argv[3:6] == ["python", "-m", "app.release_status"]:
+                assert argv[2] == self.containers[WORKER]["Id"]
+                assert argv[-3:] == ["record", SHA, "8" * 64]
+                self.receipts.append(argv)
+            else:
+                assert argv[2] == self.containers[WORKER]["Id"]
+                assert argv[3:5] == ["python", "-c"] and len(argv) == 6
+                out = (str(self.rooms.pop(0)) + "\n").encode()
+                if not self.rooms:
+                    self.after_probe()
         elif operation == "image":
             assert argv[2:5] == ["inspect", "--format", "{{.Id}}"]
             assert argv[-1] == "voicebot-telephone:" + SHA
@@ -312,6 +333,7 @@ def lane(tmp_path, monkeypatch):
         spec = importlib.util.spec_from_file_location("release_sync_under_test", SCRIPT)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
+        double.web_identity_code = module.WEB_IDENTITY
         monkeypatch.setattr(module.subprocess, "run", double)
         monkeypatch.setattr(module.sys, "dont_write_bytecode", True)
         monkeypatch.setattr(
@@ -366,6 +388,7 @@ def test_success_replaces_only_worker_and_bridge_from_exact_archived_revision(
     git_commands = [c for c, _ in lane.external.calls if c[0] == "git"]
     assert any("fetch" in c and "origin" in c for c in git_commands)
     assert any(c[-3:] == ["archive", "--format=tar", SHA] for c in git_commands)
+    assert len(lane.external.receipts) == 1
 
 
 def test_private_service_umask_does_not_make_packaged_modules_unreadable(lane):
@@ -465,6 +488,36 @@ def test_master_mismatch_defers_without_mutation(lane, capsys):
     assert capsys.readouterr().out.strip() == "DEFER: release_master_mismatch"
 
 
+def test_published_master_ancestor_still_deploys_only_published_code(lane, capsys):
+    lane.external.master = "f" * 40
+    lane.external.is_ancestor = True
+    assert lane.run() == 0
+    assert capsys.readouterr().out.strip() == "PASS: release_synced"
+    assert any(
+        c[-3:] == ["archive", "--format=tar", SHA] for c, _ in lane.external.calls
+    )
+    assert len(lane.external.receipts) == 1
+
+
+@pytest.mark.parametrize("stage", ["merge-base", "timeout-merge-base"])
+def test_ancestry_command_errors_never_authorize_an_unverified_release(lane, stage):
+    lane.external.master = "f" * 40
+    lane.external.fail = stage
+    assert lane.run() == 1
+    assert not lane.external.mutations()
+    assert not lane.external.receipts
+
+
+@pytest.mark.parametrize("stage", ["release-identity", "release-record"])
+def test_failed_release_receipt_never_claims_success(lane, stage, capsys):
+    lane.external.fail = stage
+    assert lane.run() == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err.strip() == "FAIL: release_sync_failed"
+    assert not lane.external.receipts
+
+
 @pytest.mark.parametrize(
     "target,change",
     [
@@ -526,7 +579,10 @@ def test_already_current_healthy_targets_need_no_build_replacement_or_room_query
         lane.external.containers[name]["Image"] = ARTIFACT
     assert lane.run() == 0
     assert not lane.external.mutations()
-    assert not any("exec" in c for c, _ in lane.external.calls)
+    assert not any(
+        "exec" in c and "-c" in c and c[2] != WEB for c, _ in lane.external.calls
+    )
+    assert len(lane.external.receipts) == 1
     assert capsys.readouterr().out.strip() == "PASS: release_current"
 
 
@@ -557,7 +613,10 @@ def test_stopped_worker_is_recovered_using_a_private_count_only_probe(lane):
     lane.external.after_up = recover
     assert lane.run() == 0
     assert any(c[1] == "run" for c, _ in lane.external.calls)
-    assert not any(c[1] == "exec" for c, _ in lane.external.calls)
+    assert not any(
+        c[1] == "exec" and "-c" in c and c[2] != WEB for c, _ in lane.external.calls
+    )
+    assert len(lane.external.receipts) == 1
 
 
 def test_matching_tags_with_different_actual_image_ids_are_not_current(lane, capsys):

@@ -433,6 +433,7 @@ def test_incomplete_date_cannot_dispatch_a_stale_booking(
 )
 def test_http_month_and_day_followups_retain_context(client, language, month, day):
     session_id = start(client, language)["session_id"]
+    # The first caller utterance establishes the conversation language.
     initial = {
         "et": "Soovin lauda neljale kell 18:00",
         "en": "table at 18:00 for four",

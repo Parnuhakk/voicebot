@@ -9,6 +9,58 @@ const root = path.resolve(__dirname, '..');
 const cases = [], test = (name, run) => cases.push({name, run});
 const receipt = 'a'.repeat(32), sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const posts = (f, endpoint) => f.requests.filter(r => r.path === endpoint && r.method === 'POST');
+
+test('a pending public poll cannot keep an expired alignment claim visible', async (page, f) => {
+  let unblock;
+  const gate = new Promise(resolve => {unblock = resolve;});
+  await page.route('**/api/status', async route => {await gate; await route.abort().catch(() => {});});
+  try {
+    await page.evaluate(() => {
+      const now = Date.now();
+      state.telephoneRelease = {status:'in_sync', verified_at:now / 1000, max_age_seconds:180};
+      renderTelephoneStatus();
+      void refreshTelephoneStatus();
+      Date.now = () => now + 185000;
+    });
+    await page.waitForFunction(() => document.getElementById('telephone-status').textContent === demoCopy().telephoneStale, null, {timeout:2500});
+  } finally {unblock();}
+});
+
+test('visibility restoration immediately ages an expired alignment receipt', async (page, f) => {
+  let unblock;
+  const gate = new Promise(resolve => {unblock = resolve;});
+  await page.route('**/api/status', async route => {await gate; await route.abort().catch(() => {});});
+  try {
+    const result = await page.evaluate(() => {
+      const now = Date.now();
+      state.telephoneRelease = {status:'in_sync', verified_at:now / 1000, max_age_seconds:180};
+      renderTelephoneStatus();
+      Date.now = () => now + 600000;
+      document.dispatchEvent(new Event('visibilitychange'));
+      return document.getElementById('telephone-status').textContent === demoCopy().telephoneStale;
+    });
+    assert.equal(result, true, 'visible page retained an expired alignment claim');
+  } finally {unblock();}
+});
+
+test('a stalled public status poll has a real fetch abort deadline', async (page, f) => {
+  let unblock;
+  const gate = new Promise(resolve => {unblock = resolve;});
+  await page.route('**/api/status', async route => {await gate; await route.abort().catch(() => {});});
+  try {
+    await page.evaluate(() => {
+      const fetchPublic = window.fetch.bind(window);
+      window.fixtureReleaseSignal = null;
+      window.fetch = (input, options) => {
+        if (input === '/api/status') window.fixtureReleaseSignal = options?.signal ?? null;
+        return fetchPublic(input, options);
+      };
+      void refreshTelephoneStatus();
+    });
+    assert(await page.evaluate(() => fixtureReleaseSignal instanceof AbortSignal), 'public poll has no cancellation deadline');
+    await page.waitForFunction(() => fixtureReleaseSignal.aborted && state.telephoneRelease === null, null, {timeout:12000});
+  } finally {unblock();}
+});
 async function start(page) {
   await page.locator('#demo-start').click();
   await page.waitForFunction(() => state.sessionId && !state.turnBusy);

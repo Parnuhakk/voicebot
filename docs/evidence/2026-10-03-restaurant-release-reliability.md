@@ -280,6 +280,55 @@ and release-status receipt changes. They are being independently reviewed for
 normal integration; the counts above attest this `fc5c4ae` integration checkpoint,
 not that newer combined source or live provider acceptance.
 
+### Current receipt/calendar intake checkpoints
+
+The reviewed `fc5c4ae` integration committed `bada923` and is durably pushed to
+the isolated recovery branch. Normal `97684ad` integration retains contributor
+date spelling, spoken years and channel release-status receipts; scope checks
+initially passed 6,264 cases before independent review identified further bugs.
+
+The release receipt must describe the configuration actually loaded by the
+website, not just a file path or a new CLI read. A same-path replacement produced
+an actual HTTP/file RED. Fingerprints now bind validated restaurant data, public
+status uses the retained startup snapshot, and the controller gets that hash from
+the running website through bounded loopback HTTP. Worker receipt replacement
+still rejects a mismatch atomically. A regression proves changed CLI data cannot
+refresh the website's older loaded snapshot and even a wrongly produced new-file
+receipt is reported out of sync. Complete status/controller scope: **131 passed**,
+6.71 seconds. Two legacy assertions were scoped to forbidden worker room queries,
+not the newly required website HTTP read. Independent static recheck is clear.
+
+Three actual Chromium REDs reproduced expired status surviving a pending poll,
+visibility restoration and a poll without a deadline. Independent one-second
+freshness rendering, immediate visibility rendering and a native ten-second
+fetch abort then passed all **24** delivery/status cases, with no external requests
+or page errors. The running published website accepted the controller's bounded
+loopback query and returned a valid fingerprint; that is wire proof only, not
+deployment of this candidate.
+
+Calendar review found malformed spoken-year fallback, accepted numeric date
+prefixes inside longer malformed chains, ignored short weekday contradictions,
+and year parsing consuming ordinary nineteen/twenty guest counts. The resumed
+implementation lane reproduced **13 expected REDs**, then passed 18 focused cases
+and **7,642** scoped cases. Only the three date helpers and their regression file
+changed. One intermediate day-range regression was corrected in the final scoped
+run; no malformed year value is guessed. Parent status/controller/date/deployment
+scope independently passed **6,423** cases, 22.98 seconds. An implementation quota
+failure made no changes; no probe file changed. Independent narrow recheck and
+final combined-source gates remained pending at that point. A narrow recheck then
+found month-first malformed-year input still inventing a day. Three actual REDs
+reproduced November 2; two ordinary ordinal cases already passed. Deferring the
+recognized year span propagated its issue but exposed unconsumed suffix words
+being parsed as party 27 (3 failed, 6,267 passed). Routing malformed scales through
+the existing bounded suffix parser, with no inferred year value, preserves the
+entire date issue and masks numeric words. The final three-date-file scope passed
+**6,270** cases, 22.88 seconds, and the independent narrow static closure is clear.
+186 Python AST, 21 JavaScript syntax, JSON, six asset hashes and credential,
+conflict and whitespace checks are clean. The subsequently published conversational
+voice delta `e53de15` has a clear independent static review; normal integration and
+owner tests still remain. No current master, physical-microphone or PSTN readiness
+is inferred from these earlier checkpoints.
+
 ## Pre-rollout preservation qualification
 
 Read-only hash-only snapshot at 2026-10-03 20:34:39 UTC records healthy web,
