@@ -192,8 +192,14 @@ Speech accepts only Estonian, Russian and English. Browser and native Groq
 recognition detect the original audio language with `verbose_json` before the
 server processes a request. Choosing a reply language does not force Whisper
 to decode another language as that language. Detected Finnish and other
-unsupported speech receives a supported-language prompt without model or
-booking calls; it also invalidates pending recap consent. Automatic mode chooses
+unsupported or empty speech first receives a brief request to repeat the answer.
+A second consecutive unclear turn asks the caller to write their answer in
+Estonian, Russian or English; further unclear turns keep that same request.
+A clear supported answer resets the counter. The counter belongs to the call,
+not the provider or a global session; partial speech and repeated rendering do
+not advance it. Unclear input skips model and booking calls and invalidates
+pending recap consent. Provider failures receive the technical failure message
+without advancing or resetting the counter. Automatic mode chooses
 ET/EN/RU from the source-language metadata; a selected language controls replies.
 Missing source metadata fails as unavailable recognition. Very short utterances,
 names and words shared across languages can still be misclassified by Whisper;

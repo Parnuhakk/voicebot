@@ -685,7 +685,7 @@ async def run_demo_turn(
     stt_failed = recognition_status == "stt_unavailable"
     stt_ms = (time.perf_counter() - stt_started) * 1000 if audio else 0.0
     if not isinstance(text, str) or len(text) > 500:
-        session.tools.observe_user_text("", is_final=True)
+        session.tools.observe_user_text("", is_final=True, recognition_status="input_invalid")
         raise HTTPException(413, "transcript_too_large")
     # The server observes the final transcript before any LLM-generated tool call.
     session.tools.observe_user_text(
@@ -694,6 +694,7 @@ async def run_demo_turn(
         language=None if language == "auto" else language,
         detected_language=detected_language,
         unsupported=recognition_status == "unsupported_language",
+        recognition_status=recognition_status,
     )
     language = session.tools.language
     callslog.history_safe(
@@ -721,6 +722,7 @@ async def run_demo_turn(
         language=language,
         history=session.history,
         recognition_status=recognition_status,
+        recovery_prompt=session.tools.input_recovery_reply,
     )
     result["reply"] = (
         speaker.reply

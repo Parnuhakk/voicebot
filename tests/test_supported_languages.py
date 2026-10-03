@@ -7,7 +7,8 @@ from unittest.mock import Mock
 import httpx
 import pytest
 
-from app.languages import CONSENT, SUPPORTED_LANGUAGE_PROMPT
+from app.languages import CONSENT
+from app.input_recovery import REPEAT_PROMPT
 from app.providers.errors import ProviderError
 from app.providers.groq import GroqClient
 from app.providers.transcription import parse_transcription
@@ -38,7 +39,7 @@ def test_selected_reply_language_cannot_force_supported_recognition(language, so
         provider.close()
     assert result["input_status"] == "unsupported_language"
     assert result["text_heard"] == "" and result["tool_results"] == []
-    assert result["reply"] == SUPPORTED_LANGUAGE_PROMPT.get(language, SUPPORTED_LANGUAGE_PROMPT["et"])
+    assert result["reply"] == REPEAT_PROMPT.get(language, REPEAT_PROMPT["et"])
     assert not result["fallback_used"]
     llm.chat.assert_not_called()
     dispatcher.available_tools.assert_not_called()
@@ -92,7 +93,7 @@ def test_http_rejects_finnish_without_model_tools_or_foreign_history(client, lan
     assert response.status_code == 200, response.text
     result = response.json()
     assert result["input_status"] == "unsupported_language"
-    assert result["reply"] == SUPPORTED_LANGUAGE_PROMPT[language]
+    assert result["reply"] == REPEAT_PROMPT[language]
     assert result["language"] == language
     assert result["text_heard"] == "" and result["tools_used"] == 0
     assert result["booking_changes"] == [] and result["booking_ids"] == []
@@ -146,7 +147,7 @@ def test_unsupported_source_cannot_override_gate_or_delivered_consent(make_state
         state.observe_user_text(text, unsupported=True, detected_language="finnish")
         assert state.unsupported_language and state.pending is None
         assert state.language == language
-        assert state.direct_reply == SUPPORTED_LANGUAGE_PROMPT[language]
+        assert state.direct_reply == REPEAT_PROMPT[language]
         rejected = await state.dispatch("confirm_slot_booking", {"hold_id": prepared["hold_id"]})
         assert rejected.get("error") and not state.bookings
         state.observe_user_text(CONSENT[language], language=language)

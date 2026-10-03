@@ -209,7 +209,7 @@ class TestFullTurn(unittest.TestCase):
         llm = scripted_chat([{"content": "never"}])
         dispatcher = Dispatcher(stay=FakeStay())
         result = run(turn.run_turn(b"", groq_stt("   "), llm, azure_tts(), dispatcher))
-        self.assertIn("korrake", result["reply"])
+        self.assertIn("korda", result["reply"])
         self.assertEqual(llm.calls, 0)
         self.assertEqual(result["tool_results"], [])
 
