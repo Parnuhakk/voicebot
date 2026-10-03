@@ -229,7 +229,7 @@ class ExternalCommands:
         elif operation == "exec":
             if argv[3:6] == ["python", "-m", "app.release_status"]:
                 if argv[-1] == "identity":
-                    assert argv[2] == WEB
+                    assert argv[2] == self.containers["web"]["Id"]
                     out = ("8" * 64).encode()
                 else:
                     assert argv[2] == self.containers[WORKER]["Id"]
@@ -583,7 +583,8 @@ def test_stopped_worker_is_recovered_using_a_private_count_only_probe(lane):
     lane.external.after_up = recover
     assert lane.run() == 0
     assert any(c[1] == "run" for c, _ in lane.external.calls)
-    assert not any(c[1] == "exec" for c, _ in lane.external.calls)
+    assert not any(c[1] == "exec" and "-c" in c for c, _ in lane.external.calls)
+    assert len(lane.external.receipts) == 1
 
 
 def test_matching_tags_with_different_actual_image_ids_are_not_current(lane, capsys):
