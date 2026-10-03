@@ -10,9 +10,11 @@ web and native worker containers. EasyAppointments credentials are optional in
 restaurant mode. An absent restaurant write flag inherits the prior authorized
 `EASY_DEMO_WRITES` setting; an explicit `0` disables table writes.
 
-The root page serves restaurant voice and table controls. `/hotel` returns 410
-in restaurant mode; existing ingress routes for the earlier guest website need
-separate operator review. See [restaurant configuration, deployment and
+The root page at `https://robot.arleserver.cfd/` serves restaurant voice and
+table controls. It is the only published Voicebot domain. `/hotel` returns 410
+without a redirect in restaurant mode. Remove the earlier guest website's
+dedicated ingress file as described in the [robot-only domain runbook](deploy/robot-domain/README.md).
+See [restaurant configuration, deployment and
 rollback](docs/operations/restaurants.md). The older hotel/spa settings below
 are rollback and historical deployment context. Voice provider settings and
 the separate media worker deployment still apply to the restaurant pipeline.
@@ -35,16 +37,10 @@ port 8000. No secrets are baked into the image (see `.dockerignore`).
 3. Port: **8000**. Health check path: **/health**.
 4. Domains → add `https://robot.arleserver.cfd` (TLS on, force HTTPS on).
 
-The separate public Meretuule website uses `https://meretuule.arleserver.cfd/`
-through the [host-specific dynamic proxy route](deploy/meretuule/README.md).
-This is the canonical guest address. `https://robot.arleserver.cfd/` remains
-the operator dashboard and the destination for booking and voice-demo links.
-The former guest paths `https://robot.arleserver.cfd/hotel` and
-`https://robot.arleserver.cfd/hotel/` permanently redirect at public ingress
-with HTTP 301 to `https://meretuule.arleserver.cfd/`, preserving query strings.
-The application's robot-host handler returns HTTP 410 when that redirect is
-not used. `/hotel` remains the internal proxy rewrite target and local preview
-route.
+Do not add the retired Meretuule hostname or install a separate guest-website
+router. The robot root serves the restaurant application directly. Its old
+`/hotel` and `/hotel/` paths return HTTP 410 without `Location`; there is no
+public guest-site redirect or root-to-hotel rewrite.
 
 ## 2. Environment (Coolify → Environment Variables)
 
@@ -85,11 +81,10 @@ The fictional room demo uses `STAY_STATE_DB=/data/stay-booking.db` on this same
 volume. `STAY_DEMO_WRITES` follows `EASY_DEMO_WRITES` when absent; explicit `0`
 disables it. The native worker uses the identical room database path. The room
 inventory and receipts must survive replacement alongside the Easy journal;
-never initialize a different worker volume for this feature. Public hotel
-pitching content is served at `https://meretuule.arleserver.cfd/`, using the
-internal `/hotel` handler; its contact number comes from
-`PUBLIC_PHONE_NUMBER`, or the configured Twilio/SIP number. The public DTOs
-contain catalogue/property information, and all booking writes retain operator
+never initialize a different worker volume for this feature. The hotel/spa
+renderer is retained only for explicit rollback/local regression checks; it
+is not a separate published website. The public restaurant DTOs expose only
+disclosed venue/menu information, and all booking writes retain operator
 authentication and call-owned confirmation rules.
 The Easy write journal persists on `/data` and its file lock coordinates a
 shared single-host journal. This does not make search/hold state distributed.
@@ -148,11 +143,8 @@ new web release, so synchronization waits for the next ordinary deployment.
 - `https://robot.arleserver.cfd/health` → `{"ok": true}`
 - `https://robot.arleserver.cfd/` → disclosed fictional operator dashboard
   (provider-backed bookings, catalogue, text/microphone demo, technical calls).
-- `https://meretuule.arleserver.cfd/` → public fictional hotel and spa website;
-  its homepage links use this exact canonical root.
-- Public robot `/hotel` and `/hotel/` → HTTP 301 with the exact canonical
-  Meretuule root in `Location` (query strings preserved). A direct app request
-  using the robot hostname → HTTP 410 with no `Location` header.
+- The retired Meretuule hostname does not serve the website, assets or APIs.
+- Public robot `/hotel` and `/hotel/` → HTTP 410 with no `Location` header.
 - Confirm/cancel without or with a wrong client token → 403. 503 means
   the server itself has no `OPERATOR_TOKEN` configured — check Coolify env.
 
