@@ -171,6 +171,30 @@ async page => {
     assert(await page.locator('#demo-voice-preview').isDisabled(), 'audition interrupted an active conversation');
     await page.locator('#demo-end').click();
     await page.waitForFunction(()=>!state.sessionId && !state.turnBusy);
+    // Exercise the actual controls against the local backend, with provider doubles.
+    await page.locator('#demo-start').click();
+    await page.waitForFunction(()=>state.sessionId && !state.turnBusy);
+    const temporalAnswers = {
+      et: ['Soovin lauda', 'kahe päeva pärast', 'kell kuueks õhtul', 'meid tuleb neli', 'Mis kuupäevaks', 'Mis kell', 'Mitu teid'],
+      en: ["I'd like to book a table", 'in two days', 'at six and a half PM', 'for a party of four', 'What date', 'What time', 'How many'],
+      ru: ['Хочу забронировать столик', 'через два дня', 'в половине седьмого вечера', 'нас будет четверо', 'На какую дату', 'Во сколько', 'Сколько вас'],
+    }[language.code];
+    for (let index = 0; index < 4; index++) {
+      await page.locator('#demo-text').fill(temporalAnswers[index]);
+      await page.locator('#demo-send').click();
+      await page.waitForFunction(()=>!state.turnBusy);
+      if (index < 3) {
+        const answer = await page.locator('#demo-messages .message').last().locator('span').textContent();
+        assert(answer.includes(temporalAnswers[index + 4]), `incorrect ${language.code} temporal follow-up`);
+        assert.equal(await page.evaluate(()=>state.recap), null);
+      }
+    }
+    const temporalRecap = await page.evaluate(()=>state.recap && state.recap.reply);
+    assert(temporalRecap && /4\s+(?:guests|külalist|гостей)/.test(temporalRecap));
+    assert(temporalRecap.includes({et:'18:00',en:'6:30 PM',ru:'18:30'}[language.code]));
+    assert(await page.locator('#demo-recap-read').isVisible(), 'new booking recap is missing');
+    await page.locator('#demo-end').click();
+    await page.waitForFunction(()=>!state.sessionId && !state.turnBusy);
     await page.locator('#reservation-time').fill('14:00');
     await page.locator('#reservation-party').fill('4');
     await page.locator('#reservation-prepare').click();
@@ -382,5 +406,5 @@ async page => {
   assert.equal(await page.locator('html').evaluate(element=>getComputedStyle(element).backgroundColor),'rgb(245, 249, 246)','public restaurant palette changed');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'public mobile horizontal overflow');
   assert.deepEqual(errors,[]);
-  return {languages:3,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,englishSpokenDates:true,englishClockClarification:true,russianMixedDateCases:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,publicDemoUnchanged:true,pageErrors:errors.length};
+  return {languages:3,multilingualStepwiseDateTimeAndParty:true,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,englishSpokenDates:true,englishClockClarification:true,russianMixedDateCases:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,publicDemoUnchanged:true,pageErrors:errors.length};
 }

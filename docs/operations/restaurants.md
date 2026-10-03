@@ -149,6 +149,34 @@ require an exact new time and cannot reuse an earlier selection. These selectors
 are not caller transcripts and cannot reach a booking tool until resolved.
 The public API supplies `booking_time_examples` in each supported language.
 
+The calendar also understands day/week offsets (`kahe päeva pärast`,
+`in two days`, `через два дня`) and explicitly qualified calendar weeks
+(`järgmise nädala reedel`, `next week on Friday`,
+`на следующей неделе в пятницу`). Calendar weeks start on Monday; an explicitly
+requested day in the current week can be in the past and is rejected later by
+availability validation. An unqualified weekday retains next-occurrence behavior.
+`tonight` names today's date. Month/day ordering in a short numeric date reply
+such as `4.10` still requires clarification.
+
+Day, month and optional year may arrive in separate date-question answers.
+Only bounded numeric selectors survive that clarification; they are discarded
+after an exact date, an invalid alternative or a new vague period. A day-only
+answer to a date question cannot become a guest count. Month-only and week-only
+requests invalidate an earlier selected date until clarified.
+
+Spoken time forms additionally include `kell kuueks õhtul`, `kuus läbi viisteist`,
+`six and a half PM` and `в половине седьмого вечера`. Approximate times and
+ranges require an exact answer instead of silently choosing a clock. Guest
+answers include `meid tuleb neli`, `for a party of four`, and `нас будет четверо`.
+Guest alternatives and contradictory adult/child totals invalidate the prior
+count and cannot reach reservation planning before clarification.
+
+The temporal coverage tests exercise all calendar days in all months, every
+minute of a day in the three supported languages, local year/leap-day/DST
+boundaries, and multi-turn browser/HTTP/native SDK workflows. Recognition and
+speech providers are doubles in those checks. They do not establish live
+acoustic accuracy, caller-accent coverage or deployment readiness.
+
 Edit a copy of `data/demo/restaurant-demo.json` and place it on the persistent
 shared volume, for example `/data/restaurant.json`. Set
 `RESTAURANT_CONFIG_PATH=/data/restaurant.json` in web and native worker runtime

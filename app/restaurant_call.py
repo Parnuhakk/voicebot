@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 from typing import Any
 
 from .languages import CONSENT, LANGUAGE_POLICY, english_clarification, spoken_date, spoken_time
-from .restaurant_times import parse_spoken_time
+from .restaurant_times import NUMBERS, parse_spoken_time
 from .restaurant_data import restaurant_demo_profile
 from .restaurant_dates import ESTONIAN_COUNTS, resolve_restaurant_date
 from .restaurant_date_vocabulary import RUSSIAN_COUNTS
@@ -192,6 +192,8 @@ NUMBER_WORDS = {
     **RUSSIAN_COUNTS,
     "nine": 9,
     "ten": 10,
+    **{word: value for word, value in NUMBERS.items() if value >= 11},
+    **{word.replace(" ", "-"): value for word, value in NUMBERS.items() if value >= 21 and re.fullmatch(r"[a-z ]+", word)},
 }
 
 
@@ -281,13 +283,30 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
     if not active:
         return None
     now = now or datetime.now(ZoneInfo("Europe/Tallinn"))
-    resolved = resolve_restaurant_date(text, now)
+    date_reply = expected_field in {"date", "date_invalid", "date_incomplete", "date_ambiguous"} or bool(inquiry.get("date_issue"))
+    resolved = resolve_restaurant_date(
+        text, now, allow_bare_day=date_reply,
+        pending_day=inquiry.get("date_day"), pending_month=inquiry.get("date_month"),
+        pending_year=inquiry.get("date_year"),
+    )
     if resolved.issue:
         inquiry.pop("date", None)
         inquiry["date_issue"] = resolved.issue
+        if resolved.issue != "date_incomplete":
+            for key in ("date_day", "date_month", "date_year"):
+                inquiry.pop(key, None)
+        else:
+            if resolved.day is None and resolved.month is None and resolved.year is None:
+                for key in ("date_day", "date_month", "date_year"):
+                    inquiry.pop(key, None)
+            for key, value in (("date_day", resolved.day), ("date_month", resolved.month), ("date_year", resolved.year)):
+                if value is not None:
+                    inquiry[key] = value
     elif resolved.value:
         inquiry["date"] = resolved.value
         inquiry.pop("date_issue", None)
+        for key in ("date_day", "date_month", "date_year"):
+            inquiry.pop(key, None)
     # Keep the current date parser's removal of date numerals/case forms.
     text = " ".join(resolved.remaining_text.split())
     requested_time = parse_spoken_time(
@@ -308,9 +327,11 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
             inquiry["time_candidates"] = requested_time.candidates
         else:
             inquiry["time_invalid"] = True
-    words = "|".join(map(re.escape, NUMBER_WORDS))
+    words = "|".join(re.escape(word) for word in sorted(NUMBER_WORDS, key=len, reverse=True))
     number = r"(\d{1,2}|" + words + r")"
-    party = re.search(r"\b(?:for|на|для|kokku|total)\s+" + number + r"\b", text)
+    guest_noun = r"(?:people|persons|guests|inimes\w*|külalis\w*|külalist\w*|человек\w*|гост\w*)"
+    party_prefix = r"(?:for(?:\s+a\s+party\s+of)?|на|для|kokku|total)"
+    party = re.search(r"\b" + party_prefix + r"\s+" + number + r"\b", text)
     if party and requested_time and requested_time.span:
         low, high = requested_time.span
         if party.start() < high and party.end() > low:
@@ -318,12 +339,13 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
     party = party or re.search(
         r"\b"
         + number
-        + r"\s+(?:people|persons|guests|inimes\w*|külalis\w*|külalist\w*|человек\w*|гост\w*)\b",
+        + r"\s+" + guest_noun + r"\b",
         text,
     )
     party = party or re.search(
         r"\b(?:there (?:will be|are)|we (?:are|will be)|we['’]re)\s+" + number + r"\b", text
     ) or re.search(r"\b" + number + r"\s+of us\b", text)
+    party = party or re.search(r"\b(?:meid\s+(?:on|tuleb)|нас(?:\s+будет)?)\s+" + number + r"\b", text)
     party = party or re.search(
         r"\b(ühele|kahele|kolmele|neljale|viiele|kuuele|seitsmele|kaheksale)\b", text
     )
@@ -335,6 +357,8 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
         inquiry["party_size"] = NUMBER_WORDS[text.strip(".!?")]
     elif not requested_time and re.fullmatch(r"\d{1,2}", text) and "party_size" not in inquiry:
         inquiry["party_size"] = int(text)
+    if "party_size" in inquiry and (party or (not requested_time and text.strip(".!?") in NUMBER_WORDS) or re.fullmatch(r"\d{1,2}", text)):
+        inquiry.pop("party_invalid", None)
     # A component count is not the total. Include children explicitly rather
     # than silently reserving for only the first number in the sentence.
     adult = re.search(
@@ -349,11 +373,34 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
         def count(match):
             return int(match[1]) if match[1].isdigit() else NUMBER_WORDS[match[1]]
 
-        inquiry["party_size"] = count(adult) + count(children)
+        components = count(adult) + count(children)
+        total = re.search(r"\b(?:total|kokku|всего)\s+" + number + r"\b", text) or re.search(r"\b" + number + r"\s+in\s+total\b", text)
+        if total and count(total) != components:
+            inquiry.pop("party_size", None)
+            inquiry["party_invalid"] = True
+        else:
+            inquiry["party_size"] = components
+            inquiry.pop("party_invalid", None)
     elif re.search(
         r"\b(?:children|kids?|last|lapse\w*|дет\w*|реб[её]н\w*)\b", text
     ) and not re.search(r"\b(?:total|kokku|всего)\b", text):
         inquiry.pop("party_size", None)
+    # An offered range or conflicting totals need another answer. Time/date
+    # alternatives are not guest alternatives unless a count phrase owns them.
+    alternative = re.compile(r"\b" + number + r"\s+(?:or|või|или|kuni|to)\s+" + number + r"\b")
+    for match in alternative.finditer(text):
+        count_prefix = re.search(r"\b" + party_prefix + r"\s*$", text[:match.start()])
+        count_suffix = re.match(r"\s+" + guest_noun + r"\b", text[match.end():])
+        if count_prefix or count_suffix or expected_field == "party":
+            inquiry.pop("party_size", None)
+            inquiry["party_invalid"] = True
+    totals = {int(match[1]) if match[1].isdigit() else NUMBER_WORDS[match[1]] for match in re.finditer(r"\b" + number + r"\s+" + guest_noun + r"\b", text)}
+    if len(totals) > 1:
+        inquiry.pop("party_size", None)
+        inquiry["party_invalid"] = True
+    if party and re.search(r"\b(?:not|mitte|ei|не)(?:\s+\w+){0,2}\s*$", text[:party.start()]):
+        inquiry.pop("party_size", None)
+        inquiry["party_invalid"] = True
     return inquiry
 
 
@@ -736,7 +783,7 @@ class RestaurantCallTools(CallTools):
         if (
             name == "plan_restaurant_reservation"
             and self._restaurant_inquiry
-            and any(self._restaurant_inquiry.get(key) for key in ("date_issue", "time_candidates", "time_invalid"))
+            and any(self._restaurant_inquiry.get(key) for key in ("date_issue", "time_candidates", "time_invalid", "party_invalid"))
         ):
             return {"error": "clarification_required"}
         if isinstance(args, str):
@@ -890,11 +937,11 @@ class RestaurantCallTools(CallTools):
                 self._restaurant_diet,
             )
         elif any(
-            reply == COPY[self.language][key] for key in ("date", "time", "party", "ambiguous_time", "invalid_time")
+            reply == COPY[self.language][key] for key in ("date", "date_invalid", "date_incomplete", "date_ambiguous", "time", "party", "ambiguous_time", "invalid_time")
         ):
             key = next(
                 key
-                for key in ("date", "time", "party", "ambiguous_time", "invalid_time")
+                for key in ("date", "date_invalid", "date_incomplete", "date_ambiguous", "time", "party", "ambiguous_time", "invalid_time")
                 if reply == COPY[self.language][key]
             )
             self._restaurant_last_response = ("question", key)
