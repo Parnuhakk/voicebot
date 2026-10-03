@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import time
 
 from fastapi import Header, HTTPException, Request
 
@@ -19,6 +20,23 @@ CANCEL = {"et": "Jah, tühista.", "en": "Yes, cancel.", "ru": "Да, отмен�
 
 
 def add_restaurant_routes(app, sessions):
+    def proposal_result(session, result):
+        if not isinstance(result, dict) or result.get("ok") is not True:
+            return _result(result)
+        pending = session.tools.pending
+        recap = session.tools.render_recap()
+        if not pending or not recap:
+            return _result({"error": "hold_expired_or_unknown"})
+        return _result({
+            **result,
+            "recap_text": recap,
+            "recap_expires_in_s": max(
+                0.0, min(pending["expires_at"], session.expires_at) - time.monotonic()
+            ),
+            "kind": "slot",
+            "business_type": "restaurant",
+        })
+
     @app.get("/api/public/restaurant")
     @app.get("/api/public/property")
     async def restaurant_information():
@@ -97,14 +115,38 @@ def add_restaurant_routes(app, sessions):
                     if key in body
                 },
             )
-            if isinstance(result, dict) and result.get("ok") is True:
-                result = {
-                    **result,
-                    "recap_text": session.tools.render_recap(),
-                    "kind": "slot",
-                    "business_type": "restaurant",
-                }
-            return _result(result)
+            return proposal_result(session, result)
+        finally:
+            sessions.release(session)
+
+    @app.post("/api/restaurant/reservation/renew")
+    async def renew(
+        request: Request, authorization: str | None = Header(default=None)
+    ):
+        body, session = await owned(request, authorization)
+        try:
+            _fields(body, {"session_id", "hold_id"}, {"hold_id"})
+            hold_id = body["hold_id"]
+            pending = session.tools.pending
+            if (
+                not isinstance(hold_id, str)
+                or hold_id not in session.tools.held_slots
+                or hold_id in session.tools.confirmed_holds
+                or session.tools.mutation_uncertain
+                or not pending
+                or pending.get("hold_id") != hold_id
+            ):
+                raise HTTPException(409, "booking_proposal_unavailable")
+            guest = pending["guest_fixture_id"]
+            session.tools.observe_user_text(
+                "Prepare this restaurant table reservation.",
+                language=session.tools.language,
+            )
+            result = await session.tools.dispatch(
+                "prepare_demo_booking",
+                {"hold_id": hold_id, "guest_fixture_id": guest},
+            )
+            return proposal_result(session, result)
         finally:
             sessions.release(session)
 

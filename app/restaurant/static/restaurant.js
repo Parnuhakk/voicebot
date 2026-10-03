@@ -46,8 +46,43 @@ const reservation = {
   busy: false,
   uncertain: false,
   date: null,
+  expiresAt: null,
+  expiryTimer: null,
+  countdownTimer: null,
+  renewalHoldId: null,
+  proposalRequest: null,
 };
 const TEXT = {
+  sidebarLabel: ["Töölaua külgriba", "Workspace sidebar", "Боковая панель рабочего стола"],
+  navigationLabel: ["Töölaua jaotised", "Workspace sections", "Разделы рабочего стола"],
+  proposalTimerLabel: ["Pakkumise kehtivusaeg", "Time left for this proposal", "Срок действия предложения"],
+  proposalRemaining: ["Pakkumine kehtib veel {time}.", "This proposal is valid for {time}.", "Предложение действует ещё {time}."],
+  proposalExpiring: [
+    "Pakkumine aegub peagi. Vajadusel uuenda pakkumist ja kontrolli kokkuvõtet uuesti.",
+    "This proposal expires soon. You can renew it and review the recap again.",
+    "Предложение скоро истечёт. При необходимости обновите его и снова проверьте итог.",
+  ],
+  proposalExpired: [
+    "Pakkumine aegus. Uuenda pakkumist või kontrolli lauda uuesti.",
+    "The proposal expired. Renew it or check for a table again.",
+    "Предложение истекло. Обновите предложение или снова проверьте столик.",
+  ],
+  voiceProposalExpired: [
+    "Pakkumine aegus. Saada laua kuupäev, kellaaeg ja külaliste arv uuesti, et saadavust kontrollida.",
+    "The proposal expired. Send the table date, time and guest count again to check availability.",
+    "Предложение истекло. Снова укажите дату, время и число гостей для проверки наличия столика.",
+  ],
+  renewProposal: ["Uuenda pakkumist", "Renew proposal", "Обновить предложение"],
+  proposalRenewed: [
+    "Pakkumine on uuendatud. Loe uus kokkuvõte enne kinnitamist.",
+    "The proposal is renewed. Read the new recap before confirming.",
+    "Предложение обновлено. Прочитайте новый итог перед подтверждением.",
+  ],
+  authRejected: [
+    "Operaatori tunnus ei sobi. Sisesta kehtiv tunnus ja proovi uuesti.",
+    "The operator token was rejected. Enter a valid token and try again.",
+    "Токен оператора отклонён. Введите действительный токен и повторите попытку.",
+  ],
   telephoneInSync: [
     "Telefoniroboti versioon ühtib veebiga viimase kontrolli järgi.",
     "The telephone assistant matches the website as of the last check.",
@@ -516,6 +551,84 @@ function status(id, text, kind = "") {
   element.textContent = text;
   element.className = "status " + kind;
 }
+function proposalCountdown(id, expiresAt, warning = null) {
+  const element = $(id);
+  let warned = false;
+  const tick = () => {
+    const seconds = Math.max(0, Math.ceil((expiresAt - performance.now()) / 1000));
+    const time = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+    element.hidden = false;
+    element.textContent = demoCopy().proposalRemaining.replace("{time}", time);
+    element.classList.toggle("expiring", seconds <= 20);
+    if (!warned && seconds <= 20 && seconds > 0 && warning) {
+      warned = true;
+      warning();
+    }
+  };
+  const timer = setInterval(tick, 1000);
+  tick();
+  return timer;
+}
+function clearReservationClock() {
+  clearTimeout(reservation.expiryTimer);
+  clearInterval(reservation.countdownTimer);
+  reservation.expiryTimer = reservation.countdownTimer = null;
+  $("reservation-recap-timer").hidden = true;
+}
+function currentReservationProposal() {
+  return !!reservation.holdId && Number.isFinite(reservation.expiresAt) &&
+    performance.now() < reservation.expiresAt;
+}
+function expireReservationProposal() {
+  if (!reservation.holdId) {
+    if (reservation.renewalHoldId && !reservation.uncertain)
+      status("reservation-status", demoCopy().proposalExpired, "error");
+    return;
+  }
+  clearReservationClock();
+  reservation.renewalHoldId = reservation.holdId;
+  reservation.holdId = null;
+  reservation.expiresAt = null;
+  reservation.acknowledged = false;
+  $("reservation-recap").hidden = true;
+  $("reservation-renew").hidden = false;
+  if (!reservation.busy && !reservation.uncertain)
+    status("reservation-status", demoCopy().proposalExpired, "error");
+  controls();
+}
+function reservationRequest() {
+  return {
+    date: $("reservation-date").value,
+    start_time: $("reservation-time").value,
+    party_size: Number($("reservation-party").value),
+  };
+}
+function sameReservationRequest() {
+  return JSON.stringify(reservationRequest()) === JSON.stringify(reservation.proposalRequest);
+}
+function showReservationProposal(data, requestedAt) {
+  if (typeof data.recap_text !== "string" || !data.recap_text.trim() ||
+      !Number.isFinite(data.recap_expires_in_s) || data.recap_expires_in_s <= 0)
+    throw new Error("invalid proposal");
+  clearReservationClock();
+  reservation.holdId = reservation.renewalHoldId = data.hold_id;
+  reservation.acknowledged = false;
+  reservation.date = data.recap.date;
+  reservation.expiresAt = requestedAt + data.recap_expires_in_s * 1000;
+  $("reservation-recap-text").textContent = data.recap_text;
+  $("reservation-recap").hidden = false;
+  $("reservation-renew").hidden = false;
+  const generation = state.generation, holdId = reservation.holdId;
+  reservation.countdownTimer = proposalCountdown("reservation-recap-timer", reservation.expiresAt, () => {
+    if (!reservation.busy && !reservation.uncertain)
+      status("reservation-status", demoCopy().proposalExpiring);
+  });
+  reservation.expiryTimer = setTimeout(() => {
+    if (generation === state.generation && reservation.holdId === holdId)
+      expireReservationProposal();
+  }, Math.max(0, reservation.expiresAt - performance.now()));
+  if (!currentReservationProposal()) expireReservationProposal();
+}
 function tallinnDay(offset = 0) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Tallinn",
@@ -534,6 +647,7 @@ function presentation() {
 }
 function localize() {
   const copy = demoCopy();
+  document.documentElement.classList.toggle("is-connected", state.connected);
   document.documentElement.lang = uiLanguage();
   document.title = copy.title + " · Voicebot";
   for (const element of document.querySelectorAll("[data-copy]"))
@@ -555,6 +669,7 @@ function localize() {
   controls();
 }
 function controls() {
+  document.documentElement.classList.toggle("has-voice-session", !!state.sessionId);
   const locked = state.turnBusy || state.micStarting || state.previewBusy;
   $("connect").disabled = !!state.credential;
   $("logout").disabled = !state.connected;
@@ -603,9 +718,9 @@ function controls() {
       !!reservation.holdId ||
       !!reservation.bookingId;
   $("reservation-read").disabled =
-    !reservation.holdId || reservation.busy || reservation.acknowledged;
+    !currentReservationProposal() || reservation.busy || reservation.acknowledged;
   $("reservation-confirm").disabled =
-    !reservation.holdId ||
+    !currentReservationProposal() ||
     !reservation.acknowledged ||
     reservation.busy ||
     reservation.uncertain;
@@ -613,6 +728,8 @@ function controls() {
     !reservation.bookingId || reservation.busy || reservation.uncertain;
   $("reservation-end").disabled =
     !reservation.sessionId || reservation.busy || reservation.uncertain;
+  $("reservation-renew").disabled = !state.connected || !state.bookingReady ||
+    !reservation.renewalHoldId || reservation.busy || reservation.uncertain || !!reservation.bookingId;
   for (const button of document.querySelectorAll(".example-button"))
     button.disabled = !state.sessionId || locked || !!state.mic;
   presentation();
@@ -819,6 +936,7 @@ function post(path, body) {
   });
 }
 function clearReservation() {
+  clearReservationClock();
   Object.assign(reservation, {
     sessionId: null,
     holdId: null,
@@ -826,9 +944,14 @@ function clearReservation() {
     acknowledged: false,
     busy: false,
     uncertain: false,
+    expiresAt: null,
+    renewalHoldId: null,
+    proposalRequest: null,
+    date: null,
   });
   $("reservation-recap").hidden = true;
   $("reservation-cancel").hidden = true;
+  $("reservation-renew").hidden = true;
   $("reservation-recap-text").textContent = "";
 }
 function logout() {
@@ -887,7 +1010,8 @@ async function connect() {
   } catch (error) {
     if (generation === state.generation) {
       logout();
-      status("auth-status", demoCopy().authFailed, "error");
+      status("auth-status", [401, 403].includes(error.status)
+        ? demoCopy().authRejected : demoCopy().failed, "error");
     }
   } finally {
     if (generation === state.generation) controls();
@@ -1158,11 +1282,16 @@ async function prepareReservation() {
     reservation.bookingId
   )
     return;
+  if (reservation.renewalHoldId && sameReservationRequest())
+    return renewReservation();
   const generation = state.generation;
   reservation.busy = true;
   reservation.holdId = null;
   reservation.acknowledged = false;
+  reservation.renewalHoldId = null;
+  reservation.proposalRequest = reservationRequest();
   $("reservation-recap").hidden = true;
+  $("reservation-renew").hidden = true;
   controls();
   status("reservation-status", demoCopy().loading);
   try {
@@ -1173,11 +1302,10 @@ async function prepareReservation() {
       if (generation !== state.generation) return;
       reservation.sessionId = session.session_id;
     }
+    const requestedAt = performance.now();
     const data = await post("/api/restaurant/reservation/prepare", {
       session_id: reservation.sessionId,
-      date: $("reservation-date").value,
-      start_time: $("reservation-time").value,
-      party_size: Number($("reservation-party").value),
+      ...reservation.proposalRequest,
     });
     if (generation !== state.generation) return;
     if (data.restaurant_unavailable || !data.ok) {
@@ -1189,11 +1317,9 @@ async function prepareReservation() {
       );
       return;
     }
-    reservation.holdId = data.hold_id;
-    reservation.date = data.recap.date;
-    $("reservation-recap-text").textContent = data.recap_text;
-    $("reservation-recap").hidden = false;
-    status("reservation-status", demoCopy().recapTitle);
+    showReservationProposal(data, requestedAt);
+    status("reservation-status", currentReservationProposal()
+      ? demoCopy().recapTitle : demoCopy().proposalExpired);
   } catch (error) {
     if (generation === state.generation)
       status("reservation-status", demoCopy().failed, "error");
@@ -1205,7 +1331,8 @@ async function prepareReservation() {
   }
 }
 async function readReservation() {
-  if (!reservation.holdId || reservation.busy) return;
+  if (reservation.busy) return;
+  if (!currentReservationProposal()) return expireReservationProposal();
   const generation = state.generation;
   reservation.busy = true;
   controls();
@@ -1215,13 +1342,14 @@ async function readReservation() {
       hold_id: reservation.holdId,
     });
     if (generation !== state.generation) return;
+    if (!currentReservationProposal()) return expireReservationProposal();
     reservation.acknowledged = true;
     status("reservation-status", demoCopy().acknowledged);
   } catch (error) {
     if (generation === state.generation) {
-      reservation.holdId = null;
-      $("reservation-recap").hidden = true;
-      status("reservation-status", demoCopy().failed, "error");
+      expireReservationProposal();
+      status("reservation-status", error.code === "booking_recap_expired_or_unknown"
+        ? demoCopy().proposalExpired : demoCopy().failed, "error");
     }
   } finally {
     if (generation === state.generation) {
@@ -1229,6 +1357,45 @@ async function readReservation() {
       controls();
     }
   }
+}
+async function renewReservation() {
+  if (!state.connected || reservation.busy || reservation.uncertain || reservation.bookingId) return;
+  if (!reservation.renewalHoldId || !sameReservationRequest()) {
+    reservation.renewalHoldId = null;
+    return prepareReservation();
+  }
+  const generation = state.generation;
+  reservation.busy = true;
+  expireReservationProposal();
+  controls();
+  status("reservation-status", demoCopy().loading);
+  let prepareFresh = false;
+  try {
+    const requestedAt = performance.now();
+    const data = await post("/api/restaurant/reservation/renew", {
+      session_id: reservation.sessionId, hold_id: reservation.renewalHoldId,
+    });
+    if (generation !== state.generation) return;
+    if (!data.ok || data.error) throw new Error("invalid proposal");
+    showReservationProposal(data, requestedAt);
+    status("reservation-status", currentReservationProposal()
+      ? demoCopy().proposalRenewed : demoCopy().proposalExpired);
+  } catch (error) {
+    if (generation !== state.generation) return;
+    if (error.code === "hold_expired_or_unknown") {
+      clearReservationClock();
+      reservation.holdId = reservation.renewalHoldId = null;
+      reservation.acknowledged = false;
+      $("reservation-recap").hidden = $("reservation-renew").hidden = true;
+      prepareFresh = true;
+    } else status("reservation-status", demoCopy().failed, "error");
+  } finally {
+    if (generation === state.generation) {
+      reservation.busy = false;
+      controls();
+    }
+  }
+  if (prepareFresh && generation === state.generation) await prepareReservation();
 }
 async function mutateReservation(cancel = false) {
   if (
@@ -1238,6 +1405,7 @@ async function mutateReservation(cancel = false) {
     (!cancel && !reservation.acknowledged)
   )
     return;
+  if (!cancel && !currentReservationProposal()) return expireReservationProposal();
   const generation = state.generation;
   reservation.busy = true;
   controls();
@@ -1255,6 +1423,9 @@ async function mutateReservation(cancel = false) {
     );
     if (generation !== state.generation) return;
     if (data.ok !== true || data.error) throw new Error("closed result");
+    clearReservationClock();
+    reservation.renewalHoldId = null;
+    $("reservation-renew").hidden = true;
     if (cancel) {
       reservation.bookingId = null;
       $("reservation-cancel").hidden = true;
@@ -1274,7 +1445,14 @@ async function mutateReservation(cancel = false) {
     await Promise.allSettled([loadBookings(), loadHistory()]);
   } catch (error) {
     if (generation === state.generation) {
+      if (!cancel && ["consent_required", "hold_expired_or_unknown"].includes(error.code)) {
+        expireReservationProposal();
+        status("reservation-status", demoCopy().proposalExpired, "error");
+        return;
+      }
       reservation.uncertain = true;
+      clearReservationClock();
+      $("reservation-renew").hidden = true;
       status("reservation-status", demoCopy().unknown, "error");
     }
   } finally {
@@ -1550,6 +1728,7 @@ $("reservation-form").addEventListener("submit", (event) => {
   prepareReservation();
 });
 $("reservation-read").addEventListener("click", readReservation);
+$("reservation-renew").addEventListener("click", renewReservation);
 $("reservation-confirm").addEventListener("click", () => mutateReservation());
 $("reservation-cancel").addEventListener("click", () =>
   mutateReservation(true),
@@ -1599,11 +1778,15 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     stopMic();
     $("demo-audio").pause();
+  } else {
+    if (reservation.holdId && !currentReservationProposal()) expireReservationProposal();
+    if (state.recap && !currentRecap(state.recap)) expireVoiceRecap(state.recap);
   }
 });
 window.addEventListener("pagehide", () => {
   stopMic();
   stopAudio();
+  clearReservationClock();
   for (const controller of state.controllers) controller.abort();
 });
 $("booking-date").value = tallinnDay();

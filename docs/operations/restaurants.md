@@ -310,9 +310,7 @@ Rollback: set `VOICEBOT_BUSINESS_TYPE=hotel_spa` in both transports and restart.
 The older hotel/spa state files and historical regression fixtures are retained;
 restaurant data uses its own database and does not migrate prior reservations.
 
-## Local checks
-
-### Family facilities
+## Family facilities
 
 The optional `family_facilities` object accepts `drawing`, `toys`,
 `play_corner` and `children_menu`, with strict boolean or null values. Only
@@ -323,6 +321,29 @@ highchairs or free use. Questions about those details ask the restaurant team.
 The shared question selector and reviewed ET/EN/RU answer apply to web and
 native conversation turns; a native deployment still needs release verification.
 
+## Proposal lifetime and mobile controls
+
+Restaurant proposals expose their remaining server lifetime. The direct form
+and voice conversation show a countdown, discard expired read acknowledgements
+and stop their timers on logout. The browser uses a monotonic clock so changing
+the device clock does not extend consent. The countdown has `aria-live="off"`;
+warnings and expiry use the existing status region without announcing every
+second. This follows the [W3C status-message guidance](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html).
+
+The direct form's `Renew proposal` action uses
+`POST /api/restaurant/reservation/renew` with the owned session and current hold.
+It resets consent and requires reading the new recap. It does not extend the
+underlying table hold or confirm a reservation. If that hold has expired, the
+form checks current availability again. Uncertain write outcomes remain blocked
+and cannot renew or automatically retry confirmation. In a voice conversation,
+the expiry message asks for the date, time and guest count again.
+
+The mobile layout retains 44-pixel language and navigation targets and places
+the conversation start control within a 390-by-844 viewport in all three
+languages. Sidebar labels and operator-token errors are translated.
+
+## Local checks
+
 Run the core and separate media suites with their project environments:
 
 ```powershell
@@ -331,6 +352,7 @@ Run the core and separate media suites with their project environments:
 $env:NODE_PATH='C:\Users\salov.ml7b493\AppData\Local\Programs\CodexTools\node_modules'
 $env:PLAYWRIGHT_BROWSER_CHANNEL='chrome'
 node tests/run_browser_checks.cjs playwright .venv/Scripts/python.exe restaurant_browser_checks.js
+node tests/run_browser_checks.cjs playwright .venv/Scripts/python.exe restaurant_quality_browser_checks.js
 ```
 
 The browser runner starts isolated fixture servers on temporary loopback ports.

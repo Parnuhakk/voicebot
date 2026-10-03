@@ -182,7 +182,8 @@ class StayAdapter(abc.ABC):
         """
 
     @abc.abstractmethod
-    async def cancel(self, booking_id: str, idempotency_key: str) -> dict: ...
+    async def cancel(self, booking_id: str, idempotency_key: str) -> dict:
+        ...
 
 
 class SlotAdapter(abc.ABC):
@@ -193,15 +194,19 @@ class SlotAdapter(abc.ABC):
     @abc.abstractmethod
     async def search_slots(
         self, service: str, date: str, provider: str | None = None
-    ) -> list[dict]: ...
+    ) -> list[dict]:
+        ...
 
     @abc.abstractmethod
-    async def create_hold(self, slot_id: str) -> Hold: ...
+    async def create_hold(self, slot_id: str) -> Hold:
+        ...
 
     @abc.abstractmethod
     async def confirm(
         self, hold_id: str, guest: dict, idempotency_key: str
-    ) -> dict: ...
+    ) -> dict:
+        ...
 
     @abc.abstractmethod
-    async def cancel(self, booking_id: str, idempotency_key: str) -> dict: ...
+    async def cancel(self, booking_id: str, idempotency_key: str) -> dict:
+        ...
