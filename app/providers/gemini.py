@@ -10,6 +10,8 @@ PII out (names/phones stay in tool args, not prose) or move to paid.
 
 from __future__ import annotations
 
+from typing import Any
+
 import httpx
 
 from .errors import (
@@ -21,7 +23,7 @@ from .errors import (
 DEFAULT_MODEL = "gemini-2.5-flash-lite"
 
 
-def _flatten(messages: list[dict]) -> str:
+def _flatten(messages: list[dict[str, Any]]) -> str:
     lines = []
     for message in messages:
         if not isinstance(message, dict):
@@ -51,7 +53,7 @@ class GeminiClient:
     def close(self) -> None:
         self._http.close()
 
-    def chat(self, messages: list[dict], tools=None) -> dict:
+    def chat(self, messages: list[dict[str, Any]], tools=None) -> dict[str, Any]:
         """Text-only chat (tools ignored: secondary never function-calls)."""
         body = {"contents": [{"parts": [{"text": _flatten(messages)}]}]}
         try:

@@ -286,7 +286,7 @@ for (const statusCode of [200, 503]) test(`private ${statusCode} JSON is retired
         if (endpoint === '/api/catalogue' && f.catalogueStatus) return json({detail:'fixture failure'}, f.catalogueStatus);
         if (endpoint === '/api/turn') return json({reply:'Fictional restaurant recap: four guests, 90 minutes.', language:'en', text_heard:body.text || 'Fictional audio', outcome:'tts_failed', tts_failed:true, audio_b64:'', recap_delivery_id:posts(f, endpoint).length === 1 ? receipt : null, recap_expires_in_s:60, booking_changes:[]});
         if (endpoint === '/api/booking/session') return json({session_id:'direct-fixture'});
-        if (endpoint === '/api/restaurant/reservation/prepare') return json({ok:true, hold_id:'hold-fixture', recap_delivery_id:f.receipt, recap:{date:body.date}, recap_text:'Fictional table for four guests at 14:00; 90 minutes.'});
+        if (endpoint === '/api/restaurant/reservation/prepare') return json({ok:true, hold_id:'hold-fixture', recap_delivery_id:f.receipt, recap_expires_in_s:60, recap:{date:body.date}, recap_text:'Fictional table for four guests at 14:00; 90 minutes.'});
         if (endpoint === '/api/booking/recap') {
           if (f.stallRecap) await new Promise(resolve => {f.releaseRecap = resolve;});
           return json({acknowledged:f.acknowledged, hold_id:f.ackHold || body.hold_id});

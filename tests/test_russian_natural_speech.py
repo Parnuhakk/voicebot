@@ -199,11 +199,9 @@ def test_actual_russian_recap_introduction_preserves_venue_alias_and_canonical_t
     session = start(client, "ru")["session_id"]
     result = turn(client, session, "Столик на четверых завтра в 18:00", language="ru")
     text = result["reply"]
-    assert text.startswith("Итак, тестовая бронь: ")
+    assert text.startswith("Могу предложить столик: ")
     markup = ET.fromstring(ssml(text, "ru-RU-SvetlanaNeural", "ru-RU"))
-    assert "деморесторан Меретууле" in [
-        node.get("alias") for node in markup.iter(SSML + "sub")
-    ]
+    assert "Меретууле" in [node.get("alias") for node in markup.iter(SSML + "sub")]
     assert "".join(markup.itertext()) == text
     state = client.app.state.demo_sessions.sessions[session].tools
     assert state.pending["recap"]["party_size"] == 4
@@ -287,16 +285,19 @@ def test_russian_http_replies_recap_audio_and_booking_approval(client):
         assert session["greeting"] == COPY["ru"]["greeting"]
         identifier = session["session_id"]
         for question, expected in [
-            ("Можно прийти с собакой?", "Да, можно прийти с собакой."),
-            ("Стоит ли прийти с собакой?", "Да, можно прийти с собакой."),
+            (
+                "Можно прийти с собакой?",
+                "Можно прийти с собакой. О других питомцах спросите сотрудника ресторана.",
+            ),
+            (
+                "Стоит ли прийти с собакой?",
+                "Можно прийти с собакой. О других питомцах спросите сотрудника ресторана.",
+            ),
             (
                 "На сколько времени можно забронировать столик?",
                 "Столик будет за вами на полтора часа.",
             ),
-            (
-                "Где находится ресторан?",
-                "Это деморесторан, поэтому настоящего адреса у него нет.",
-            ),
+            ("Где находится ресторан?", "Адреса ресторана у меня пока нет."),
             ("Сколько стоит суп?", COPY["ru"]["price"]),
             ("Сколько стоят блюда?", COPY["ru"]["price"]),
         ]:

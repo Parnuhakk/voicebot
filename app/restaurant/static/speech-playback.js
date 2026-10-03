@@ -2,9 +2,18 @@
 // Derived from the reviewed dashboard playback: bounded NDJSON, contiguous audio, exact recap receipts.
 function clearRecap() {
   clearTimeout(state.recap?.timer);
+  clearInterval(state.recap?.countdownTimer);
   state.recap = null;
   state.recapDeliveryId = null;
   $("demo-recap-read").hidden = true;
+  $("demo-recap-timer").hidden = true;
+}
+function expireVoiceRecap(recap) {
+  if (state.recap !== recap) return;
+  clearRecap();
+  if (state.connected && state.sessionId && !state.turnBusy)
+    status("demo-status", demoCopy().voiceProposalExpired, "error");
+  controls();
 }
 function currentRecap(recap) {
   return (
@@ -13,7 +22,7 @@ function currentRecap(recap) {
     state.connected &&
     recap.generation === state.generation &&
     recap.sessionId === state.sessionId &&
-    Date.now() < recap.expiresAt &&
+    performance.now() < recap.expiresAt &&
     $("demo-messages").contains(recap.message) &&
     recap.message.querySelector("span")?.textContent === recap.reply
   );
@@ -25,7 +34,7 @@ function acknowledgeRecap(recap, heard = false) {
   $("demo-recap-read").hidden = true;
   status("demo-status", recapPlayedMessage(heard));
 }
-function renderRecap(data, message, receivedAt = Date.now()) {
+function renderRecap(data, message, receivedAt = performance.now()) {
   if (
     typeof data.recap_delivery_id !== "string" ||
     !/^[a-f0-9]{32}$/.test(data.recap_delivery_id) ||
@@ -37,7 +46,7 @@ function renderRecap(data, message, receivedAt = Date.now()) {
   )
     return null;
   const expiresAt = receivedAt + data.recap_expires_in_s * 1000;
-  if (expiresAt <= Date.now()) return null;
+  if (expiresAt <= performance.now()) return null;
   const recap = {
     id: data.recap_delivery_id,
     sessionId: state.sessionId,
@@ -47,10 +56,12 @@ function renderRecap(data, message, receivedAt = Date.now()) {
     reply: data.reply,
     acknowledged: false,
   };
+  clearRecap();
   state.recap = recap;
+  recap.countdownTimer = proposalCountdown("demo-recap-timer", expiresAt);
   recap.timer = setTimeout(() => {
-    if (state.recap === recap) clearRecap();
-  }, expiresAt - Date.now());
+    expireVoiceRecap(recap);
+  }, expiresAt - performance.now());
   $("demo-recap-read").hidden = false;
   return recap;
 }
@@ -435,7 +446,7 @@ async function readTurnStream(response, controller) {
       )
         invalid();
       done = event;
-      receivedAt = Date.now();
+      receivedAt = performance.now();
     } else invalid();
   };
   const abort = () => reader.cancel().catch(() => {});

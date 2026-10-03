@@ -13,6 +13,7 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import date, datetime
+from typing import Any
 
 from fastapi import HTTPException, Request
 
@@ -38,13 +39,13 @@ class DemoSession:
     owner: str
     tools: CallTools
     expires_at: float
-    history: list = field(default_factory=list)
-    booking_details: dict = field(default_factory=dict)
+    history: list[Any] = field(default_factory=list)
+    booking_details: dict[str, Any] = field(default_factory=dict)
     busy: bool = False
     turn_count: int = 0
     expiry: object = None
-    recap_delivery: dict | None = None
-    booking_recap_delivery: dict | None = None
+    recap_delivery: dict[str, Any] | None = None
+    booking_recap_delivery: dict[str, Any] | None = None
     voice_id: str = "azure"
 
     def _recap_is_current(self, pending, text):
@@ -128,7 +129,7 @@ class DemoSessions:
 
     def create(
         self, dispatcher, owner, *, language: str = "et", voice_id: str = "azure"
-    ):
+    ) -> dict[str, Any]:
         with self.lock:
             self._prune()
             if len(self.sessions) >= MAX_SESSIONS:
@@ -405,6 +406,7 @@ class _TurnTools:
         return self.session.tools.conversation_tools()
 
     async def dispatch(self, name, arguments):
+        result: dict[str, Any]
         is_mutation = name in {
             "confirm_slot_booking",
             "cancel_slot_booking",
@@ -520,6 +522,7 @@ class _TrustedLlm:
             and getattr(state, "reasoning_allowed", False)
         ):
             from .restaurant_reasoning import reasoned_reply
+
             started = time.perf_counter()
             try:
                 reply = reasoned_reply(state, messages, self.client)
@@ -678,7 +681,7 @@ class _SafeSpeaker:
 
 
 async def run_demo_turn(
-    session,
+    session: DemoSession,
     stack,
     audio,
     text,
@@ -688,7 +691,7 @@ async def run_demo_turn(
     tts_override=None,
     emit=None,
     receipt_transport=None,
-):
+) -> dict[str, Any]:
     from .turn import MAX_HISTORY_TURNS, recognize_audio_result, run_turn
 
     started = time.perf_counter()
@@ -699,7 +702,8 @@ async def run_demo_turn(
     detected_language = None
     if audio:
         recognition = await recognize_audio_result(
-            stack["stt"], audio,
+            stack["stt"],
+            audio,
             session.tools.language if session.tools.language_locked else "auto",
         )
         text, recognition_status = recognition.text, recognition.status
@@ -707,7 +711,9 @@ async def run_demo_turn(
     stt_failed = recognition_status == "stt_unavailable"
     stt_ms = (time.perf_counter() - stt_started) * 1000 if audio else 0.0
     if not isinstance(text, str) or len(text) > 500:
-        session.tools.observe_user_text("", is_final=True, recognition_status="input_invalid")
+        session.tools.observe_user_text(
+            "", is_final=True, recognition_status="input_invalid"
+        )
         raise HTTPException(413, "transcript_too_large")
     # The server observes the final transcript before any LLM-generated tool call.
     session.tools.observe_user_text(
@@ -826,7 +832,11 @@ async def run_demo_turn(
         if getattr_static(provider, "first_audio_ms", None) is not None
         else None
     )
-    if type(first_audio_ms) in (int, float) and first_audio_ms >= 0:
+    if (
+        isinstance(first_audio_ms, (int, float))
+        and not isinstance(first_audio_ms, bool)
+        and first_audio_ms >= 0
+    ):
         timings["tts_first_audio_ms"] = first_audio_ms
     return {
         "text_heard": result["text_heard"],

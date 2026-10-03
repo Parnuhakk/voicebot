@@ -349,17 +349,17 @@ def test_serious_allergy_guidance_still_precedes_price(make_state, language, que
         (
             "et",
             "Jah, tühista.",
-            "Toimingu tulemus jäi ebaselgeks. Ärge korrake seda; kontrollige veebilehelt või küsige töötajalt.",
+            "Ma ei saanud toimingu tulemust kinnitada. Palun ärge korrake seda; kontrollige broneeringu olekut.",
         ),
         (
             "en",
             "Yes, cancel.",
-            "The action result is uncertain. Don't repeat it; check the website or ask staff.",
+            "I couldn't confirm the result. Please don't repeat the action; check the reservation's status.",
         ),
         (
             "ru",
             "Да, отмените.",
-            "Результат действия неизвестен. Не повторяйте его; проверьте на сайте или спросите сотрудника.",
+            "Не удалось подтвердить результат действия. Не повторяйте его; проверьте статус брони.",
         ),
     ],
 )

@@ -7,6 +7,8 @@ Prereqs live in PMS: services, employee schedules, center hours, processor.
 
 from __future__ import annotations
 
+from typing import Any
+
 from .base import Hold, HoldLedger, SlotAdapter
 
 
@@ -21,7 +23,7 @@ class ZenotiAdapter(SlotAdapter):
 
     async def search_slots(
         self, service: str, date: str, provider: str | None = None
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         raise NotImplementedError("wire slot search in Phase 2")
 
     async def create_hold(self, slot_id: str) -> Hold:
@@ -38,7 +40,9 @@ class ZenotiAdapter(SlotAdapter):
             payload={"slot_id": slot_id},
         )
 
-    async def confirm(self, hold_id: str, guest: dict, idempotency_key: str) -> dict:
+    async def confirm(
+        self, hold_id: str, guest: dict[str, Any], idempotency_key: str
+    ) -> dict[str, Any]:
         replayed = self._holds.check_replay(idempotency_key)
         if replayed is not None:
             return replayed
@@ -47,7 +51,7 @@ class ZenotiAdapter(SlotAdapter):
             return {"ok": False, "error": "hold_expired_or_unknown"}
         raise NotImplementedError("reserve slot -> confirm")
 
-    async def cancel(self, booking_id: str, idempotency_key: str) -> dict:
+    async def cancel(self, booking_id: str, idempotency_key: str) -> dict[str, Any]:
         replayed = self._holds.check_replay(idempotency_key)
         if replayed is not None:
             return replayed

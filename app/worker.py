@@ -66,9 +66,12 @@ class _SpokenText(TimedString):
 
 class TelephoneAgent(Agent):
     def __init__(self, state, *, speech_config=None, speech_provider=None):
+        tools: list[llm.Tool | llm.Toolset] = [
+            tool for tool in sdk_tools(state, conversation=True)
+        ]
         super().__init__(
             instructions=state.conversation_instructions,
-            tools=sdk_tools(state, conversation=True),
+            tools=tools,
             use_tts_aligned_transcript=True,
         )
         self.state = state
@@ -207,7 +210,7 @@ class TelephoneAgent(Agent):
                     ),
                 )
                 return
-        if initial and self.state.booking_inquiry:
+        if initial and tail is not None and self.state.booking_inquiry:
             # Current parsed caller preferences must reach the provider even
             # though the SDK's original instructions predate this turn.
             inquiry = llm.ChatMessage(
@@ -227,6 +230,7 @@ class TelephoneAgent(Agent):
         ):
             if (
                 current
+                and turn is not None
                 and (initial or after_tool)
                 and (
                     turn != self._final_user_turn or turn[1] != self.state._turn_serial
@@ -237,6 +241,7 @@ class TelephoneAgent(Agent):
                 return
             if (
                 current
+                and turn is not None
                 and (initial or after_tool)
                 and turn == self._final_user_turn
                 and turn[1] == self.state._turn_serial
@@ -252,6 +257,7 @@ class TelephoneAgent(Agent):
             yield chunk
         if (
             current
+            and turn is not None
             and (initial or after_tool)
             and (turn != self._final_user_turn or turn[1] != self.state._turn_serial)
         ):
@@ -463,7 +469,10 @@ class VoiceMetrics:
 
     def observe(self, event):
         metrics = getattr(event, "metrics", None)
-        for stage, field in self.FIELDS.get(getattr(metrics, "type", None), {}).items():
+        metrics_type = getattr(metrics, "type", None)
+        if not isinstance(metrics_type, str):
+            return
+        for stage, field in self.FIELDS.get(metrics_type, {}).items():
             self._add(stage, getattr(metrics, field, None))
 
     def observe_playback(self, event):
@@ -631,9 +640,10 @@ async def publish_interruption(room, interrupted):
         )
     except (Exception, asyncio.CancelledError) as error:
         # No remote failure body, caller identity or transcript is logged.
+        task = asyncio.current_task()
         if (
             isinstance(error, asyncio.CancelledError)
-            and asyncio.current_task().cancelling()
+            and task is not None and task.cancelling()
         ):
             raise
         try:

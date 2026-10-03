@@ -414,9 +414,50 @@ Fresh combined `0487c2e` integration verification:
   syntax, JSON, six asset hashes and credential/conflict/whitespace checks clean.
 
 Newly published `8123638` includes natural Estonian wording, medical-food guidance,
-proposal renewal/mobile feedback and runtime type boundaries. That immutable delta
-is in disjoint independent reviews before normal intake. These counts attest the
-`0487c2e` checkpoint, not the newer source or a live-provider/PSTN rollout.
+proposal renewal/mobile feedback and runtime type boundaries. Normal `0487c2e`
+integration is committed/pushed as `5e91f5a`; the newer delta was inspected in three
+disjoint independent static reviews before normal integration.
+
+### Proposal renewal, natural wording and runtime boundaries
+
+The new renewal route initially lacked the fresh receipt required by the retained
+protected workflow. Three ET/EN/RU HTTP REDs preceded moving the existing bound
+receipt issuance into the shared prepare/renew result helper. The UI stores this
+receipt with the canonical text/language and monotonic server lifetime; late async
+results remain generation/session/epoch guarded. Receipt attempts, including stale
+ones, are one-use; premature confirmation retires the proposal without writing.
+Regressions preserve those closed failures rather than relaxing the protocol.
+
+The newly renamed venue `Meretuule` initially lost Russian SSML pronunciation.
+An actual canonical-recap RED preceded extending the existing approved-name alias
+to the bare label, retaining the old full-label alias and exact literal text.
+The integration scope passed **601** cases, 28.27 seconds. Both narrow independent
+static closures are clear; the shared adapter/type-boundary review is also clear.
+
+The first full core run found six failures: allergy-plus-price no longer returned
+only canonical allergy guidance, and unknown cancellation spoke about whether a
+reservation was saved. Restore allergy topic priority and use natural, action-
+neutral uncertainty speech in all languages. Existing lost-result SQLite tests
+retain the committed cancellation, history and sticky no-repeat state. The first
+mobile quality run also reproduced Russian voice controls below the first screen;
+two small header/breadcrumb spacing rules fix wrapping without hiding disclosures,
+labels or reducing controls. The scoped **228** cases and full quality journey pass;
+the disjoint narrow static closure is clear.
+
+Fresh `8123638` combined-source gates:
+
+- Core: **11,849 passed / 80 skipped / 36 subtests**, 137.26 seconds.
+- All **ten** Chromium journeys passed, including ET/EN/RU first-screen controls,
+  renewal requiring a new read, proposal expiry and sticky uncertain mutations.
+- All **24** delivery/status checks pass; no external browser requests/page errors.
+- Isolated Docker packaging **5 passed**, 10.46 seconds; 196 Python AST, 22 JS
+  syntax, JSON, six asset hashes and credential/conflict/whitespace checks clean.
+- Media, afterward: **12,254 passed / 6 skipped / 36 subtests**, 166.47 seconds.
+
+A newer small published `56e7c9f` delta repairs spoken Estonian menu spelling and
+mobile spacing. Its independent static review is clear; normal intake preserves
+the owner's additional flex/min-width declarations and recomputes the CSS asset.
+None of these local checkpoints proves live-provider or carrier acceptance.
 
 ## Pre-rollout preservation qualification
 
