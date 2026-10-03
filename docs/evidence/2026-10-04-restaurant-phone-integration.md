@@ -39,6 +39,20 @@ each bounded correction: initial missing answers/routing, fourteen mixed-plan
 assertions, nine clarification notices, and two generated capability promises.
 No confirmed booking or consent bypass was demonstrated in the quoted cases.
 
+The next Codex review reproduced an inherited generated-wording promise on an
+unmatched chef request and an ordinary menu question. Twenty failing-first
+HTTP/final-response cases reproduced those and ET/EN/RU action variants. The
+shared local wording validator now conservatively rejects capability-operation
+wording and first-person action commitments, regardless of detected question or
+model approval; the same check runs again immediately before a generated reply
+is returned for speech. Rejection retains the trusted canonical response. This
+is a bounded deterministic guard, not proof of arbitrary model entailment.
+
+The private speech checker also reproduced eight reversed capability clauses
+that had passed a global "some negation survives" check. It now checks every
+required refusal separately. Its 39 offline checks pass without provider calls;
+that result is not live-audio acceptance.
+
 ## Combined verification
 
 ```bash
@@ -49,8 +63,12 @@ env -i PATH=/usr/bin:/bin HOME=/tmp/opencode LANG=C.UTF-8 \
   --basetemp=/tmp/opencode/restaurant-recovery-afe1-final
 ```
 
-Result: **11,370 passed, 36 subtests passed, 4 private-backend opt-in skips**, in
-120.12 seconds. Two upstream warnings remain: Python `audioop` deprecation and
+The initial combined result was 11,370 passed in 120.12 seconds. After the
+wording-boundary correction and normal merge of published `fc5c4ae` Russian
+phrasing, the fresh combined result is **11,470 passed, 36 subtests passed,
+4 private-backend opt-in skips**, in 127.87 seconds (same command, basetemp
+`/tmp/opencode/restaurant-recovery-fc5c-final`). Two upstream warnings remain:
+Python `audioop` deprecation and
 Starlette's HTTPX test-client deprecation. This run made no provider calls.
 
 All nine committed local browser scenarios pass with Chromium 153.0.8010.12,

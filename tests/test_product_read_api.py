@@ -225,12 +225,13 @@ def test_provider_projection_and_exact_fixed_query(tmp_path):
         {"length": "0"},
         {"length": "51"},
         {"length": "x"},
-        {"date": "outside-window"},
+        {"date": "beyond-horizon"},
     ],
 )
 def test_invalid_queries_do_not_read(tmp_path, params):
-    # Collection and execution can straddle midnight during the full media suite.
-    if params.get("date") == "outside-window":
+    # Calculate the boundary at request time: collecting the suite before
+    # Tallinn midnight must not make a 91-day query valid later in the run.
+    if params.get("date") == "beyond-horizon":
         params = {
             "date": (
                 datetime.now(ZoneInfo("Europe/Tallinn")).date() + timedelta(days=91)

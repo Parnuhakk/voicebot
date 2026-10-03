@@ -40,7 +40,7 @@
   "policies": {
     "et": "Broneering kestab 90 minutit. Üle kuue külalisega grupid tuleb personaliga kokku leppida. Laste arv sisaldub külaliste koguarvus. Terrassi, ligipääsetavust, lastetooli ja erisoove peab kinnitama personal. Tellimusi, makseid ja päris üleandmist demokeskkonnas ei tehta.",
     "en": "Reservations last 90 minutes. Groups larger than six must arrange their visit with staff. Children count toward the total party size. Staff must confirm terrace seating, accessibility, highchairs and special requests. This demo does not place food orders, collect payments or transfer real calls.",
-    "ru": "Бронирование действует 90 минут. Группам больше шести человек нужно договориться с персоналом. Дети входят в общее число гостей. Места на террасе, доступность, детский стул и особые пожелания подтверждает персонал. Демонстрация не принимает заказы еды, платежи и не переводит реальные звонки."
+    "ru": "Столик бронируется на полтора часа. Если вас больше шести, договоритесь с сотрудником ресторана. Детей тоже считаем. Террасу, доступность, детский стул и особые пожелания нужно уточнить у сотрудника. Здесь не принимают заказы еды и оплату, а перевести звонок в демоверсии нельзя."
   },
   "pet_policy": {
     "et": "Jah, koeraga võib tulla.",
@@ -50,6 +50,6 @@
   "allergy_notice": {
     "et": "Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral räägi enne tellimist otse restoraniga.",
     "en": "The menu lists known allergens, but staff must verify ingredients and possible cross-contact. I cannot guarantee allergen-free food. For a serious allergy, speak directly with the restaurant before ordering.",
-    "ru": "В меню указаны известные аллергены, но состав и возможный перекрёстный контакт нужно уточнить у персонала. Я не могу гарантировать отсутствие аллергенов. При серьёзной аллергии поговорите с рестораном напрямую до заказа."
+    "ru": "В меню указаны аллергены, но состав и возможный контакт с аллергенами на кухне нужно проверить с сотрудником. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа."
   }
 }
