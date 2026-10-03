@@ -36,7 +36,7 @@ caller must hear the repeated recap and then give fresh explicit consent.
 | `VOICEBOT_SPEAKING_STYLE` | `natural` | Shared speech styling; `neutral` removes prosody, pronunciation aliases and expressive style. |
 | `VOICEBOT_SPEECH_RATE` | `1.12` | Brisk conversational rate multiplier, accepted range `0.85`–`1.15`. |
 | `VOICEBOT_RECAP_RATE` | `1.00` | Recaps retain the normal voice pace, capped at the conversational rate so they never become faster. |
-| `VOICEBOT_SENTENCE_PAUSE_MS` | `120` | Conversational sentence pauses, accepted range `100`–`500` ms. Recaps retain the provider's default pauses. |
+| `VOICEBOT_SENTENCE_PAUSE_MS` | `120` | Estonian/English conversational sentence pauses, accepted range `100`–`500` ms. Russian and recaps retain the provider's default pauses. |
 
 English `en-US-JennyNeural` uses Azure's supported `friendly` style at degree
 `0.8`. Estonian Anu and other configured voices keep their normal voice style,

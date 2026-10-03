@@ -13,7 +13,10 @@ from app.languages import CONSENT
 from app.providers.errors import ProviderError
 from app.providers.demo_voices import DemoVoices
 from app.providers.speech_delivery import SpeechDelivery
-from tests.test_restaurant_http import AUTH, client as client
+from tests import test_restaurant_http
+from tests.test_restaurant_http import AUTH
+
+client = test_restaurant_http.client
 
 SSML = "{http://www.w3.org/2001/10/synthesis}"
 MSTTS = "{http://www.w3.org/2001/mstts}"
@@ -248,7 +251,12 @@ def test_added_male_profiles_preview_and_session_routing(
     document = requests[-1]
     assert voice(document) == expected
     assert document.find(".//" + SSML + "prosody").get("rate") == rate
-    assert document.find(".//" + MSTTS + "silence").get("value") == pause
+    silence = document.find(".//" + MSTTS + "silence")
+    if language == "ru":
+        assert silence is None
+    else:
+        assert silence is not None
+        assert silence.get("value") == pause
     started = client.post(
         "/api/demo/session",
         headers=AUTH,
