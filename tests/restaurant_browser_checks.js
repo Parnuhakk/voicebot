@@ -8,6 +8,7 @@ async page => {
   });
   await page.setViewportSize({width:1440,height:1000});
   await page.goto('http://127.0.0.1:8766/', {waitUntil:'networkidle'});
+  assert.equal(await page.locator('a[href]').evaluateAll(links=>links.some(link=>new URL(link.href).hostname==='meretuule.arleserver.cfd')),false,'Robot navigation still opens the removed demo site');
   const chooseLanguage = async code => page.locator('.language-option').filter({
     has: page.locator('input[value="' + code + '"]'),
   }).click();
@@ -53,9 +54,6 @@ async page => {
   assert(sidebarBox.x+sidebarBox.width<=mainBox.x,'desktop sidebar overlaps the workspace');
   assert.equal(await page.locator('.sidebar').evaluate(element=>getComputedStyle(element).position),'fixed');
   assert(await page.locator('.topbar').isVisible(),'dashboard topbar is missing');
-  assert.deepEqual(await page.locator('a.demo-website-link').evaluateAll(links=>links.map(link=>link.href)),[
-    'https://meretuule.arleserver.cfd/', 'https://meretuule.arleserver.cfd/'
-  ]);
   assert(await page.locator('#demo-start').isDisabled());
   assert(await page.locator('#reservation-prepare').isDisabled());
   assert.equal(await page.locator('#menu-list li').count(),3);
@@ -426,22 +424,22 @@ async page => {
   assert.equal(await page.locator('#demo-messages .message').count(),0);
   assert.equal(await page.locator('.booking-receipt').count(),0);
   assert(await page.locator('#reservation-confirm').isDisabled());
-  // Both hosts share one application; only the operator hostname gets the shell.
+  // Russian operator layout must also fit the sidebar breakpoint.
   await page.setViewportSize({width:801,height:844});
   await chooseLanguage('ru');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'801px Russian dashboard overflow');
   await page.setViewportSize({width:390,height:844});
   const fixtureOrigin=new URL(page.url()).origin;
-  await page.route('https://meretuule.arleserver.cfd/**',async route=>{
-    const url=new URL(route.request().url());
-    const response=await route.fetch({url:fixtureOrigin+url.pathname+url.search});
-    await route.fulfill({response});
-  });
-  await page.goto('https://meretuule.arleserver.cfd/',{waitUntil:'networkidle'});
-  assert(await page.locator('.sidebar').isHidden(),'operator restoration changed the public restaurant demo');
-  assert(await page.locator('.site-header > .brand').isVisible(),'public restaurant header was removed');
-  assert.equal(await page.locator('html').evaluate(element=>getComputedStyle(element).backgroundColor),'rgb(245, 249, 246)','public restaurant palette changed');
-  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'public mobile horizontal overflow');
+  // Exercise the actual app's retired-host guard, not a substituted website.
+  for(const path of ['/','/restaurant.js','/api/public/restaurant','/api/bookings','/health']){
+    const retired=await page.request.get(fixtureOrigin+path,{
+      headers:{Host:'meretuule.arleserver.cfd'},maxRedirects:0
+    });
+    assert.equal(retired.status(),410,`retired hostname still serves ${path}`);
+    assert.equal((await retired.body()).length,0,'retired hostname returned content');
+    assert.equal(retired.headers()['cache-control'],'no-store');
+    assert.equal(retired.headers().location,undefined,'retired hostname redirected');
+  }
   assert.deepEqual(errors,[]);
-  return {languages:3,multilingualStepwiseDateTimeAndParty:true,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,englishSpokenDates:true,englishClockClarification:true,russianMixedDateCases:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,gatedReadback:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,publicDemoUnchanged:true,pageErrors:errors.length};
+  return {languages:3,multilingualStepwiseDateTimeAndParty:true,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,englishSpokenDates:true,englishClockClarification:true,russianMixedDateCases:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,gatedReadback:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,retiredHostDenied:true,pageErrors:errors.length};
 }

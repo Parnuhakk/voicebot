@@ -104,16 +104,12 @@ the demo phone contact; otherwise the configured Twilio/SIP number is used.
 
 ## Website architecture
 
-The canonical guest website is [Meretuule](https://meretuule.arleserver.cfd/).
-The [operator dashboard](https://robot.arleserver.cfd/) retains booking and
-voice-demo workflows. The former public addresses
-`https://robot.arleserver.cfd/hotel` and `https://robot.arleserver.cfd/hotel/`
-are retired: the public ingress permanently redirects them with HTTP 301 to
-`https://meretuule.arleserver.cfd/`, preserving query strings. Direct requests
-to the application's robot-host handler return HTTP 410 if the ingress redirect
-is not used. Use the Meretuule root in guest-facing links; `/hotel` remains an
-internal proxy rewrite target and a local preview route.
-See the [Meretuule domain runbook](deploy/meretuule/README.md).
+The [robot website](https://robot.arleserver.cfd/) is the only published
+Voicebot domain. It includes restaurant reception, table reservations and
+voice-demo workflows. The redundant Meretuule subdomain and its website are
+removed; do not publish a second guest site. In restaurant mode, the former
+`/hotel` and `/hotel/` paths return HTTP 410 without redirecting elsewhere.
+See the [robot-only domain runbook](deploy/robot-domain/README.md).
 
 `/api/bookings` and `/api/catalogue` read Easy REST through explicit allowlisted
 DTOs. `/api/demo/session` and `/api/turn` share native booking ownership/consent;

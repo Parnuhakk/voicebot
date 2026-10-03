@@ -134,14 +134,6 @@ small,
   border-bottom: 1px solid var(--line);
   gap: 16px;
 }
-.demo-website-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  gap: 0.35em;
-  font-size: 0.9rem;
-  font-weight: 650;
-}
 .brand {
   font-size: 1.65rem;
   font-weight: 750;

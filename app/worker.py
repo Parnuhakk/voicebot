@@ -15,6 +15,7 @@ from pathlib import Path
 
 from livekit import api, rtc
 from livekit.agents import Agent, AgentServer, AgentSession, JobContext, cli, llm, stt
+from livekit.agents.language import LanguageCode
 from livekit.agents.types import TimedString, USERDATA_TIMED_TRANSCRIPT
 from livekit.plugins import groq, silero
 
@@ -39,6 +40,12 @@ from .telephone import (
     validate_environment,
 )
 from .call_factory import make_call_tools
+
+REJECTED_TRANSCRIPT = {
+    "et": "[Toetamata kõnekeel]",
+    "en": "[Unsupported speech language]",
+    "ru": "[Неподдерживаемый язык речи]",
+}
 
 
 class PrivateLogs(logging.Filter):
@@ -85,6 +92,12 @@ class TelephoneAgent(Agent):
                     self._unsupported_language |= bool(
                         (data.metadata or {}).get("unsupported_language")
                     )
+                    if self._unsupported_language:
+                        # SDK emits public captions before the finalized-turn hook.
+                        # Keep a nonempty marker to finish the turn without leaking
+                        # foreign speech or losing the normal rejection/retry path.
+                        data.text = REJECTED_TRANSCRIPT[self.state.language]
+                        data.language = LanguageCode(self.state.language)
             yield event
 
     async def on_user_turn_completed(self, turn_ctx, new_message):
