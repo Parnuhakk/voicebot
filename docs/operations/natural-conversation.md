@@ -1,4 +1,4 @@
-# Natural English and Estonian conversation
+# Natural Estonian, English and Russian conversation
 
 The telephone worker and protected HTTP demo share conversational wording and
 Azure speech delivery. The existing Groq models, Azure voices and booking
@@ -19,30 +19,63 @@ opening-hours and table-reservation questions use reviewed answers. Hours and
 restaurant bookings remain unconfigured; the assistant does not invent them.
 Legacy spa/stay integrations retain their separate catalogue and recap policy.
 
-### Estonian date answers
+### Multilingual date and time answers
 
-Both transports interpret dates from each finalized caller turn using the
-current date in `Europe/Tallinn`. `homme` means tomorrow and `ülehomme` means
-the day after tomorrow. Month names accept both `6. oktoober` and `6. oktoobril`,
-with or without a year; common spoken ordinals such as `kuuendal oktoobril`
-are also recognized. A month/day without a year means its next real calendar
-occurrence, including today; 29 February resolves to the next leap year.
-An explicit year is preserved. Impossible dates and explicitly past dates
-receive a clarification rather than a guessed replacement.
+Both transports parse finalized caller turns in Estonian, English and Russian
+using one current `Europe/Tallinn` clock snapshot. Partial transcripts never
+update booking preferences. Strong calendar words also identify the language of
+short answers when ASR language metadata is missing or wrong; numeric answers
+retain the current language and voice.
 
-The current turn's normalized `requested_dates` reach HTTP planning instructions
-and the native model's current context. Spa date followups keep the requested
-date while asking for the missing time. Arrival answers such as `homme` and
-`6. oktoober` reach the planner as ISO dates instead of falling through to the
-generic FAQ clarification. Questions use “Mis kuupäeval soovid saabuda?” and
-“Mis kuupäeval soovid lahkuda?” to distinguish the two dates.
+`app/temporal.py` recognizes month and weekday names, Estonian case endings,
+Russian declensions, spoken days 1–31, spoken years 2000–2099, numeric dates,
+ISO timestamps and explicit AM/PM or dayparts. Examples:
 
-The restaurant demo acknowledges a standalone visit date, while stating that
-table bookings remain unavailable. Parsing a date does not create availability,
-a reservation, playback delivery, or consent to a write. Only normalized fields
-are held for the current turn; partial transcripts do not update them.
-`tests/test_estonian_booking_dates.py` covers the parser, Tallinn midnight,
-year/leap-year boundaries, date/time followups, HTTP replies and native planning.
+| Language | Date answer | Time answer |
+| --- | --- | --- |
+| Estonian | `homseks`, `kuuendaks oktoobriks`, `järgmisel kuul kuuendal` | `pool seitse õhtul`, `kella kuueks`, `18:30` |
+| English | `tomorrow`, `October sixth`, `next month on the sixth` | `half past six pm`, `quarter to six pm`, `18:30` |
+| Russian | `завтра`, `шестого октября`, `шестого числа следующего месяца` | `в половине седьмого вечера`, `без десяти шесть вечера`, `18:30` |
+
+Relative durations include days, weeks, calendar months/years, hours, minutes,
+compound hours/minutes and half/quarter hours. Elapsed hours/minutes add real
+time in UTC before returning to Tallinn local time. Calendar month arithmetic
+preserves the day; an impossible result such as January 31 plus one month needs
+clarification. “The next day” needs a previously stated absolute date.
+
+An omitted year means the next real occurrence, including today; February 29
+resolves to the next leap year. Explicit years and past weekdays are preserved
+and past appointments are rejected. Ambiguous slash dates, weekday references,
+AM/PM (including English/Russian unpadded `6:30`), approximate clocks, ranges,
+alternatives, vague dayparts, foreign named timezones and incomplete dates ask
+for clarification. The bot never selects an
+alternative on the caller's behalf. ISO offset timestamps convert the actual
+instant; nonzero seconds need a minute-precision answer. Nonexistent DST wall
+clocks and repeated autumn wall clocks cannot authorize an appointment. The
+same validation runs again on tool arguments, including dates/times supplied on
+separate turns.
+
+`requested_dates`, `requested_times` and `temporal_issue` reach HTTP instructions;
+native planning injects current parsed fields before the final user message.
+Legacy booking inquiries retain known date/time fields across localized
+followup questions. Ambiguous clocks retain a valid date privately while
+blocking booking tools until a precise clock is supplied. A short daypart answer
+such as `PM` or `вечером` resolves a single previous AM/PM ambiguity. A complete
+resolved request feeds exact ISO date and HH:MM into the existing booking backend.
+Booking confirmation still requires the owned recap to finish playing and a
+new final caller turn containing explicit consent.
+
+Restaurant table inventory remains unconfigured. The restaurant demo can
+acknowledge understood visit dates/times but cannot create a real reservation.
+Calendar parsing never creates availability, a hold, recap delivery or consent.
+No new provider or dependency is added. The new multilingual tests exercise
+ET/EN/RU grammar and mocked backend confirmation, HTTP planning and native final
+turns; existing Estonian tests retain midnight/year/leap-year coverage. These
+fixtures do not establish live ASR recognition or telephone audio quality.
+
+Grammar references: [EKI numeral inflection](https://teatmik.eki.ee/teatmik/keelenouvakk/kuidas-kaanata-arve/),
+[EKI compound numerals](https://keeleabi.eki.ee/viki/Arvsonade_kokku-_ja_lahkukirjutamine.html),
+[Gramota ordinal date forms](https://gramota.ru/spravka/vopros/255101).
 
 Standalone greetings, thanks, goodbyes, declines, repeat requests, frustration,
 identity and human-transfer questions use reviewed replies in Estonian, English

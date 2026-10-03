@@ -5,11 +5,12 @@ from __future__ import annotations
 import json
 import re
 import unicodedata
+from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 
 from .languages import LANGUAGES, spoken_time
-from .booking_dates import ESTONIAN_DATE_PATTERN
+from .temporal import TALLINN, interpret_temporal
 
 
 FAQ_PATH = Path(__file__).resolve().parents[1] / "data/demo/booking-faq.json"
@@ -166,7 +167,7 @@ def booking_input(text):
         return False
     # Month names are common short answers to a date question, including ASR
     # ordinals such as "kuuendal oktoobril". Preserve them for planning.
-    if re.fullmatch(rf"(?:palun\s+)?{ESTONIAN_DATE_PATTERN}(?:\s+(?:palun|sobib))?", value, re.I):
+    if any(interpret_temporal(text, language, datetime.now(TALLINN)).is_answer for language in LANGUAGES):
         return True
     if re.search(r"\b(?:broneeri\w*|bruneeri\w*|book|reserve|reserving|заброниру\w*)\b", value):
         return True

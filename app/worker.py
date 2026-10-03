@@ -190,7 +190,7 @@ class TelephoneAgent(Agent):
                     ),
                 )
                 return
-        if initial and (self.state.booking_inquiry or self.state.requested_dates):
+        if initial and (self.state.booking_inquiry or self.state.requested_dates or self.state.requested_times):
             # Current parsed caller preferences must reach the provider even
             # though the SDK's original instructions predate this turn.
             inquiry = llm.ChatMessage(
@@ -201,6 +201,8 @@ class TelephoneAgent(Agent):
                     + json.dumps({
                         "booking_inquiry": self.state.booking_inquiry,
                         "requested_dates": self.state.requested_dates,
+                        "requested_times": self.state.requested_times,
+                        "temporal_issue": self.state._temporal.issue,
                     }, ensure_ascii=False)
                 ],
             )
