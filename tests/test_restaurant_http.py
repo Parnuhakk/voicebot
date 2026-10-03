@@ -190,6 +190,33 @@ def test_routine_menu_and_hours_are_grounded_without_model_calls(
     assert answer["reply"] == client.provider.spoken[-1]
 
 
+@pytest.mark.parametrize("channel", ["text", "audio"])
+def test_auto_english_booking_with_side_question_uses_grounded_english(client, channel):
+    session = start(client, "auto")["session_id"]
+    def speak(text):
+        body = {"session_id": session, "language": "auto"}
+        if channel == "audio":
+            client.provider.transcript = text
+            body["audio_b64"] = base64.b64encode(b"RIFF-synthetic-fixture").decode()
+        else:
+            body["text"] = text
+        response = client.post("/api/turn", json=body, headers=AUTH)
+        assert response.status_code == 200, response.text
+        answer = response.json()
+        assert answer["language"] == "en"
+        assert answer["reply"] == client.provider.spoken[-1]
+        assert answer["booking_changes"] == []
+        return answer
+
+    assert speak("I'd like to reserve a table")["reply"] == COPY["en"]["date"]
+    assert speak("Tomorrow")["reply"] == COPY["en"]["time"]
+    assert speak("How much does the salmon cost?")["reply"] == COPY["en"]["price"]
+    assert speak("Two pm")["reply"] == COPY["en"]["party"]
+    proposal = speak("There will be four of us")
+    assert "4 guests" in proposal["reply"] and "2:00 PM" in proposal["reply"]
+    assert proposal["recap_delivery_id"]
+
+
 @pytest.mark.parametrize(
     "language,utterance",
     [
@@ -221,7 +248,15 @@ def test_browser_voice_policy_books_only_after_recap_receipt(
     row = page["items"][0]
     assert str(row["id"]) == confirmed["booking_changes"][0]["id"]
     assert row["status"] == "confirmed" and row["service_id"] == 4
-    assert row["start_local"] == confirmed["booking_changes"][0]["start_local"]
+    change = confirmed["booking_changes"][0]
+    assert row["start_local"] == change["start_local"]
+    assert row["end_local"] == change["end_local"]
+    assert change["party_size"] == 4
+    assert change["table_name"] == row["provider_name"]
+    assert change["table_id"] == str(row["provider_id"])
+    assert change["timezone"] == "Europe/Tallinn"
+    assert change["synthetic"] is True
+    assert confirmed["reply"] == client.provider.spoken[-1]
 
 
 @pytest.mark.parametrize("channel", ["text", "audio"])
@@ -282,6 +317,180 @@ def test_asr_confirmation_without_delivery_receipt_never_reaches_the_calendar(cl
     )
 
 
+@pytest.mark.parametrize("lost_after_write", [False, True])
+def test_failed_confirmation_never_returns_a_success_receipt(
+    client, monkeypatch, lost_after_write
+):
+    session = start(client, "et")["session_id"]
+    proposal = turn(client, session, "Soovin homme lauda neljale kell 14.00", language="et")
+    dispatcher = client.app.state.stack["dispatcher"]
+    original = dispatcher.dispatch
+    writes = []
+
+    async def failing_write(name, arguments):
+        if name != "confirm_slot_booking":
+            return await original(name, arguments)
+        writes.append(name)
+        if lost_after_write:
+            await original(name, arguments)
+            raise TimeoutError("fixture response lost after commit")
+        return {"error": "slot_unavailable"}
+
+    monkeypatch.setattr(dispatcher, "dispatch", failing_write)
+    result = turn(
+        client, session, CONSENT["et"], language="et",
+        receipt=proposal["recap_delivery_id"],
+    )
+    assert result["booking_changes"] == []
+    assert result["reply"] != COPY["et"]["confirmed"]
+    assert result["reply"] == client.provider.spoken[-1]
+    if lost_after_write:
+        assert result["reply"] == COPY["et"]["unknown"]
+        repeated = turn(client, session, CONSENT["et"], language="et")
+        assert repeated["reply"] == COPY["et"]["unknown"]
+        assert repeated["booking_changes"] == []
+    assert len(writes) == 1
+    rows = client.get("/api/bookings?date=" + tomorrow(), headers=AUTH).json()["items"]
+    assert len(rows) == int(lost_after_write)
+
+
+@pytest.mark.parametrize("direct", [False, True])
+def test_optional_display_metadata_failure_preserves_saved_booking_and_link(
+    client, monkeypatch, direct
+):
+    def unavailable_details(*args):
+        raise ValueError("fixture optional display metadata unavailable")
+
+    monkeypatch.setattr("app.hackathon.restaurant_booking_details", unavailable_details)
+    monkeypatch.setattr("app.booking_web.restaurant_booking_details", unavailable_details)
+    if direct:
+        session, proposal = prepared(client, "et")
+        client.post(
+            "/api/booking/recap",
+            json={"session_id": session, "hold_id": proposal["hold_id"]},
+            headers=AUTH,
+        )
+        response = client.post(
+            "/api/booking/confirm",
+            json={"session_id": session, "hold_id": proposal["hold_id"], "consent": True},
+            headers=AUTH,
+        )
+        assert response.status_code == 200 and response.json()["ok"] is True
+        result = response.json()
+    else:
+        session = start(client, "et")["session_id"]
+        proposal = turn(client, session, "Soovin homme lauda neljale kell 14.00", language="et")
+        result = turn(
+            client, session, CONSENT["et"], language="et",
+            receipt=proposal["recap_delivery_id"],
+        )
+        assert result["reply"] == COPY["et"]["confirmed"]
+    change = result["booking_changes"][0]
+    assert change["action"] == "confirmed" and change["date"] == tomorrow()
+    assert "party_size" not in change
+    row = client.get("/api/bookings?date=" + tomorrow(), headers=AUTH).json()["items"][0]
+    assert str(row["id"]) == change["id"] and row["status"] == "confirmed"
+
+
+def spoken_tomorrow():
+    from tests.test_restaurant_dates import DAY_WORDS
+    from app.restaurant_call import DATE_MONTHS
+
+    day = datetime.fromisoformat(tomorrow())
+    return f"{DAY_WORDS[day.day - 1]} {DATE_MONTHS['et'][day.month - 1]}"
+
+
+@pytest.mark.parametrize("date_text", ["homseks", "homsele", "hommeks", "named"])
+@pytest.mark.parametrize("channel", ["text", "audio"])
+def test_case_forms_and_spoken_dates_prepare_then_save_visible_booking(
+    client, date_text, channel
+):
+    session = start(client, "et")["session_id"]
+    if date_text == "named":
+        date_text = spoken_tomorrow()
+    request_text = f"Soovin lauaks {date_text} kell 14.00 nelja inimesega"
+    body = {"session_id": session, "language": "auto"}
+    if channel == "audio":
+        client.provider.transcript = request_text
+        body["audio_b64"] = base64.b64encode(b"RIFF-synthetic-date-fixture").decode()
+    else:
+        body["text"] = request_text
+    response = client.post("/api/turn", json=body, headers=AUTH)
+    assert response.status_code == 200, response.text
+    proposal = response.json()
+    assert proposal["text_heard"] == request_text
+    assert proposal["recap_delivery_id"]
+    assert proposal["booking_changes"] == []
+    tools = client.app.state.demo_sessions.sessions[session].tools
+    assert tools.pending["recap"]["date"] == tomorrow()
+    assert tools.pending["recap"]["party_size"] == 4
+    result = turn(
+        client,
+        session,
+        "ja kinnitää",
+        language="et",
+        receipt=proposal["recap_delivery_id"],
+    )
+    assert result["booking_changes"][0]["date"] == tomorrow()
+    rows = client.get("/api/bookings?date=" + tomorrow(), headers=AUTH).json()["items"]
+    assert (
+        len(rows) == 1
+        and rows[0]["service_id"] == 4
+        and rows[0]["status"] == "confirmed"
+    )
+
+
+def test_followup_case_forms_keep_previously_supplied_details(client):
+    session = start(client, "et")["session_id"]
+    assert (
+        turn(client, session, "Soovin lauda", language="et")["reply"]
+        == COPY["et"]["date"]
+    )
+    assert (
+        turn(client, session, "homseks", language="et")["reply"] == COPY["et"]["time"]
+    )
+    assert (
+        turn(client, session, "kell 14", language="et")["reply"] == COPY["et"]["party"]
+    )
+    proposal = turn(client, session, "nelja inimesega", language="et")
+    assert proposal["recap_delivery_id"]
+    recap = client.app.state.demo_sessions.sessions[session].tools.pending["recap"]
+    assert recap["date"] == tomorrow() and recap["party_size"] == 4
+
+
+@pytest.mark.parametrize(
+    "text,issue",
+    [
+        ("31 veebruar", "date_invalid"),
+        ("homseks või ülehomseks", "date_ambiguous"),
+        ("oktoobriks", "date_incomplete"),
+    ],
+)
+def test_bad_dates_clarify_without_a_hold_and_can_be_corrected(client, text, issue):
+    session = start(client, "et")["session_id"]
+    answer = turn(
+        client, session, f"Soovin lauda {text} kell 14.00 kahele", language="et"
+    )
+    assert answer["reply"] == COPY["et"][issue]
+    assert answer["booking_changes"] == [] and not answer.get("recap_delivery_id")
+    tools = client.app.state.demo_sessions.sessions[session].tools
+    assert not tools.holds and not tools.bookings
+    fixed = turn(client, session, "homseks", language="et")
+    assert fixed["recap_delivery_id"]
+    assert tools.pending["recap"]["date"] == tomorrow()
+    assert tools.pending["recap"]["party_size"] == 2
+
+
+def test_schedule_bad_date_returns_clarification_without_booking(client):
+    session = start(client, "et")["session_id"]
+    answer = turn(client, session, "Kas 31 veebruar olete avatud?", language="et")
+    assert answer["reply"] == COPY["et"]["date_invalid"]
+    assert answer["booking_changes"] == []
+    assert not client.app.state.demo_sessions.sessions[session].tools.holds
+    fixed = turn(client, session, "Aga homseks?", language="et")
+    assert fixed["booking_changes"] == [] and "31" not in fixed["reply"]
+
+
 def test_audio_language_is_sent_to_recognition_and_restaurant_reply(client):
     session = start(client, "en")["session_id"]
     response = client.post(
@@ -323,12 +532,21 @@ def test_direct_table_booking_recap_confirmation_and_owned_cancel(client, langua
     confirmed = client.post("/api/booking/confirm", json=body, headers=AUTH)
     assert confirmed.status_code == 200 and confirmed.json()["ok"] is True
     identifier = str(confirmed.json()["booking"]["id"])
+    change = confirmed.json()["booking_changes"][0]
+    booking = confirmed.json()["booking"]
+    assert change["id"] == identifier and change["action"] == "confirmed"
+    assert change["start_local"] == booking["start"]
+    assert change["end_local"] == booking["end"]
+    assert change["party_size"] == booking["party_size"] == 4
+    assert change["table_id"] == booking["table_id"]
+    assert change["table_name"] == "Table 3"
     cancelled = client.post(
         "/api/booking/cancel",
         json={"session_id": session, "booking_id": identifier, "consent": True},
         headers=AUTH,
     )
     assert cancelled.status_code == 200 and cancelled.json()["ok"] is True
+    assert cancelled.json()["booking_changes"] == [{**change, "action": "cancelled"}]
     page = client.get("/api/bookings?date=" + tomorrow(), headers=AUTH).json()
     assert page["items"][0]["status"] == "cancelled"
 

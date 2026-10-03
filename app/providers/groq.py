@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import httpx
 
+from .transcription import Transcription, parse_transcription
+
 from .errors import (
     ProviderError,
     RetryableProviderError,
@@ -100,6 +102,33 @@ class GroqClient:
                 reason="invalid_response",
                 status_code=response.status_code,
             ) from exc
+
+    def transcribe_with_metadata(
+        self, audio: bytes, filename: str = "chunk.wav", *, language: str = "auto"
+    ) -> Transcription:
+        """Detect the original language before applying the ET/EN/RU policy.
+
+        The reply-language preference cannot constrain decoding: a forced hint
+        can turn unsupported speech into apparently supported words.
+        """
+        response = self._post(
+            "/openai/v1/audio/transcriptions",
+            "groq.transcribe",
+            files={"file": (filename, audio, "audio/wav")},
+            data={
+                "model": self.config.stt_model,
+                "response_format": "verbose_json",
+                "temperature": "0",
+            },
+        )
+        try:
+            return parse_transcription(response.json())
+        except (ValueError, TypeError, AttributeError):
+            raise ProviderError(
+                "groq.transcribe: invalid language metadata",
+                reason="invalid_response",
+                status_code=response.status_code,
+            ) from None
 
     def chat(
         self,

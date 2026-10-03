@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
 
 
@@ -99,7 +100,9 @@ FRACTIONS = (
 PREFIX = re.compile(r"\b(?:at|kell|kella|в|к|около)\s+(?P<h>" + HOUR + r")(?:\s+час(?:а|ов)?)?(?:\s+(?:(?:ja|and|и)\s+)?(?P<m>" + MINUTE + r"))?(?:\s+минут\w*)?(?![\w:.])")
 SUFFIX = re.compile(r"(?<!\w)(?P<h>" + HOUR + r")(?:\s+(?P<m>" + MINUTE + r"))?\s*(?:o'clock|час(?:а|ов)?|[ap]\.?\s*m\.?)(?!\w)")
 BARE = re.compile(r"(?P<h>" + HOUR + r")(?:\s+(?P<m>" + MINUTE + r"))?")
-ALTERNATIVE = re.compile(r"\b(?:or|või|или|between|vahemikus|между)\b")
+ALTERNATIVE = re.compile(r"\b(?:or|või|или)\s+" + HOUR + r"\b")
+TIME_RANGE = re.compile(r"\b(?:between|vahemikus|между)\s+" + HOUR + r"\b")
+MERIDIEM = re.compile(r"(?<![a-z])[ap]\.?\s*m\.?(?![a-z])")
 
 
 def _number(value: str, *, hour=False) -> int:
@@ -111,8 +114,10 @@ def _period(text: str) -> str | None:
     return values[0] if len(values) == 1 else "conflict" if values else None
 
 
-def _selection(hour: int, minute: int, period: str | None, *, explicit=False, span=None) -> RequestedTime:
+def _selection(hour: int, minute: int, period: str | None, *, explicit=False, meridiem=False, span=None) -> RequestedTime:
     if not 0 <= hour <= 23 or not 0 <= minute <= 59 or period == "conflict":
+        return RequestedTime(invalid=True, span=span)
+    if meridiem and (hour > 12 or hour == 0 and explicit):
         return RequestedTime(invalid=True, span=span)
     if period:
         if hour > 12 or (hour == 0 and explicit):
@@ -135,12 +140,13 @@ def parse_spoken_time(
     """Return only clock selectors. Bare numbers require an expected time reply."""
     if not isinstance(text, str) or len(text) > 2000:
         return None
-    text = " ".join(text.casefold().replace("ё", "е").replace("’", "'").replace("‘", "'").split())
+    text = " ".join(unicodedata.normalize("NFC", text.casefold()).replace("ё", "е").replace("’", "'").replace("‘", "'").split())
     text = re.sub(r"\bo\s*'?\s*clock\b", "o'clock", text)
     text = re.sub(r"(?<=[a-z])-(?=[a-z])", " ", text)
     # Dates must never become clock times. Spaces preserve overlap positions.
     text = re.sub(r"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[./]\d{1,2}[./]\d{2,4})\b", lambda match: " " * len(match[0]), text)
     period = _period(text)
+    meridiem = bool(MERIDIEM.search(text))
     found: list[RequestedTime] = []
     occupied: list[tuple[int, int]] = []
 
@@ -149,7 +155,7 @@ def parse_spoken_time(
         if any(start < high and end > low for low, high in occupied):
             return
         occupied.append((start, end))
-        found.append(_selection(hour, minute, period, explicit=explicit, span=(start, end)))
+        found.append(_selection(hour, minute, period, explicit=explicit, meridiem=meridiem, span=(start, end)))
 
     for match in SPECIAL.finditer(text):
         # Noon/midnight name an exact time, even without a period suffix.
@@ -159,7 +165,7 @@ def parse_spoken_time(
     for pattern, kind in FRACTIONS:
         for match in pattern.finditer(text):
             target = _number(match["h"], hour=True)
-            if not 1 <= target <= 23:
+            if not 1 <= target <= 23 or meridiem and target > 12:
                 add(match, 24)
                 continue
             if kind in {"en_half", "ru_half", "ru_quarter"}:
@@ -189,6 +195,7 @@ def parse_spoken_time(
             hour = _number(match["h"], hour=True)
             minute = _number(match["m"]) if match["m"] else 0
             add(match, hour, minute, explicit=hour == 0 or hour > 12)
+    bare = None
     if not found and allow_bare:
         bare = text
         for pattern in PERIODS.values():
@@ -198,13 +205,26 @@ def parse_spoken_time(
         match = BARE.fullmatch(bare)
         if match:
             hour = _number(match["h"], hour=True)
-            found.append(_selection(hour, _number(match["m"]) if match["m"] else 0, period, explicit=hour == 0 or hour > 12))
+            found.append(_selection(hour, _number(match["m"]) if match["m"] else 0, period, explicit=hour == 0 or hour > 12, meridiem=meridiem))
     if not found and pending and period:
         hour, minute = map(int, pending[0].split(":"))
-        return _selection(hour, minute, period)
+        return _selection(hour, minute, period, meridiem=meridiem)
+    if not found and period and bare == "":
+        return RequestedTime(invalid=True)
     if not found:
-        return None
+        return RequestedTime(invalid=True) if TIME_RANGE.search(text) else None
+    # A date/guest alternative elsewhere in the request is not a clock choice.
+    alternative_time = bool(TIME_RANGE.search(text))
+    for alternative in ALTERNATIVE.finditer(text):
+        for _, end in occupied:
+            if alternative.start() < end:
+                continue
+            gap = text[end:alternative.start()]
+            for pattern in PERIODS.values():
+                gap = pattern.sub(" ", gap)
+            gap = re.sub(r"\b(?:in the|in|the)\b", " ", gap)
+            alternative_time |= not gap.strip(" ,.!?")
     # Two different offered times are a choice, never authority to pick one.
-    if len({(selection.value, selection.candidates, selection.invalid) for selection in found}) > 1 or ALTERNATIVE.search(text):
+    if len({(selection.value, selection.candidates, selection.invalid) for selection in found}) > 1 or alternative_time:
         return RequestedTime(invalid=True)
     return found[0]

@@ -44,6 +44,7 @@ const reservation = {
   date: null,
 };
 const TEXT = {
+  demoWebsite: ["Vaata restorani demo ↗", "Visit the restaurant demo ↗", "Открыть демонстрацию ресторана ↗"],
   voice: ["Abilise hääl", "Assistant voice", "Голос помощника"],
   voicePreview: ["Kuula häält", "Listen to voice", "Послушать голос"],
   voicePreviewLoading: ["Valmistan hääleproovi…", "Preparing voice sample…", "Готовлю образец голоса…"],
@@ -99,6 +100,15 @@ const TEXT = {
   active: ["Pooleli", "In progress", "В процессе"],
   booked: ["kinnitatud", "confirmed", "подтверждено"],
   cancelledState: ["tühistatud", "cancelled", "отменено"],
+  receiptTitle: ["Broneering kinnitatud", "Reservation confirmed", "Бронирование подтверждено"],
+  receiptCancelledTitle: ["Broneering tühistatud", "Reservation cancelled", "Бронирование отменено"],
+  receiptSaved: ["Salvestatud demosüsteemi.", "Saved in the demo system.", "Сохранено в демосистеме."],
+  receiptCancelled: ["Tühistamine salvestatud demosüsteemi.", "Cancellation saved in the demo system.", "Отмена сохранена в демосистеме."],
+  receiptDate: ["Kuupäev", "Date", "Дата"],
+  receiptTime: ["Kellaaeg (Tallinn)", "Time (Tallinn)", "Время (Таллинн)"],
+  receiptGuests: ["Külalisi", "Guests", "Гостей"],
+  receiptTable: ["Laud", "Table", "Столик"],
+  receiptNumber: ["Broneeringu number", "Reservation number", "Номер бронирования"],
   skip: ["Hüppa sisu juurde", "Skip to content", "Перейти к содержимому"],
   brand: ["Restorani vastuvõtt", "Restaurant reception", "Ресепшн ресторана"],
   title: [
@@ -178,7 +188,7 @@ const TEXT = {
   message: ["Sõnum abilisele", "Message the assistant", "Сообщение помощнику"],
   send: ["Saada", "Send", "Отправить"],
   placeholder: [
-    "Näiteks: soovin homme lauda neljale kell 19.00",
+    "Näiteks: soovin homseks lauda nelja inimesega kell 19.00",
     "For example: a table for four tomorrow at 19:00",
     "Например: столик на четверых завтра в 19:00",
   ],
@@ -355,9 +365,9 @@ const TEXT = {
     "Итог прочитан. Теперь можно отдельно подтвердить.",
   ],
   confirmed: [
-    "Testbroneering kinnitatud.",
-    "Test reservation confirmed.",
-    "Тестовое бронирование столика подтверждено.",
+    "Teie broneering on tehtud.",
+    "Your reservation is confirmed.",
+    "Ваше бронирование подтверждено.",
   ],
   cancelled: [
     "Testbroneering tühistatud.",
@@ -470,8 +480,8 @@ const DAYS = {
 function uiLanguage() {
   return state.demoLanguage === "auto" ? "et" : state.demoLanguage;
 }
-function demoCopy() {
-  const index = { et: 0, en: 1, ru: 2 }[uiLanguage()];
+function demoCopy(language = uiLanguage()) {
+  const index = { et: 0, en: 1, ru: 2 }[language];
   return Object.fromEntries(
     Object.entries(TEXT).map(([key, values]) => [key, values[index]]),
   );
@@ -547,13 +557,13 @@ function controls() {
   $("demo-voice-preview").textContent = state.previewBusy
     ? demoCopy().voicePreviewLoading : demoCopy().voicePreview;
   for (const id of ["demo-text", "demo-send"])
-    $(id).disabled = !state.sessionId || locked;
+    $(id).disabled = !state.sessionId || locked || !!state.mic;
   $("demo-mic").disabled = !state.connected || !state.audioReady || locked;
   if (!state.mic)
     $("demo-mic").textContent = state.sessionId
       ? demoCopy().micReady
       : demoCopy().micStart;
-  $("demo-recap-read").disabled = !currentRecap(state.recap) || locked;
+  $("demo-recap-read").disabled = !currentRecap(state.recap) || locked || !!state.mic;
   $("refresh").disabled = !state.connected || state.readBusy;
   $("booking-prev").disabled =
     !state.connected || state.readBusy || state.page <= 1;
@@ -579,7 +589,7 @@ function controls() {
   $("reservation-end").disabled =
     !reservation.sessionId || reservation.busy || reservation.uncertain;
   for (const button of document.querySelectorAll(".example-button"))
-    button.disabled = !state.sessionId || locked;
+    button.disabled = !state.sessionId || locked || !!state.mic;
   presentation();
 }
 function requireDemoConnection() {
@@ -868,9 +878,69 @@ function selectBooking(change) {
   state.hasMore = false;
   return true;
 }
-function appendBookingLink(container, change) {
+function formatBookingDate(day, language = uiLanguage()) {
+  return new Intl.DateTimeFormat({ et: "et-EE", en: "en-GB", ru: "ru-RU" }[language], {
+    day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
+  }).format(new Date(day + "T12:00:00Z"));
+}
+function updateBookingReceiptStatus(receipt, action) {
+  const copy = demoCopy(receipt.lang);
+  const cancelled = action === "cancelled";
+  receipt.dataset.action = action;
+  receipt.querySelector(".receipt-title").textContent = cancelled
+    ? copy.receiptCancelledTitle : copy.receiptTitle;
+  receipt.querySelector(".receipt-saved").textContent = cancelled
+    ? copy.receiptCancelled : copy.receiptSaved;
+}
+function appendBookingReceipt(container, change) {
   if (!selectBooking(change)) return;
   const generation = state.generation;
+  for (const receipt of document.querySelectorAll(".booking-receipt")) {
+    if (receipt.dataset.bookingId === String(change.id))
+      updateBookingReceiptStatus(receipt, change.action);
+  }
+  // Only the committed backend receipt supplies these fields. Missing metadata
+  // keeps the link available without guessing details from the conversation.
+  if (
+    change.timezone === "Europe/Tallinn" &&
+    typeof change.start_local === "string" &&
+    typeof change.end_local === "string" &&
+    change.start_local.slice(0, 10) === change.date &&
+    Number.isFinite(Date.parse(change.date + "T12:00:00Z")) &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(change.start_local) &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(change.end_local) &&
+    Number.isInteger(change.party_size) && change.party_size > 0 &&
+    typeof change.table_name === "string"
+  ) {
+    const copy = demoCopy();
+    const receipt = document.createElement("div");
+    receipt.className = "booking-receipt";
+    receipt.lang = uiLanguage();
+    receipt.dataset.bookingId = String(change.id);
+    const title = document.createElement("strong");
+    title.className = "receipt-title";
+    const saved = document.createElement("p");
+    saved.className = "receipt-saved";
+    const details = document.createElement("dl");
+    for (const [label, value] of [
+      [copy.receiptDate, formatBookingDate(change.date)],
+      [copy.receiptTime, `${change.start_local.slice(11, 16)}–${change.end_local.slice(11, 16)}`],
+      [copy.receiptGuests, change.party_size],
+      [copy.receiptTable, change.table_name],
+      [copy.receiptNumber, `#${change.id}`],
+    ]) {
+      const item = document.createElement("div");
+      const term = document.createElement("dt");
+      term.textContent = label;
+      const detail = document.createElement("dd");
+      detail.textContent = String(value);
+      item.append(term, detail);
+      details.append(item);
+    }
+    receipt.append(title, saved, details);
+    updateBookingReceiptStatus(receipt, change.action);
+    container.append(receipt);
+  }
   const button = document.createElement("button");
   button.type = "button";
   button.className = "secondary booking-link";
@@ -888,6 +958,7 @@ function appendBookingLink(container, change) {
     target.focus({ preventScroll: true });
   });
   container.append(button);
+  container.scrollIntoView({ block: "nearest" });
 }
 function recapPlayedMessage() {
   return {
@@ -942,7 +1013,8 @@ async function sendTurn(input) {
     !state.connected ||
     !state.sessionId ||
     state.turnBusy ||
-    state.micStarting
+    state.micStarting ||
+    state.mic
   )
     return;
   const generation = state.generation,
@@ -967,14 +1039,16 @@ async function sendTurn(input) {
     });
     if (generation !== state.generation) return;
     state.replyLanguage = data.language;
-    const heard = addMessage(demoCopy().you, data.text_heard);
+    const heard = data.text_heard ? addMessage(demoCopy().you, data.text_heard) : null;
     const message =
       data._stream?.replyNode || addMessage(demoCopy().assistant, data.reply);
-    if (data._stream) $("demo-messages").insertBefore(heard, message);
+    if (data._stream && heard) $("demo-messages").insertBefore(heard, message);
     $("demo-text").value = "";
     status(
       "demo-status",
-      data.outcome === "unknown_outcome"
+      data.input_status === "unsupported_language"
+        ? data.reply
+        : data.outcome === "unknown_outcome"
         ? demoCopy().unknown
         : data.tts_failed
           ? demoCopy().textFallback
@@ -986,7 +1060,7 @@ async function sendTurn(input) {
     else playReply(data, recap);
     renderVoiceResult(data);
     const change = (data.booking_changes || []).at(-1);
-    if (change) appendBookingLink(message, change);
+    if (change) appendBookingReceipt(message, change);
     await Promise.allSettled([loadBookings(), loadHistory()]);
   } catch (error) {
     if (generation === state.generation) {
@@ -1152,12 +1226,8 @@ async function mutateReservation(cancel = false) {
       cancel ? demoCopy().cancelled : demoCopy().confirmed,
       "success",
     );
-    const identifier = cancel ? data.booking_id : data.booking.id;
-    appendBookingLink($("reservation-status"), {
-      id: identifier,
-      date: reservation.date,
-      action: cancel ? "cancelled" : "confirmed",
-    });
+    const change = (data.booking_changes || []).at(-1);
+    if (change) appendBookingReceipt($("reservation-status"), change);
     await Promise.allSettled([loadBookings(), loadHistory()]);
   } catch (error) {
     if (generation === state.generation) {
@@ -1203,7 +1273,7 @@ async function loadBookings() {
       )
         element.classList.add("booking-recent");
       const label = document.createElement("strong");
-      label.textContent = `${row.start_local.slice(11, 16)}–${row.end_local.slice(11, 16)} · ${row.provider_name}`;
+      label.textContent = `${formatBookingDate(row.start_local.slice(0, 10))} · ${row.start_local.slice(11, 16)}–${row.end_local.slice(11, 16)} · ${row.provider_name}`;
       const detail = document.createElement("span");
       detail.textContent = `${row.service_id} ${demoCopy().guests} · ${row.status === "confirmed" ? demoCopy().booked : demoCopy().cancelledState} · #${row.id}`;
       element.append(label, detail);

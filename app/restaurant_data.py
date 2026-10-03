@@ -6,13 +6,46 @@ import copy
 import json
 import os
 import re
-from datetime import date, time
+from datetime import date, datetime, time
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 LANGUAGES = ("et", "en", "ru")
 DAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
 DEFAULT_PATH = Path(__file__).resolve().parents[1] / "data/demo/restaurant-demo.json"
+
+
+def restaurant_booking_details(booking, restaurant):
+    """Build a display receipt from a committed reservation, never a proposal."""
+    identifier = str(booking["id"])
+    start = datetime.fromisoformat(booking["start"])
+    end = datetime.fromisoformat(booking["end"])
+    party = booking["party_size"]
+    table = next(
+        (row for row in restaurant["tables"] if row["id"] == booking["table_id"]),
+        None,
+    )
+    if (
+        not re.fullmatch(r"[1-9][0-9]*", identifier)
+        or booking["status"] != "confirmed"
+        or type(party) is not int
+        or not 1 <= party <= restaurant["maximum_party_size"]
+        or table is None
+        or party > table["capacity"]
+        or end <= start
+    ):
+        raise ValueError("restaurant_booking_receipt_invalid")
+    return {
+        "id": identifier,
+        "date": start.date().isoformat(),
+        "start_local": booking["start"],
+        "end_local": booking["end"],
+        "party_size": party,
+        "table_id": table["id"],
+        "table_name": table["name"],
+        "timezone": restaurant["timezone"],
+        "synthetic": True,
+    }
 
 
 def _text(value, cap=1200):

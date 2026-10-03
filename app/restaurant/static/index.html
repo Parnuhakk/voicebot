@@ -9,11 +9,11 @@
     />
     <title>Voicebot · Restaurant reception</title>
     <script src="/operator-dashboard.js?v=e2bebda58021"></script>
-    <link rel="stylesheet" href="/restaurant.css?v=3cecae2dc444" />
+    <link rel="stylesheet" href="/restaurant.css?v=f91a04e0ad4a" />
     <link rel="stylesheet" href="/operator-dashboard.css?v=5a05f2f0a2b3" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script src="/speech-playback.js?v=27698f675462" defer></script>
-    <script src="/restaurant.js?v=daa341ad47d5" defer></script>
+    <script src="/restaurant.js?v=4d8a91cbdbf8" defer></script>
     <script src="/speech-capture.js?v=09feffb8cdd4" defer></script>
   </head>
   <body>
@@ -50,7 +50,7 @@
     <header class="site-header topbar">
       <a class="brand" href="#main">voicebot <span data-copy="brand">Restorani vastuvõtt</span></a>
       <div class="breadcrumb"><svg class="icon" aria-hidden="true"><use href="#i-grid" /></svg><span>Meretuule</span><span aria-hidden="true">/</span><strong data-copy="brand">Restorani vastuvõtt</strong></div>
-      <a class="demo-website-link" href="https://meretuule.arleserver.cfd/"
+      <a class="demo-website-link" data-copy="demoWebsite" href="https://meretuule.arleserver.cfd/"
         >Restorani demo <span aria-hidden="true">↗</span></a
       >
       <span id="connection-state" class="connection" role="status"
@@ -294,7 +294,7 @@
               Kontrolli lauda
             </button>
           </form>
-          <p
+          <div
             id="reservation-status"
             class="status"
             role="status"
@@ -302,7 +302,7 @@
             data-copy="reservationInitial"
           >
             Ühenda, et proovida lauabroneeringut.
-          </p>
+          </div>
           <div id="reservation-recap" hidden>
             <h3 data-copy="recapTitle">Kontrolli kokkuvõtet</h3>
             <p id="reservation-recap-text"></p>
@@ -430,7 +430,7 @@
     </main>
     <footer>
       <span data-copy="footer">Restorani demo · Eesti, English, Русский</span
-      ><a class="demo-website-link" href="https://meretuule.arleserver.cfd/"
+      ><a class="demo-website-link" data-copy="demoWebsite" href="https://meretuule.arleserver.cfd/"
         >Vaata restorani demo <span aria-hidden="true">↗</span></a
       ><span id="service-status" role="status"></span>
     </footer>

@@ -9,6 +9,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from .restaurant_data import DAYS
+from .restaurant_dates import resolve_restaurant_date
 
 
 @dataclass(frozen=True)
@@ -17,6 +18,7 @@ class RestaurantQuestion:
     topics: tuple[str, ...]
     days: tuple[int, ...] | None = None
     date: str | None = None
+    date_issue: str | None = None
 
 
 INFORMATION_TOPICS = (
@@ -27,24 +29,24 @@ INFORMATION_TOPICS = (
 
 PATTERNS = {
     "allergens": r"allerg|allergeen|аллерг|глютен|glut(?:ee|e)n|peanut|pähkl|орех|laktoos|lactose|лактоз|sisald|contain|koostis|ingredients|содерж|состав",
-    "price": r"\b(?:price|cost|hind|hinna\w*|hinnaga|maksab|цен\w*|стоим\w*)\b",
+    "price": r"\b(?:price|cost|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maksab|цен\w*|стоим\w*)\b",
     "menu": r"menüü|menu|меню|vegan|веган|vegetarian|taimetoit|вегетар|\b(?:dishes|serve|roogi|блюд\w*)\b|mis.*süüa|mida.*(?:süüa|pakute)",
     "kitchen": r"kitchen|köök|köögi|кухн|(?:kell|kellaajani|millal).*süüa|when.*(?:food|eat)|(?:до скольки|когда).*еда",
     "hours": r"\b(?:hours|open\w*|close\w*|shut|lahtiole\w*|avatud|avate|lahti|kinni|sulge\w*|tööa\w*|откры\w*|закры\w*|работа\w*)\b",
-    "location": r"\b(?:where|address|location|located|aadress|asute|asub|kus|где|адрес|находит\w*)\b",
+    "location": r"\b(?:where are you|where is (?:the )?restaurant|where is it|address|location|located|aadress|asute|asub|kus|где|адрес|находит\w*)\b",
     "duration": r"(?:how long|kui kaua|сколько времени|как долго).*(?:table|stay|keep|laua|broneering|стол|брон)|(?:reservation|broneering|брон\w*).*(?:last|kest|длит)",
     "groups": r"\b(?:group\w*|grup\w*|seltskonn\w*|firmapidu|sünnipäev\w*|групп\w*|компани\w*)\b",
     "children": r"\b(?:children|kids?|child|lapsed|lastega|laste|laps|дети|детей|детьми|реб[её]н\w*)\b",
     "cancellation_help": r"(?:how|kuidas|как).*(?:cancel|tühista|отмен)|(?:can|kas|можно).*(?:cancel|tühista|отмен)",
     "changes": r"(?:change|move|muuta|muutmine|muutmiseks|измен|перенес).*(?:booking|reservation|broneering|брон)|(?:booking|reservation|broneering\w*|брон\w*).*(?:change|move|muuta|muutm|измен|перенес)",
     "late": r"\b(?:late|hiline\w*|опозд\w*)\b",
-    "parking": r"parkim|parkida|parking|car park|парков",
+    "parking": r"parkim|parkida|parking|\bpark\b|car park|парков",
     "pets": r"\b(?:dogs?|pets?|pupp(?:y|ies)|cats?|koer\w*|kutsu\w*|lemmik\w*|kiis\w*|kass(?:i\w*|e\w*|iga|idega)?|собак\w*|животн\w*|питом\w*|щен\w*|кош(?:к|ек|еч)\w*)\b",
     "highchair": r"high\s?chair|high chair|lastetool|детск\w*\s+(?:стул|кресл)",
     "accessibility": r"wheelchair|accessible|accessibility|ratastool|ligipääs|инвалид|коляск|доступн",
     "terrace": r"terrac|terrass|outside seating|outdoor seating|террас",
     "extras": r"dessert|magustoit|magustoitu|drinks?|vein|wine|jook|joog|напит|десерт",
-    "staff": r"\b(?:staff|human|transfer|callback|personali\w*|inimese\w*|teenindaja\w*|персонал\w*|сотрудник\w*|оператор\w*|перевед\w*)\b|\b(?:order|delivery|takeaway|tellim\w*|kojuvedu|достав\w*|заказ\w*)\b",
+    "staff": r"\b(?:staff|human|transfer|callback|personali\w*|teenindaja\w*|персонал\w*|сотрудник\w*|оператор\w*|перевед\w*)\b|\b(?:order|delivery|takeaway|tellim\w*|kojuvedu|достав\w*|заказ\w*)\b|\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b.*\binimese\w*\b|\binimese\w*\b.*\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b",
     "policies": r"polic|reegl|tingimus|правил",
 }
 
@@ -74,6 +76,21 @@ def match_question(
     matches = [(match.start(), topic) for topic, pattern in PATTERNS.items()
                if (match := re.search(pattern, text))]
     topics = [topic for _, topic in sorted(matches)]
+    # An English question about an unlisted dish or a non-food "contain"
+    # must not receive an unrelated menu/allergen answer.
+    if "allergens" in topics and not (
+        has_dish or has_diet or previous and re.search(r"\b(?:it|this|that)\b", text) and any(
+            topic in {"menu", "allergens"} for topic in previous.topics
+        ) or re.search(
+            r"allerg|allergeen|аллерг|глютен|glut|peanut|pähkl|орех|laktoos|lactose|лактоз|"
+            r"food|dish|ingredient|milk|fish|celery|sisald|koostis|содерж|состав", text
+        )
+    ):
+        topics.remove("allergens")
+    if "menu" in topics and re.search(r"\bdo you (?:have|serve)\b", text) and not (
+        has_dish or has_diet or re.search(r"\b(?:menu|dishes|food)\b", text)
+    ):
+        topics.remove("menu")
     # Narrative party counts are booking details, not a request for policies.
     # In particular, "for two adults and two children" must reach the planner.
     policy_question = bool(re.search(
@@ -100,36 +117,31 @@ def match_question(
         days = (0, 1, 2, 3, 4)
     elif len(days) == 2 and re.search(r"through|\bto\b|kuni|päevast|reedest|\bпо\b", text):
         days = tuple(range(days[0], days[-1] + 1))
-    relative = next((offset for pattern, offset in (
-        (r"\bülehomme\b|\bday after tomorrow\b|\bпослезавтра\b", 2),
-        (r"\bhomme\b|\btomorrow\b|\bзавтра\b", 1),
-        (r"\btäna\b|\btoday\b|\bсегодня\b", 0),
-    ) if re.search(pattern, text)), None)
+    resolved = resolve_restaurant_date(
+        text, now or datetime.now(ZoneInfo("Europe/Tallinn")), include_weekdays=False
+    )
     requested_date = None
+    date_issue = None
     if not topics and previous and not BOOKING_REQUEST.search(text):
-        if (days or relative is not None) and len(text.split()) <= 8:
+        if (days or resolved.value or resolved.issue) and len(text.split()) <= 8:
             topics = [topic for topic in previous.topics if topic in {"hours", "kitchen"}]
     if not topics:
         return None
     if (
-        not days and relative is None and previous
+        not days and not resolved.value and not resolved.issue and previous
         and re.search(r"^(?:aga|ja|and|what about|а|и)\b", text)
         and any(topic in {"hours", "kitchen"} for topic in topics)
         and any(topic in {"hours", "kitchen"} for topic in previous.topics)
     ):
         days, requested_date = previous.days or (), previous.date
-    if relative is not None and any(topic in {"hours", "kitchen"} for topic in topics):
-        today = (now or datetime.now(ZoneInfo("Europe/Tallinn"))).date()
-        target = today + timedelta(days=relative)
-        requested_date, days = target.isoformat(), (target.weekday(),)
-    explicit_date = re.search(r"\b20\d{2}-\d{2}-\d{2}\b", text)
-    if explicit_date and any(topic in {"hours", "kitchen"} for topic in topics):
-        try:
-            target = datetime.strptime(explicit_date[0], "%Y-%m-%d").date()
-        except ValueError:
-            return None
-        requested_date, days = target.isoformat(), (target.weekday(),)
-    return RestaurantQuestion(tuple(topics[:3]), days or None, requested_date)
+        date_issue = previous.date_issue
+    if any(topic in {"hours", "kitchen"} for topic in topics):
+        if resolved.value:
+            target = datetime.fromisoformat(resolved.value)
+            requested_date, days = resolved.value, (target.weekday(),)
+        elif resolved.issue:
+            date_issue = resolved.issue
+    return RestaurantQuestion(tuple(topics[:3]), days or None, requested_date, date_issue)
 
 
 SINGLES = {

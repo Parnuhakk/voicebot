@@ -358,6 +358,7 @@ def create_app():
                     "model": config.stt_model,
                     "language": "auto",
                     "languages": ["et", "en", "ru"],
+                    "reject_unsupported_languages": True,
                 },
                 "llm": {"provider": "groq", "model": config.chat_model},
                 "tts": {

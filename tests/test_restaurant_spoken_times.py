@@ -1,6 +1,7 @@
 """Requested clock facts and clarification across ET/EN/RU; no live providers."""
 
 import asyncio
+import unicodedata
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -102,8 +103,9 @@ def test_ambiguous_clocks_offer_both_periods_instead_of_guessing(text, am, pm):
     "at 25:00", "kell 18:70", "в 24:00", "at 6 75 pm",
     "at six sixty pm", "kell kuus kuuskümmend õhtul", "в шесть семьдесят вечера",
     "at 18:300", "kell 18:3", "at 100:00",
-    "at 18 am", "kell 18 hommikul", "at six in the morning or evening",
+    "at 18 am", "at 13 pm", "at 13:00 pm", "kell 18 hommikul", "at six in the morning or evening",
     "at six or seven in the evening", "at 18:00 or at 19:00",
+    "at six in the evening or seven", "between six and seven",
 ])
 def test_invalid_conflicting_and_alternative_times_need_clarification(text):
     selection = parse_spoken_time(text)
@@ -198,3 +200,15 @@ def test_public_clock_examples_are_parsed_in_each_language(client):
     assert examples == TIME_INPUT_EXAMPLES
     for phrases in examples.values():
         assert [parse_spoken_time(phrase).value for phrase in phrases] == ["18:00", "18:30", "18:30"]
+
+
+def test_unicode_time_reply_and_period_only_response_keep_booking_context(make_state):
+    state = make_state("et")
+    state.observe_user_text("Soovin homme lauda neljale kell kuus", language="et")
+    state.observe_user_text(unicodedata.normalize("NFD", "õhtul"), language="et")
+    assert state.booking_inquiry["start_time"] == "18:00"
+    state = make_state("en")
+    state.observe_user_text("A table for four tomorrow", language="en")
+    state.observe_user_text("in the evening", language="en")
+    assert trusted_booking_response(state) == {"content": COPY["en"]["invalid_time"]}
+    assert "start_time" not in state.booking_inquiry

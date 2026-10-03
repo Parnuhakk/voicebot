@@ -27,10 +27,13 @@ from tests.test_native_booking_terminals import (  # noqa: E402
 )
 
 
+@pytest.mark.parametrize("initial_language", ["et", "en", "ru"])
 @pytest.mark.parametrize(
     "language,utterance,confirmation",
     [
         ("et", "Soovin homme lauda neljale kell 14.00", "ja kinnitää"),
+        ("et", "Soovin lauaks homseks kell 14.00 nelja inimesega", "ja kinnitää"),
+        ("et", "named-date", "ja kinnitää"),
         ("en", "A table for four tomorrow at 2 pm", "Yes, please confirm."),
         ("ru", "Столик на четверых завтра в 14:00", "Да, подтверждаю."),
         ("en", "A table for four tomorrow at six o'clock in the evening", "Yes, please confirm."),
@@ -42,13 +45,18 @@ from tests.test_native_booking_terminals import (  # noqa: E402
     ],
 )
 def test_native_sdk_confirmation_is_visible_in_the_restaurant_database(
-    tmp_path, language, utterance, confirmation
+    tmp_path, language, utterance, confirmation, initial_language
 ):
     async def run():
+        request_text = utterance
+        if request_text == "named-date":
+            from tests.test_restaurant_http import spoken_tomorrow
+
+            request_text = f"Soovin lauda {spoken_tomorrow()} kell 14 nelja külalisega"
         data = load_restaurant_data()
         path = str(tmp_path / "shared-restaurant.db")
         adapter = RestaurantAdapter(path, data=data, allow_writes=True)
-        state = make_call_tools(restaurant_dispatcher(adapter, data), language=language)
+        state = make_call_tools(restaurant_dispatcher(adapter, data), language=initial_language)
         agent = worker.TelephoneAgent(state)
         model = UnusedModel()
         session = AgentSession(
@@ -59,12 +67,13 @@ def test_native_sdk_confirmation_is_visible_in_the_restaurant_database(
         with patch("livekit.agents.Agent.default.tts_node", synthesize):
             await session.start(agent=agent, record=False)
             try:
-                requests = utterance if isinstance(utterance, tuple) else (utterance,)
+                requests = request_text if isinstance(request_text, tuple) else (request_text,)
                 for index, request_text in enumerate(requests):
                     await native_turn(session, agent, request_text)
                     if index < len(requests) - 1:
                         assert state.pending is None and not state.bookings
                         assert agent.chat_ctx.items[-1].text_content == COPY[language]["ambiguous_time"]
+                assert state.language == language
                 assert state.pending["delivery"] and not state.pending["approved"]
                 await native_turn(session, agent, confirmation)
                 assert len(state.bookings) == 1
