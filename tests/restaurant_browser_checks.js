@@ -153,7 +153,7 @@ async page => {
     const timeQuestions = {
       en: ["I'd like a table tomorrow at 6 o clock", 'in the evening', 'Do you mean AM or PM?', 'How many of you are coming, including children?'],
       et: ['Soovin homme lauda kell kuus', 'õhtul', 'Kas mõtlete hommikul või õhtul?', 'Mitmele inimesele lauda soovite?'],
-      ru: ['Хочу столик завтра в шесть часов', 'вечером', 'Утром или вечером?', 'Сколько вас будет, вместе с детьми?'],
+      ru: ['Хочу столик завтра в шесть часов', 'вечером', 'Вы имеете в виду утром или вечером?', 'Сколько вас будет, вместе с детьми?'],
     }[language.code];
     for (let index = 0; index < 2; index++) {
       await page.locator('#demo-text').fill(timeQuestions[index]);
@@ -166,6 +166,19 @@ async page => {
     await page.locator('#demo-send').click();
     await page.waitForFunction(()=>!state.turnBusy);
     assert((await page.locator('#demo-messages').textContent()).includes(language.soup));
+    const reasoningExample = {
+      et: ['Üks meist on vegan, teisele meeldivad seened. Mida soovitaksite ja miks?',
+           'Veganile soovitan köögiviljasuppi. Seenerisoto sobib taimetoitlasele, kuid sisaldab piima.'],
+      en: ['One of us is vegan, another likes mushrooms. What would you recommend and why?',
+           "I'd suggest vegetable soup for the vegan guest. Mushroom risotto suits a vegetarian, but contains milk."],
+      ru: ['Один из нас веган, другой любит грибы. Что вы посоветуете и почему?',
+           'Для вегана я предложу овощной суп. Грибное ризотто подходит вегетарианцу, но содержит молоко.'],
+    }[language.code];
+    await page.locator('[data-example="recommendation"]').click();
+    await page.waitForFunction(()=>!state.turnBusy);
+    assert.equal(await page.locator('#demo-messages .message').nth(-2).locator('span').textContent(), reasoningExample[0]);
+    assert.equal(await page.locator('#demo-messages .message').last().locator('span').textContent(), reasoningExample[1]);
+    assert.equal(await page.evaluate(()=>state.recap), null, 'reasoning response created a booking proposal');
     assert(await page.getByRole('radio', {name:'Eesti', exact:true}).isDisabled());
     await page.evaluate(code => {
       const input = document.querySelector('input[name="demo-language"][value="' + code + '"]');
@@ -183,7 +196,7 @@ async page => {
     const temporalAnswers = {
       et: ['Soovin lauda', 'kahe päeva pärast', 'kell kuueks õhtul', 'meid tuleb neli', 'Mis päevaks', 'Mis kell', 'Mitmele inimesele'],
       en: ["I'd like to book a table", 'in two days', 'at six and a half PM', 'for a party of four', 'What date', 'What time', 'How many'],
-      ru: ['Хочу забронировать столик', 'через два дня', 'в половине седьмого вечера', 'нас будет четверо', 'На какую дату', 'Во сколько', 'Сколько вас'],
+      ru: ['Хочу забронировать столик', 'через два дня', 'в половине седьмого вечера', 'нас будет четверо', 'На какой день', 'Во сколько', 'Сколько вас'],
     }[language.code];
     for (let index = 0; index < 4; index++) {
       await page.locator('#demo-text').fill(temporalAnswers[index]);
@@ -196,7 +209,12 @@ async page => {
       }
     }
     const temporalRecap = await page.evaluate(()=>state.recap && state.recap.reply);
-    assert(temporalRecap && /4\s+(?:guests|külalist|inimesele|гостей)/.test(temporalRecap));
+    assert(temporalRecap && (language.code === 'ru' ? temporalRecap.includes('на четырёх гостей') : /4\s+(?:guests|külalist|inimesele)/.test(temporalRecap)));
+    if (language.code === 'ru') {
+      assert(temporalRecap.includes('на полтора часа'));
+      assert(temporalRecap.endsWith('Вам подходит?'));
+      assert(!temporalRecap.includes('Возможное время на ту же дату'));
+    }
     assert(temporalRecap.includes({et:'18:00',en:'6:30 PM',ru:'18:30'}[language.code]));
     assert(await page.locator('#demo-recap-read').isVisible(), 'new booking recap is missing');
     assert(temporalRecap.endsWith({et:'Kas teile sobib?',en:'Does that work for you?',ru:'Вам подходит?'}[language.code]));
@@ -221,7 +239,7 @@ async page => {
     await page.locator('#reservation-party').fill('4');
     await page.locator('#reservation-prepare').click();
     await page.waitForFunction(()=>reservation.holdId && !reservation.busy);
-    assert((await page.locator('#reservation-recap-text').textContent()).includes('4'));
+    assert((await page.locator('#reservation-recap-text').textContent()).includes(language.code === 'ru' ? 'на четырёх гостей' : '4'));
     assert(await page.locator('#reservation-date').isDisabled(),'held recap allowed editable dates');
     assert(await page.getByRole('radio', {name:'Eesti', exact:true}).isDisabled(),'owned booking language changed');
     assert(await page.locator('#reservation-confirm').isDisabled(),'recap automatically granted consent');
@@ -449,5 +467,5 @@ async page => {
     assert.equal(retired.headers().location,undefined,'retired hostname redirected');
   }
   assert.deepEqual(errors,[]);
-  return {languages:3,multilingualStepwiseDateTimeAndParty:true,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,englishSpokenDates:true,englishClockClarification:true,russianMixedDateCases:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,retiredHostDenied:true,pageErrors:errors.length};
+  return {languages:3,groundedAnswers:3,multilingualStepwiseDateTimeAndParty:true,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,englishSpokenDates:true,englishClockClarification:true,russianMixedDateCases:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,retiredHostDenied:true,pageErrors:errors.length};
 }

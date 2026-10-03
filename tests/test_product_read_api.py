@@ -221,14 +221,16 @@ def test_provider_projection_and_exact_fixed_query(tmp_path):
         {"length": "0"},
         {"length": "51"},
         {"length": "x"},
-        {
-            "date": (
-                datetime.now(ZoneInfo("Europe/Tallinn")).date() + timedelta(days=91)
-            ).isoformat()
-        },
+        {"date": "beyond-horizon"},
     ],
 )
 def test_invalid_queries_do_not_read(tmp_path, params):
+    # Calculate the boundary at request time: collecting the suite before
+    # Tallinn midnight must not make a 91-day query valid later in the run.
+    if params.get("date") == "beyond-horizon":
+        params = {"date": (
+            datetime.now(ZoneInfo("Europe/Tallinn")).date() + timedelta(days=91)
+        ).isoformat()}
     calls = []
     client, _ = make_client(tmp_path, [], calls)
     with client:

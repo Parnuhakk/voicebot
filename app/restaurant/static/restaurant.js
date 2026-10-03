@@ -205,6 +205,7 @@ const TEXT = {
   ],
   exampleTable: ["Lauabroneering", "Table reservation", "Бронирование столика"],
   exampleMenu: ["Menüü", "Menu", "Меню"],
+  exampleRecommendation: ["Toidusoovitus", "Food recommendation", "Совет по меню"],
   exampleHours: ["Lahtiolekuajad", "Opening hours", "Часы работы"],
   message: ["Sõnum abilisele", "Message the assistant", "Сообщение помощнику"],
   send: ["Saada", "Send", "Отправить"],
@@ -1509,6 +1510,11 @@ for (const button of document.querySelectorAll("[data-example]"))
         "Я хочу забронировать столик.",
       ],
       menu: ["Milline on menüü?", "What is on the menu?", "Что есть в меню?"],
+      recommendation: [
+        "Üks meist on vegan, teisele meeldivad seened. Mida soovitaksite ja miks?",
+        "One of us is vegan, another likes mushrooms. What would you recommend and why?",
+        "Один из нас веган, другой любит грибы. Что вы посоветуете и почему?",
+      ],
       hours: [
         "Millal restoran avatud on?",
         "What are your opening hours?",
