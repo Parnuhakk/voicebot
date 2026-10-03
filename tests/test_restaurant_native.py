@@ -35,7 +35,10 @@ from tests.test_native_booking_terminals import (  # noqa: E402
         ("et", "Soovin lauaks homseks kell 14.00 nelja inimesega", "ja kinnitää"),
         ("et", "named-date", "ja kinnitää"),
         ("en", "A table for four tomorrow at 2 pm", "Yes, please confirm."),
+        ("en", "named-date", "Yes, please confirm."),
         ("ru", "Столик на четверых завтра в 14:00", "Да, подтверждаю."),
+        ("ru", "named-date", "Да, подтверждаю."),
+        ("ru", "mixed-date", "Да, подтверждаю."),
     ],
 )
 def test_native_sdk_confirmation_is_visible_in_the_restaurant_database(
@@ -43,10 +46,15 @@ def test_native_sdk_confirmation_is_visible_in_the_restaurant_database(
 ):
     async def run():
         request_text = utterance
-        if request_text == "named-date":
+        if request_text in {"named-date", "mixed-date"}:
             from tests.test_restaurant_http import spoken_tomorrow
 
-            request_text = f"Soovin lauda {spoken_tomorrow()} kell 14 nelja külalisega"
+            day = spoken_tomorrow(language, mixed_case=request_text == "mixed-date")
+            request_text = {
+                "et": f"Soovin lauda {day} kell 14 nelja külalisega",
+                "en": f"I'd like a table {day} at 2 pm for four",
+                "ru": f"Забронируйте столик {day} в 14:00 для четырёх гостей",
+            }[language]
         data = load_restaurant_data()
         path = str(tmp_path / "shared-restaurant.db")
         adapter = RestaurantAdapter(path, data=data, allow_writes=True)
