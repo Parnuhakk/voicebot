@@ -21,6 +21,7 @@ from .call_factory import make_call_tools
 from .languages import LANGUAGES
 from .booking_response import trusted_booking_response
 from .restaurant_data import restaurant_booking_details
+from .restaurant_reasoning import reasoning_enabled
 from . import call_history, callslog
 from .providers.errors import PROVIDER_FAILURE_REASONS, ProviderError
 from .providers.demo_voices import PROFILES
@@ -501,6 +502,7 @@ class _TrustedLlm:
         self.latency_ms = 0.0
         self.failed = False
         self.failure = {}
+        self.reasoning_fallback = False
 
     def chat(self, messages, tools=None):
         state = self.session.tools
@@ -510,6 +512,21 @@ class _TrustedLlm:
         response = trusted_booking_response(
             state, after_tool=bool(messages and messages[-1].get("role") == "tool")
         )
+        if (
+            response is not None
+            and "content" in response
+            and reasoning_enabled(self.client)
+            and getattr(state, "reasoning_allowed", False)
+        ):
+            from .restaurant_reasoning import reasoned_reply
+            started = time.perf_counter()
+            try:
+                reply = reasoned_reply(state, messages, self.client)
+            finally:
+                self.latency_ms += (time.perf_counter() - started) * 1000
+            if reply is not None:
+                return {"content": reply}
+            self.reasoning_fallback = True
         if response is not None:
             if "content" in response:
                 return response
@@ -767,6 +784,8 @@ async def run_demo_turn(
         ]
     )[-MAX_HISTORY_TURNS:]
     warnings = []
+    if primary.reasoning_fallback:
+        warnings.append({"stage": "llm", "code": "grounded_reply_unavailable"})
     if stt_failed:
         warnings.append({"stage": "stt", "code": "transcription_unavailable"})
     if primary.failed:

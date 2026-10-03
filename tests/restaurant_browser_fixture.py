@@ -1,6 +1,7 @@
 """Real restaurant routes with local synthetic audio; no paid providers."""
 
 import os
+import json
 import tempfile
 import httpx
 from pathlib import Path
@@ -9,6 +10,7 @@ from unittest.mock import patch
 from app.server import create_app as server_app
 from app.providers.azure_tts import AzureTtsClient
 from app.providers.transcription import Transcription
+from app.providers.voice_config import VoiceConfig
 
 _storage = tempfile.TemporaryDirectory(prefix="voicebot-restaurant-browser-")
 
@@ -33,7 +35,33 @@ class FixtureSpeech:
 
 
 class FixtureLlm:
-    def chat(self, messages, tools=None):
+    supports_restaurant_reasoning = True
+    config = VoiceConfig()
+
+    def chat(self, messages, tools=None, *, response_format=None, timeout=None):
+        if response_format is not None:
+            schema = response_format["json_schema"]
+            language = schema["schema"]["properties"]["language"]["enum"][0]
+            if schema["name"] == "restaurant_review":
+                return {"content": json.dumps({"approved": True, "language": language})}
+            facts = json.loads(messages[0]["content"].split("Trusted facts: ", 1)[1])
+            question = messages[-1]["content"]
+            examples = {
+                "et": ("Üks meist on vegan, teisele meeldivad seened. Mida soovitaksite ja miks?",
+                       "Veganile soovitan köögiviljasuppi. Seenerisoto sobib taimetoitlasele, kuid sisaldab piima."),
+                "en": ("One of us is vegan, another likes mushrooms. What would you recommend and why?",
+                       "I'd suggest vegetable soup for the vegan guest. Mushroom risotto suits a vegetarian, but contains milk."),
+                "ru": ("Один из нас веган, другой любит грибы. Что вы посоветуете и почему?",
+                       "Для вегана я предложу овощной суп. Грибное ризотто подходит вегетарианцу, но содержит молоко."),
+            }
+            if question == examples[language][0]:
+                reply, references = examples[language][1], ["menu_items"]
+            elif "current_question_facts" in facts:
+                reply, references = facts["current_question_facts"], ["current_question_facts"]
+            else:
+                return {"content": "fixture reasoning unavailable"}
+            return {"content": json.dumps({"reply": reply, "fact_ids": references,
+                                           "language": language})}
         return {
             "content": "I can help with restaurant table reservations, the menu and opening hours. How can I help?"
         }

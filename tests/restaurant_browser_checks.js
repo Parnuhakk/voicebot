@@ -152,6 +152,19 @@ async page => {
     await page.locator('#demo-send').click();
     await page.waitForFunction(()=>!state.turnBusy);
     assert((await page.locator('#demo-messages').textContent()).includes(language.soup));
+    const reasoningExample = {
+      et: ['Üks meist on vegan, teisele meeldivad seened. Mida soovitaksite ja miks?',
+           'Veganile soovitan köögiviljasuppi. Seenerisoto sobib taimetoitlasele, kuid sisaldab piima.'],
+      en: ['One of us is vegan, another likes mushrooms. What would you recommend and why?',
+           "I'd suggest vegetable soup for the vegan guest. Mushroom risotto suits a vegetarian, but contains milk."],
+      ru: ['Один из нас веган, другой любит грибы. Что вы посоветуете и почему?',
+           'Для вегана я предложу овощной суп. Грибное ризотто подходит вегетарианцу, но содержит молоко.'],
+    }[language.code];
+    await page.locator('#demo-text').fill(reasoningExample[0]);
+    await page.locator('#demo-send').click();
+    await page.waitForFunction(()=>!state.turnBusy);
+    assert.equal(await page.locator('#demo-messages .message').last().locator('span').textContent(), reasoningExample[1]);
+    assert.equal(await page.evaluate(()=>state.recap), null, 'reasoning response created a booking proposal');
     assert(await page.getByRole('radio', {name:'Eesti', exact:true}).isDisabled());
     await page.evaluate(code => {
       const input = document.querySelector('input[name="demo-language"][value="' + code + '"]');
