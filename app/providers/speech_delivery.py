@@ -11,6 +11,7 @@ import re
 from xml.sax.saxutils import quoteattr
 
 from ..languages import CONSENT
+from ..restaurant_consent import CONFIRMATION_QUESTIONS
 
 
 @dataclass(frozen=True)
@@ -51,7 +52,9 @@ class SpeechDelivery:
 
 
 def is_recap(text: str) -> bool:
-    return any(consent in text for consent in CONSENT.values())
+    return any(consent in text for consent in CONSENT.values()) or any(
+        text.rstrip().endswith(question) for question in CONFIRMATION_QUESTIONS.values()
+    )
 
 
 def spoken_estonian_date(value: str) -> str:

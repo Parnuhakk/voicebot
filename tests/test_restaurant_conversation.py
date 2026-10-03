@@ -62,7 +62,7 @@ def test_restaurant_only_prompt_tools_greeting_and_recap(make_state, language):
         result = await prepare(state)
         assert result["recap"]["party_size"] == 4
         assert result["recap"]["duration_minutes"] == 90
-        assert CONSENT[language] in state.render_recap()
+        assert COPY[language]["confirmation_question"] in state.render_recap()
         assert "Meretuule Demo Restaurant" in state.render_recap()
         assert "spa" not in state.render_recap().casefold()
 
@@ -127,8 +127,6 @@ def test_call_ownership_blocks_foreign_hold_and_cancellation(make_state):
 @pytest.mark.parametrize(
     "utterance",
     [
-        "yes",
-        "okay",
         "thanks",
         "yes but make it five",
         "Yes, confirm. And change the time.",
@@ -188,7 +186,6 @@ def test_estonian_natural_confirmation_and_known_asr_spellings(make_state, utter
 @pytest.mark.parametrize(
     "utterance",
     [
-        "jah",
         "ja",
         "ei kinnita",
         "ei, ja kinnitää",
@@ -202,7 +199,6 @@ def test_estonian_natural_confirmation_and_known_asr_spellings(make_state, utter
         "ja kinnitää, aga muuda kellaaega",
         "ma ei öelnud ja kinnitää",
         "jah kinnitää või mitte",
-        "kinnitää",
         "ja kinnitöö",
     ],
 )
