@@ -182,7 +182,8 @@ def test_russian_http_replies_recap_audio_and_booking_approval(client):
         proposal = turn(client, identifier, f"Столик на одного гостя {tomorrow()} в 18:30", language="ru")
         assert "на одного гостя" in proposal["reply"]
         assert "на полтора часа" in proposal["reply"]
-        assert CONSENT["ru"] in proposal["reply"]
+        assert proposal["reply"].endswith(COPY["ru"]["confirmation_question"])
+        assert "Скажите" not in proposal["reply"]
         assert "в шесть тридцать вечера" in [node.get("alias") for node in requests[-1].iter(SSML + "sub")]
         assert requests[-1].find(".//" + SSML + "prosody").get("rate") == "0.94"
         state = client.app.state.demo_sessions.sessions[identifier].tools

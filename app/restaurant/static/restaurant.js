@@ -521,9 +521,9 @@ function localize() {
     ? copy.connected
     : copy.disconnected;
   $("consent-help").textContent = {
-    et: "Kuula või loe täpne kokkuvõte. Alles seejärel ütle „Jah, kinnitan.” või vajuta eraldi kinnitamisnuppu. „Jah, tühista.” tühistab ainult selles vestluses loodud broneeringu. Ära sisesta päris kontakte.",
-    en: 'Listen to or read the exact recap. Then say "Yes, confirm." or press the separate confirmation button. "Yes, cancel." cancels only a reservation created in this conversation. Do not enter real contacts.',
-    ru: "Прослушайте или прочитайте точный итог. Затем скажите «Да, подтверждаю.» или нажмите отдельную кнопку подтверждения. «Да, отмените.» отменяет только бронирование из этого разговора. Не вводите настоящие контакты.",
+    et: "Kuula või loe broneeringu kokkuvõte. Kui see sobib, vasta jaatavalt või vajuta kinnitamisnuppu. „Jah, tühista.” tühistab ainult selles vestluses loodud broneeringu. Ära sisesta päris kontakte.",
+    en: 'Listen to or read the reservation recap. If it works for you, answer affirmatively or press the confirmation button. "Yes, cancel." cancels only a reservation created in this conversation. Do not enter real contacts.',
+    ru: "Прослушайте или прочитайте итог бронирования. Если всё подходит, ответьте утвердительно или нажмите кнопку подтверждения. «Да, отмените.» отменяет только бронирование из этого разговора. Не вводите настоящие контакты.",
   }[uiLanguage()];
   renderInformation();
   renderVoices();
@@ -962,9 +962,9 @@ function appendBookingReceipt(container, change) {
 }
 function recapPlayedMessage() {
   return {
-    et: "Kokkuvõte esitatud. Kinnitamiseks ütle „Jah, kinnitan.”",
-    en: 'Recap delivered. To confirm, say "Yes, confirm."',
-    ru: "Итог озвучен. Для подтверждения скажите «Да, подтверждаю.»",
+    et: "Kokkuvõte esitatud. Kui broneering sobib, vasta jaatavalt.",
+    en: 'Recap delivered. If the reservation works for you, answer affirmatively.',
+    ru: "Итог озвучен. Если бронирование подходит, ответьте утвердительно.",
   }[state.replyLanguage];
 }
 async function startDemo() {

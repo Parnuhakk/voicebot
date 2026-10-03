@@ -54,8 +54,9 @@ and ninety minutes is spoken as `полтора часа`. The shared browser/na
 renderer uses escaped `sub` aliases for approved numeric dates, explicit clock
 times and opening-hour ranges: `в 18:30` is pronounced `в шесть тридцать вечера`
 and `с 12 до 21` as `с двенадцати дня до девяти вечера`. ISO dates and the demo
-restaurant name also have Russian spoken forms. Displayed text, booking fields
-and exact consent are retained. Invalid dates/times and numeric price, duration,
+restaurant name also have Russian spoken forms. Pronunciation aliases retain
+the displayed canonical text and booking fields. Confirmation keeps the
+current delivered-recap and affirmative-answer guard. Invalid dates/times and numeric price, duration,
 guest-count and calendar-day ranges stay literal. Neutral mode disables aliases.
 See Microsoft's [pronunciation controls](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-pronunciation).
 SSML fixture checks establish request contents, not the subjective quality of

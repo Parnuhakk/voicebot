@@ -60,11 +60,16 @@ approved question or restaurant fact. A standalone decline clears the proposed
 booking details without claiming to cancel a saved booking.
 
 The assistant uses short questions in all three languages and speaks recap
-dates with month names. Estonian confirmation accepts a closed list of explicit
-whole-turn phrases, including `Jah, kinnitan.`, `kinnitan`, `jah palun kinnita`
-and the known recognition spelling `ja kinnitää`. These variants also guide
-language selection when recognition metadata is wrong. This is transcript
-handling, not speech-model training or a measured change in recognition accuracy.
+dates with month names. Restaurant recaps end with `Kas teile sobib?`,
+`Does that work for you?` or `Вам подходит?`. A subsequent natural affirmative
+answer confirms the current proposal immediately through the verified backend:
+`jah`, `sobib`, `kinnitan`, `jah super`, `yes`, `sounds good`, `да` and
+`подходит` are examples. Recognition combines affirmative expressions, emphasis
+and ordinary politeness rather than enumerating complete replies. Known
+recognition spellings such as `ja kinnitää` remain supported. Short agreement
+retains the current recap language despite noisy recognition metadata.
+This is transcript handling, not speech-model training or a measured change in
+recognition accuracy. Unsupported or ambiguous wording still needs clarification.
 Questions, quoted examples, declines and mixed changes are not consent. A
 current owned recap must still have been delivered before a later final turn;
 partial recognition and expired or interrupted recaps cannot confirm a table.
