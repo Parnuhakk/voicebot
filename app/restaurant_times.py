@@ -91,6 +91,9 @@ def _pattern(words: dict[str, int]) -> str:
 
 HOUR = _pattern(HOURS)
 MINUTE = _pattern(NUMBERS)
+GUEST_NOUN = r"(?:people|persons|guests|adults?|children|kids?|inimes\w*|külalis\w*|täiskasvan\w*|last|lapse\w*|человек\w*|гост\w*|взросл\w*|дет\w*|ребен\w*)"
+MINUTE_NOT_GUEST = r"(?!\s+" + GUEST_NOUN + r"\b)"
+APPROXIMATE_COUNT = re.compile(r"\b(?:around|about|approximately|between|umbes|около|примерно|между)\s+" + HOUR + r"(?:\s+(?:and|to|ja|kuni|и|до)\s+" + HOUR + r")?\s+" + GUEST_NOUN + r"\b")
 PERIODS = {
     "am": re.compile(r"(?<![a-z])a\.?\s*m\.?(?![a-z])|\b(?:morning|hommik\w*|утр\w*)\b"),
     "pm": re.compile(r"(?<![a-z])p\.?\s*m\.?(?![a-z])|\b(?:afternoon|evening|õhtu\w*|pärastlõuna\w*|päeval|вечер\w*|дня|днем)\b"),
@@ -110,7 +113,7 @@ FRACTIONS = (
     (re.compile(r"\bчетверть\s+(?P<h>" + HOUR + r")\b"), "ru_quarter"),
     (re.compile(r"\bбез\s+(?P<m>четверти|" + MINUTE + r")(?:\s+минут\w*)?\s+(?P<h>" + HOUR + r")\b"), "ru_to"),
 )
-PREFIX = re.compile(r"\b(?:at|kell|kella|в|к|около)\s+(?P<h>" + HOUR + r")(?:\s+(?:час(?:а|ов)?|hours?))?(?:\s+(?:(?:ja|and|и)\s+)?(?P<m>" + MINUTE + r"))?(?:\s+(?:минут\w*|minutes?|minut\w*))?(?![\w:.])")
+PREFIX = re.compile(r"\b(?:at|kell|kella|в|к|около)\s+(?P<h>" + HOUR + r")(?:\s+(?:час(?:а|ов)?|hours?))?(?:\s+(?:(?:ja|and|и)\s+)?(?P<m>" + MINUTE + r")\b" + MINUTE_NOT_GUEST + r")?(?:\s+(?:минут\w*|minutes?|minut\w*))?(?![\w:.])")
 SUFFIX = re.compile(r"(?<!\w)(?P<h>" + HOUR + r")(?:\s+(?P<m>" + MINUTE + r"))?\s*(?:o'clock|час(?:а|ов)?|[ap]\.?\s*m\.?)(?!\w)")
 BARE = re.compile(r"(?P<h>" + HOUR + r")(?:\s+(?P<m>" + MINUTE + r"))?")
 ALTERNATIVE = re.compile(r"\b(?:or|või|или|kuni|до|to)\s+" + HOUR + r"\b")
@@ -160,6 +163,7 @@ def parse_spoken_time(
     text = re.sub(r"(?<=[a-z])-(?=[a-z])", " ", text)
     # Dates must never become clock times. Spaces preserve overlap positions.
     text = re.sub(r"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[./]\d{1,2}[./]\d{2,4})\b", lambda match: " " * len(match[0]), text)
+    text = APPROXIMATE_COUNT.sub(lambda match: " " * len(match[0]), text)
     period = _period(text)
     meridiem = bool(MERIDIEM.search(text))
     found: list[RequestedTime] = []

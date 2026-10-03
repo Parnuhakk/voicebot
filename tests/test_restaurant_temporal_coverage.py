@@ -176,6 +176,21 @@ def test_guest_count_answers_keep_date_and_time(language, quantity):
     assert result == {"date": "2026-10-06", "start_time": "18:00", "party_size": 4}
 
 
+@pytest.mark.parametrize("text", [
+    "Soovin lauda neljas oktoober kell 14 nelja külalisega",
+    "A table on October fourth at fourteen four guests",
+    "Столик четвертого октября в четырнадцать четыре гостя",
+])
+def test_adjacent_guest_count_is_never_a_clock_minute(text):
+    assert parse_restaurant_request(text, now=NOW) == {"date": "2026-10-04", "start_time": "14:00", "party_size": 4}
+
+
+@pytest.mark.parametrize("text", ["around four guests", "between four and five guests", "umbes nelja inimesega", "около четырех гостей"])
+def test_approximate_guest_quantity_keeps_time_but_requires_exact_count(text):
+    result = parse_restaurant_request(text, {"date": "2026-10-06", "start_time": "18:00", "party_size": 4}, now=NOW)
+    assert result == {"date": "2026-10-06", "start_time": "18:00", "party_invalid": True}
+
+
 @pytest.mark.parametrize("quantity,expected", [
     ("eleven guests", 11), ("twenty people", 20), ("twenty-one people", 21),
     ("üksteist inimest", 11), ("kakskümmend inimest", 20), ("kakskümmend üks inimest", 21),

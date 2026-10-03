@@ -37,7 +37,7 @@ COPY: dict[str, dict[str, str]] = {
         "date_incomplete": "Palun täpsustage ka päeva ja kuud.",
         "time": "Mis kell soovite tulla?",
         "ambiguous_time": "Kas mõtlete hommikul või õhtul? Palun täpsustage kellaaega.",
-        "invalid_time": "Sellist kellaaega ei ole. Mis kell soovite tulla?",
+        "invalid_time": "Mis täpne kellaaeg sobib? Näiteks kell 18.30.",
         "party": "Mitmele inimesele lauda soovite? Palun arvestage ka lapsed.",
         "unavailable": "Sel ajal sobivat lauda ei ole. Kas sobiks mõni teine kellaaeg või päev?",
         "unknown": "Ma ei saanud kinnitust, kas broneering salvestus. Palun kontrollige veebilehel broneeringuid enne uuesti proovimist.",
@@ -408,6 +408,9 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
             inquiry["party_invalid"] = True
     totals = {int(match[1]) if match[1].isdigit() else NUMBER_WORDS[match[1]] for match in re.finditer(r"\b" + number + r"\s+" + guest_noun + r"\b", text)}
     if len(totals) > 1:
+        inquiry.pop("party_size", None)
+        inquiry["party_invalid"] = True
+    if re.search(r"\b(?:around|about|approximately|between|umbes|около|примерно|между)\s+" + number + r"(?:\s+(?:and|to|ja|kuni|и|до)\s+" + number + r")?\s+" + guest_noun + r"\b", text):
         inquiry.pop("party_size", None)
         inquiry["party_invalid"] = True
     if party and re.search(r"\b(?:not|mitte|ei|не)(?:\s+\w+){0,2}\s*$", text[:party.start()]):

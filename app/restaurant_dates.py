@@ -12,10 +12,12 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
 from .restaurant_date_vocabulary import (
+    ENGLISH_CARDINALS,
     ENGLISH_DAY_FORMS,
     ENGLISH_MONTH_FORMS,
     RUSSIAN_DAY_FORMS,
     RUSSIAN_MONTH_FORMS,
+    RUSSIAN_COUNTS,
 )
 
 
@@ -248,7 +250,35 @@ WEEK_QUALIFIERS = tuple(
     )
 )
 WEEK_GAP = re.compile(r"[\s,]*(?:(?:on|the|in|at|в|на|этой)\s+)*$")
-OFFSET_COUNTS = {**DAY_FORMS, "a": 1, "an": 1, "одну": 1}
+OFFSET_COUNTS = {"a": 1, "an": 1, "одну": 1, **RUSSIAN_COUNTS}
+OFFSET_COUNTS.update({word: number for number, word in enumerate(ENGLISH_CARDINALS, 1)})
+for number, word in enumerate((
+    "один", "два", "три", "четыре", "пять", "шесть", "семь", "восемь", "девять", "десять",
+    "одиннадцать", "двенадцать", "тринадцать", "четырнадцать", "пятнадцать", "шестнадцать",
+    "семнадцать", "восемнадцать", "девятнадцать",
+), 1):
+    OFFSET_COUNTS[word] = number
+for number, bases in enumerate(CARDINAL_BASES, 1):
+    OFFSET_COUNTS.update(dict.fromkeys(bases, number))
+for number, word in enumerate((
+    "üksteist", "kaksteist", "kolmteist", "neliteist", "viisteist", "kuusteist", "seitseteist", "kaheksateist", "üheksateist",
+), 11):
+    OFFSET_COUNTS[word] = number
+# Relative quantities need cardinal words, not the thousands of calendar-day
+# declensions. Keeping this vocabulary separate also bounds regex startup cost.
+for tens, prefixes, units in (
+    (20, ("twenty",), tuple((word,) for word in ENGLISH_CARDINALS[:9])),
+    (30, ("thirty",), tuple((word,) for word in ENGLISH_CARDINALS[:9])),
+    (20, ("kakskümmend", "kahekümne"), CARDINAL_BASES[:9]),
+    (30, ("kolmkümmend", "kolmekümne"), CARDINAL_BASES[:9]),
+    (20, ("двадцать", "двадцати"), tuple((word,) for word in ("один", "два", "три", "четыре", "пять", "шесть", "семь", "восемь", "девять"))),
+    (30, ("тридцать", "тридцати"), tuple((word,) for word in ("один", "два", "три", "четыре", "пять", "шесть", "семь", "восемь", "девять"))),
+):
+    for prefix in prefixes:
+        OFFSET_COUNTS[prefix] = tens
+        for digit, variants in enumerate(units, 1):
+            for word in variants:
+                OFFSET_COUNTS[prefix + " " + word] = tens + digit
 OFFSET_NUMBER = r"(?:-?\d{1,4}|" + _alternatives(OFFSET_COUNTS) + ")"
 OFFSETS = (
     re.compile(r"(?<![\w-])(?P<n>" + OFFSET_NUMBER + r")\s+(?P<unit>päeva|päev|nädala|nädalat|nädal)\s+pärast\b"),
