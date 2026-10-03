@@ -65,9 +65,9 @@ async page => {
   await page.locator('#connect').click();
   await page.waitForFunction(()=>state.connected && !state.readBusy);
   await page.waitForFunction(()=>state.voiceCatalog);
-  assert.equal(await page.locator('#demo-voice option:not(:disabled)').count(), 3);
+  assert.equal(await page.locator('#demo-voice option:not(:disabled)').count(), 5);
   await chooseLanguage('et');
-  for (const profile of ['azure-male', 'azure-calm']) {
+  for (const profile of ['azure-male', 'azure-calm', 'azure-male-calm', 'azure-male-warm']) {
     await page.locator('#demo-voice').selectOption(profile);
     await page.locator('#demo-voice-preview').click();
     await page.waitForFunction(()=>!state.previewBusy && !document.getElementById('demo-audio').hidden);
@@ -75,8 +75,22 @@ async page => {
     assert.equal(requests.at(-1).body.voice, profile);
     assert.equal(await page.evaluate(()=>state.sessionId), null, 'audition created a conversation');
     await page.waitForFunction(()=>document.getElementById('demo-audio').duration > 0);
-    assert((await page.locator('#demo-voice-result').textContent()).includes(profile==='azure-male' ? 'Kert' : 'Anu'));
+    assert((await page.locator('#demo-voice-result').textContent()).includes(profile==='azure-calm' ? 'Anu' : 'Kert'));
   }
+  assert(await page.locator('#demo-voice option[value="azure-brian"]').isDisabled());
+  assert(await page.locator('#demo-voice option[value="azure-ryan"]').isDisabled());
+  await chooseLanguage('en');
+  assert.equal(await page.locator('#demo-voice option:not(:disabled)').count(), 7);
+  for (const [profile, name] of [['azure-male-calm','Davis'], ['azure-male-warm','Andrew'], ['azure-brian','Brian'], ['azure-ryan','Ryan']]) {
+    await page.locator('#demo-voice').selectOption(profile);
+    await page.locator('#demo-voice-preview').click();
+    await page.waitForFunction(()=>!state.previewBusy && !document.getElementById('demo-audio').hidden);
+    assert.equal(requests.at(-1).body.language, 'en');
+    assert((await page.locator('#demo-voice-result').textContent()).includes(name));
+  }
+  await chooseLanguage('et');
+  assert.equal(await page.locator('#demo-voice').inputValue(), 'azure');
+  await page.locator('#demo-voice').selectOption('azure-male-calm');
   await page.screenshot({path:'output/playwright/natural-voices-desktop.png',fullPage:true});
   await page.setViewportSize({width:390,height:844});
   assert(await page.locator('#demo-voice-preview').isVisible());
