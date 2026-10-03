@@ -57,7 +57,7 @@ COPY: dict[str, dict[str, str]] = {
         "closed": "suletud",
         "alternatives": "Sel ajal lauda ei ole. Samal päeval saan pakkuda kell {times}. Milline aeg sobib?",
         "confirmation_question": CONFIRMATION_QUESTIONS["et"],
-        "recap": "Saan pakkuda lauda {date} kell {time} Eesti aja järgi, {party} inimesele restoranis {name}. Broneering kestab {duration} minutit ja on nimele {guest}. {question}"
+        "recap": "Saan pakkuda lauda {date} kell {time}, {party} inimesele restoranis {name}. Broneering kestab {duration} minutit ja on nimele {guest}. {question}"
     },
     "en": {
         "greeting": "Hello! This is an AI restaurant demo. No real table is booked here. How can I help?",
@@ -113,7 +113,7 @@ COPY: dict[str, dict[str, str]] = {
         "closed": "закрыто",
         "alternatives": "На запрошенное время столика нет. Возможное время на ту же дату: {times}. Что вам подходит?",
         "confirmation_question": CONFIRMATION_QUESTIONS["ru"],
-        "recap": "Тестовая бронь: {name}, {date} в {time}, по времени Таллина, на {party} гостей. Столик на {duration} минут, на имя {guest}. {question}"
+        "recap": "Тестовая бронь: {name}, {date} в {time}, на {party} гостей. Столик на {duration} минут, на имя {guest}. {question}"
     }
 }
 
