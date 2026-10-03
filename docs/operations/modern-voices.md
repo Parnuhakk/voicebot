@@ -18,8 +18,8 @@ Unconfigured profiles are disabled in the selector rather than silently enabled.
 | Azure (existing) | Estonian, English, Russian | Incremental REST MP3; retains current voices, pronunciation and 48 kHz / 96 kbps output. |
 | Male voice | Estonian Kert, English Guy, Russian Dmitry | Uses the existing Azure credentials and MP3 streaming. Voice selection is request-local. |
 | Calm female voice | Estonian Anu, English Jenny, Russian Svetlana | Existing Azure credentials; a slower delivery variant of these voices, not another Estonian speaker. |
-| Calm male voice | Estonian Kert, English Davis, Russian Dmitry | Slower delivery, 240 ms sentence pauses; Davis uses his documented friendly style. |
-| Lively male voice | Estonian Kert, English Andrew, Russian Dmitry | Native intonation, modestly quicker normal replies and 160 ms sentence pauses; recaps retain their slower rate. |
+| Calm male voice | Estonian Kert, English Davis, Russian Dmitry | Slower delivery, 240 ms sentence pauses in Estonian/English; Russian keeps native timing. Davis uses his documented friendly style. |
+| Lively male voice | Estonian Kert, English Andrew, Russian Dmitry | Native intonation, modestly quicker normal replies and 160 ms sentence pauses in Estonian/English; Russian keeps native timing and recaps retain their slower rate. |
 | Brian | English (United States) | A distinct male speaker using the existing Azure credentials. |
 | Ryan | English (United Kingdom) | A distinct male speaker with a British accent and documented chat style. |
 | ElevenLabs v4 Turbo | Estonian, English, Russian | Documented dialogue WebSocket MP3; requires a configured licensed voice and provider acceptance validation. |
