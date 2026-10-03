@@ -853,6 +853,10 @@ class RestaurantCallTools(CallTools):
 
     def information_reply(self, topic):
         copybook = COPY[self.language]
+        if topic in {"family", "family_details"}:
+            from .restaurant_family import family_reply
+
+            return family_reply(self.restaurant, self.language, details=topic == "family_details")
         if topic in ("staff", "domain", "price"):
             return copybook[topic]
         if topic == "pets" and self.restaurant.get("pet_policy"):

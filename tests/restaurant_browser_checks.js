@@ -7,6 +7,8 @@ async page => {
   });
   await page.setViewportSize({width:1440,height:1000});
   await page.goto('http://127.0.0.1:8766/', {waitUntil:'networkidle'});
+  const familyInformation = await (await page.request.get('http://127.0.0.1:8766/api/public/restaurant')).json();
+  assert.deepEqual(familyInformation.restaurant.family_facilities, {drawing:true,toys:true,play_corner:true,children_menu:true});
   assert.equal(await page.locator('a[href]').evaluateAll(links=>links.some(link=>new URL(link.href).hostname==='meretuule.arleserver.cfd')),false,'Robot navigation still opens the removed demo site');
   const chooseLanguage = async code => page.locator('.language-option').filter({
     has: page.locator('input[value="' + code + '"]'),
@@ -250,6 +252,18 @@ async page => {
       await page.waitForFunction(()=>!state.turnBusy);
       assert.equal(await page.locator('#demo-messages .message').last().locator('span').textContent(), petQuestions[2]);
       assert.equal(await page.evaluate(()=>state.recap), null);
+    }
+    const familyQuestions = {
+      et: ['Kas lastele on joonistamisvõimalus?', 'Kas lastemenüü on olemas?'],
+      en: ['Can children do some drawing?', "Do you have a children's menu?"],
+      ru: ['Дети могут порисовать?', 'Есть детское меню?'],
+    }[language.code];
+    for (const question of familyQuestions) {
+      await page.locator('#demo-text').fill(question);
+      await page.locator('#demo-send').click();
+      await page.waitForFunction(()=>!state.turnBusy);
+      assert.equal(await page.locator('#demo-messages .message').last().locator('span').textContent(), familyInformation.family_facilities_summary[language.code]);
+      assert.equal(await page.evaluate(()=>state.recap), null, 'family answer created a booking proposal');
     }
     const timeQuestions = {
       en: ["I'd like a table tomorrow at 6 o clock", 'in the evening', 'Do you mean AM or PM?', 'How many of you are coming, including children?'],
@@ -599,5 +613,5 @@ async page => {
     assert.equal(retired.headers().location,undefined,'retired hostname redirected');
   }
   assert.deepEqual(errors,[]);
-  return {languages:3,groundedAnswers:3,bookingSideQuestions:12,calendarSpellingRepair:true,backgroundReadsNonblocking:true,failedBackgroundReadsRecover:true,historyRefreshOrderGuard:true,multilingualStepwiseDateTimeAndParty:true,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,englishSpokenDates:true,englishClockClarification:true,russianMixedDateCases:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,retiredHostDenied:true,pageErrors:errors.length};
+  return {languages:3,familyFacilities:true,groundedAnswers:3,bookingSideQuestions:12,calendarSpellingRepair:true,backgroundReadsNonblocking:true,failedBackgroundReadsRecover:true,historyRefreshOrderGuard:true,multilingualStepwiseDateTimeAndParty:true,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,englishSpokenDates:true,englishClockClarification:true,russianMixedDateCases:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,retiredHostDenied:true,pageErrors:errors.length};
 }
