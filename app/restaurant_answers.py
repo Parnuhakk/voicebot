@@ -29,7 +29,7 @@ INFORMATION_TOPICS = (
 
 PATTERNS = {
     "allergens": r"allerg|allergeen|аллерг|глютен|glut(?:ee|e)n|peanut|pähkl|орех|laktoos|lactose|лактоз|sisald|contain|koostis|ingredients|содерж|состав",
-    "price": r"\b(?:price|cost|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maksab|цен\w*|стоим\w*)\b",
+    "price": r"\b(?:price|cost|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maksab|цен\w*|стоим\w*|стоит|стоят)\b",
     "menu": r"menüü|menu|меню|vegan|веган|vegetarian|taimetoit|вегетар|\b(?:dishes|serve|roogi|блюд\w*)\b|mis.*süüa|mida.*(?:süüa|pakute)",
     "kitchen": r"kitchen|köök|köögi|кухн|(?:kell|kellaajani|millal).*süüa|when.*(?:food|eat)|(?:до скольки|когда).*еда",
     "hours": r"\b(?:hours|open\w*|close\w*|shut|lahtiole\w*|avatud|avate|lahti|kinni|sulge\w*|tööa\w*|откры\w*|закры\w*|работа\w*)\b",
@@ -215,7 +215,12 @@ def format_schedule(
             start, end = map(_clock, interval)
             value = {"et": f"kell {start}–{end}", "en": f"{start}–{end}", "ru": f"с {start} до {end}"}[language]
         parts.append(label + " " + value)
-    answer = natural_list(parts, language)
+    # Russian weekly schedules sound clearer as short sentences, with the
+    # neural voice's own pauses rather than one long chain of conjunctions.
+    answer = (
+        ". ".join(part[:1].upper() + part[1:] for part in parts)
+        if language == "ru" else natural_list(parts, language)
+    )
     return answer[:1].upper() + answer[1:]
 
 
@@ -249,17 +254,17 @@ GUIDANCE = {
         "extras": "I don't have that menu information. Please ask the restaurant team.",
     },
     "ru": {
-        "duration": "Столик бронируется на {duration} минут.",
-        "children": "Включите детей в общее число гостей.",
-        "groups": "Можно забронировать столик на {maximum} гостей. Большую группу согласуйте с персоналом.",
-        "cancellation_help": "Чтобы отменить бронь, сделанную в этом разговоре, скажите «Да, отмените».",
-        "changes": "Для изменения брони свяжитесь с сотрудником ресторана.",
-        "late": "Если опаздываете, уточните у сотрудника, смогут ли придержать столик.",
-        "parking": "Уточните возможность парковки у сотрудника ресторана.",
-        "pets": "У меня нет правил для питомцев. Уточните у сотрудника, можно ли прийти с питомцем.",
-        "highchair": "Уточните наличие детского стула у сотрудника ресторана.",
-        "accessibility": "Уточните доступность у сотрудника ресторана.",
-        "terrace": "Место на террасе согласуйте с сотрудником ресторана.",
-        "extras": "У меня нет этой информации о меню. Уточните у сотрудника ресторана.",
+        "duration": "Столик будет за вами на {duration}.",
+        "children": "Да, детей тоже нужно посчитать. Сколько вас будет всего?",
+        "groups": "Здесь можно забронировать столик максимум на {maximum} человек. Если вас больше, договоритесь с рестораном напрямую.",
+        "cancellation_help": "Чтобы отменить бронь из этого разговора, скажите «Да, отмените».",
+        "changes": "Чтобы перенести бронь, обратитесь к сотруднику ресторана.",
+        "late": "Если опаздываете, позвоните в ресторан и спросите, смогут ли придержать столик.",
+        "parking": "Про парковку лучше спросить у сотрудника ресторана.",
+        "pets": "Пока не знаю, можно ли с питомцем. Лучше спросить у сотрудника ресторана.",
+        "highchair": "Есть ли детский стул, подскажет сотрудник ресторана.",
+        "accessibility": "По доступности лучше уточнить у сотрудника ресторана.",
+        "terrace": "Чтобы сесть на террасе, договоритесь с сотрудником ресторана.",
+        "extras": "Про это у меня пока нет информации. Лучше спросить у сотрудника ресторана.",
     },
 }

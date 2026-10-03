@@ -36,15 +36,30 @@ It never creates a session, calls a language model or performs a booking. Only
 concurrently. Logout aborts the browser request and stops audio. Language or
 voice changes stop the earlier sample; preview is disabled during a conversation.
 
-Natural Azure delivery uses native intonation, a modest speaking rate and an
-absolute 180 ms sentence pause instead of adding artificial silence to the
-provider's pause. `VOICEBOT_SENTENCE_PAUSE_MS` accepts 100–500 ms. The calm
-profile lowers normal rate by 0.04 and recap rate by 0.03, bounded at 0.85, and
-uses 240 ms sentence pauses. Recaps keep the provider's natural pauses and
+Natural Azure delivery uses native intonation and a modest speaking rate.
+Estonian and English use an absolute 180 ms sentence pause instead of adding
+artificial silence to the provider's pause. `VOICEBOT_SENTENCE_PAUSE_MS` accepts
+100–500 ms for those languages. Russian keeps the neural voice's own sentence
+timing, including in the calm profile. The calm profile lowers normal rate by
+0.04 and recap rate by 0.03, bounded at 0.85, and uses 240 ms sentence pauses
+for Estonian and English. Recaps keep the provider's natural pauses and
 retain canonical wording, pronunciation aliases and explicit consent. Jenny and
 Guy use their documented friendly style; Anu, Kert and the Russian voices do not
 claim unsupported emotion styles. `VOICEBOT_SPEAKING_STYLE=neutral` disables
 all style and pause adjustments, including the calm delivery adjustments.
+
+Russian restaurant replies use short, polite spoken phrases. Weekly hours are
+grouped into short sentences; reservation counts agree with Russian grammar
+and ninety minutes is spoken as `полтора часа`. The shared browser/native Azure
+renderer uses escaped `sub` aliases for approved numeric dates, explicit clock
+times and opening-hour ranges: `в 18:30` is pronounced `в шесть тридцать вечера`
+and `с 12 до 21` as `с двенадцати дня до девяти вечера`. ISO dates and the demo
+restaurant name also have Russian spoken forms. Displayed text, booking fields
+and exact consent are retained. Invalid dates/times and numeric price, duration,
+guest-count and calendar-day ranges stay literal. Neutral mode disables aliases.
+See Microsoft's [pronunciation controls](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-pronunciation).
+SSML fixture checks establish request contents, not the subjective quality of
+live synthesized audio; listening still requires configured provider access.
 
 The two extra Azure profiles need no new credentials or environment changes.
 They become available with the real Azure client, and cannot be selected when

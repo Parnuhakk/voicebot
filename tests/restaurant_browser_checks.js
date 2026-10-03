@@ -139,7 +139,7 @@ async page => {
     const timeQuestions = {
       en: ["I'd like a table tomorrow at 6 o clock", 'in the evening', 'Do you mean AM or PM?', 'How many of you are coming, including children?'],
       et: ['Soovin homme lauda kell kuus', 'õhtul', 'Kas mõtlete hommikul või õhtul?', 'Mitmele inimesele lauda soovite?'],
-      ru: ['Хочу столик завтра в шесть часов', 'вечером', 'Утром или вечером?', 'Сколько вас будет, вместе с детьми?'],
+      ru: ['Хочу столик завтра в шесть часов', 'вечером', 'Вы имеете в виду утром или вечером?', 'Сколько вас будет, вместе с детьми?'],
     }[language.code];
     for (let index = 0; index < 2; index++) {
       await page.locator('#demo-text').fill(timeQuestions[index]);
@@ -169,7 +169,7 @@ async page => {
     const temporalAnswers = {
       et: ['Soovin lauda', 'kahe päeva pärast', 'kell kuueks õhtul', 'meid tuleb neli', 'Mis päevaks', 'Mis kell', 'Mitmele inimesele'],
       en: ["I'd like to book a table", 'in two days', 'at six and a half PM', 'for a party of four', 'What date', 'What time', 'How many'],
-      ru: ['Хочу забронировать столик', 'через два дня', 'в половине седьмого вечера', 'нас будет четверо', 'На какую дату', 'Во сколько', 'Сколько вас'],
+      ru: ['Хочу забронировать столик', 'через два дня', 'в половине седьмого вечера', 'нас будет четверо', 'На какой день', 'Во сколько', 'Сколько вас'],
     }[language.code];
     for (let index = 0; index < 4; index++) {
       await page.locator('#demo-text').fill(temporalAnswers[index]);
@@ -182,7 +182,12 @@ async page => {
       }
     }
     const temporalRecap = await page.evaluate(()=>state.recap && state.recap.reply);
-    assert(temporalRecap && /4\s+(?:guests|külalist|inimesele|гостей)/.test(temporalRecap));
+    assert(temporalRecap && (language.code === 'ru' ? temporalRecap.includes('на четырёх гостей') : /4\s+(?:guests|külalist|inimesele)/.test(temporalRecap)));
+    if (language.code === 'ru') {
+      assert(temporalRecap.includes('на полтора часа'));
+      assert(temporalRecap.includes('Да, подтверждаю.'));
+      assert(!temporalRecap.includes('Возможное время на ту же дату'));
+    }
     assert(temporalRecap.includes({et:'18:00',en:'6:30 PM',ru:'18:30'}[language.code]));
     assert(await page.locator('#demo-recap-read').isVisible(), 'new booking recap is missing');
     await page.locator('#demo-end').click();
@@ -191,7 +196,7 @@ async page => {
     await page.locator('#reservation-party').fill('4');
     await page.locator('#reservation-prepare').click();
     await page.waitForFunction(()=>reservation.holdId && !reservation.busy);
-    assert((await page.locator('#reservation-recap-text').textContent()).includes('4'));
+    assert((await page.locator('#reservation-recap-text').textContent()).includes(language.code === 'ru' ? 'на четырёх гостей' : '4'));
     assert(await page.locator('#reservation-date').isDisabled(),'held recap allowed editable dates');
     assert(await page.getByRole('radio', {name:'Eesti', exact:true}).isDisabled(),'owned booking language changed');
     assert(await page.locator('#reservation-confirm').isDisabled(),'recap automatically granted consent');

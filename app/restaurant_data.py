@@ -163,7 +163,7 @@ def restaurant_demo_profile(data):
             "question_ru": "Это настоящий ресторан?",
             "answer_et": "See on fiktiivne restoranidemo. Broneering ei anna õigust päris restoranikülastusele.",
             "answer_en": "This is a fictional restaurant demo. A reservation does not entitle you to a real restaurant visit.",
-            "answer_ru": "Это демонстрация вымышленного ресторана. Бронирование не даёт права на настоящее посещение.",
+            "answer_ru": "Это деморесторан. Здесь можно попробовать помощника, но бронь только тестовая — прийти по ней в настоящий ресторан нельзя.",
         },
         {
             "question_et": "Kus restoran asub?",
@@ -171,7 +171,7 @@ def restaurant_demo_profile(data):
             "question_ru": "Где находится ресторан?",
             "answer_et": "Restoranidemol ei ole päris aadressi ega külastuskohta.",
             "answer_en": "The restaurant demo has no real address or visitor location.",
-            "answer_ru": "У демонстрационного ресторана нет настоящего адреса и места для посещения.",
+            "answer_ru": "Это деморесторан, поэтому настоящего адреса у него нет.",
         },
     ]
     return demo

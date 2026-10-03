@@ -17,7 +17,7 @@ pytest_plugins = ["tests.test_restaurant_conversation", "tests.test_restaurant_h
     [
         ("et", "Esmaspäevast neljapäevani kell 12–21, reedel ja laupäeval kell 12–23 ning pühapäeval kell 12–20"),
         ("en", "Monday through Thursday 12–21, Friday and Saturday 12–23 and Sunday 12–20"),
-        ("ru", "С понедельника по четверг с 12 до 21, в пятницу и субботу с 12 до 23 и в воскресенье с 12 до 20"),
+        ("ru", "С понедельника по четверг с 12 до 21. В пятницу и субботу с 12 до 23. В воскресенье с 12 до 20"),
     ],
 )
 def test_equal_adjacent_hours_are_grouped(language, expected):
