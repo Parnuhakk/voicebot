@@ -226,7 +226,12 @@ async page => {
     await page.locator('[data-example="recommendation"]').click();
     await page.waitForFunction(()=>!state.turnBusy);
     assert.equal(await page.locator('#demo-messages .message').nth(-2).locator('span').textContent(), reasoningExample[0]);
-    assert.equal(await page.locator('#demo-messages .message').last().locator('span').textContent(), reasoningExample[1]);
+    const recommendation = await page.locator('#demo-messages .message').last().locator('span').textContent();
+    assert(recommendation.startsWith(reasoningExample[1]));
+    assert(recommendation.endsWith({
+      et:'Mitmele inimesele lauda soovite? Palun arvestage ka lapsed.',
+      en:timeQuestions[3],ru:timeQuestions[3],
+    }[language.code]));
     assert.equal(await page.evaluate(()=>state.recap), null, 'reasoning response created a booking proposal');
     assert(await page.getByRole('radio', {name:'Eesti', exact:true}).isDisabled());
     await page.evaluate(code => {
@@ -255,6 +260,16 @@ async page => {
         const answer = await page.locator('#demo-messages .message').last().locator('span').textContent();
         assert(answer.includes(temporalAnswers[index + 4]), `incorrect ${language.code} temporal follow-up`);
         assert.equal(await page.evaluate(()=>state.recap), null);
+        const sideQuestions = [hoursQuestions[0], language.menu, {
+          et:'Kus saab parkida?',en:'Where can I park?',ru:'Где парковка?',
+        }[language.code]];
+        await page.locator('#demo-text').fill(sideQuestions[index]);
+        await page.locator('#demo-send').click();
+        await page.waitForFunction(()=>!state.turnBusy);
+        const resumed = await page.locator('#demo-messages .message').last().locator('span').textContent();
+        assert(resumed.endsWith(answer), `side question lost ${language.code} booking prompt`);
+        assert(resumed.length > answer.length, 'side question was ignored');
+        assert.equal(await page.evaluate(()=>state.recap), null);
       }
     }
     const temporalRecap = await page.evaluate(()=>state.recap && state.recap.reply);
@@ -265,6 +280,14 @@ async page => {
       assert(!temporalRecap.includes('Возможное время на ту же дату'));
     }
     assert(temporalRecap.includes({et:'18:00',en:'6:30 PM',ru:'18:30'}[language.code]));
+    const oldReceipt = await page.evaluate(()=>state.recap.id);
+    await page.locator('#demo-text').fill(language.menu);
+    await page.locator('#demo-send').click();
+    await page.waitForFunction(()=>!state.turnBusy);
+    const resumedRecap = await page.evaluate(()=>state.recap && state.recap.reply);
+    assert(resumedRecap && resumedRecap.endsWith(temporalRecap));
+    assert(resumedRecap.startsWith({et:'Menüüs',en:'The menu',ru:'В меню'}[language.code]));
+    assert.notEqual(await page.evaluate(()=>state.recap.id),oldReceipt,'old recap receipt survived question');
     assert(await page.locator('#demo-recap-read').isVisible(), 'new booking recap is missing');
     assert(temporalRecap.endsWith({et:'Kas teile sobib?',en:'Does that work for you?',ru:'Вам подходит?'}[language.code]));
     await page.locator('#demo-recap-read').click();
@@ -520,5 +543,5 @@ async page => {
     assert.equal(retired.headers().location,undefined,'retired hostname redirected');
   }
   assert.deepEqual(errors,[]);
-  return {languages:3,familyFacilities:true,groundedAnswers:3,calendarSpellingRepair:true,multilingualStepwiseDateTimeAndParty:true,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,englishSpokenDates:true,englishClockClarification:true,russianMixedDateCases:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,retiredHostDenied:true,pageErrors:errors.length};
+  return {languages:3,familyFacilities:true,groundedAnswers:3,bookingSideQuestions:12,calendarSpellingRepair:true,multilingualStepwiseDateTimeAndParty:true,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,englishSpokenDates:true,englishClockClarification:true,russianMixedDateCases:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,retiredHostDenied:true,pageErrors:errors.length};
 }

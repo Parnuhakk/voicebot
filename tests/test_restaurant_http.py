@@ -211,7 +211,9 @@ def test_auto_english_booking_with_side_question_uses_grounded_english(client, c
 
     assert speak("I'd like to reserve a table")["reply"] == COPY["en"]["date"]
     assert speak("Tomorrow")["reply"] == COPY["en"]["time"]
-    assert speak("How much does the salmon cost?")["reply"] == COPY["en"]["price"]
+    side_answer = speak("How much does the salmon cost?")["reply"]
+    assert side_answer.startswith(COPY["en"]["price"])
+    assert side_answer.endswith(COPY["en"]["time"])
     assert speak("Two pm")["reply"] == COPY["en"]["party"]
     proposal = speak("There will be four of us")
     assert "4 guests" in proposal["reply"] and "2:00 PM" in proposal["reply"]
