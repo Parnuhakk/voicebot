@@ -120,21 +120,24 @@ def test_dates_party_counts_and_unprompted_bare_numbers_are_not_clocks(text):
 @pytest.mark.parametrize("text", ["six", "6", "six thirty", "шесть", "kuus", "kuus kolmkümmend"])
 def test_bare_numbers_only_select_time_after_a_time_question(text):
     assert parse_spoken_time(text) is None
-    assert parse_spoken_time(text, allow_bare=True).candidates is not None
+    parsed = parse_spoken_time(text, allow_bare=True)
+    assert parsed is not None and parsed.candidates is not None
 
 
-@pytest.mark.parametrize("language,utterance,period", [
-    ("en", "I'd like a table for four tomorrow at 6 o clock", "in the evening"),
-    ("et", "Soovin homme lauda neljale kell kuus", "õhtul"),
-    ("ru", "Столик на четверых завтра в шесть часов", "вечером"),
+@pytest.mark.parametrize("language,utterance,period,expected_question", [
+    ("en", "I'd like a table for four tomorrow at 6 o clock", "in the evening", "Do you mean AM or PM?"),
+    ("et", "Soovin homme lauda neljale kell kuus", "õhtul", "Kas mõtlete hommikul või õhtul?"),
+    ("ru", "Столик на четверых завтра в шесть часов", "вечером", "Вы имеете в виду утром или вечером?"),
 ])
-def test_time_clarification_retains_date_and_party_and_blocks_actions(make_state, language, utterance, period):
+def test_time_clarification_retains_date_and_party_and_blocks_actions(
+    make_state, language, utterance, period, expected_question
+):
     state = make_state(language)
     state.observe_user_text(utterance, language=language)
     before = state.booking_inquiry
     assert before["party_size"] == 4 and before["time_candidates"] == ("06:00", "18:00")
     assert "start_time" not in before
-    assert trusted_booking_response(state) == {"content": COPY[language]["ambiguous_time"]}
+    assert trusted_booking_response(state) == {"content": expected_question}
     result = asyncio.run(state.dispatch("plan_restaurant_reservation", {"date": before["date"], "start_time": "18:00", "party_size": 4}))
     assert result["error"] == "clarification_required" and state.pending is None
     state.observe_user_text(period, language=language)
@@ -175,15 +178,17 @@ def test_small_clock_minutes_are_not_an_ambiguous_english_date(make_state, utter
     assert state.booking_inquiry["start_time"] == "19:05"
 
 
-@pytest.mark.parametrize("language,initial_request,period", [
-    ("en", "A table for four tomorrow at 6 o clock", "pm"),
-    ("et", "Soovin homme lauda neljale pool seitse", "õhtul"),
-    ("ru", "Столик на четверых завтра полседьмого", "вечером"),
+@pytest.mark.parametrize("language,initial_request,period,expected_question", [
+    ("en", "A table for four tomorrow at 6 o clock", "pm", "Do you mean AM or PM?"),
+    ("et", "Soovin homme lauda neljale pool seitse", "õhtul", "Kas mõtlete hommikul või õhtul?"),
+    ("ru", "Столик на четверых завтра полседьмого", "вечером", "Вы имеете в виду утром или вечером?"),
 ])
-def test_http_spoken_time_clarification_and_exact_recap_without_model(client, language, initial_request, period):
+def test_http_spoken_time_clarification_and_exact_recap_without_model(
+    client, language, initial_request, period, expected_question
+):
     session = start(client, language)
     first = turn(client, session["session_id"], initial_request, language=language)
-    assert first["reply"] == client.provider.spoken[-1] == COPY[language]["ambiguous_time"]
+    assert first["reply"] == client.provider.spoken[-1] == expected_question
     assert first["booking_changes"] == [] and not first.get("recap_delivery_id")
     second = turn(client, session["session_id"], period, language=language)
     expected = "18:00" if language == "en" else "18:30"
@@ -199,7 +204,9 @@ def test_public_clock_examples_are_parsed_in_each_language(client):
     examples = client.get("/api/public/restaurant").json()["booking_time_examples"]
     assert examples == TIME_INPUT_EXAMPLES
     for phrases in examples.values():
-        assert [parse_spoken_time(phrase).value for phrase in phrases] == ["18:00", "18:30", "18:30"]
+        parsed = [parse_spoken_time(phrase) for phrase in phrases]
+        assert all(clock is not None for clock in parsed)
+        assert [clock.value for clock in parsed if clock is not None] == ["18:00", "18:30", "18:30"]
 
 
 def test_unicode_time_reply_and_period_only_response_keep_booking_context(make_state):
