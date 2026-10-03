@@ -69,6 +69,12 @@ def test_may_permission_and_neighbouring_clock_are_not_year_or_date():
     assert request == {"date": "2026-10-04", "start_time": "18:00", "party_size": 4}
 
 
+@pytest.mark.parametrize("text,expected", [("12pm", "12:00"), ("11am", "11:00")])
+def test_month_neighbouring_am_pm_clock_is_not_a_short_year(text, expected):
+    request = parse_restaurant_request("table 4th October " + text + " for four", now=NOW, language="en")
+    assert request == {"date": "2026-10-04", "start_time": expected, "party_size": 4}
+
+
 @pytest.mark.parametrize("text", ["6 o clock", "6 o'clock", "six o’clock", "six oclock", "at six", "6:00"])
 def test_twelve_hour_time_is_recognized_and_remembered_without_guessing(text):
     resolution = resolve_english_time(text)
