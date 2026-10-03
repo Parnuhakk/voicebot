@@ -135,6 +135,17 @@ real call, promise a callback, take payment or place a food order.
 
 ## Deployment
 
+Speech accepts only Estonian, Russian and English. Browser and native Groq
+recognition detect the original audio language with `verbose_json` before the
+server processes a request. Choosing a reply language does not force Whisper
+to decode another language as that language. Detected Finnish and other
+unsupported speech receives a supported-language prompt without model or
+booking calls; it also invalidates pending recap consent. Automatic mode chooses
+ET/EN/RU from the source-language metadata; a selected language controls replies.
+Missing source metadata fails as unavailable recognition. Very short utterances,
+names and words shared across languages can still be misclassified by Whisper;
+this policy cannot guarantee perfect acoustic language identification.
+
 ```dotenv
 VOICEBOT_BUSINESS_TYPE=restaurant
 RESTAURANT_DEMO_WRITES=1
