@@ -14,6 +14,7 @@ from typing import Any
 from .languages import CONSENT, LANGUAGE_POLICY, spoken_date, spoken_time
 from .restaurant_data import restaurant_demo_profile
 from .restaurant_dates import ESTONIAN_COUNTS, resolve_restaurant_date
+from .restaurant_date_vocabulary import RUSSIAN_COUNTS
 from .restaurant_answers import (
     GUIDANCE,
     INFORMATION_TOPICS,
@@ -181,6 +182,9 @@ NUMBER_WORDS = {
     "пять": 5,
     "шесть": 6,
     **ESTONIAN_COUNTS,
+    **RUSSIAN_COUNTS,
+    "nine": 9,
+    "ten": 10,
 }
 
 

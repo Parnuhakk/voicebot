@@ -180,8 +180,8 @@ const TEXT = {
   send: ["Saada", "Send", "Отправить"],
   placeholder: [
     "Näiteks: soovin homseks lauda nelja inimesega kell 19.00",
-    "For example: a table for four tomorrow at 19:00",
-    "Например: столик на четверых завтра в 19:00",
+    "For example: a table for tomorrow at 5 pm for four",
+    "Например: столик на завтрашний день в 17:00 для четырёх гостей",
   ],
   transcript: [
     "Selle lehe vestlus",

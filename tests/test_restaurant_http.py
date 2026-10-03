@@ -193,6 +193,7 @@ def test_routine_menu_and_hours_are_grounded_without_model_calls(
 @pytest.mark.parametrize("channel", ["text", "audio"])
 def test_auto_english_booking_with_side_question_uses_grounded_english(client, channel):
     session = start(client, "auto")["session_id"]
+
     def speak(text):
         body = {"session_id": session, "language": "auto"}
         if channel == "audio":
@@ -309,11 +310,24 @@ def test_asr_confirmation_without_delivery_receipt_never_reaches_the_calendar(cl
     )
 
 
-def spoken_tomorrow():
+def spoken_tomorrow(language="et", *, mixed_case=False):
     from tests.test_restaurant_dates import DAY_WORDS
     from app.restaurant_call import DATE_MONTHS
 
     day = datetime.fromisoformat(tomorrow())
+    if language in {"en", "ru"}:
+        from tests.test_restaurant_multilingual_dates import (
+            ENGLISH_DAYS, ENGLISH_MONTHS, RUSSIAN_DAYS, RUSSIAN_MONTHS,
+        )
+
+        if language == "en":
+            return f"the {ENGLISH_DAYS[day.day - 1]} of {ENGLISH_MONTHS[day.month - 1]}"
+        word = RUSSIAN_DAYS[day.day - 1]
+        if mixed_case:
+            word = word[:-1] + "ему" if word.endswith("тье") else word[:-2] + "ому"
+        else:
+            word = word[:-1] + "его" if word.endswith("тье") else word[:-2] + "ого"
+        return f"{word} {RUSSIAN_MONTHS[day.month - 1]}"
     return f"{DAY_WORDS[day.day - 1]} {DATE_MONTHS['et'][day.month - 1]}"
 
 
@@ -355,6 +369,78 @@ def test_case_forms_and_spoken_dates_prepare_then_save_visible_booking(
         and rows[0]["service_id"] == 4
         and rows[0]["status"] == "confirmed"
     )
+
+
+@pytest.mark.parametrize("language", ["en", "ru"])
+@pytest.mark.parametrize("variant", ["named", "mixed", "relative"])
+@pytest.mark.parametrize("channel", ["text", "audio"])
+def test_multilingual_dates_prepare_and_confirm_visible_booking(client, language, variant, channel):
+    session = start(client, language)["session_id"]
+    date_text = spoken_tomorrow(language, mixed_case=variant == "mixed")
+    if variant == "relative":
+        date_text = "for tomorrow" if language == "en" else "на завтрашний день"
+    request_text = (
+        f"I'd like a table {date_text} at 2 pm for four"
+        if language == "en" else f"Забронируйте столик {date_text} в 14:00 для четырёх гостей"
+    )
+    body = {"session_id": session, "language": "auto"}
+    if channel == "audio":
+        client.provider.transcript = request_text
+        body["audio_b64"] = base64.b64encode(b"RIFF-synthetic-multilingual-date").decode()
+    else:
+        body["text"] = request_text
+    response = client.post("/api/turn", json=body, headers=AUTH)
+    assert response.status_code == 200, response.text
+    proposal = response.json()
+    assert proposal["text_heard"] == request_text and proposal["language"] == language
+    assert proposal["recap_delivery_id"] and proposal["booking_changes"] == []
+    tools = client.app.state.demo_sessions.sessions[session].tools
+    assert tools.pending["recap"]["date"] == tomorrow()
+    assert tools.pending["recap"]["party_size"] == 4
+    confirmation = "Yes, I confirm." if language == "en" else "Да, подтверждаю."
+    result = turn(client, session, confirmation, language=language, receipt=proposal["recap_delivery_id"])
+    assert result["booking_changes"][0]["date"] == tomorrow()
+    rows = client.get("/api/bookings?date=" + tomorrow(), headers=AUTH).json()["items"]
+    assert len(rows) == 1 and rows[0]["service_id"] == 4 and rows[0]["status"] == "confirmed"
+
+
+@pytest.mark.parametrize(
+    "language,text,issue",
+    [
+        ("en", "thirty-first February", "date_invalid"),
+        ("ru", "тридцать первого февраля", "date_invalid"),
+        ("en", "October fourth or fifth", "date_ambiguous"),
+        ("ru", "октября четвёртого или пятого", "date_ambiguous"),
+        ("en", "in May", "date_incomplete"),
+        ("ru", "в октябре", "date_incomplete"),
+    ],
+)
+def test_multilingual_bad_dates_keep_details_until_correction(client, language, text, issue):
+    session = start(client, language)["session_id"]
+    request_text = (
+        f"A table {text} at 14:00 for four" if language == "en"
+        else f"Столик {text} в 14:00 на четверых"
+    )
+    answer = turn(client, session, request_text, language=language)
+    assert answer["reply"] == COPY[language][issue]
+    assert answer["booking_changes"] == [] and not answer.get("recap_delivery_id")
+    tools = client.app.state.demo_sessions.sessions[session].tools
+    assert not tools.holds and not tools.bookings
+    fixed = turn(client, session, spoken_tomorrow(language), language=language)
+    assert fixed["recap_delivery_id"]
+    assert tools.pending["recap"]["date"] == tomorrow()
+    assert tools.pending["recap"]["party_size"] == 4
+
+
+@pytest.mark.parametrize("language", ["en", "ru"])
+def test_multilingual_invalid_hours_date_clarifies_and_followup_recovers(client, language):
+    session = start(client, language)["session_id"]
+    question = "Are you open on the thirty-first of February?" if language == "en" else "Вы открыты тридцать первого февраля?"
+    answer = turn(client, session, question, language=language)
+    assert answer["reply"] == COPY[language]["date_invalid"] and answer["booking_changes"] == []
+    fixed = turn(client, session, spoken_tomorrow(language), language=language)
+    assert fixed["booking_changes"] == [] and fixed["reply"] != COPY[language]["date_invalid"]
+    assert not client.app.state.demo_sessions.sessions[session].tools.holds
 
 
 def test_followup_case_forms_keep_previously_supplied_details(client):
