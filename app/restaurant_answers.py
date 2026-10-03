@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from .booking_faq import FAQ_PATH, load_faq, normalize
 from .restaurant_data import DAYS
 from .restaurant_dates import resolve_restaurant_date
 
@@ -22,10 +23,77 @@ class RestaurantQuestion:
 
 
 INFORMATION_TOPICS = (
-    "menu", "hours", "kitchen", "allergens", "policies", "location", "price",
-    "duration", "children", "groups", "cancellation_help", "changes", "late",
-    "parking", "pets", "highchair", "accessibility", "terrace", "extras", "staff",
+    "menu",
+    "hours",
+    "kitchen",
+    "allergens",
+    "policies",
+    "location",
+    "price",
+    "duration",
+    "children",
+    "groups",
+    "cancellation_help",
+    "changes",
+    "late",
+    "parking",
+    "pets",
+    "highchair",
+    "accessibility",
+    "terrace",
+    "extras",
+    "staff",
+    "special_requests",
+    "food_orders",
 )
+
+CAPABILITIES = {
+    {"booking-101": "special_requests", "booking-102": "food_orders"}[
+        entry["id"]
+    ]: entry
+    for entry in load_faq(FAQ_PATH.with_name("restaurant-phone-faq.json"))
+}
+CAPABILITY_PATTERNS = {
+    topic: re.compile(
+        r"\b(?:"
+        + "|".join(
+            r"\W+".join(re.escape(word) for word in normalize(phrase).split())
+            for language in ("et", "en", "ru")
+            for phrase in (
+                entry["question_" + language],
+                *entry.get("variants_" + language, []),
+            )
+        )
+        + r")\b"
+    )
+    for topic, entry in CAPABILITIES.items()
+}
+
+
+def capability_booking_clause(text: str) -> str | None:
+    """A capability question is not booking intent; require a positive clause."""
+    if re.search(
+        r'["“”«»`]|\b(?:do not|don[\x27’]t|not|ära|ei|не|instructions?|example|'
+        r"juhis\w*|näide|пример\w*|инструкц\w*)\b",
+        text,
+    ):
+        return None
+    for pattern in CAPABILITY_PATTERNS.values():
+        text = pattern.sub(" ", text)
+    for clause in re.split(r"[!?;]+|(?<!\d)\.(?!\d)", text):
+        clause = clause.strip()
+        if re.match(
+            r"^(?:(?:and|ja|и)\s+)?(?:(?:please|palun|пожалуйста)[,\s]+)?"
+            r"(?:(?:can|could|would)\s+(?:you|i)\s+(?:please\s+)?)?"
+            r"(?:book|reserve|broneeri\w*|заброниру\w*|"
+            r"(?:i|we)\s+(?:want|need|would like)\s+to\s+(?:book|reserve)|"
+            r"(?:ma\s+)?(?:soovin|sooviksin|tahan|tahaksin)\s+broneeri\w*|"
+            r"(?:(?:я|мы)\s+)?(?:хочу|хотим)\s+заброниро\w*)\b",
+            clause,
+        ):
+            return clause
+    return None
+
 
 PATTERNS = {
     "allergens": r"allerg|allergeen|аллерг|глютен|glut(?:ee|e)n|peanut|pähkl|орех|laktoos|lactose|лактоз|sisald|contain|koostis|ingredients|содерж|состав",
@@ -59,7 +127,9 @@ DAY_PATTERNS = (
     r"saturday|laupäev\w*|суббот\w*",
     r"sunday|pühapäev\w*|воскресень\w*",
 )
-BOOKING_REQUEST = re.compile(r"broneer|reserve|reservation|book|lau[ad]|table|брон|столик")
+BOOKING_REQUEST = re.compile(
+    r"broneer|reserve|reservation|book|lau[ad]|table|брон|столик"
+)
 
 
 def match_question(
@@ -73,31 +143,54 @@ def match_question(
     text = " ".join(text.casefold().split())
     if not text or len(text) > 2000:
         return None
-    matches = [(match.start(), topic) for topic, pattern in PATTERNS.items()
-               if (match := re.search(pattern, text))]
+    matches = []
+    information_text = text
+    for topic, pattern in CAPABILITY_PATTERNS.items():
+        if match := pattern.search(text):
+            matches.append((match.start(), topic))
+            # "Tell the kitchen about my allergy" is one capability request,
+            # not a kitchen-hours question plus an allergen catalogue request.
+            information_text = pattern.sub(
+                lambda match: " " * len(match.group()), information_text
+            )
+    matches.extend(
+        (match.start(), topic)
+        for topic, pattern in PATTERNS.items()
+        if (match := re.search(pattern, information_text))
+    )
     topics = [topic for _, topic in sorted(matches)]
     # An English question about an unlisted dish or a non-food "contain"
     # must not receive an unrelated menu/allergen answer.
     if "allergens" in topics and not (
-        has_dish or has_diet or previous and re.search(r"\b(?:it|this|that)\b", text) and any(
-            topic in {"menu", "allergens"} for topic in previous.topics
-        ) or re.search(
+        has_dish
+        or has_diet
+        or previous
+        and re.search(r"\b(?:it|this|that)\b", text)
+        and any(topic in {"menu", "allergens"} for topic in previous.topics)
+        or re.search(
             r"allerg|allergeen|аллерг|глютен|glut|peanut|pähkl|орех|laktoos|lactose|лактоз|"
-            r"food|dish|ingredient|milk|fish|celery|sisald|koostis|содерж|состав", text
+            r"food|dish|ingredient|milk|fish|celery|sisald|koostis|содерж|состав",
+            text,
         )
     ):
         topics.remove("allergens")
-    if "menu" in topics and re.search(r"\bdo you (?:have|serve)\b", text) and not (
-        has_dish or has_diet or re.search(r"\b(?:menu|dishes|food)\b", text)
+    if (
+        "menu" in topics
+        and re.search(r"\bdo you (?:have|serve)\b", text)
+        and not (has_dish or has_diet or re.search(r"\b(?:menu|dishes|food)\b", text))
     ):
         topics.remove("menu")
     # Narrative party counts are booking details, not a request for policies.
     # In particular, "for two adults and two children" must reach the planner.
-    policy_question = bool(re.search(
-        r"\?|^(?:kas|kuidas|miks|do|does|can|are|is|how|what|may|мож\w*|как|сколько|вход\w*|учит\w*)\b",
-        text,
-    ))
-    if not policy_question or re.search(r"\b(?:book|reserve|broneeri\w*|заброниру\w*)\b", text):
+    policy_question = bool(
+        re.search(
+            r"\?|^(?:kas|kuidas|miks|do|does|can|are|is|how|what|may|мож\w*|как|сколько|вход\w*|учит\w*)\b",
+            text,
+        )
+    )
+    if not policy_question or re.search(
+        r"\b(?:book|reserve|broneeri\w*|заброниру\w*)\b", text
+    ):
         topics = [topic for topic in topics if topic not in {"children", "groups"}]
     if "kitchen" in topics:
         topics = [topic for topic in topics if topic != "hours"]
@@ -109,13 +202,18 @@ def match_question(
         topics = [topic for topic in topics if topic != "menu"]
     if not topics and (has_dish or has_diet):
         topics = ["menu"]
-    days = tuple(index for index, pattern in enumerate(DAY_PATTERNS)
-                 if re.search(r"\b(?:" + pattern + r")\b", text))
+    days = tuple(
+        index
+        for index, pattern in enumerate(DAY_PATTERNS)
+        if re.search(r"\b(?:" + pattern + r")\b", text)
+    )
     if re.search(r"nädalavahetus|weekends?|выходн", text):
         days = (5, 6)
     elif re.search(r"tööpäev|weekdays?|будн", text):
         days = (0, 1, 2, 3, 4)
-    elif len(days) == 2 and re.search(r"through|\bto\b|kuni|päevast|reedest|\bпо\b", text):
+    elif len(days) == 2 and re.search(
+        r"through|\bto\b|kuni|päevast|reedest|\bпо\b", text
+    ):
         days = tuple(range(days[0], days[-1] + 1))
     resolved = resolve_restaurant_date(
         text, now or datetime.now(ZoneInfo("Europe/Tallinn")), include_weekdays=False
@@ -124,11 +222,16 @@ def match_question(
     date_issue = None
     if not topics and previous and not BOOKING_REQUEST.search(text):
         if (days or resolved.value or resolved.issue) and len(text.split()) <= 8:
-            topics = [topic for topic in previous.topics if topic in {"hours", "kitchen"}]
+            topics = [
+                topic for topic in previous.topics if topic in {"hours", "kitchen"}
+            ]
     if not topics:
         return None
     if (
-        not days and not resolved.value and not resolved.issue and previous
+        not days
+        and not resolved.value
+        and not resolved.issue
+        and previous
         and re.search(r"^(?:aga|ja|and|what about|а|и)\b", text)
         and any(topic in {"hours", "kitchen"} for topic in topics)
         and any(topic in {"hours", "kitchen"} for topic in previous.topics)
@@ -141,27 +244,89 @@ def match_question(
             requested_date, days = resolved.value, (target.weekday(),)
         elif resolved.issue:
             date_issue = resolved.issue
-    return RestaurantQuestion(tuple(topics[:3]), days or None, requested_date, date_issue)
+    return RestaurantQuestion(
+        tuple(topics[:3]), days or None, requested_date, date_issue
+    )
 
 
 SINGLES = {
-    "et": ("esmaspäeval", "teisipäeval", "kolmapäeval", "neljapäeval", "reedel", "laupäeval", "pühapäeval"),
-    "en": ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"),
-    "ru": ("в понедельник", "во вторник", "в среду", "в четверг", "в пятницу", "в субботу", "в воскресенье"),
+    "et": (
+        "esmaspäeval",
+        "teisipäeval",
+        "kolmapäeval",
+        "neljapäeval",
+        "reedel",
+        "laupäeval",
+        "pühapäeval",
+    ),
+    "en": (
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+    ),
+    "ru": (
+        "в понедельник",
+        "во вторник",
+        "в среду",
+        "в четверг",
+        "в пятницу",
+        "в субботу",
+        "в воскресенье",
+    ),
 }
 FROM_DAYS = {
-    "et": ("esmaspäevast", "teisipäevast", "kolmapäevast", "neljapäevast", "reedest", "laupäevast", "pühapäevast"),
-    "ru": ("с понедельника", "со вторника", "со среды", "с четверга", "с пятницы", "с субботы", "с воскресенья"),
+    "et": (
+        "esmaspäevast",
+        "teisipäevast",
+        "kolmapäevast",
+        "neljapäevast",
+        "reedest",
+        "laupäevast",
+        "pühapäevast",
+    ),
+    "ru": (
+        "с понедельника",
+        "со вторника",
+        "со среды",
+        "с четверга",
+        "с пятницы",
+        "с субботы",
+        "с воскресенья",
+    ),
 }
 TO_DAYS = {
-    "et": ("esmaspäevani", "teisipäevani", "kolmapäevani", "neljapäevani", "reedeni", "laupäevani", "pühapäevani"),
-    "ru": ("по понедельник", "по вторник", "по среду", "по четверг", "по пятницу", "по субботу", "по воскресенье"),
+    "et": (
+        "esmaspäevani",
+        "teisipäevani",
+        "kolmapäevani",
+        "neljapäevani",
+        "reedeni",
+        "laupäevani",
+        "pühapäevani",
+    ),
+    "ru": (
+        "по понедельник",
+        "по вторник",
+        "по среду",
+        "по четверг",
+        "по пятницу",
+        "по субботу",
+        "по воскресенье",
+    ),
 }
 
 
 def natural_list(items: list[str], language: str) -> str:
     conjunction = {"et": " ning ", "en": " and ", "ru": " и "}[language]
-    return conjunction.join(items) if len(items) <= 2 else ", ".join(items[:-1]) + conjunction + items[-1]
+    return (
+        conjunction.join(items)
+        if len(items) <= 2
+        else ", ".join(items[:-1]) + conjunction + items[-1]
+    )
 
 
 def _day_label(indices: list[int], language: str) -> str:
@@ -175,7 +340,9 @@ def _day_label(indices: list[int], language: str) -> str:
             labels[1] = labels[1].removeprefix("в ").removeprefix("во ")
         return {"et": " ja ", "en": " and ", "ru": " и "}[language].join(labels)
     if language == "en":
-        return SINGLES[language][indices[0]] + " through " + SINGLES[language][indices[-1]]
+        return (
+            SINGLES[language][indices[0]] + " through " + SINGLES[language][indices[-1]]
+        )
     return FROM_DAYS[language][indices[0]] + " " + TO_DAYS[language][indices[-1]]
 
 
@@ -199,7 +366,10 @@ def format_schedule(
         if hours:
             end = hours["end"]
             if kitchen:
-                end = (datetime.strptime(end, "%H:%M") - timedelta(minutes=data["kitchen_closes_minutes_before"])).strftime("%H:%M")
+                end = (
+                    datetime.strptime(end, "%H:%M")
+                    - timedelta(minutes=data["kitchen_closes_minutes_before"])
+                ).strftime("%H:%M")
             if end > hours["start"]:
                 interval = (hours["start"], end)
         if groups and groups[-1][1] == interval and groups[-1][0][-1] + 1 == index:
@@ -213,7 +383,11 @@ def format_schedule(
             value = {"et": "suletud", "en": "closed", "ru": "закрыто"}[language]
         else:
             start, end = map(_clock, interval)
-            value = {"et": f"kell {start}–{end}", "en": f"{start}–{end}", "ru": f"с {start} до {end}"}[language]
+            value = {
+                "et": f"kell {start}–{end}",
+                "en": f"{start}–{end}",
+                "ru": f"с {start} до {end}",
+            }[language]
         parts.append(label + " " + value)
     answer = natural_list(parts, language)
     return answer[:1].upper() + answer[1:]
