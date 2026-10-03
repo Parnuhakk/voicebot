@@ -28,8 +28,18 @@ INFORMATION_TOPICS = (
     "parking", "pets", "highchair", "accessibility", "terrace", "extras", "staff",
 )
 
+# Medical suitability and food-safety outcomes are canonical, not diet preferences.
+MEDICAL_FOOD_CONCERN = (
+    r"allerg(?:y|ies|ic)|allergi|аллерги|"
+    r"c(?:o)?eliac|ts[öo]liaak|целиак|"
+    r"intoleran|talumatu|ei\s+talu|непереносим|"
+    r"anaphyla|anafülak|анафилак|reaction|reaktsioon|реакци|"
+    r"cross[-\s]*(?:contact|contaminat)|ristsaast|ristkontak|"
+    r"перекр[её]стн\w*\s+(?:контакт|загрязн)"
+)
+
 PATTERNS = {
-    "allergens": r"allerg|allergeen|аллерг|глютен|glut(?:ee|e)n|peanut|pähkl|орех|laktoos|lactose|лактоз|sisald|contain|koostis|ingredients|содерж|состав",
+    "allergens": MEDICAL_FOOD_CONCERN + r"|allerg|allergeen|аллерг|глютен|glut(?:ee|e)n|peanut|pähkl|орех|laktoos|lactose|лактоз|sisald|contain|koostis|ingredients|содерж|состав",
     "price": r"\b(?:price|cost|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maksab|цен\w*|стоим\w*|сколько(?:\s+\w+){0,2}\s+сто(?:ит|ят|ить))\b",
     "menu": r"menüü|menu|меню|vegan|веган|vegetarian|taimetoit|вегетар|\b(?:dishes|serve|roogi|блюд\w*)\b|mis.*süüa|mida.*(?:süüa|pakute)",
     "kitchen": r"kitchen|köök|köögi|кухн|(?:kell|kellaajani|millal).*süüa|when.*(?:food|eat)|(?:до скольки|когда).*еда",
@@ -60,7 +70,10 @@ DAY_PATTERNS = (
     r"saturday|laupäev\w*|суббот\w*",
     r"sunday|pühapäev\w*|воскресень\w*",
 )
-BOOKING_REQUEST = re.compile(r"broneer|reserve|reservation|book|lau[ad]|table|брон|столик")
+BOOKING_REQUEST = re.compile(
+    r"\b(?:broneer\w*|reserv(?:e[ds]?|ing|ations?)|book(?:s|ed|ing)?|"
+    r"lau[ad]\w*|tables?|(?:за)?брон\w*|столик\w*)\b"
+)
 RECOMMENDATION = re.compile(
     r"^(?:mida (?:te )?soovit(?:ad|ate)(?: süüa)?|"
     r"what (?:would|do) you recommend(?: to eat)?|"
@@ -107,7 +120,8 @@ def match_question(
     # An English question about an unlisted dish or a non-food "contain"
     # must not receive an unrelated menu/allergen answer.
     if "allergens" in topics and not (
-        has_dish or has_diet or previous and re.search(r"\b(?:it|this|that)\b", text) and any(
+        re.search(MEDICAL_FOOD_CONCERN, text)
+        or has_dish or has_diet or previous and re.search(r"\b(?:it|this|that)\b", text) and any(
             topic in {"menu", "allergens"} for topic in previous.topics
         ) or re.search(
             r"allerg|allergeen|аллерг|глютен|glut|peanut|pähkl|орех|laktoos|lactose|лактоз|"
@@ -119,6 +133,28 @@ def match_question(
         has_dish or has_diet or re.search(r"\b(?:menu|dishes|food)\b", text)
     ):
         topics.remove("menu")
+    # A short food follow-up does not turn an existing medical concern into
+    # permission to generate a recommendation or a safety assurance.
+    if (
+        previous
+        and "allergens" in previous.topics
+        and not BOOKING_REQUEST.search(text)
+        and (
+            recommendation
+            or detail_followup
+            or all(topic in {"menu", "allergens", "price"} for topic in topics)
+            and (
+                has_dish
+                or has_diet
+                or re.search(
+                    r"\b(?:it|this|that|me|us|see|seda|selle|minule|mulle|это|его|мне|нам)\b",
+                    text,
+                )
+            )
+        )
+        and "allergens" not in topics
+    ):
+        topics.insert(0, "allergens")
     # Narrative party counts are booking details, not a request for policies.
     # In particular, "for two adults and two children" must reach the planner.
     policy_question = bool(re.search(
@@ -134,7 +170,10 @@ def match_question(
     if "highchair" in topics:
         topics = [topic for topic in topics if topic != "children"]
     if "allergens" in topics:
-        topics = [topic for topic in topics if topic != "menu"]
+        # Safety guidance must survive the three-topic response limit.
+        topics = ["allergens"] + [
+            topic for topic in topics if topic not in {"menu", "allergens"}
+        ]
     if not topics and (has_dish or has_diet):
         topics = ["menu"]
     days = tuple(index for index, pattern in enumerate(DAY_PATTERNS)

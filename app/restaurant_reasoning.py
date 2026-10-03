@@ -12,7 +12,11 @@ from typing import Any, Protocol
 from zoneinfo import ZoneInfo
 
 from .languages import LANGUAGE_POLICY
-from .restaurant_answers import INFORMATION_TOPICS, format_schedule
+from .restaurant_answers import (
+    INFORMATION_TOPICS,
+    MEDICAL_FOOD_CONCERN,
+    format_schedule,
+)
 
 MAX_REPLY = 650
 REQUEST_TIMEOUT = 8.0
@@ -154,6 +158,10 @@ def safe_wording(reply: str, language: str) -> bool:
         re.I,
     ):
         return False
+    # Medical outcomes and cross-contact stay canonical regardless of polarity
+    # or reviewer approval. Benign diet facts such as "contains milk" are allowed.
+    if re.search(MEDICAL_FOOD_CONCERN, reply, re.I):
+        return False
     # Success, prices, real contact collection and allergy guarantees are always
     # controlled outside generated prose, even if a model reviewer approves it.
     blocked = (
@@ -181,6 +189,8 @@ def reasoned_reply(
     state: RestaurantState, messages: list[dict[str, Any]], client: ReasoningClient
 ) -> str | None:
     """One generation and a separate review, then a turn-bound approval."""
+    if not state.reasoning_allowed:
+        return None
     serial, language = state._turn_serial, state.language
     facts = restaurant_facts(state)
     digest = facts_digest(facts)
