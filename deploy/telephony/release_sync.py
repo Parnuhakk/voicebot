@@ -1,4 +1,4 @@
-"""Reconcile only existing telephone services to the healthy published master."""
+"""Reconcile existing telephone services to a healthy published master release."""
 
 import argparse
 import contextlib
@@ -197,6 +197,45 @@ def busy(worker, env, image=None):
     return int(count) > 0
 
 
+def published_revision(git, sha, env):
+    master = output(git + ["rev-parse", "refs/remotes/origin/master"], env)
+    require(re.fullmatch(r"[0-9a-f]{40}", master))
+    if master == sha:
+        return True
+    try:
+        # The web release may lag a queued or [skip cd] master push. Only its
+        # exact published code is deployed; pending head code is never used.
+        run(git + ["merge-base", "--is-ancestor", sha, master], env)
+    except subprocess.CalledProcessError as error:
+        if error.returncode == 1:
+            return False
+        raise
+    return True
+
+
+def report_release(web, items, sha, profile, env):
+    """Refresh a receipt only after a fresh private health/identity check."""
+    source(env, web["Id"])
+    observed = targets(env, items, healthy_only=True)
+    require(current(observed, sha, web["Id"], profile))
+    fingerprint = output(
+        ["docker", "exec", web["Id"], "python", "-m", "app.release_status", "identity"],
+        env,
+    )
+    require(re.fullmatch(r"[0-9a-f]{64}", fingerprint))
+    source(env, web["Id"])
+    run(
+        [
+            "docker", "exec", items[0]["Id"], "python", "-m",
+            "app.release_status", "record", sha, fingerprint,
+        ],
+        env,
+    )
+    source(env, web["Id"])
+    observed = targets(env, items, healthy_only=True)
+    require(current(observed, sha, web["Id"], profile))
+
+
 def reconcile(repository, state, base):
     web, sha = source(base)
     git = ["git", "-C", str(repository)]
@@ -212,8 +251,7 @@ def reconcile(repository, state, base):
     )
     ref = "refs/heads/master:refs/remotes/origin/master"
     run(git + ["fetch", "--no-tags", "origin", ref], base, timeout=120)
-    master = output(git + ["rev-parse", "refs/remotes/origin/master"], base)
-    if master != sha:
+    if not published_revision(git, sha, base):
         return "DEFER: release_master_mismatch"
     old = targets(base)
     kept = settings(web, *old)
@@ -280,11 +318,15 @@ def reconcile(repository, state, base):
         profile = {
             k: v
             for k, v in resolved.items()
-            if k.startswith(("AZURE_", "GROQ_", "VOICEBOT_"))
+            if (
+                k.startswith(("AZURE_", "GROQ_", "VOICEBOT_", "RESTAURANT_", "STAY_", "EASY_"))
+                or k == "CALLS_DB"
+            )
             and not k.endswith(("KEY", "SECRET", "TOKEN"))
         }
         require(profile)
         if current(old, sha, web["Id"], profile):
+            report_release(web, old, sha, profile, base)
             return "PASS: release_current"
         if healthy(old[0]) and busy(old[0], base):
             return "DEFER: release_busy"
@@ -372,6 +414,7 @@ def reconcile(repository, state, base):
         require(settings(web, *final) == kept)
         require(volume(final[0]) == volume(old[0]))
         require(final[1]["Mounts"] == old[1]["Mounts"])
+        report_release(web, final, sha, profile, base)
     return "PASS: release_synced"
 
 

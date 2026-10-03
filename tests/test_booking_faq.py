@@ -9,7 +9,14 @@ from pathlib import Path
 
 import pytest
 
-from app.booking_faq import CLARIFY, MISSING_FACTS, NO_BOOKING, load_faq, match_question, render_catalogue
+from app.booking_faq import (
+    CLARIFY,
+    MISSING_FACTS,
+    NO_BOOKING,
+    load_faq,
+    match_question,
+    render_catalogue,
+)
 from app.booking.tools import TOOL_STAY_CATALOGUE
 from app.conversation import QUESTIONS
 from app.languages import CONSENT, ENGLISH
@@ -36,7 +43,9 @@ HTTP_CASES = [
     pytest.param(entry, language, question, id=f"faq-{entry['id']}-{language}-{index}")
     for entry in BANK
     for language in LANGUAGES
-    for index, question in enumerate([entry["question_" + language], *entry["variants_" + language]])
+    for index, question in enumerate(
+        [entry["question_" + language], *entry["variants_" + language]]
+    )
 ]
 EXTRA_COMMAND = {
     "et": "Broneeri mulle homme kell 14 spaa aeg.",
@@ -137,7 +146,9 @@ class FaqDispatcher(Slots):
     async def dispatch(self, name, args):
         if name in {"get_stay_catalogue", "get_slot_catalogue"}:
             self.calls.append((name, copy.deepcopy(args)))
-            return copy.deepcopy(self.stay if name == "get_stay_catalogue" else self.slot)
+            return copy.deepcopy(
+                self.stay if name == "get_stay_catalogue" else self.slot
+            )
         return await super().dispatch(name, args)
 
 
@@ -168,7 +179,11 @@ def test_bank_has_exactly_fifty_complete_unique_translations():
     assert isinstance(BANK, tuple) and len(BANK) == 50
     assert len({entry["id"] for entry in BANK}) == 50
     assert {entry["route"] for entry in BANK} <= {
-        "static", "stay_catalogue", "slot_catalogue", "clarify", "status",
+        "static",
+        "stay_catalogue",
+        "slot_catalogue",
+        "clarify",
+        "status",
     }
     for entry in BANK:
         for language in LANGUAGES:
@@ -198,9 +213,17 @@ def test_every_translated_variant_selects_its_own_answer(entry, language, varian
 @pytest.mark.parametrize("entry,language", CANONICAL_CASES)
 def test_courtesy_case_and_punctuation_keep_the_question(entry, language):
     question = entry["question_" + language].strip(" .!?")
-    typography = unicodedata.normalize("NFD", question).replace("'", "’").replace("-", "—")
-    for text in ("  " + question.upper() + "?!  ", COURTESY[language] + question + "?", typography + "?"):
-        assert tuple(item["id"] for item in match_question(text, language)) == (entry["id"],)
+    typography = (
+        unicodedata.normalize("NFD", question).replace("'", "’").replace("-", "—")
+    )
+    for text in (
+        "  " + question.upper() + "?!  ",
+        COURTESY[language] + question + "?",
+        typography + "?",
+    ):
+        assert tuple(item["id"] for item in match_question(text, language)) == (
+            entry["id"],
+        )
 
 
 @pytest.mark.parametrize("entry,language", CANONICAL_CASES)
@@ -218,8 +241,15 @@ def test_multiple_questions_require_every_clause_to_be_understood(language):
         assert tuple(item["id"] for item in match_question(text, language)) == tuple(
             entry["id"] for entry in entries[:count]
         )
-    assert match_question(" ".join(entry["question_" + language] for entry in entries), language) == ()
-    assert match_question(entries[0]["question_" + language] + " Jupiter?", language) == ()
+    assert (
+        match_question(
+            " ".join(entry["question_" + language] for entry in entries), language
+        )
+        == ()
+    )
+    assert (
+        match_question(entries[0]["question_" + language] + " Jupiter?", language) == ()
+    )
 
 
 @pytest.mark.parametrize(
@@ -246,10 +276,14 @@ def test_unclear_irrelevant_or_hostile_text_has_no_random_faq(language, text):
     assert match_question(text, language) == ()
 
 
-@pytest.mark.parametrize("defect", ["missing_answer", "wrong_variants", "duplicate_id", "unknown_route"])
+@pytest.mark.parametrize(
+    "defect", ["missing_answer", "wrong_variants", "duplicate_id", "unknown_route"]
+)
 def test_malformed_faq_source_fails_closed(tmp_path, defect):
     source = json.loads(
-        (Path(__file__).resolve().parents[1] / "data/demo/booking-faq.json").read_text(encoding="utf-8")
+        (Path(__file__).resolve().parents[1] / "data/demo/booking-faq.json").read_text(
+            encoding="utf-8"
+        )
     )
     entries = source["entries"]
     if defect == "missing_answer":
@@ -267,20 +301,32 @@ def test_malformed_faq_source_fails_closed(tmp_path, defect):
 
 
 @pytest.mark.parametrize("entry,language,question", HTTP_CASES)
-def test_every_http_question_uses_approved_language_and_no_model_guess(client, entry, language, question):
+def test_every_http_question_uses_approved_language_and_no_model_guess(
+    client, entry, language, question
+):
     session, state, dispatcher, model = setup_session(client, language)
     response = send(client, session, question, language=language)
     if entry["route"] in {"static", "clarify"}:
         expected = entry["answer_" + language]
         if entry["id"] == "booking-002" and question in entry["variants_" + language]:
             # The two aliases already choose room/spa, so ask its next detail.
-            key = "arrival" if entry["variants_" + language].index(question) == 0 else "date"
+            key = (
+                "arrival"
+                if entry["variants_" + language].index(question) == 0
+                else "date"
+            )
             expected = QUESTIONS[language][key][0]
         assert dispatcher.calls == []
     elif entry["route"] in {"stay_catalogue", "slot_catalogue"}:
-        catalogue = dispatcher.stay if entry["route"] == "stay_catalogue" else dispatcher.slot
+        catalogue = (
+            dispatcher.stay if entry["route"] == "stay_catalogue" else dispatcher.slot
+        )
         expected = render_catalogue((entry,), catalogue, language)
-        tool = "get_stay_catalogue" if entry["route"] == "stay_catalogue" else "get_slot_catalogue"
+        tool = (
+            "get_stay_catalogue"
+            if entry["route"] == "stay_catalogue"
+            else "get_slot_catalogue"
+        )
         assert dispatcher.calls == [(tool, {})]
     else:
         expected = state.faq_reply()
@@ -320,7 +366,9 @@ def test_missing_current_catalogue_facts_have_no_saved_policy_fallback(language,
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
-def test_status_depends_on_owned_booking_state_and_unknown_write_prevails(client, language):
+def test_status_depends_on_owned_booking_state_and_unknown_write_prevails(
+    client, language
+):
     entry = next(item for item in BANK if item["route"] == "status")
     question = entry["question_" + language]
     session, state, dispatcher, model = setup_session(client, language)
@@ -332,24 +380,36 @@ def test_status_depends_on_owned_booking_state_and_unknown_write_prevails(client
     assert foreign == absent
     state.last_booking = "owned-booking"
     confirmed = send(client, session, question, language=language).json()["reply"]
-    expected = ENGLISH["confirmed"] if language == "en" else localize("Testbroneering on kinnitatud.", language)
+    expected = (
+        ENGLISH["confirmed"]
+        if language == "en"
+        else localize("Testbroneering on kinnitatud.", language)
+    )
     assert confirmed == expected and confirmed != absent
     state.cancelled_bookings.add("owned-booking")
     cancelled = send(client, session, question, language=language).json()["reply"]
-    expected = ENGLISH["cancelled"] if language == "en" else localize("Testbroneering on tühistatud.", language)
+    expected = (
+        ENGLISH["cancelled"]
+        if language == "en"
+        else localize("Testbroneering on tühistatud.", language)
+    )
     assert cancelled == expected and cancelled not in {absent, confirmed}
     state._unknown_mutation()
     response = send(client, session, question, language=language)
     assert response.status_code == 200
     data = response.json()
-    expected = ENGLISH["unknown"] if language == "en" else localize(UNKNOWN_REPLY, language)
+    expected = (
+        ENGLISH["unknown"] if language == "en" else localize(UNKNOWN_REPLY, language)
+    )
     assert data["reply"] == expected and data["outcome"] == "unknown_outcome"
     assert data["booking_changes"] == []
     assert model.messages == [] and dispatcher.calls == []
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
-def test_missing_live_duration_never_reuses_approved_observed_duration(client, language):
+def test_missing_live_duration_never_reuses_approved_observed_duration(
+    client, language
+):
     entry = next(item for item in BANK if item["id"] == "booking-023")
     session, state, dispatcher, model = setup_session(client, language)
     del dispatcher.slot["services"][0]["duration"]
@@ -371,11 +431,19 @@ def test_false_hotel_policy_from_model_is_not_spoken(client, language):
 
 @pytest.mark.parametrize(
     "language,question",
-    [("et", "Kas võin koeraga tulla?"), ("en", "Can I bring my dog?"), ("ru", "Можно прийти с собакой?")],
+    [
+        ("et", "Kas võin koeraga tulla?"),
+        ("en", "Can I bring my dog?"),
+        ("ru", "Можно прийти с собакой?"),
+    ],
 )
-def test_pet_paraphrase_gets_the_approved_policy_and_extra_action_is_not_lost(client, language, question):
+def test_pet_paraphrase_gets_the_approved_policy_and_extra_action_is_not_lost(
+    client, language, question
+):
     entry = next(item for item in BANK if item["id"] == "booking-044")
-    assert tuple(item["id"] for item in match_question(question, language)) == (entry["id"],)
+    assert tuple(item["id"] for item in match_question(question, language)) == (
+        entry["id"],
+    )
     assert match_question(question + " " + EXTRA_COMMAND[language], language) == ()
     session, state, dispatcher, model = setup_session(client, language)
     response = send(client, session, question, language=language)
@@ -385,9 +453,15 @@ def test_pet_paraphrase_gets_the_approved_policy_and_extra_action_is_not_lost(cl
 
 @pytest.mark.parametrize(
     "language,text",
-    [("et", "Kas Jupiteril sajab?"), ("en", "Is there rain on Jupiter?"), ("ru", "На Юпитере идёт дождь?")],
+    [
+        ("et", "Kas Jupiteril sajab?"),
+        ("en", "Is there rain on Jupiter?"),
+        ("ru", "На Юпитере идёт дождь?"),
+    ],
 )
-def test_unrecognized_question_has_friendly_clarification_not_unrelated_greeting(client, language, text):
+def test_unrecognized_question_has_friendly_clarification_not_unrelated_greeting(
+    client, language, text
+):
     session, state, dispatcher, model = setup_session(client, language)
     model.reply = GREETING[language]
     response = send(client, session, text, language=language)
@@ -397,11 +471,16 @@ def test_unrecognized_question_has_friendly_clarification_not_unrelated_greeting
 
 @pytest.mark.parametrize("language", LANGUAGES)
 @pytest.mark.parametrize("reply_kind", ["greeting", "faq"])
-def test_unknown_hotel_question_cannot_receive_an_unrelated_approved_reply(client, language, reply_kind):
+def test_unknown_hotel_question_cannot_receive_an_unrelated_approved_reply(
+    client, language, reply_kind
+):
     session, state, dispatcher, model = setup_session(client, language)
     model.reply = (
-        GREETING[language] if reply_kind == "greeting"
-        else next(entry for entry in BANK if entry["route"] == "static")["answer_" + language]
+        GREETING[language]
+        if reply_kind == "greeting"
+        else next(entry for entry in BANK if entry["route"] == "static")[
+            "answer_" + language
+        ]
     )
     response = send(client, session, UNKNOWN_QUESTION[language], language=language)
     assert_speech_response(client, response, CLARIFY[language], language)
@@ -409,10 +488,20 @@ def test_unknown_hotel_question_cannot_receive_an_unrelated_approved_reply(clien
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
-def test_unknown_question_does_not_turn_an_unsupported_success_claim_into_clarification(client, language):
+def test_unknown_question_does_not_turn_an_unsupported_success_claim_into_clarification(
+    client, language
+):
     session, state, dispatcher, model = setup_session(client, language)
-    model.reply = ENGLISH["confirmed"] if language == "en" else localize("Testbroneering on kinnitatud.", language)
-    expected = ENGLISH["unverified"] if language == "en" else localize(UNVERIFIED_REPLY, language)
+    model.reply = (
+        ENGLISH["confirmed"]
+        if language == "en"
+        else localize("Testbroneering on kinnitatud.", language)
+    )
+    expected = (
+        ENGLISH["unverified"]
+        if language == "en"
+        else localize(UNVERIFIED_REPLY, language)
+    )
     response = send(client, session, UNKNOWN_QUESTION[language], language=language)
     assert_speech_response(client, response, expected, language)
     assert model.messages and dispatcher.calls == [] and not state.bookings
@@ -420,11 +509,17 @@ def test_unknown_question_does_not_turn_an_unsupported_success_claim_into_clarif
 
 @pytest.mark.parametrize("language", LANGUAGES)
 @pytest.mark.parametrize("tool", ["get_stay_catalogue", "get_slot_catalogue"])
-def test_unrelated_current_catalogue_cannot_answer_an_unknown_hotel_question(client, language, tool):
+def test_unrelated_current_catalogue_cannot_answer_an_unknown_hotel_question(
+    client, language, tool
+):
     class ReadThenGreeting(SimpleLlm):
         def chat(self, messages, tools=None):
             self.messages.append(messages)
-            return call(tool, {}) if len(self.messages) == 1 else {"content": GREETING[language]}
+            return (
+                call(tool, {})
+                if len(self.messages) == 1
+                else {"content": GREETING[language]}
+            )
 
     session, state, dispatcher, _ = setup_session(client, language)
     model = ReadThenGreeting()
@@ -461,17 +556,23 @@ def test_unrelated_current_catalogue_cannot_answer_an_unknown_hotel_question(cli
         ("en", "I need the Wi-Fi password", "booking-015"),
     ],
 )
-def test_unmatched_subquestions_do_not_receive_a_different_generic_faq(client, language, question, topic_id):
+def test_unmatched_subquestions_do_not_receive_a_different_generic_faq(
+    client, language, question, topic_id
+):
     assert match_question(question, language) == ()
     session, state, dispatcher, model = setup_session(client, language)
-    model.reply = next(entry for entry in BANK if entry["id"] == topic_id)["answer_" + language]
+    model.reply = next(entry for entry in BANK if entry["id"] == topic_id)[
+        "answer_" + language
+    ]
     response = send(client, session, question, language=language)
     assert_speech_response(client, response, CLARIFY[language], language)
     assert model.messages and dispatcher.calls == [] and not state.bookings
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
-def test_an_actual_owned_proposal_retains_priority_over_unknown_question_clarification(language):
+def test_an_actual_owned_proposal_retains_priority_over_unknown_question_clarification(
+    language,
+):
     async def run():
         state = CallTools(Slots(), language=language)
         state.observe_user_text(UNKNOWN_QUESTION[language], language=language)
@@ -485,22 +586,33 @@ def test_an_actual_owned_proposal_retains_priority_over_unknown_question_clarifi
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
-def test_an_actual_owned_booking_receipt_retains_priority_over_unrelated_model_reply(language):
+def test_an_actual_owned_booking_receipt_retains_priority_over_unrelated_model_reply(
+    language,
+):
     async def run():
         state = CallTools(Slots(), language=language)
         await prepared(state)
         state.observe_user_text(CONSENT[language], language=language)
         result = await state.dispatch("confirm_slot_booking", {"hold_id": "owned-hold"})
         assert result.get("ok") and state.bookings == {"owned-booking"}
-        expected = ENGLISH["confirmed"] if language == "en" else localize("Testbroneering on kinnitatud.", language)
+        expected = (
+            ENGLISH["confirmed"]
+            if language == "en"
+            else localize("Testbroneering on kinnitatud.", language)
+        )
         assert state.guard_reply(GREETING[language], [result]) == expected
-        assert sum(name == "confirm_slot_booking" for name, _ in state.dispatcher.calls) == 1
+        assert (
+            sum(name == "confirm_slot_booking" for name, _ in state.dispatcher.calls)
+            == 1
+        )
 
     asyncio.run(run())
 
 
 @pytest.mark.parametrize("previous_language", ["et", "ru"])
-def test_an_english_topic_paraphrase_selects_english_in_auto_mode(client, previous_language):
+def test_an_english_topic_paraphrase_selects_english_in_auto_mode(
+    client, previous_language
+):
     session, state, dispatcher, model = setup_session(client, previous_language)
     state.language = previous_language
     entry = next(item for item in BANK if item["id"] == "booking-044")
@@ -527,7 +639,9 @@ def test_an_english_topic_paraphrase_selects_english_in_auto_mode(client, previo
         ("ru", "два", "children"),
     ],
 )
-def test_short_planning_continuations_keep_the_approved_next_question(client, language, text, next_detail):
+def test_short_planning_continuations_keep_the_approved_next_question(
+    client, language, text, next_detail
+):
     session, state, dispatcher, model = setup_session(client, language)
     # Short continuations follow a clear caller turn, not a UI language override.
     opening = send(client, session, CALLER_GREETING[language])
@@ -539,7 +653,10 @@ def test_short_planning_continuations_keep_the_approved_next_question(client, la
     response = send(client, session, text, language=language)
     assert_speech_response(client, response, expected, language)
     assert state.faq_entries == () and model.messages
-    assert any(message.get("role") == "user" and message.get("content") == text for message in model.messages[-1])
+    assert any(
+        message.get("role") == "user" and message.get("content") == text
+        for message in model.messages[-1]
+    )
     assert dispatcher.calls == [] and not state.bookings
 
 
@@ -554,7 +671,9 @@ def test_short_planning_continuations_keep_the_approved_next_question(client, la
         ("ru", "В номерах есть Wi-Fi? Двое взрослых.", "children"),
     ],
 )
-def test_mixed_faq_and_booking_detail_reaches_planning_with_the_complete_utterance(client, language, text, next_detail):
+def test_mixed_faq_and_booking_detail_reaches_planning_with_the_complete_utterance(
+    client, language, text, next_detail
+):
     session, state, dispatcher, model = setup_session(client, language)
     opening = send(client, session, CALLER_GREETING[language])
     assert opening.status_code == 200 and opening.json()["language"] == language
@@ -565,7 +684,10 @@ def test_mixed_faq_and_booking_detail_reaches_planning_with_the_complete_utteran
     response = send(client, session, text, language=language)
     assert_speech_response(client, response, expected, language)
     assert state.faq_entries == () and model.messages
-    assert any(message.get("role") == "user" and message.get("content") == text for message in model.messages[-1])
+    assert any(
+        message.get("role") == "user" and message.get("content") == text
+        for message in model.messages[-1]
+    )
     assert dispatcher.calls == [] and not state.bookings
 
 
@@ -590,6 +712,8 @@ def test_faq_question_cannot_supply_confirmation_consent(language):
         result = await state.dispatch("confirm_slot_booking", {"hold_id": "owned-hold"})
         assert result["error"] == "consent_required"
         assert not state.bookings
-        assert not any(name == "confirm_slot_booking" for name, _ in state.dispatcher.calls)
+        assert not any(
+            name == "confirm_slot_booking" for name, _ in state.dispatcher.calls
+        )
 
     asyncio.run(run())

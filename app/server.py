@@ -290,7 +290,7 @@ def create_app():
                 status_code=500,
                 headers={"Cache-Control": "no-store"},
             )
-        if private:
+        if private or request.url.path == "/api/status":
             response.headers["Cache-Control"] = "no-store"
         return response
 
@@ -343,6 +343,7 @@ def create_app():
         stack = app.state.stack
         from .providers.voice_config import SpeechConfig, VoiceConfig
         from .providers.speech_delivery import SpeechDelivery
+        from .release_status import status as telephone_release_status
 
         config = getattr(stack.get("llm_primary"), "config", VoiceConfig())
         speech = SpeechConfig.from_env()
@@ -385,6 +386,8 @@ def create_app():
                 "speaking_style": delivery.mode,
                 "speech_rate": delivery.rate,
                 "recap_rate": delivery.recap_rate,
+                "sentence_pause_ms": delivery.sentence_pause_ms,
+                "release": telephone_release_status(),
                 "media_credentials_configured": stack["livekit"] is not None,
                 "worker_health_probe": "separate_private_endpoint",
                 "public_ingress_verified": False,
