@@ -23,5 +23,6 @@ Küsimuste valija eristab lastele mõeldud tegevusi, lastemenüüd, täpsustamis
 - `flake8.cmd --select E4,E7,E9,F`: läbitud.
 - Uue mooduli `basedpyright.cmd`: **0 viga, 0 hoiatust**.
 - Pärast põhiharu paralleelsete hääle- ja väljalaskemuudatuste liitmist: **466 läbitud, 1 vahele jäetud**; Chrome'i täielik restoranikontroll uuesti läbitud.
+- Pärast ka broneerimise vaheküsimuste ja lühikese kellaaja täpsustuse liitmist põhiharust `c48b467`: **385 läbitud**, Chrome'i kontroll uuesti läbitud, sh **12 broneerimise vaheküsimust**.
 
 Kõne- ja brauserikontrollid kasutavad kohalikke teenusepakkujate fixturesid. Need ei tõesta tegeliku telefonikõne helituvastust, tasulise kõnesünteesi kvaliteeti ega tootmises töötava telefoniprotsessi versiooni. Näidisrestorani broneering ei ole päris restorani tellimus.
