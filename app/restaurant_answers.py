@@ -113,7 +113,7 @@ PATTERNS = {
     "allergens": MEDICAL_FOOD_CONCERN
     + r"|allerg|allergeen|аллерг|глютен|glut(?:ee|e)n|peanut|pähkl|орех|laktoos|lactose|лактоз|sisald|contain|koostis|ingredients|содерж|состав",
     "price": r"\b(?:price|cost|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maksab|цен\w*|стоим\w*|сколько(?:\s+\w+){0,2}\s+сто(?:ит|ят|ить))\b",
-    "menu": r"menüü|menu|меню|vegan|веган|vegetarian|taimetoit|вегетар|\b(?:dishes|serve|roogi|блюд\w*)\b|mis.*süüa|mida.*(?:süüa|pakute)",
+    "menu": r"menüü?|menu|меню|vegan|веган|vegetarian|taimetoit|вегетар|\b(?:dishes|serve|roogi|блюд\w*)\b|mis.*süüa|mida.*(?:süüa|pakute)",
     "kitchen": r"kitchen|köök|köögi|кухн|(?:kell|kellaajani|millal).*süüa|when.*(?:food|eat)|(?:до скольки|когда).*еда",
     "hours": r"\b(?:hours|open\w*|close\w*|shut|lahtiole\w*|avatud|avate|lahti|kinni|sulge\w*|tööa\w*|откры\w*|закры\w*|работа\w*|часы\s+работы)\b",
     "location": r"\b(?:where are you|where is (?:the )?restaurant|where is it|address|location|located|aadress|asute|asub|kus|где|адрес|находит\w*)\b",
