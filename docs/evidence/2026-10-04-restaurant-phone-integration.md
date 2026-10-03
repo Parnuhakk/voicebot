@@ -224,5 +224,21 @@ could not independently establish the untracked private helper's baseline.
 Private live ET/EN/RU acceptance and deployment of this final correction remain
 pending until recorded against the actual synchronized release.
 
+The normal merge of subsequently published `8123638` preserves its natural
+restaurant replies, the configured name `Meretuule`, guest display names and
+additional Estonian question variants. The only source conflict kept the new
+price selector alongside the reviewed menu-spelling alias. Fresh combined
+verification of this merge: **11,966 passed, 36 subtests passed, 4 private-backend
+opt-in skips**, two warnings, 173.56 seconds; basetemp
+`/tmp/opencode/restaurant-recovery-812-wording-final`. All ten Chromium journeys
+pass again without JavaScript errors or external requests.
+
+All twelve private expectations match the new actual canonical renderer and
+final guard with no holds/bookings/providers. Four new failing-first offline
+probes exposed missing first-person Russian/English refusal forms in the audio
+validator; the validator now covers those forms while retaining historical
+third-person and fictional-booking cases. All 52 offline checks pass. This is
+acceptance-validator verification, not a claim that live speech has passed.
+
 This document does not claim a physical microphone test, a carrier/PSTN call,
 real restaurant acceptance, an allergy-safe meal, a food order or a real booking.

@@ -50,6 +50,27 @@ count toward capacity. Ambiguous component counts prompt for the total.
 
 ## Natural conversation and visible demo reservations
 
+Spoken greetings and ordinary restaurant replies do not announce testing or
+demo status. The AI identity remains in the greeting. The bundled venue uses
+the display name `Meretuule`; its stable restaurant ID and all synthetic-data
+markers are unchanged. Restaurant-only guest aliases (`Esimene Külaline`, etc.)
+remove internal fixture labels from canonical recaps without changing fixture
+IDs, reserved contacts, call scopes or existing saved records. Shared hotel
+fixtures are unchanged.
+
+The webpage and saved receipts still disclose fictional data, and an explicit
+"Is this a real restaurant?" question receives a truthful answer. Unknown
+prices, address and write outcomes remain unknown; no transfer, payment or
+allergy guarantee is invented. Grounded browser candidates that narrate internal
+test/demo labels are rejected whole and use the approved fallback, never a
+word-stripped recap. Ordinary generation receives the venue name, not its
+internal testing description. Capability answers also omit routine demo framing,
+while explicitly refusing special-request storage, kitchen notifications and
+food/takeaway/delivery orders. Estonian duration/price/staff questions accept `laud/lauda`,
+`maksavad/maksma` and `töötajaga`; children, closure and recommendation prompts
+use consistent polite address. Dog policy does not grant permission for cats
+or other unverified pets.
+
 Estonian replies use consistent polite wording and recap dates such as
 `pühapäeval, 4. oktoobril 2026`. Clock pronunciation also handles `kell 9`
 and `kell 9:30` without changing the displayed or stored values. Party details

@@ -17,32 +17,32 @@ CASES = [
     (
         "et",
         "Kas saate minu allergiast köögile teatada?",
-        "See demo ei salvesta erisoove ega saada köögile teateid. Allergiaohutust ma kinnitada ei saa.",
+        "Ma ei salvesta erisoove ega saada köögile teateid. Allergiaohutust ma kinnitada ei saa.",
     ),
     (
         "en",
         "Can you record an allergy note?",
-        "This demo can't save special requests or notify the kitchen. I can't confirm allergy safety.",
+        "I can't save special requests or notify the kitchen. I can't confirm allergy safety.",
     ),
     (
         "ru",
         "Можете записать мою аллергию в бронирование?",
-        "Эта демонстрация не сохраняет особые пожелания и не уведомляет кухню. Я не могу подтвердить безопасность при аллергии.",
+        "Я не сохраняю особые пожелания и не уведомляю кухню. Я не могу подтвердить безопасность при аллергии.",
     ),
     (
         "et",
         "Kas saan toitu kaasa tellida?",
-        "See demo ei võta vastu toidu-, kaasamüügi- ega kohaletoimetamise tellimusi. Saan aidata fiktiivse lauabroneeringuga.",
+        "Ma ei võta vastu toidu-, kaasamüügi- ega kohaletoimetamise tellimusi. Saan aidata lauabroneeringuga.",
     ),
     (
         "en",
         "Can I order takeaway?",
-        "This demo doesn't take food, takeaway or delivery orders. I can help with a fictional table reservation.",
+        "I don't take food, takeaway or delivery orders. I can help with a table reservation.",
     ),
     (
         "ru",
         "Можно заказать еду навынос?",
-        "Эта демонстрация не принимает заказы еды, навынос или с доставкой. Я могу помочь с тестовым бронированием столика.",
+        "Я не принимаю заказы еды, навынос или с доставкой. Могу помочь с бронированием столика.",
     ),
 ]
 
