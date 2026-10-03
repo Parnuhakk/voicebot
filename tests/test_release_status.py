@@ -97,6 +97,7 @@ def test_invalid_or_mismatched_record_keeps_previous_verified_receipt(
     {"fingerprint": "unknown"}, {"fingerprint": False},
     {"verified_at": True}, {"verified_at": "today"},
     {"verified_at": float("nan")}, {"verified_at": float("inf")},
+    {"verified_at": 10 ** 400},
     {"verified_at": -1}, {"verified_at": time.time() + 3600},
     {"unexpected": "synthetic-private"},
 ])
@@ -108,7 +109,10 @@ def test_malformed_receipt_is_unverified_and_not_echoed(tmp_path, change):
     assert "synthetic-private" not in json.dumps(releases.status(path=path))
 
 
-@pytest.mark.parametrize("payload", [b"", b"[1]", b"null", b"\xff", b"x" * 4097])
+@pytest.mark.parametrize("payload", [
+    b"", b"[1]", b"null", b"\xff", b"x" * 4097,
+    b"[" * 1500 + b"0" + b"]" * 1500,
+])
 def test_corrupt_or_oversized_receipt_does_not_break_public_status(tmp_path, payload):
     path = tmp_path / "telephone-release.json"
     path.write_bytes(payload)

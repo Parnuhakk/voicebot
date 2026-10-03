@@ -139,7 +139,7 @@ def status(
         age = (time.time() if now is None else now) - checked
         if age < -5:
             return result
-    except (OSError, ValueError, TypeError):
+    except (OSError, ValueError, TypeError, OverflowError, RecursionError):
         return result
     result.update(
         telephone_fingerprint=fingerprint,

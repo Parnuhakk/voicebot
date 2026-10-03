@@ -192,6 +192,8 @@ class ExternalCommands:
                 operation = "up-" + argv[-1]
         if operation == "run" and argv[argv.index("--network") + 1] == "none":
             operation = "artifact-check"
+        if operation == "exec" and argv[3:6] == ["python", "-m", "app.release_status"]:
+            operation = "release-" + argv[6]
         if self.fail == "timeout-" + operation:
             raise subprocess.TimeoutExpired(argv, kwargs["timeout"], PRIVATE, PRIVATE)
         if self.fail == operation:
@@ -226,7 +228,7 @@ class ExternalCommands:
             if not selected:
                 raise subprocess.CalledProcessError(1, argv, PRIVATE, PRIVATE)
             out = json.dumps(copy.deepcopy(selected)).encode()
-        elif operation == "exec":
+        elif operation in ("exec", "release-identity", "release-record"):
             if argv[3:6] == ["python", "-m", "app.release_status"]:
                 if argv[-1] == "identity":
                     assert argv[2] == self.containers["web"]["Id"]
@@ -488,6 +490,25 @@ def test_published_master_ancestor_still_deploys_only_published_code(lane, capsy
     assert capsys.readouterr().out.strip() == "PASS: release_synced"
     assert any(c[-3:] == ["archive", "--format=tar", SHA] for c, _ in lane.external.calls)
     assert len(lane.external.receipts) == 1
+
+
+@pytest.mark.parametrize("stage", ["merge-base", "timeout-merge-base"])
+def test_ancestry_command_errors_never_authorize_an_unverified_release(lane, stage):
+    lane.external.master = "f" * 40
+    lane.external.fail = stage
+    assert lane.run() == 1
+    assert not lane.external.mutations()
+    assert not lane.external.receipts
+
+
+@pytest.mark.parametrize("stage", ["release-identity", "release-record"])
+def test_failed_release_receipt_never_claims_success(lane, stage, capsys):
+    lane.external.fail = stage
+    assert lane.run() == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err.strip() == "FAIL: release_sync_failed"
+    assert not lane.external.receipts
 
 
 @pytest.mark.parametrize(
