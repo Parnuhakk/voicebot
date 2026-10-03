@@ -19,6 +19,47 @@ opening-hours and table-reservation questions use reviewed answers. Hours and
 restaurant bookings remain unconfigured; the assistant does not invent them.
 Legacy spa/stay integrations retain their separate catalogue and recap policy.
 
+### English restaurant understanding
+
+The shared restaurant router recognizes natural English table, menu, dietary,
+allergy-note, takeaway/delivery and opening-hours requests. Whole-utterance
+matching accepts polite introductions, hesitations and contractions such as
+“I'd like a table for four” and “I was wondering if you're open on Sundays”.
+Clear English restaurant clauses can override an erroneous ASR language label;
+weak yes/no, numeric and AM/PM answers retain the current voice. A request
+to speak English gets a short English acknowledgement. Transcripts and
+write-consent phrases are not rewritten.
+
+Reviewed FAQ answers remain authoritative. A table request receives the booking
+limitation directly, without collecting dates or AM/PM for an unavailable
+service. Each fully recognized clause of a mixed English request receives its
+own reviewed answer; unknown extra clauses prevent the shortcut. Explicit topic
+corrections such as “No, I meant the menu” select the new topic. Short followups
+such as “What about Sundays?” use the last answered topic in the same call.
+English repeat requests replay the last reviewed FAQ answer. Only a bounded
+set of FAQ identifiers survives for this context, not caller text; unrelated
+questions clear it. Existing owned-recap playback and fresh-consent rules still
+apply separately.
+
+Both native and HTTP Groq recognition support a short static English restaurant
+spelling vocabulary when the current call is English. Fixed English mode also
+sends `language=en`. Auto mode keeps language autodetection and permits switching
+to Estonian/Russian; the spelling hint is removed after a language change. Native
+context changes only after a final caller turn. HTTP uses separate per-call
+provider views, so concurrent sessions cannot mutate shared recognition options.
+The hint contains no caller history, caller names, requested dates/times, prices or
+confirmation phrase. Other integrations retain their existing recognition
+contract. See [Groq's transcription parameters](https://console.groq.com/docs/speech-to-text#using-the-api)
+for the language and spelling-prompt API. This is a configuration change, not a
+measured claim of improved word error rate.
+
+`tests/test_english_restaurant_understanding.py` covers native/shared and HTTP
+routing, wrong language metadata, contextual followups, topic corrections,
+repeats, mixed requests and isolated multipart recognition requests. Synthetic
+provider responses exercise English-to-Russian switching and cleanup. Live ASR
+accuracy, accents, background noise and audible response quality still require
+real calls after deployment to both processes.
+
 ### Multilingual date and time answers
 
 Both transports parse finalized caller turns in Estonian, English and Russian

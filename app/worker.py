@@ -57,7 +57,7 @@ class _SpokenText(TimedString):
 
 
 class TelephoneAgent(Agent):
-    def __init__(self, state, *, speech_config=None, speech_provider=None):
+    def __init__(self, state, *, speech_config=None, speech_provider=None, speech_recognizer=None):
         super().__init__(
             instructions=state.conversation_instructions,
             tools=sdk_tools(state, conversation=True),
@@ -66,6 +66,7 @@ class TelephoneAgent(Agent):
         self.state = state
         self.speech_config = speech_config or SpeechConfig()
         self.speech_provider = speech_provider
+        self.speech_recognizer = speech_recognizer
         self._detected_language = None
         self._unsupported_language = False
         self._final_user_turn = None
@@ -101,6 +102,8 @@ class TelephoneAgent(Agent):
         self._detected_language = None
         self._unsupported_language = False
         message_id = getattr(new_message, "id", None)
+        if isinstance(self.speech_recognizer, TelephoneSTT):
+            self.speech_recognizer.set_preferred_language(self.state.language)
         self._final_user_turn = (
             (message_id, self.state._turn_serial)
             if new_message.role == "user" and message_id
@@ -750,6 +753,7 @@ async def entrypoint(ctx: JobContext):
         recognizer = TelephoneSTT(
             model=config.stt_model,
             mode=speech_config.mode,
+            business=state.business,
             api_key=os.environ["GROQ_API_KEY"],
         )
         speech_provider = TelephoneTTS(
@@ -778,7 +782,8 @@ async def entrypoint(ctx: JobContext):
         )
         closed = asyncio.Event()
         agent = TelephoneAgent(
-            state, speech_config=speech_config, speech_provider=speech_provider
+            state, speech_config=speech_config, speech_provider=speech_provider,
+            speech_recognizer=recognizer,
         )
         session.on("close", lambda ev: closed.set())
         session.on(

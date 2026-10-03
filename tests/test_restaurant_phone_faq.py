@@ -96,6 +96,12 @@ def test_restaurant_courtesy_question_selects_its_own_language(
 def test_allergy_question_never_swallows_an_extra_table_booking(
     language, question, identifier, replies
 ):
+    if language == "en":
+        # English now recognizes both complete requests. Each gets its own
+        # reviewed limitation; the table request cannot vanish into allergy FAQ.
+        found = match_question(question + " " + EXTRA_COMMAND[language], language, entries=bank())
+        assert tuple(entry["id"] for entry in found) == (identifier, "booking-104")
+        return
     assert (
         match_question(
             question + " " + EXTRA_COMMAND[language], language, entries=bank()

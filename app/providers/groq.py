@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import httpx
 
+from .recognition_context import recognition_prompt
+
 from .errors import (
     ProviderError,
     RetryableProviderError,
@@ -68,6 +70,8 @@ class GroqClient:
         model: str | None = None,
         *,
         language: str = STT_LANGUAGE,
+        business: str | None = None,
+        preferred_language: str | None = None,
     ) -> str:
         """Transcribe one chunk with a language hint or automatic recognition.
 
@@ -82,6 +86,9 @@ class GroqClient:
         }
         if language != "auto":
             data["language"] = language
+        prompt = recognition_prompt(preferred_language if language == "auto" else language, business)
+        if prompt:
+            data["prompt"] = prompt
         response = self._post(
             "/openai/v1/audio/transcriptions",
             "groq.transcribe",
@@ -100,6 +107,11 @@ class GroqClient:
                 reason="invalid_response",
                 status_code=response.status_code,
             ) from exc
+
+    def for_recognition(self, *, business, preferred_language):
+        # A per-call view keeps concurrent HTTP callers from changing each
+        # other's language hint on the shared HTTP provider.
+        return _RecognitionView(self, business, preferred_language)
 
     def chat(
         self,
@@ -138,3 +150,11 @@ class GroqClient:
                 reason="invalid_response",
                 status_code=response.status_code,
             ) from exc
+
+
+class _RecognitionView:
+    def __init__(self, client, business, preferred_language):
+        self.client, self.business, self.preferred_language = client, business, preferred_language
+
+    def transcribe(self, audio, *, language):
+        return self.client.transcribe(audio, language=language, business=self.business, preferred_language=self.preferred_language)

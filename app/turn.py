@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import json
 import re
+from inspect import getattr_static
 
 from .providers.errors import (
     ProviderError,
@@ -44,12 +45,14 @@ TURN_UNAVAILABLE = {
 }
 
 
-async def recognize_audio(stt, audio: bytes, language: str) -> tuple[str, str]:
+async def recognize_audio(stt, audio: bytes, language: str, *, business=None, preferred_language=None) -> tuple[str, str]:
     """Return final text and a closed diagnostic code, never provider details."""
     if not audio:
         return "", "no_speech"
     lang = language if language in ("auto", "et", "en", "ru") else "et"
     try:
+        if business == "restaurant" and callable(getattr_static(stt, "for_recognition", None)):
+            stt = stt.for_recognition(business=business, preferred_language=preferred_language)
         text = await asyncio.to_thread(stt.transcribe, audio, language=lang)
         if not isinstance(text, str):
             return "", "stt_unavailable"

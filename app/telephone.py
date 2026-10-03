@@ -32,6 +32,7 @@ from . import callslog
 from .conversation import (
     Conversation,
     QUESTIONS,
+    REPLIES,
     STYLE_INSTRUCTIONS,
     approved_dialogue,
     spa_hours_focus,
@@ -574,6 +575,7 @@ class CallTools:
         self._date_only = False
         self._temporal = TemporalInput()
         self._expected_temporal = None
+        self._restaurant_faq_context = ()
         self._spa_hours_inquiry = False
         self.faq_entries = ()
         self._faq_unmatched = False
@@ -862,6 +864,9 @@ class CallTools:
         changed = selected != self.language
         self.language = selected
         self.conversation.observe(text, selected, business=self.business)
+        if self.business == "restaurant" and requested_language(text) == "en":
+            self.conversation.intent = "language"
+            self.conversation.reply = REPLIES["en"]["language"][0]
         self.unsupported_language = (
             unsupported and not named_fixture and requested_language(text) is None
         )
@@ -876,15 +881,20 @@ class CallTools:
         self._temporal = interpret_temporal(text, selected, now_local, reference, expected, reference_clock) if not self.unsupported_language else TemporalInput()
         self._requested_dates = self._temporal.dates
         self._date_only = self._temporal.is_answer
-        self.clarification = english_clarification(text) if selected == "en" else None
+        self.clarification = english_clarification(text) if selected == "en" and self.business != "restaurant" else None
         self.results.clear()
         self._turn_serial += 1
         self.turn_mutation = None
         self.cancel_approval = None
         self._spa_hours_inquiry = False
         self.faq_entries = (
-            match_question(text, selected, entries=faq_bank) if not self.unsupported_language else ()
+            match_question(text, selected, entries=faq_bank, previous=self._restaurant_faq_context) if not self.unsupported_language else ()
         )
+        if self.business == "restaurant":
+            if selected == "en" and not self.unsupported_language and self.conversation.intent == "repeat" and self._restaurant_faq_context and not self.pending:
+                self.faq_entries = tuple(entry for entry in faq_bank if entry["id"] in self._restaurant_faq_context)
+            if self.unsupported_language or (text.strip() and not self.faq_entries and self.conversation.intent not in {"thanks", "repeat"}):
+                self._restaurant_faq_context = ()
         if self.faq_entries and all(entry["id"] in {"booking-025", "booking-026"} for entry in self.faq_entries):
             self.conversation.focus = "hours"
         self._faq_unmatched = bool(text.strip() and not self.faq_entries and self.conversation.intent is None)
@@ -1062,6 +1072,7 @@ class CallTools:
         """Acknowledge a standalone date without inventing a restaurant booking."""
         if (
             not (self._date_only or (self._booking_request and self._temporal.issue)) or self.unsupported_language
+            or (self.business == "restaurant" and self.faq_entries)
             or self.results or self.pending or self.turn_mutation
             or self.cancel_approval or self.mutation_uncertain
             or self.outcome == "write_outcome_unknown"
@@ -1210,6 +1221,8 @@ class CallTools:
 
     def guard_reply(self, text, results):
         reply = self.say(self._guard_reply(text, results))
+        if self.business == "restaurant" and self.faq_entries and reply == self.faq_reply(results) and not self.mutation_uncertain:
+            self._restaurant_faq_context = tuple(entry["id"] for entry in self.faq_entries)
         questions = QUESTIONS[self.language]
         temporal = TEMPORAL_QUESTIONS[self.language]
         if reply in {*questions["date"], *questions["arrival"], *questions["departure"], self.say(ASK_DATE), self.say(ASK_DATE_TIME), ENGLISH["ask_date"], ENGLISH["ask_date_time"], *(temporal[key] for key in ("invalid_date", "ambiguous_date", "vague_date", "past"))}:

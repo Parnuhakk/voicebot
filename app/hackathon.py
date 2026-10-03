@@ -667,7 +667,10 @@ async def run_demo_turn(
     stt_started = started
     recognition_status = "typed"
     if audio:
-        text, recognition_status = await recognize_audio(stack["stt"], audio, language)
+        text, recognition_status = await recognize_audio(
+            stack["stt"], audio, language,
+            business=session.tools.business, preferred_language=session.tools.language,
+        )
     stt_failed = recognition_status == "stt_unavailable"
     stt_ms = (time.perf_counter() - stt_started) * 1000 if audio else 0.0
     if not isinstance(text, str) or len(text) > 500:

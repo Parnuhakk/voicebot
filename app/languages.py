@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Any
 from .russian import detect_language
 from .temporal import temporal_language
+from .restaurant_english import english_evidence
 
 LANGUAGES = ("et", "en", "ru")
 ENGLISH_INVITATION = "You can also speak English. How can I help you?"
@@ -212,6 +213,8 @@ def select_language(text: str, detected: object, current: str) -> str:
     calendar_language = temporal_language(text)
     if calendar_language:
         return calendar_language
+    if english_evidence(text):
+        return "en"
     if code:
         return code
     inferred = detect_language(text, "en")

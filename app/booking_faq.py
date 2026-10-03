@@ -11,6 +11,7 @@ from pathlib import Path
 
 from .languages import LANGUAGES, spoken_time
 from .temporal import TALLINN, interpret_temporal
+from .restaurant_english import normalize_english, restaurant_question_ids
 
 
 FAQ_PATH = Path(__file__).resolve().parents[1] / "data/demo/booking-faq.json"
@@ -23,7 +24,7 @@ CLARIFY = {
 }
 RESTAURANT_CLARIFY = {
     "et": "Ma ei saanud küsimusest päris täpselt aru. Kas küsid menüü, lahtiolekuaegade või lauabroneeringu kohta?",
-    "en": "I didn't quite understand. The Meretuule Kitchen demo can answer verified restaurant questions, but real table reservations are not configured.",
+    "en": "I didn't quite catch what you need. Are you asking about the menu, opening hours or a table reservation?",
     "ru": "Я не совсем понял. Демонстрация Meretuule Köök может отвечать на подтверждённые вопросы о ресторане, но настоящие бронирования столиков не настроены.",
 }
 MISSING_FACTS = {
@@ -115,23 +116,38 @@ def _without_courtesy(text, language):
     return text
 
 
-def match_question(text, language, entries=None):
+def match_question(text, language, entries=None, *, previous=()):
     """Only complete reviewed questions; unmatched mixed requests keep planning."""
     if language not in LANGUAGES or not isinstance(text, str) or not text.strip() or len(text) > 2000:
         return ()
     entries = load_faq() if entries is None else entries
+    restaurant = language == "en" and {"booking-103", "booking-104"}.issubset({e["id"] for e in entries})
+
+    def key_for(phrase):
+        return normalize(normalize_english(phrase)) if language == "en" else normalize(phrase)
+
+    def conversational(phrase):
+        if not restaurant:
+            return ()
+        ids = restaurant_question_ids(phrase, previous)
+        found = tuple(e for identifier in ids for e in entries if e["id"] == identifier)
+        return found if len(found) == len(ids) else ()
+
     lookup = {}
     for entry in entries:
         for phrase in (entry["question_" + language], *entry.get("variants_" + language, [])):
-            key = normalize(phrase)
+            key = key_for(phrase)
             # Ambiguous aliases must never silently pick an unrelated answer.
             if key in lookup and (lookup[key] is None or lookup[key]["id"] != entry["id"]):
                 lookup[key] = None
             else:
                 lookup[key] = entry
-    value = _without_courtesy(normalize(text), language)
+    value = _without_courtesy(key_for(text), language)
     if value in lookup:
         return (lookup[value],) if lookup[value] else ()
+    natural = conversational(text)
+    if natural:
+        return natural
     parts = [part.strip(" .,!\n\t") for part in re.split(
         r"[?!;\n]+|\s+(?:ja|and|и)\s+(?=(?:kas|mis|millal|can|is|do|what|можно|есть|как|где)\b)",
         text, flags=re.I,
@@ -143,8 +159,11 @@ def match_question(text, language, entries=None):
         return ()
     found = []
     for part in parts:
-        value = _without_courtesy(normalize(part), language)
+        value = _without_courtesy(key_for(part), language)
         entry = lookup.get(value)
+        if entry is None and value not in lookup:
+            natural = conversational(part)
+            entry = natural[0] if len(natural) == 1 else None
         if entry is None:
             return ()
         if entry not in found:

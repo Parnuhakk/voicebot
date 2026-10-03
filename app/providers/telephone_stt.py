@@ -22,6 +22,7 @@ from livekit.agents import (
 from livekit.agents.utils import AudioBuffer
 
 from ..languages import LANGUAGES, language_code
+from .recognition_context import recognition_prompt
 
 
 class TelephoneSTT(stt.STT[str]):
@@ -31,6 +32,7 @@ class TelephoneSTT(stt.STT[str]):
         api_key: str,
         model: str,
         mode: str = "auto",
+        business: str = "legacy",
         transport: httpx.AsyncBaseTransport | None = None,
     ):
         super().__init__(
@@ -38,7 +40,11 @@ class TelephoneSTT(stt.STT[str]):
         )
         if mode not in {"auto", *LANGUAGES}:
             raise ValueError("invalid telephone language mode")
+        if business not in {"legacy", "restaurant"}:
+            raise ValueError("invalid telephone business")
         self._model, self.mode = model, mode
+        self.business = business
+        self._preferred_language = mode
         self._http = httpx.AsyncClient(
             base_url="https://api.groq.com",
             transport=transport,
@@ -57,6 +63,11 @@ class TelephoneSTT(stt.STT[str]):
     async def aclose(self) -> None:
         await self._http.aclose()
 
+    def set_preferred_language(self, language):
+        if language not in LANGUAGES:
+            raise ValueError("invalid preferred recognition language")
+        self._preferred_language = language
+
     async def _recognize_impl(
         self,
         buffer: AudioBuffer,
@@ -71,6 +82,9 @@ class TelephoneSTT(stt.STT[str]):
         }
         if self.mode != "auto":
             data["language"] = self.mode
+        prompt = recognition_prompt(self._preferred_language if self.mode == "auto" else self.mode, self.business)
+        if prompt:
+            data["prompt"] = prompt
         try:
             response = await self._http.post(
                 "/openai/v1/audio/transcriptions",

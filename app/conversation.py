@@ -56,6 +56,11 @@ INTENTS = {
         "please repeat that",
         "say that again",
         "could you repeat that",
+        "sorry could you say that again",
+        "can you say that again",
+        "could you say that again",
+        "sorry i missed that",
+        "i didn't catch that",
         "i didn't understand",
         "what was the date",
         "please repeat the date",
@@ -135,6 +140,7 @@ REPLIES = {
         ),
     },
     "en": {
+        "language": ("Of course. We can speak English. How can I help?",),
         "greeting": ("Hello! How can I help you?", "Hi! What can I help you with?"),
         "thanks": (
             "You're welcome! Can I help with anything else?",
@@ -268,7 +274,7 @@ QUESTIONS = {
 
 STYLE_INSTRUCTIONS = {
     "et": "Vasta korrektses ja loomulikus eesti keeles, nagu sõbralik vastuvõtja. Alusta vastusest küsitud küsimusele; vajadusel lisa üks lühike selgitus. Kasuta sidusaid täislauseid ja sina-vormi. Väldi ingliskeelseid sõnu, otsetõlkeid, tehnilist sõnavara ja hakitud lausekatkeid. Kasuta tavaliselt üht kuni kolme lühikest lauset. Vali puuduvate andmete küsimus natural_questions valikutest ja küsi üks detail korraga. Ära küsi uuesti juba antud detaili ega lisa iga vastuse lõppu uut küsimust. Ära korda tervitust ega demo tutvustust igas voorus. Väldi bürokraatlikku sõnastust, loetelude ettelugemist, täitesõnu ja väljamõeldud naeru. Ära väida, et oled inimene. Vastused ja küsimused ei tohi lubada kinnitamata broneeringut, hinda, saadavust ega inimesele suunamist. Kinnitatud KKK-vastused, serveri kokkuvõte ja nõusoleku sõnad jäävad täpseks.",
-    "en": "Speak like a friendly assistant, with short spoken sentences and one question at a time. Choose missing-detail questions from natural_questions. Keep details the caller already supplied. Do not restart the greeting or repeat the demo disclosure every turn. Avoid bureaucratic wording, long lists, filler noises and invented laughter. Do not pretend to be human. Never add an unverified booking, price, availability or transfer claim. The server's recap and consent wording stay exact. Pick one clarification question; do not read out the whole list of missing details.",
+    "en": "Speak natural, concise English, like a friendly receptionist. Answer the caller's current question first. Understand polite requests, contractions and everyday expressions by their meaning; do not demand a scripted phrase. Use the recent conversation to understand short followups and corrections. Keep details the caller already supplied and ask only for a missing or ambiguous detail, one question at a time. If two meanings remain possible, name the choices in a short clarification. If something is unavailable in this demo, explain that directly; do not collect details for a service you cannot provide. Address each part of a mixed request. Do not restart the greeting or repeat the demo disclosure every turn. Avoid bureaucratic wording, long lists, filler noises and invented laughter. Do not pretend to be human. Never add an unverified booking, price, availability or transfer claim. Reviewed FAQ answers, the server's recap and consent wording stay exact.",
     "ru": "Говори как дружелюбный помощник: короткими фразами и по одному вопросу за раз. Выбирай вопросы о недостающих данных из natural_questions. Сохраняй сведения, которые собеседник уже сообщил. Не начинай каждый ответ с приветствия и не повторяй описание демонстрации в каждом ходе. Избегай канцелярских оборотов, длинных списков, слов-паразитов и выдуманного смеха. Не выдавай себя за человека. Не обещай неподтверждённое бронирование, цену, наличие мест или перевод звонка сотруднику. Серверный текст итогов бронирования и слова согласия должны оставаться точными. Задавай один уточняющий вопрос, а не весь список вопросов о недостающих данных.",
 }
 
