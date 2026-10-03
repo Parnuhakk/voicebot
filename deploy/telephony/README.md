@@ -190,6 +190,27 @@ requires reinstalling those reviewed files and reloading systemd.
 
 ## Synthetic proofs
 
+For the current restaurant mode, use the canonical restaurant runner only after
+verifying the worker's deployed source and an idle room count, while holding the
+shared `/home/arle/.local/share/voicebot-release-sync/sync.lock` deployment lock:
+
+```bash
+python deploy/telephony/restaurant_probe.py --source-container livekit-worker-1 --language et
+python deploy/telephony/restaurant_probe.py --source-container livekit-worker-1 --language en
+python deploy/telephony/restaurant_probe.py --source-container livekit-worker-1 --language ru
+```
+
+This runner uses fictional, call-owned restaurant reservations. It independently
+checks zero writes before later explicit consent, exact date/time/party, one
+canonical reservation and its cancellation. Cleanup cancels only strongly proven
+owned reservations, never deletes ledger history, and deletes only its UUID room.
+Caller audio and credentials stay in memory. The conversation has a 240-second
+budget, caller synthesis a 40-second process deadline, cleanup steps independent
+4-second deadlines, and the CLI an overall 300-second budget. Cleanup failure
+prevents a PASS. These RTC proofs do not establish physical microphone, human
+hearing, carrier/PSTN operation or production readiness. Older booking probes
+below are historical hotel/spa context, not restaurant acceptance.
+
 Install pinned media requirements in isolated Python 3.12. These tests use real
 providers/private demo writes and may incur provider usage. Output is metrics
 and codes only, not credentials or transcripts.

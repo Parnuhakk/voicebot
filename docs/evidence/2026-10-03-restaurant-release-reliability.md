@@ -104,3 +104,105 @@ the narrow independent static recheck closed the finding. Production readbacks
 remain nonblocking. Three-language committed-cancellation/lost-response cases
 also reproduced confirmation-specific uncertainty wording; neutral short action
 wording now preserves sticky uncertainty and forbids repeating the mutation.
+
+## Recovered contributor integration
+
+The server restart erased the temporary worktree. Reviewed commits `b8e5192`
+and `bb711a8` were recovered into the persistent isolated worktree
+`/home/arle/voicebot-restaurant-release-recovered-20261003`; the original dirty
+checkout's HEAD, tracked diff and all 19 status entries remained unchanged.
+Normal merges retain published `649d23e` and `20bffec`, including multilingual
+spoken dates/times, clarification, approved restaurant answers, voice previews,
+language radios, operator navigation and detailed saved-reservation receipts.
+
+The user's later explicit hostname correction supersedes the earlier Meretuule
+publication: `75bc112` retires that separate site and redirects. Robot remains
+the restaurant/operator website. Local real-host tests deny the retired hostname
+with empty HTTP 410/no-store while preserving robot health, assets, facts,
+authenticated bookings/history and the existing telephone endpoints.
+
+Fresh full verification after `20bffec` integration and probe repairs:
+
+- Main core, with the still-owned probe file excluded during its repair:
+  **10,611 passed, 62 skipped, 36 subtests passed**, 77.56 seconds.
+- Complete media, including the repaired probe: **11,022 passed, 6 skipped,
+  36 subtests passed**, 102.39 seconds.
+- Nine local Chromium journeys and 21 delivery checks passed at the `649d23e`
+  checkpoint; the current restaurant journey also passed retired-host denial,
+  exact receipt delivery, later ET/EN/RU confirmation/cancellation, gated reads,
+  saved-booking reload, speech/date forms, WAV capture, logout and mobile checks.
+  All browser requests remained local; page errors and external requests were zero.
+- Actual restrictive-archive Docker checks: **5 passed**, 11.35 seconds, using
+  an existing local image, no network and read-only nonroot runtime.
+- Python and embedded probe-code syntax, JavaScript syntax, asset digests,
+  conflict markers, credential patterns and whitespace checks passed.
+
+One full-suite failure was an upstream direct-booking fixture that omitted the
+mandatory one-use recap receipt; HTTP 409 correctly prevented confirmation.
+The fixture now supplies the preparation receipt and asserts acknowledgement
+before separate confirmation. All 73 HTTP tests passed. Three reviewed browser
+fixtures likewise needed owned audio identity or programmatic central-retirement
+input, rather than clicking disabled recording controls. Runtime guards were
+not relaxed; actual browser checks and the narrow static recheck passed.
+
+Independent review reproduced a new rejected-caption SDK defect: assigning a
+plain string to `SpeechData.language` bypassed `LanguageCode` normalization and
+crashed recognition before caption emission. Six ET/EN/RU real-SDK regressions,
+with and without a later supported fragment, failed first. The two-line SDK-type
+repair retains private rejection markers and blocks later-fragment consent;
+161 native/recovery/language cases passed, and static P1 recheck closed the issue.
+
+The recovered restaurant RTC runner received two lifecycle P1 repairs and a
+separate native-key ownership repair. Ambiguous room creation now still deletes
+only its generated UUID room. Caller synthesis uses a killable subprocess with
+environment-only credentials and privately captured WAV bytes. Conversation,
+process and independent cleanup waits are bounded; cleanup failure cannot PASS.
+Ownership is proved by real native confirmation hashes, scoped guest, venue,
+hold, request fingerprint and immutable canonical response, not an invented key
+prefix. Actual `RestaurantCallTools.dispatch`/SQLite regressions prove writes are
+visible and cleanup preserves foreign/baseline reservations and action history.
+The repair lane reported 63 core passes/6 SDK skips and 69 media passes; the
+owner's complete media run above independently includes them. Narrow independent
+static review found no remaining P0/P1 in the ownership/lifecycle scope.
+
+Final English-invitation merge `c8afb06`, current-source reruns, publication,
+deployed-source/browser verification and real-provider acceptance are subsequent
+delivery evidence, not claims implied by these local checkpoint counts.
+
+### Tested publication candidate including `c8afb06`
+
+The final normal merge retains the approved native English invitation without
+removing any affirmation/recovery/owned-hold safeguards. The exact invitation
+whitelist remains below unknown-outcome, mutation-truth, canonical-recap and
+inquiry priorities; appended success prose is rejected. A narrow independent
+Codex static review found no concrete P0/P1 in that merge scope.
+
+Fresh sequential full runs on that combined source, including the recovered and
+reviewed canonical probe:
+
+- Core: **10,676 passed, 69 skipped, 36 subtests passed**, 81.37 seconds.
+- Media: **11,025 passed, 6 skipped, 36 subtests passed**, 103.66 seconds.
+- All **nine** local Chromium journeys and all **21** restaurant delivery cases
+  passed again; no external requests or page errors. Browser 153.0.8010.12.
+- Existing deprecation warnings remain: Starlette/httpx in core and media,
+  Python audioop in media. Skipped tests are reported, not called verified.
+
+These are overlapping suites, not a summed test total. Live rollout/provider
+metrics are recorded in the persistent goal evidence after delivery; these local
+checks do not establish physical-microphone or carrier acceptance.
+
+## Pre-rollout preservation qualification
+
+Read-only hash-only snapshot at 2026-10-03 20:34:39 UTC records healthy web,
+worker and bridge on `67af353`, original shared volumes and a valid incoming
+robot POST route. Existing canonical reservations/actions, legacy writes/stay
+rows and calls/bookings/events are hash-preserved. Mutable session/hold hashes
+had already changed before this session's rollout; unchanged row bytes are not
+claimed for those lifecycle tables.
+
+The original incoming number is no longer owned in the carrier account. A
+different current owned number has the correct configured incoming route. This
+external change predates our deployment: this session neither purchased/released
+numbers nor rewrote account/bridge settings. Delivery must preserve the fresh
+current configuration and report that original-number continuity is unproven,
+rather than overwrite another owner's changes or claim the old baseline matches.

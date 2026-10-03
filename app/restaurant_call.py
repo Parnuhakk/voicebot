@@ -16,6 +16,7 @@ from .languages import (
     AFFIRMATIONS_EN,
     AFFIRMATIONS_RU,
     CONSENT,
+    ENGLISH_INVITATION,
     LANGUAGE_POLICY,
     english_clarification,
     spoken_date,
@@ -1220,7 +1221,9 @@ class RestaurantCallTools(CallTools):
         reply = self.inquiry_reply()
         if reply:
             return reply
-        if text == self.greeting:
+        if text == self.greeting or (
+            self.language == "et" and text == ENGLISH_INVITATION
+        ):
             return text
         if text in (
             self.fallback,
