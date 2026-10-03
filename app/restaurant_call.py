@@ -84,7 +84,7 @@ COPY: dict[str, dict[str, str]] = {
         "closed": "closed",
         "alternatives": "That time isn't available. On the same day, we have {times}. Which works for you?",
         "confirmation_question": CONFIRMATION_QUESTIONS["en"],
-        "recap": "Your test reservation: {name}, {date} at {time}, Tallinn local time, for {party} guests. The table is for {duration} minutes, under {guest}. {question}"
+        "recap": "Your test reservation: {name}, {date} at {time}, for {party} guests. The table is for {duration} minutes, under {guest}. {question}"
     },
     "ru": {
         "greeting": "Здравствуйте! Я ИИ-помощник деморесторана. Настоящий столик здесь не бронируется. Чем помочь?",
