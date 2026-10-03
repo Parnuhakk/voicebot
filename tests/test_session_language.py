@@ -71,7 +71,9 @@ def test_only_explicit_language_request_changes_a_selected_language(make_state):
     state.observe_user_text(OPENERS["en"])
     state.observe_user_text("Milline on menüü?", detected_language="estonian", language="et")
     assert state.language == "en"
-    assert trusted_booking_response(state)["content"] == state.information_reply("menu")
+    answer = trusted_booking_response(state)["content"]
+    assert answer.startswith(state.information_reply("menu"))
+    assert answer.endswith(COPY["en"]["date"])
     state.observe_user_text("Please speak Russian", detected_language="english")
     assert state.language_locked and state.language == "ru"
     state.observe_user_text("Thank you", detected_language="english")
