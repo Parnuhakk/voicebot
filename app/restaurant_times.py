@@ -100,11 +100,17 @@ PERIODS = {
     "night": re.compile(r"\b(?:night|öösel|ööl|ночи|ночью)\b"),
 }
 SPECIAL = re.compile(r"\b(?P<noon>noon|midday|keskpäev\w*|полдень|полудень)|\b(?P<midnight>midnight|kesköö\w*|полночь|полночи)")
+NAMED_CLOCK = r"(?:noon|midday|midnight|keskpäev\w*|kesköö\w*|полдень|полудень|полночь|полночи)"
+NAMED_FRACTIONS = (
+    (re.compile(r"\b(?:a\s+)?(?P<m>half|quarter|" + MINUTE + r")(?:\s+minutes?)?\s+(?P<direction>past|after|to|before)\s+(?P<h>" + NAMED_CLOCK + r")\b"), "en"),
+    (re.compile(r"\b(?P<m>" + MINUTE + r")\s+minut\w*\s+(?P<direction>enne|üle)\s+(?P<h>" + NAMED_CLOCK + r")\b"), "et"),
+    (re.compile(r"\bбез\s+(?P<m>четверти|" + MINUTE + r")(?:\s+минут\w*)?\s+(?P<h>" + NAMED_CLOCK + r")\b"), "ru"),
+)
 DIGITAL = re.compile(r"(?<![\w:.])(?P<h>\d{1,2})[:.](?P<m>\d{2})(?![\d:]|\.\d)")
 MALFORMED_DIGITAL = re.compile(r"(?<![\w:.])\d{1,3}[:.]\d+(?!\w)")
 FRACTIONS = (
     (re.compile(r"\b(?P<h>" + HOUR + r")\s+(?:and\s+(?:a\s+)?half|с\s+половиной)\b"), "after_half"),
-    (re.compile(r"\b(?:a\s+)?(?P<m>half|quarter|" + MINUTE + r")\s+(?P<direction>past|to|after|before)\s+(?P<h>" + HOUR + r")\b"), "en"),
+    (re.compile(r"\b(?:a\s+)?(?P<m>half|quarter|" + MINUTE + r")(?:\s+minutes?)?\s+(?P<direction>past|to|after|before)\s+(?P<h>" + HOUR + r")\b"), "en"),
     (re.compile(r"\b(?P<h>" + HOUR + r")\s+läbi\s+(?P<m>" + MINUTE + r")(?:\s+minut\w*)?\b"), "et_past"),
     (re.compile(r"\b(?P<m>" + MINUTE + r")\s+minut\w*\s+enne\s+(?P<h>" + HOUR + r")\b"), "et_to"),
     (re.compile(r"\bhalf\s+(?P<h>" + HOUR + r")\b"), "en_half"),
@@ -180,9 +186,23 @@ def parse_spoken_time(
     if approximate:
         return RequestedTime(invalid=True, span=approximate.span())
 
+    for pattern, kind in NAMED_FRACTIONS:
+        for match in pattern.finditer(text):
+            target = 12 if re.fullmatch(r"noon|midday|keskpäev\w*|полдень|полудень", match["h"]) else 0
+            word = match["m"]
+            minute = {"half": 30, "quarter": 15, "четверти": 15}.get(word)
+            minute = _number(word) if minute is None else minute
+            before = kind == "ru" or match["direction"] in {"to", "before", "enne"}
+            total = (target * 60 + (-minute if before else minute)) % (24 * 60)
+            hour, minute_of_hour = divmod(total, 60)
+            compatible = period is None or period == "am" and hour < 12 or period == "pm" and hour >= 12 or period == "night" and (hour < 6 or hour >= 18)
+            occupied.append(match.span())
+            found.append(RequestedTime(f"{hour:02d}:{minute_of_hour:02d}", span=match.span()) if 1 <= minute <= 59 and compatible else RequestedTime(invalid=True, span=match.span()))
     for match in SPECIAL.finditer(text):
         # Noon/midnight name an exact time, even without a period suffix.
         start, end = match.span()
+        if any(start < high and end > low for low, high in occupied):
+            continue
         occupied.append((start, end))
         found.append(_selection(12 if match["noon"] else 0, 0, period, explicit=True, span=(start, end)))
     for pattern, kind in FRACTIONS:

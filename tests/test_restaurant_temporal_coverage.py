@@ -140,6 +140,11 @@ def test_incomplete_relative_dates_clear_previous_date(text):
     ("viisteist minutit enne seitset õhtul", "18:45"),
     ("at six fifteen in the evening", "18:15"),
     ("quarter after six PM", "18:15"), ("a quarter before seven PM", "18:45"),
+    ("five minutes past six PM", "18:05"), ("quarter to midnight", "23:45"),
+    ("half past noon", "12:30"), ("quarter before noon", "11:45"),
+    ("quarter past midnight", "00:15"), ("quarter to midnight at night", "23:45"),
+    ("viisteist minutit enne keskpäeva", "11:45"),
+    ("viisteist minutit üle kesköö", "00:15"), ("без четверти полночь", "23:45"),
     ("at six and a half in the evening", "18:30"),
     ("at six hours and thirty minutes in the evening", "18:30"),
     ("в половине седьмого вечера", "18:30"),
@@ -159,6 +164,7 @@ def test_additional_spoken_time_forms(text, expected):
     "kell kuus kuni seitse õhtul", "с шести до семи вечера", "at -6 PM",
     "at 24:00", "kell 18:60", "в 25 часов", "at six or seven PM",
     "at noon AM", "at midnight PM",
+    "quarter before noon PM", "quarter past midnight PM", "sixty minutes past noon",
 ])
 def test_unclear_invalid_and_approximate_times_never_select_a_clock(text):
     result = parse_restaurant_request(text, {"date": "2026-10-06", "start_time": "18:00", "party_size": 4}, now=NOW)

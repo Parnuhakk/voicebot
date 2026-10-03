@@ -175,7 +175,10 @@ requests invalidate an earlier selected date until clarified.
 
 Spoken time forms additionally include `kell kuueks õhtul`, `kuus läbi viisteist`,
 `six and a half PM` and `в половине седьмого вечера`. Approximate times and
-ranges require an exact answer instead of silently choosing a clock. Guest
+ranges require an exact answer instead of silently choosing a clock. Minute
+phrases also accept `five minutes past six` and fractions around named noon
+or midnight, including `quarter to midnight`, `viisteist minutit enne keskpäeva`
+and `без четверти полночь`; conflicting day periods still require clarification. Guest
 answers include `meid tuleb neli`, `for a party of four`, and `нас будет четверо`.
 Guest alternatives and contradictory adult/child totals invalidate the prior
 count and cannot reach reservation planning before clarification.
