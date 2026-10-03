@@ -217,6 +217,11 @@ async page => {
   });
   await page.locator('#demo-mic').click();
   await page.waitForFunction(()=>state.mic && state.mic.frames>4096);
+  assert(await page.locator('#demo-send').isDisabled(),'text input remained active during microphone capture');
+  assert(await page.locator('.example-button').first().isDisabled(),'example could overlap a microphone turn');
+  const turnsBeforeRecordingText=requests.length;
+  await page.evaluate(()=>sendTurn({text:'unintended overlapping turn'}));
+  assert.equal(requests.length,turnsBeforeRecordingText,'programmatic text overlapped microphone capture');
   await page.locator('#demo-mic').click();
   await page.waitForFunction(()=>!state.micStarting && !state.turnBusy);
   const audioRequest=requests.findLast(request=>request.body.audio_b64);

@@ -44,6 +44,7 @@ const reservation = {
   date: null,
 };
 const TEXT = {
+  demoWebsite: ["Vaata restorani demo ↗", "Visit the restaurant demo ↗", "Открыть демонстрацию ресторана ↗"],
   voice: ["Abilise hääl", "Assistant voice", "Голос помощника"],
   voicePreview: ["Kuula häält", "Listen to voice", "Послушать голос"],
   voicePreviewLoading: ["Valmistan hääleproovi…", "Preparing voice sample…", "Готовлю образец голоса…"],
@@ -547,13 +548,13 @@ function controls() {
   $("demo-voice-preview").textContent = state.previewBusy
     ? demoCopy().voicePreviewLoading : demoCopy().voicePreview;
   for (const id of ["demo-text", "demo-send"])
-    $(id).disabled = !state.sessionId || locked;
+    $(id).disabled = !state.sessionId || locked || !!state.mic;
   $("demo-mic").disabled = !state.connected || !state.audioReady || locked;
   if (!state.mic)
     $("demo-mic").textContent = state.sessionId
       ? demoCopy().micReady
       : demoCopy().micStart;
-  $("demo-recap-read").disabled = !currentRecap(state.recap) || locked;
+  $("demo-recap-read").disabled = !currentRecap(state.recap) || locked || !!state.mic;
   $("refresh").disabled = !state.connected || state.readBusy;
   $("booking-prev").disabled =
     !state.connected || state.readBusy || state.page <= 1;
@@ -579,7 +580,7 @@ function controls() {
   $("reservation-end").disabled =
     !reservation.sessionId || reservation.busy || reservation.uncertain;
   for (const button of document.querySelectorAll(".example-button"))
-    button.disabled = !state.sessionId || locked;
+    button.disabled = !state.sessionId || locked || !!state.mic;
   presentation();
 }
 function requireDemoConnection() {
@@ -942,7 +943,8 @@ async function sendTurn(input) {
     !state.connected ||
     !state.sessionId ||
     state.turnBusy ||
-    state.micStarting
+    state.micStarting ||
+    state.mic
   )
     return;
   const generation = state.generation,

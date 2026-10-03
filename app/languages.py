@@ -233,17 +233,35 @@ def select_language(text: str, detected: object, current: str) -> str:
         "нет",
     }:
         return current
-    # Cyrillic is strong evidence for Russian when HTTP STT has no metadata.
-    # Otherwise retain the existing provider language and weak-turn rules.
-    if code:
-        return code
+    if normalized in {
+        "one", "two", "three", "four", "five", "six", "seven", "eight",
+        "nine", "ten", "eleven", "twelve",
+    } or re.fullmatch(
+        r"(?:\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)"
+        r"\s+(?:a\s*m|p\s*m|am|pm)", normalized,
+    ):
+        return current
+    # Clear caller wording outweighs noisy STT metadata. Weak turns above keep
+    # the conversation language, including numbers and short time replies.
     inferred = detect_language(text, "en")
     if inferred == "ru":
         return "ru"
     if inferred == "et":
         return "et"
-    if re.search(r"\b(?:hello|hi|please|where|when|what|how|book|booking|want|need|reserve|thank)\b", text, re.I):
+    if re.search(
+        r"\b(?:hello|hi|hey|please|where|when|what|how|book|booking|want|need|reserve|thank|"
+        r"tomorrow|today|tonight|thanks|goodbye|bye)\b|"
+        r"\b(?:i|we|you|there|it|that)\s+(?:would|will|have|are|is|can|like)\b|"
+        r"\b(?:i['’]d|we['’]d|i['’]m|we['’]re|can i|can you|can we|do you|does the|"
+        r"is there|is the|is this|is that|are you|are there|does it|could i|could you|"
+        r"a table|a reservation|a booking|good morning|good afternoon|good evening|"
+        r"for (?:two|three|four|five|six))\b",
+        text,
+        re.I,
+    ):
         return "en"
+    if code:
+        return code
     return current
 
 
