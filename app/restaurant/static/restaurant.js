@@ -170,9 +170,9 @@ const TEXT = {
     "Попробуйте голосового помощника",
   ],
   voiceHelp: [
-    "Küsi laua, menüü või lahtiolekuaegade kohta.",
-    "Ask about a table, the menu or opening hours.",
-    "Спросите о столике, меню или часах работы.",
+    "Küsi laua, menüü või lahtiolekuaegade kohta. Toidusoovituseks ütle oma eelistus.",
+    "Ask about a table, the menu or opening hours. Mention your dietary preferences for menu suggestions.",
+    "Спросите о столике, меню или часах работы. Для рекомендации блюда расскажите о своих предпочтениях.",
   ],
   voiceBadge: ["Tekst ja mikrofon", "Text and microphone", "Текст и микрофон"],
   start: ["Alusta vestlust", "Start conversation", "Начать разговор"],
