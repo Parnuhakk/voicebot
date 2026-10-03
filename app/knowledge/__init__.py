@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import sqlite3
 import threading
+from typing import Any
 
 _LOCK = threading.RLock()
 
@@ -26,7 +27,7 @@ def open_db(path: str = ":memory:") -> sqlite3.Connection:
     return db
 
 
-def ingest(db: sqlite3.Connection, documents: list[dict]) -> int:
+def ingest(db: sqlite3.Connection, documents: list[dict[str, Any]]) -> int:
     """Store FAQ/policy docs [{doc_id, title, text, lang}]. Returns count."""
     rows = []
     for document in documents:
@@ -54,7 +55,7 @@ def ingest(db: sqlite3.Connection, documents: list[dict]) -> int:
 
 def retrieve(
     db: sqlite3.Connection, query: str, lang: str = "et", top_k: int = 3
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """BM25-ranked passages for query, filtered to lang. Cited or handoff.
 
     Token-prefix OR query (each token quoted, `*`-suffixed) so Estonian

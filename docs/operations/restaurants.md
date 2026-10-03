@@ -331,9 +331,7 @@ Rollback: set `VOICEBOT_BUSINESS_TYPE=hotel_spa` in both transports and restart.
 The older hotel/spa state files and historical regression fixtures are retained;
 restaurant data uses its own database and does not migrate prior reservations.
 
-## Local checks
-
-### Family facilities
+## Family facilities
 
 The optional `family_facilities` object accepts `drawing`, `toys`,
 `play_corner` and `children_menu`, with strict boolean or null values. Only
@@ -344,6 +342,33 @@ highchairs or free use. Questions about those details ask the restaurant team.
 The shared question selector and reviewed ET/EN/RU answer apply to web and
 native conversation turns; a native deployment still needs release verification.
 
+## Proposal lifetime and mobile controls
+
+Restaurant proposals expose their remaining server lifetime. The direct form
+and voice conversation show a countdown, discard expired read acknowledgements
+and stop their timers on logout. The browser uses a monotonic clock so changing
+the device clock does not extend consent. Browser suspension can still delay
+timers; the server checks expiry before every read and confirmation. Clock and
+page-restoration behavior follow [MDN's clock documentation](https://developer.mozilla.org/en-US/docs/Web/API/Performance/now)
+and [page-show lifecycle](https://developer.mozilla.org/en-US/docs/Web/API/Window/pageshow_event).
+The countdown has `aria-live="off"`;
+warnings and expiry use the existing status region without announcing every
+second. This follows the [W3C status-message guidance](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html).
+
+The direct form's `Renew proposal` action uses
+`POST /api/restaurant/reservation/renew` with the owned session and current hold.
+It resets consent and requires reading the new recap. It does not extend the
+underlying table hold or confirm a reservation. If that hold has expired, the
+form checks current availability again. Uncertain write outcomes remain blocked
+and cannot renew or automatically retry confirmation. In a voice conversation,
+the expiry message asks for the date, time and guest count again.
+
+The mobile layout retains 44-pixel language and navigation targets and places
+the conversation start and microphone controls within a 390-by-844 viewport in all three
+languages. Sidebar labels and operator-token errors are translated.
+
+## Local checks
+
 Run the core and separate media suites with their project environments:
 
 ```powershell
@@ -352,6 +377,7 @@ Run the core and separate media suites with their project environments:
 $env:NODE_PATH='C:\Users\salov.ml7b493\AppData\Local\Programs\CodexTools\node_modules'
 $env:PLAYWRIGHT_BROWSER_CHANNEL='chrome'
 node tests/run_browser_checks.cjs playwright .venv/Scripts/python.exe restaurant_browser_checks.js
+node tests/run_browser_checks.cjs playwright .venv/Scripts/python.exe restaurant_quality_browser_checks.js
 ```
 
 The browser runner starts isolated fixture servers on temporary loopback ports.
@@ -359,3 +385,33 @@ Only fixture credentials, local synthetic MP3 audio, synthetic microphone input
 and provider doubles are used. The tests exercise the actual API, SQLite,
 microphone filtering/resampling, browser streaming, consent and UI lifecycle;
 they do not measure real speech recognition or provider voice quality.
+
+### Quality verification, 2026-10-04
+
+The quality release was checked after integration with master `b75ba06`:
+
+- Core environment: 11,409 passed, 78 skipped and 36 subtests passed.
+- Media environment: 11,802 passed, 10 skipped and 36 subtests passed.
+- All ten browser suites passed in installed Microsoft Edge 154.0.4258.53,
+  including ET/EN/RU consent, renewal, expiry, mobile controls and uncertain-write
+  recovery. No browser page errors or external provider requests were observed.
+- Flake8, JavaScript syntax checks and full application BasedPyright error-level
+  checks passed. The unfiltered report covered 67 files with zero errors and
+  5,947 warnings, mostly incomplete or unknown dynamic types. Those warnings
+  remain visible; the checker configuration was not weakened.
+- Each Python suite reported the existing Starlette TestClient deprecation
+  warning about its HTTPX integration. Dependency replacement requires a
+  separate compatibility change.
+
+Regression coverage includes absent write journals and lock paths, missing
+pending journal records, invalid trusted booking responses, synchronous read
+adapters and missing native audio handles. Such conditions stop before an
+unverified booking write or close through the existing media error path.
+HTTPX adapter transports now use the asynchronous transport contract described
+in [the HTTPX transport documentation](https://www.python-httpx.org/advanced/transports/#custom-transports).
+
+These results use synthetic restaurant data and provider doubles. Operator
+credentials were unavailable for live private endpoints. Actual carrier calls,
+paid speech-provider quality, Safari and physical mobile devices were not
+verified. Public deployment health and matching web/telephone release receipts
+are separate checks and do not establish real-call quality.

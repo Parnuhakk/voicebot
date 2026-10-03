@@ -21,6 +21,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from urllib.parse import parse_qsl
 from xml.etree import ElementTree as ET
+from typing import Any
 
 from aiohttp import web, WSMsgType
 
@@ -397,8 +398,11 @@ class LiveKitCall:
     def _subscribe_audio(self):
         from livekit import rtc
 
+        track = self.agent_track
+        if track is None:
+            raise BridgeError("output_invalid")
         self.stream = rtc.AudioStream(
-            track=self.agent_track,
+            track=track,
             sample_rate=8000,
             num_channels=1,
             frame_size_ms=20,
@@ -408,7 +412,10 @@ class LiveKitCall:
 
     async def _output(self):
         try:
-            async for event in self.stream:
+            stream = self.stream
+            if stream is None:
+                raise BridgeError("output_invalid")
+            async for event in stream:
                 frame = event.frame
                 if (
                     frame.sample_rate != 8000
@@ -498,7 +505,10 @@ class LiveKitCall:
     async def feed(self, pcm):
         from livekit import rtc
 
-        await self.source.capture_frame(
+        source = self.source
+        if source is None:
+            raise BridgeError("bridge_unavailable")
+        await source.capture_frame(
             rtc.AudioFrame(
                 data=pcm,
                 sample_rate=8000,
@@ -520,26 +530,28 @@ class LiveKitCall:
             await bounded_close(lambda: asyncio.gather(*tasks, return_exceptions=True))
         if self.stream is not None:
             await bounded_close(self.stream.aclose)
-        if self.publication is not None and self.room is not None:
+        publication, room = self.publication, self.room
+        if publication is not None and room is not None:
             await bounded_close(
-                lambda: self.room.local_participant.unpublish_track(
-                    self.publication.sid
+                lambda: room.local_participant.unpublish_track(
+                    publication.sid
                 )
             )
         if self.source is not None:
             await bounded_close(self.source.aclose)
         if self.room is not None:
             await bounded_close(self.room.disconnect)
-        if self.client is not None:
+        client = self.client
+        if client is not None:
             if self.create_attempted:
                 from livekit import api
 
                 await bounded_close(
-                    lambda: self.client.room.delete_room(
+                    lambda: client.room.delete_room(
                         api.DeleteRoomRequest(room=self.name)
                     )
                 )
-            await bounded_close(self.client.aclose)
+            await bounded_close(client.aclose)
         self.track = self.agent_track = self.source = self.stream = self.publication = (
             self.room
         ) = self.client = None
@@ -785,7 +797,8 @@ def create_app():
         state.sockets += 1
         state.running.add(asyncio.current_task())
         call = sender = native = None
-        tasks, close_code = [], 1000
+        tasks: list[asyncio.Task[Any]] = []
+        close_code = 1000
         stage = "handshake"
         try:
             await socket.prepare(request)
