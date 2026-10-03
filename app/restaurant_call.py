@@ -594,12 +594,19 @@ class RestaurantCallTools(CallTools):
                 previous_language == self.language and previous_question
                 and any(topic in {"menu", "allergens"} for topic in previous_question.topics)
                 and any(topic in {"menu", "allergens", "price"} for topic in self._restaurant_question.topics)
-                and (DETAIL_FOLLOWUP.fullmatch(text) or re.search(
+                and (self._restaurant_question.recommendation or DETAIL_FOLLOWUP.fullmatch(text) or re.search(
                     r"\b(?:aga|see|seda|selle|sellest|and|it|this|that|а|это|он|она|него|неё)\b", text
                 ))
             ):
                 explicit_dish = self._restaurant_dish is not None
-                if self._restaurant_dish is None:
+                explicit_diet = self._restaurant_diet is not None
+                refers_to_dish = DETAIL_FOLLOWUP.fullmatch(text) or re.search(
+                    r"\b(?:see|seda|selle|sellest|it|this|that|это|он|она|него|неё)\b", text
+                )
+                if self._restaurant_dish is None and (
+                    refers_to_dish
+                    or not explicit_diet and not self._restaurant_question.recommendation
+                ):
                     self._restaurant_dish = previous_dish
                 if self._restaurant_diet is None and not explicit_dish:
                     self._restaurant_diet = previous_diet
