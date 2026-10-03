@@ -74,11 +74,14 @@ def test_hotel_operator_links_keep_the_management_domain() -> None:
                     links.append(href)
 
     with patch.dict("os.environ", {"VOICEBOT_BUSINESS_TYPE": "hotel_spa"}, clear=True), TestClient(create_app()) as client:
-        response = client.get("/hotel", headers={"Host": "meretuule.arleserver.cfd"})
+        response = client.get("/hotel", headers={"Host": "localhost:8000"})
         assert response.status_code == 200
         Parser().feed(response.text)
     assert not any(href == "/" or href.startswith(("/?", "/#")) for href in links)
-    assert "https://meretuule.arleserver.cfd/" in links
+    assert not any(
+        urlsplit(href).hostname == "meretuule.arleserver.cfd" for href in links
+    )
+    assert links.count("#main") >= 2
     assert "/hotel" not in links
     assert {
         href for href in links if urlsplit(href).hostname == "robot.arleserver.cfd"
@@ -131,15 +134,15 @@ def test_forwarded_headers_cannot_restore_the_old_hotel_page(forwarded) -> None:
     assert response.status_code == 410
 
 
-def test_meretuule_and_local_routes_keep_the_hotel_page_and_assets() -> None:
+def test_local_rollback_keeps_the_hotel_page_without_republishing_meretuule() -> None:
     with patch.dict("os.environ", {"VOICEBOT_BUSINESS_TYPE": "hotel_spa"}, clear=True), TestClient(create_app()) as client:
-        for host in ("meretuule.arleserver.cfd", "localhost:8000", "testserver"):
+        for host in ("localhost:8000", "testserver"):
             for path in ("/hotel", "/hotel/"):
                 response = client.get(path, headers={"Host": host})
                 assert response.status_code == 200
                 assert "<title>Meretuule" in response.text
         headers = {
-            "Host": "meretuule.arleserver.cfd",
+            "Host": "localhost:8000",
             "X-Forwarded-Host": "robot.arleserver.cfd",
         }
         assert client.get("/hotel", headers=headers).status_code == 200
@@ -152,22 +155,40 @@ def test_meretuule_and_local_routes_keep_the_hotel_page_and_assets() -> None:
             "/api/public/catalogue",
         ):
             assert client.get(path, headers=headers).status_code == 200
+        for path in ("/", "/hotel", "/hotel.css", "/api/public/property", "/health"):
+            response = client.get(
+                path,
+                headers={
+                    "Host": "meretuule.arleserver.cfd",
+                    "X-Forwarded-Host": "robot.arleserver.cfd",
+                },
+                follow_redirects=False,
+            )
+            assert response.status_code == 410
+            assert "Location" not in response.headers
 
 
 def test_retiring_the_old_hotel_page_preserves_operator_root_health_and_auth() -> None:
     with (
-        patch.dict("os.environ", {"OPERATOR_TOKEN": "fixture-operator", "VOICEBOT_BUSINESS_TYPE": "hotel_spa"}, clear=True),
+        patch.dict(
+            "os.environ",
+            {
+                "OPERATOR_TOKEN": "fixture-operator",
+                "VOICEBOT_BUSINESS_TYPE": "hotel_spa",
+            },
+            clear=True,
+        ),
         TestClient(create_app()) as client,
     ):
         headers = {"Host": "robot.arleserver.cfd"}
         dashboard = client.get("/", headers=headers)
         assert dashboard.status_code == 200
         assert "<title>Vastuvõtulaud" in dashboard.text
-        assert dashboard.text.count('href="https://meretuule.arleserver.cfd/"') >= 2
+        assert 'href="https://meretuule.arleserver.cfd/' not in dashboard.text
         assert 'href="/hotel"' not in dashboard.text
         health = client.get("/health", headers=headers)
         assert health.status_code == 200 and health.json() == {"ok": True}
-        for host in ("robot.arleserver.cfd", "meretuule.arleserver.cfd"):
+        for host in ("robot.arleserver.cfd", "localhost:8000"):
             for path in ("/api/bookings", "/api/rooms", "/api/stays"):
                 denied = client.get(path, headers={"Host": host})
                 assert denied.status_code == 403
@@ -180,7 +201,7 @@ def test_retiring_the_old_hotel_page_preserves_operator_root_health_and_auth() -
         assert allowed.headers["Cache-Control"] == "no-store"
 
 
-def test_hotel_home_and_dashboard_demo_links_use_public_root() -> None:
+def test_local_rollback_navigation_never_advertises_the_removed_domain() -> None:
     hrefs: list[str] = []
 
     class Parser(HTMLParser):
@@ -196,5 +217,7 @@ def test_hotel_home_and_dashboard_demo_links_use_public_root() -> None:
             response = client.get(path)
             assert response.status_code == 200
             Parser().feed(response.text)
-            assert hrefs.count("https://meretuule.arleserver.cfd/") == 2
+            assert all(
+                urlsplit(href).hostname != "meretuule.arleserver.cfd" for href in hrefs
+            )
             assert "/hotel" not in hrefs

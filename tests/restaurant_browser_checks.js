@@ -7,6 +7,7 @@ async page => {
   });
   await page.setViewportSize({width:1440,height:1000});
   await page.goto('http://127.0.0.1:8766/', {waitUntil:'networkidle'});
+  assert.equal(await page.locator('a[href]').evaluateAll(links=>links.some(link=>new URL(link.href).hostname==='meretuule.arleserver.cfd')),false,'Robot navigation still opens the removed demo site');
   const chooseLanguage = async code => page.locator('.language-option').filter({
     has: page.locator('input[value="' + code + '"]'),
   }).click();
@@ -52,9 +53,6 @@ async page => {
   assert(sidebarBox.x+sidebarBox.width<=mainBox.x,'desktop sidebar overlaps the workspace');
   assert.equal(await page.locator('.sidebar').evaluate(element=>getComputedStyle(element).position),'fixed');
   assert(await page.locator('.topbar').isVisible(),'dashboard topbar is missing');
-  assert.deepEqual(await page.locator('a.demo-website-link').evaluateAll(links=>links.map(link=>link.href)),[
-    'https://meretuule.arleserver.cfd/', 'https://meretuule.arleserver.cfd/'
-  ]);
   assert(await page.locator('#demo-start').isDisabled());
   assert(await page.locator('#reservation-prepare').isDisabled());
   assert.equal(await page.locator('#menu-list li').count(),3);

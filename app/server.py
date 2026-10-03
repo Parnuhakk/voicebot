@@ -256,6 +256,11 @@ def create_app():
 
     @app.middleware("http")
     async def private_responses(request, call_next):
+        # Do not republish the retired website through wildcard ingress.
+        if (request.url.hostname or "").lower().rstrip(
+            "."
+        ) == "meretuule.arleserver.cfd":
+            return Response(status_code=410, headers={"Cache-Control": "no-store"})
         private = request.url.path in (
             "/api/calls",
             "/api/turn",
