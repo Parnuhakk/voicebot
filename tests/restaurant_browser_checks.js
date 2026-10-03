@@ -61,11 +61,28 @@ async page => {
     {code:'et', greeting:'Tere!', menu:'Milline on menüü?', soup:'Köögiviljasupp', confirmed:'kinnitatud', cancelled:'tühistatud'},
     {code:'ru', greeting:'Здравствуйте!', menu:'Что есть в меню?', soup:'Овощной суп', confirmed:'подтверждено', cancelled:'отменено'},
   ];
+  let releaseCatalog;
+  const catalogGate = new Promise(resolve=>{releaseCatalog=resolve;});
+  await page.route('**/api/demo/voices', async route=>{
+    await catalogGate;
+    await route.continue();
+  });
   await page.locator('#operator-token').fill('restaurant-fixture-operator');
   await page.locator('#connect').click();
+  await page.waitForFunction(()=>state.connected && state.voicesLoading);
+  assert(await page.locator('#demo-start').isDisabled());
+  assert(await page.locator('#demo-mic').isDisabled());
+  assert(await page.locator('#demo-voice-preview').isDisabled());
+  releaseCatalog();
   await page.waitForFunction(()=>state.connected && !state.readBusy);
   await page.waitForFunction(()=>state.voiceCatalog);
-  assert.equal(await page.locator('#demo-voice option:not(:disabled)').count(), 5);
+  assert.equal(await page.locator('#demo-voice option:not(:disabled)').count(), 7);
+  assert.equal(await page.locator('#demo-voice').inputValue(), 'azure-conversational');
+  await page.unroute('**/api/demo/voices');
+  for (const code of ['en', 'ru', 'et']) {
+    await chooseLanguage(code);
+    assert.equal(await page.locator('#demo-voice').inputValue(), 'azure-conversational');
+  }
   await chooseLanguage('et');
   for (const profile of ['azure-male', 'azure-calm', 'azure-male-calm', 'azure-male-warm']) {
     await page.locator('#demo-voice').selectOption(profile);
@@ -80,7 +97,23 @@ async page => {
   assert(await page.locator('#demo-voice option[value="azure-brian"]').isDisabled());
   assert(await page.locator('#demo-voice option[value="azure-ryan"]').isDisabled());
   await chooseLanguage('en');
-  assert.equal(await page.locator('#demo-voice option:not(:disabled)').count(), 7);
+  assert.equal(await page.locator('#demo-voice option:not(:disabled)').count(), 9);
+  for (const code of ['en', 'ru', 'et']) {
+    await chooseLanguage(code);
+    for (const [profile, names] of [
+      ['azure-conversational', {et:'Anu',en:'Emma',ru:'Эмма'}],
+      ['azure-conversational-male', {et:'Kert',en:'Andrew',ru:'Эндрю'}],
+    ]) {
+      await page.locator('#demo-voice').selectOption(profile);
+      await page.locator('#demo-voice-preview').click();
+      await page.waitForFunction(()=>!state.previewBusy && !document.getElementById('demo-audio').hidden);
+      assert.equal(requests.at(-1).body.voice, profile);
+      assert.equal(requests.at(-1).body.language, code);
+      assert((await page.locator('#demo-voice-result').textContent()).includes(names[code]));
+      assert.equal(await page.evaluate(()=>state.sessionId), null);
+    }
+  }
+  await chooseLanguage('en');
   for (const [profile, name] of [['azure-male-calm','Davis'], ['azure-male-warm','Andrew'], ['azure-brian','Brian'], ['azure-ryan','Ryan']]) {
     await page.locator('#demo-voice').selectOption(profile);
     await page.locator('#demo-voice-preview').click();
@@ -90,6 +123,8 @@ async page => {
   }
   await chooseLanguage('et');
   assert.equal(await page.locator('#demo-voice').inputValue(), 'azure');
+  await page.evaluate(()=>loadVoices());
+  assert.equal(await page.locator('#demo-voice').inputValue(), 'azure', 'catalog refresh replaced an explicit selection');
   await page.locator('#demo-voice').selectOption('azure-male-calm');
   await page.screenshot({path:'output/playwright/natural-voices-desktop.png',fullPage:true});
   await page.setViewportSize({width:390,height:844});

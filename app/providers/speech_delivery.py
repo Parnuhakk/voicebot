@@ -13,6 +13,7 @@ from xml.sax.saxutils import quoteattr
 from ..languages import CONSENT
 from ..restaurant_consent import CONFIRMATION_QUESTIONS
 from . import russian_speech
+from .azure_voices import MULTILINGUAL_LOCALES
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,7 @@ class SpeechDelivery:
     rate: float = 1.12
     recap_rate: float = 1.00
     sentence_pause_ms: int = 120
+    native_timing: bool = False
 
     def __post_init__(self) -> None:
         if (
@@ -30,6 +32,7 @@ class SpeechDelivery:
             or isinstance(self.sentence_pause_ms, bool)
             or not isinstance(self.sentence_pause_ms, int)
             or not 100 <= self.sentence_pause_ms <= 500
+            or not isinstance(self.native_timing, bool)
         ):
             raise ValueError("invalid speech delivery configuration")
 
@@ -95,7 +98,8 @@ _PRONUNCIATION = re.compile(
 _RUSSIAN_PRONUNCIATION = re.compile(
     r"(?<![\w:./])(?:"
     r"(?P<iso>\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2})?)"
-    r"|(?P<date>(?P<day>\d{1,2})\s+(?P<month>" + "|".join(russian_speech.MONTHS)
+    r"|(?P<date>(?P<day>\d{1,2})\s+(?P<month>"
+    + "|".join(russian_speech.MONTHS)
     + r")(?:\s+(?P<year>\d{4})(?:\s+года)?)?)"
     r"|(?P<range>с\s+(?P<start>\d{1,2}(?::\d{2})?)\s+до\s+(?P<end>\d{1,2}(?::\d{2})?))"
     r"|(?P<clock>в\s+(?P<time>\d{1,2}:\d{2}))"
@@ -116,35 +120,42 @@ def _russian_alias(match: re.Match[str], text: str) -> str:
     def clock(value: str, *, genitive: bool = False) -> str:
         fields = value.split(":")
         return russian_speech.spoken_time(
-            int(fields[0]), int(fields[1]) if len(fields) == 2 else 0,
+            int(fields[0]),
+            int(fields[1]) if len(fields) == 2 else 0,
             genitive=genitive,
         )
 
     if match["range"]:
         # Exclude numeric price, headcount, duration and measurement ranges.
-        tail = text[match.end():].lstrip()
+        tail = text[match.end() :].lstrip()
         if _RUSSIAN_RANGE_UNITS.match(tail):
             raise ValueError("not a clock range")
         return (
-            "с " + clock(match["start"], genitive=True)
-            + " до " + clock(match["end"], genitive=True)
+            "с "
+            + clock(match["start"], genitive=True)
+            + " до "
+            + clock(match["end"], genitive=True)
         )
     if match["clock"]:
         # Explicit morning/evening wording belongs to the original sentence.
-        if re.match(r"\s*(?:утра|дня|вечера|ночи)\b", text[match.end():], re.IGNORECASE):
+        if re.match(
+            r"\s*(?:утра|дня|вечера|ночи)\b", text[match.end() :], re.IGNORECASE
+        ):
             raise ValueError("clock already qualified")
         return "в " + clock(match["time"])
     if match["zone"]:
         return "по времени Таллина"
     if match["venue"]:
         return "деморесторан Меретууле"
-    accusative = bool(re.search(r"\bна\s*$", text[:match.start()], re.IGNORECASE))
+    accusative = bool(re.search(r"\bна\s*$", text[: match.start()], re.IGNORECASE))
     if match["date"]:
         year = match["year"]
         month = russian_speech.MONTHS.index(match["month"].lower()) + 1
         value = f"{int(year) if year else 2000:04d}-{month:02d}-{int(match['day']):02d}"
         return russian_speech.spoken_date(
-            value, accusative=accusative, include_year=bool(year),
+            value,
+            accusative=accusative,
+            include_year=bool(year),
         )
     value = match["iso"]
     day = datetime.fromisoformat(value)
@@ -157,7 +168,7 @@ def _russian_alias(match: re.Match[str], text: str) -> str:
 def _pronounced_russian(text: str) -> str:
     parts, end = [], 0
     for match in _RUSSIAN_PRONUNCIATION.finditer(text):
-        parts.append(escape(text[end:match.start()], quote=False))
+        parts.append(escape(text[end : match.start()], quote=False))
         try:
             alias = _russian_alias(match, text)
             parts.append(
@@ -246,13 +257,23 @@ def speech_markup(
 ) -> str:
     # All model/backend text is literal. Only this renderer can introduce tags.
     text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", " ", text)
+    # Multilingual voices need an explicit locale even in neutral mode.
+    multilingual = voice in MULTILINGUAL_LOCALES
     if delivery.mode == "neutral":
-        return escape(text, quote=False)
+        body = escape(text, quote=False)
+        return (
+            f"<lang xml:lang={quoteattr(language)}>{body}</lang>"
+            if multilingual
+            else body
+        )
     body = _pronounced_text(text, language)
     rate = delivery.effective_rate(recap=recap)
     body = f'<prosody rate="{rate:.2f}">{body}</prosody>'
     # Use only documented styles; Anu/Kert keep their native intonation.
-    if voice in {"en-US-JennyNeural", "en-US-GuyNeural", "en-US-DavisNeural"} and language == "en-US":
+    if (
+        voice in {"en-US-JennyNeural", "en-US-GuyNeural", "en-US-DavisNeural"}
+        and language == "en-US"
+    ):
         body = f'<mstts:express-as style="friendly" styledegree="0.8">{body}</mstts:express-as>'
     elif voice == "en-GB-RyanNeural" and language == "en-GB":
         body = f'<mstts:express-as style="chat" styledegree="0.8">{body}</mstts:express-as>'
@@ -260,9 +281,16 @@ def speech_markup(
     # provider's default pauses so dates and consent remain easy to follow.
     # Russian neural voices keep their own sentence timing and question
     # intonation. An identical forced pause after every sentence flattens it.
-    if not recap and language != "ru-RU":
+    if (
+        not recap
+        and language != "ru-RU"
+        and not delivery.native_timing
+        and not multilingual
+    ):
         body = (
             f'<mstts:silence type="Sentenceboundary-exact" '
             f'value="{delivery.sentence_pause_ms}ms"/>' + body
         )
-    return body
+    return (
+        f"<lang xml:lang={quoteattr(language)}>{body}</lang>" if multilingual else body
+    )

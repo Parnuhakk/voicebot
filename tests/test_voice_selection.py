@@ -5,7 +5,10 @@ from unittest.mock import patch
 
 import pytest
 
-from tests.test_product_demo import AUTH, SimpleLlm, Speaker, client
+from tests.test_product_demo import AUTH, Speaker
+from tests import test_product_demo
+
+client = test_product_demo.client
 
 
 def test_bootstrap_installs_optional_registry_without_capturing_default_azure():
@@ -27,6 +30,8 @@ def test_bootstrap_installs_optional_registry_without_capturing_default_azure():
         "azure-male-warm",
         "azure-brian",
         "azure-ryan",
+        "azure-conversational",
+        "azure-conversational-male",
     }
     assert next(row for row in rows if row["id"] == "azure")["available"]
     assert (
