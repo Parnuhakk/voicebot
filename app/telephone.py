@@ -925,14 +925,7 @@ class CallTools:
             and now < self.pending["expires_at"]
             and self.pending["delivery"]
             and not self.unsupported_language
-            and normalized
-            in (
-                AFFIRMATIONS_EN
-                if selected == "en"
-                else AFFIRMATIONS_RU
-                if selected == "ru"
-                else AFFIRMATIONS
-            )
+            and self._is_confirmation(text, selected)
         ):
             self.pending["approved"] = True
         else:
@@ -954,6 +947,15 @@ class CallTools:
                 "booking_id": self.last_booking,
                 "expires_at": now + CONSENT_TIMEOUT_SECONDS,
             }
+
+    def _is_confirmation(self, text, language):
+        normalized = " ".join(re.sub(r"[.,!]", " ", text.casefold()).split())
+        phrases = (
+            AFFIRMATIONS_EN if language == "en"
+            else AFFIRMATIONS_RU if language == "ru"
+            else AFFIRMATIONS
+        )
+        return normalized in phrases
 
     @property
     def spa_hours_inquiry(self):

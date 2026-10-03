@@ -232,7 +232,7 @@ def test_browser_voice_policy_books_only_after_recap_receipt(
     data = start(client, language)
     answer = turn(client, data["session_id"], utterance, language=language)
     assert answer["recap_delivery_id"]
-    assert CONSENT[language] in answer["reply"]
+    assert COPY[language]["confirmation_question"] in answer["reply"]
     assert "4" in answer["reply"] and "90" in answer["reply"]
     assert answer["booking_changes"] == []
     confirmed = turn(
@@ -597,7 +597,7 @@ def test_audio_language_is_sent_to_recognition_and_restaurant_reply(client):
 @pytest.mark.parametrize("language", ["et", "en", "ru"])
 def test_direct_table_booking_recap_confirmation_and_owned_cancel(client, language):
     session, result = prepared(client, language)
-    assert CONSENT[language] in result["recap_text"]
+    assert COPY[language]["confirmation_question"] in result["recap_text"]
     body = {"session_id": session, "hold_id": result["hold_id"], "consent": True}
     denied = client.post("/api/booking/confirm", json=body, headers=AUTH)
     assert denied.status_code == 409

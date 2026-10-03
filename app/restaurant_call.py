@@ -11,7 +11,8 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Any
 
-from .languages import CONSENT, LANGUAGE_POLICY, english_clarification, spoken_date, spoken_time
+from .languages import ENGLISH_INVITATION, LANGUAGE_POLICY, english_clarification, spoken_date, spoken_time
+from .restaurant_consent import CONFIRMATION_QUESTIONS, is_restaurant_confirmation
 from .restaurant_times import NUMBERS, parse_spoken_time
 from .restaurant_data import restaurant_demo_profile
 from .restaurant_dates import ESTONIAN_COUNTS, resolve_restaurant_date
@@ -54,7 +55,8 @@ COPY: dict[str, dict[str, str]] = {
         "hours": "{hours}.",
         "closed": "suletud",
         "alternatives": "Sel ajal lauda ei ole. Samal päeval saan pakkuda kell {times}. Milline aeg sobib?",
-        "recap": "Saan pakkuda lauda {date} kell {time} Eesti aja järgi, {party} inimesele restoranis {name}. Broneering kestab {duration} minutit ja on nimele {guest}. Kas kinnitan selle testbroneeringu? Öelge „{consent}”."
+        "confirmation_question": CONFIRMATION_QUESTIONS["et"],
+        "recap": "Saan pakkuda lauda {date} kell {time} Eesti aja järgi, {party} inimesele restoranis {name}. Broneering kestab {duration} minutit ja on nimele {guest}. {question}"
     },
     "en": {
         "greeting": "Hello! This is an AI restaurant demo. No real table is booked here. How can I help?",
@@ -81,7 +83,8 @@ COPY: dict[str, dict[str, str]] = {
         "hours": "{hours}.",
         "closed": "closed",
         "alternatives": "That time isn't available. On the same day, we have {times}. Which works for you?",
-        "recap": "Your test reservation: {name}, {date} at {time}, Tallinn local time, for {party} guests. The table is for {duration} minutes, under {guest}. Shall I confirm it? You can say \"{consent}\""
+        "confirmation_question": CONFIRMATION_QUESTIONS["en"],
+        "recap": "Your test reservation: {name}, {date} at {time}, for {party} guests. The table is for {duration} minutes, under {guest}. {question}"
     },
     "ru": {
         "greeting": "Здравствуйте! Я ИИ-помощник деморесторана. Настоящий столик здесь не бронируется. Чем помочь?",
@@ -108,7 +111,8 @@ COPY: dict[str, dict[str, str]] = {
         "hours": "{hours}.",
         "closed": "закрыто",
         "alternatives": "На запрошенное время столика нет. Возможное время на ту же дату: {times}. Что вам подходит?",
-        "recap": "Тестовая бронь: {name}, {date} в {time}, по времени Таллина, на {party} гостей. Столик на {duration} минут, на имя {guest}. Всё верно? Можно сказать «{consent}»"
+        "confirmation_question": CONFIRMATION_QUESTIONS["ru"],
+        "recap": "Тестовая бронь: {name}, {date} в {time}, по времени Таллина, на {party} гостей. Столик на {duration} минут, на имя {guest}. {question}"
     }
 }
 
@@ -488,7 +492,11 @@ class RestaurantCallTools(CallTools):
             "Clarify morning/evening for an ambiguous hour. Retain parsed date and party size while asking; never infer AM/PM from opening hours. "
             "Never assume a party size, select a different requested time, or confuse kitchen hours with table availability. "
             "Use plan_restaurant_reservation for the requested details; the backend assigns a table with sufficient capacity. "
-            "Read the exact server recap. A reservation is confirmed only after delivered recap, a subsequent explicit caller confirmation, and backend success. "
+            "Read the exact server recap and ask whether it works for the caller. "
+            "A natural affirmative answer confirms it; no fixed phrase is required. "
+            "The server recognizes agreement and authorizes confirmation only after a delivered current recap. "
+            "Questions, conditions, declines and requested changes require clarification, never immediate confirmation. "
+            "Announce confirmation only after backend success. "
             "Use the supplied synthetic guest fixture only; do not ask for real contacts. Cancel only the caller's owned reservation after explicit cancellation. "
             "For groups exceeding the configured maximum, special seating, dietary safety, complaints or staff requests use approved staff guidance. "
             "Menu allergens are declarations, not allergy safety guarantees. Never claim a dish is safe for a serious allergy or free of cross-contact. "
@@ -509,11 +517,23 @@ class RestaurantCallTools(CallTools):
     def spa_hours_inquiry(self):
         return False
 
+    def _is_confirmation(self, text, language):
+        return super()._is_confirmation(text, language) or is_restaurant_confirmation(text, language)
+
     def observe_user_text(self, text, **kwargs):
         previous_response = self._restaurant_last_response
         previous_question = self._restaurant_question
         previous_language = self.language
         previous_dish, previous_diet = self._restaurant_dish, self._restaurant_diet
+        if (
+            self.pending
+            and not kwargs.get("unsupported")
+            and not kwargs.get("language")
+            and is_restaurant_confirmation(text, previous_language)
+        ):
+            # Short agreement is weak language evidence. Keep this proposal's
+            # language even if ASR guessed another language for "sobib"/"super".
+            kwargs["detected_language"] = previous_language
         super().observe_user_text(text, **kwargs)
         if kwargs.get("is_final", True) is not True:
             return
@@ -968,7 +988,7 @@ class RestaurantCallTools(CallTools):
             party=fields["party_size"],
             duration=fields["duration_minutes"],
             guest=fields["guest_name"],
-            consent=CONSENT[self.language],
+            question=COPY[self.language]["confirmation_question"],
         )
 
     def guard_reply(self, text, results):
@@ -1078,7 +1098,7 @@ class RestaurantCallTools(CallTools):
         reply = self.inquiry_reply()
         if reply:
             return reply
-        if text == self.greeting:
+        if text == self.greeting or (self.language == "et" and text == ENGLISH_INVITATION):
             return text
         if text in (
             self.fallback,
