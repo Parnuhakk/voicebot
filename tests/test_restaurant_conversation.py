@@ -266,7 +266,7 @@ def test_partial_asr_confirmation_waits_for_final_user_turn(make_state):
 @pytest.mark.parametrize(
     "language,expected",
     [
-        ("et", "4. oktoober 2026"),
+        ("et", "pühapäeval, 4. oktoobril 2026"),
         ("en", "Sunday, 4 October 2026"),
         ("ru", "4 октября 2026"),
     ],

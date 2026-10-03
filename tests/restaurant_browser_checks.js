@@ -146,7 +146,7 @@ async page => {
     }
     const timeQuestions = {
       en: ["I'd like a table tomorrow at 6 o clock", 'in the evening', 'Do you mean AM or PM?', 'How many of you are coming, including children?'],
-      et: ['Soovin homme lauda kell kuus', 'õhtul', 'Kas mõtled hommikut või õhtut?', 'Mitu teid tuleb, koos lastega?'],
+      et: ['Soovin homme lauda kell kuus', 'õhtul', 'Kas mõtlete hommikul või õhtul?', 'Mitmele inimesele lauda soovite?'],
       ru: ['Хочу столик завтра в шесть часов', 'вечером', 'Утром или вечером?', 'Сколько вас будет, вместе с детьми?'],
     }[language.code];
     for (let index = 0; index < 2; index++) {
@@ -175,7 +175,7 @@ async page => {
     await page.locator('#demo-start').click();
     await page.waitForFunction(()=>state.sessionId && !state.turnBusy);
     const temporalAnswers = {
-      et: ['Soovin lauda', 'kahe päeva pärast', 'kell kuueks õhtul', 'meid tuleb neli', 'Mis kuupäevaks', 'Mis kell', 'Mitu teid'],
+      et: ['Soovin lauda', 'kahe päeva pärast', 'kell kuueks õhtul', 'meid tuleb neli', 'Mis päevaks', 'Mis kell', 'Mitmele inimesele'],
       en: ["I'd like to book a table", 'in two days', 'at six and a half PM', 'for a party of four', 'What date', 'What time', 'How many'],
       ru: ['Хочу забронировать столик', 'через два дня', 'в половине седьмого вечера', 'нас будет четверо', 'На какую дату', 'Во сколько', 'Сколько вас'],
     }[language.code];
@@ -190,7 +190,7 @@ async page => {
       }
     }
     const temporalRecap = await page.evaluate(()=>state.recap && state.recap.reply);
-    assert(temporalRecap && /4\s+(?:guests|külalist|гостей)/.test(temporalRecap));
+    assert(temporalRecap && /4\s+(?:guests|külalist|inimesele|гостей)/.test(temporalRecap));
     assert(temporalRecap.includes({et:'18:00',en:'6:30 PM',ru:'18:30'}[language.code]));
     assert(await page.locator('#demo-recap-read').isVisible(), 'new booking recap is missing');
     await page.locator('#demo-end').click();
