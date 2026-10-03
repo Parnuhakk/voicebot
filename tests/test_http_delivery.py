@@ -121,7 +121,8 @@ def test_exact_receipt_is_consumed_before_subsequent_final_consent(
 
         class Stt:
             def transcribe(self, data, *, language):
-                assert data == b"RIFF-fixture" and language == "auto"
+                # Preparation already locked ET; this legacy double gets the hint.
+                assert data == b"RIFF-fixture" and language == "et"
                 return CONSENT
 
         client.app.state.stack["stt"] = Stt()

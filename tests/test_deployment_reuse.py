@@ -88,6 +88,7 @@ def test_worker_agent_selection_survives_environment_copy():
         ("VOICEBOT_SPEAKING_STYLE", "natural"),
         ("VOICEBOT_SPEECH_RATE", "0.98"),
         ("VOICEBOT_RECAP_RATE", "0.94"),
+        ("VOICEBOT_SENTENCE_PAUSE_MS", "300"),
     ],
 )
 def test_published_speech_settings_survive_web_to_worker_copy(field, value):

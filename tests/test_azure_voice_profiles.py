@@ -31,7 +31,10 @@ def azure(client):
         return httpx.Response(200, content=MP3)
 
     speaker = AzureTtsClient(
-        "fixture", "fixture", "et-EE-AnuNeural", "et-EE",
+        "fixture",
+        "fixture",
+        "et-EE-AnuNeural",
+        "et-EE",
         languages={
             "et": ("et-EE-AnuNeural", "et-EE"),
             "en": ("en-US-JennyNeural", "en-US"),
@@ -48,25 +51,44 @@ def voice(document):
     return document.find(SSML + "voice").get("name")
 
 
-@pytest.mark.parametrize("language,expected", [
-    ("et", "et-EE-KertNeural"),
-    ("en", "en-US-GuyNeural"),
-    ("ru", "ru-RU-DmitryNeural"),
-])
-def test_male_voice_owns_greeting_and_turn_in_each_language(client, azure, language, expected):
+@pytest.mark.parametrize(
+    "language,expected",
+    [
+        ("et", "et-EE-KertNeural"),
+        ("en", "en-US-GuyNeural"),
+        ("ru", "ru-RU-DmitryNeural"),
+    ],
+)
+def test_male_voice_owns_greeting_and_turn_in_each_language(
+    client, azure, language, expected
+):
     speaker, requests = azure
-    started = client.post("/api/demo/session", headers=AUTH, json={
-        "language": language, "voice": "azure-male",
-    })
+    started = client.post(
+        "/api/demo/session",
+        headers=AUTH,
+        json={
+            "language": language,
+            "voice": "azure-male",
+        },
+    )
     assert started.status_code == 200, started.text
     data = started.json()
     assert data["voice"]["effective"] == "azure-male"
     assert base64.b64decode(data["audio_b64"]) == MP3
-    reply = client.post("/api/turn", headers=AUTH, json={
-        "session_id": data["session_id"], "voice": "azure-calm",
-        "language": language,
-        "text": {"et": "Milline on menüü?", "en": "What is on the menu?", "ru": "Что есть в меню?"}[language],
-    })
+    reply = client.post(
+        "/api/turn",
+        headers=AUTH,
+        json={
+            "session_id": data["session_id"],
+            "voice": "azure-calm",
+            "language": language,
+            "text": {
+                "et": "Milline on menüü?",
+                "en": "What is on the menu?",
+                "ru": "Что есть в меню?",
+            }[language],
+        },
+    )
     assert reply.status_code == 200, reply.text
     assert reply.json()["voice"]["effective"] == "azure-male"
     assert all(voice(document) == expected for document in requests)
@@ -78,8 +100,13 @@ def test_profiles_are_available_without_additional_provider_credentials(client, 
     catalog = client.get("/api/demo/voices", headers=AUTH).json()["voices"]
     available = {row["id"] for row in catalog if row["available"]}
     assert available == {
-        "azure", "azure-male", "azure-calm", "azure-male-calm",
-        "azure-male-warm", "azure-brian", "azure-ryan",
+        "azure",
+        "azure-male",
+        "azure-calm",
+        "azure-male-calm",
+        "azure-male-warm",
+        "azure-brian",
+        "azure-ryan",
     }
     assert all(row["configured"] for row in catalog if row["id"] in available)
 
@@ -90,18 +117,24 @@ def test_parallel_profiles_keep_their_voice_and_pacing_isolated(azure):
     profiles = ["azure-male", "azure-calm", "azure"] * 3
 
     def synthesize(profile):
-        return registry.choose(profile, azure=speaker).for_language("et").synthesize(profile)
+        return (
+            registry.choose(profile, azure=speaker)
+            .for_language("et")
+            .synthesize(profile)
+        )
 
     with ThreadPoolExecutor(max_workers=3) as pool:
         assert list(pool.map(synthesize, profiles)) == [MP3] * len(profiles)
     for document in requests:
         text = "".join(document.itertext())
-        assert voice(document) == ("et-EE-KertNeural" if text == "azure-male" else "et-EE-AnuNeural")
+        assert voice(document) == (
+            "et-EE-KertNeural" if text == "azure-male" else "et-EE-AnuNeural"
+        )
         assert document.find(".//" + SSML + "prosody").get("rate") == (
-            "0.94" if text == "azure-calm" else "0.98"
+            "1.08" if text == "azure-calm" else "1.12"
         )
         assert document.find(".//" + MSTTS + "silence").get("value") == (
-            "240ms" if text == "azure-calm" else "180ms"
+            "240ms" if text == "azure-calm" else "120ms"
         )
     assert speaker._delivery == SpeechDelivery()
 
@@ -116,7 +149,7 @@ def test_profile_streams_native_mp3_and_preserves_canonical_recap(azure, profile
     assert "".join(document.itertext()) == recap
     assert document.find(".//" + MSTTS + "silence") is None
     assert document.find(".//" + SSML + "prosody").get("rate") == (
-        "0.91" if profile == "azure-calm" else "0.94"
+        "0.97" if profile == "azure-calm" else "1.00"
     )
 
 
@@ -129,12 +162,19 @@ def test_rejected_male_voice_falls_back_before_audio_and_reports_actual_voice(az
             return httpx.Response(200, text="fixture-token")
         document = ET.fromstring(request.content)
         requests.append(document)
-        return httpx.Response(400 if voice(document) == "et-EE-KertNeural" else 200, content=MP3)
+        return httpx.Response(
+            400 if voice(document) == "et-EE-KertNeural" else 200, content=MP3
+        )
 
     speaker._http = httpx.Client(transport=httpx.MockTransport(respond))
-    selected = DemoVoices.from_env({}).choose("azure-male", azure=speaker).for_language("et")
+    selected = (
+        DemoVoices.from_env({}).choose("azure-male", azure=speaker).for_language("et")
+    )
     assert b"".join(selected.stream("Tere!")) == MP3
-    assert [voice(document) for document in requests] == ["et-EE-KertNeural", "et-EE-AnuNeural"]
+    assert [voice(document) for document in requests] == [
+        "et-EE-KertNeural",
+        "et-EE-AnuNeural",
+    ]
     assert selected.voice_info["effective"] == "azure"
     assert selected.voice_info["reason"] == "provider_failure"
 
@@ -155,7 +195,9 @@ def test_partial_male_audio_failure_never_switches_voice(azure):
         return httpx.Response(200, stream=PartialAudio())
 
     speaker._http = httpx.Client(transport=httpx.MockTransport(respond))
-    selected = DemoVoices.from_env({}).choose("azure-male", azure=speaker).for_language("et")
+    selected = (
+        DemoVoices.from_env({}).choose("azure-male", azure=speaker).for_language("et")
+    )
     stream = selected.stream("Tere!")
     assert next(stream)
     with pytest.raises(ProviderError):
@@ -167,29 +209,39 @@ def test_partial_male_audio_failure_never_switches_voice(azure):
 def test_neutral_delivery_disables_calm_style_and_pause_adjustments(azure):
     speaker, requests = azure
     speaker._delivery = SpeechDelivery(mode="neutral")
-    selected = DemoVoices.from_env({}).choose("azure-calm", azure=speaker).for_language("et")
+    selected = (
+        DemoVoices.from_env({}).choose("azure-calm", azure=speaker).for_language("et")
+    )
     assert selected.synthesize("Tere! Mis kell sobiks?") == MP3
     assert requests[-1].find(".//" + SSML + "prosody") is None
     assert requests[-1].find(".//" + MSTTS + "silence") is None
 
 
-@pytest.mark.parametrize("profile,language,expected,rate,pause", [
-    ("azure-male-calm", "et", "et-EE-KertNeural", "0.94", "240ms"),
-    ("azure-male-calm", "en", "en-US-DavisNeural", "0.94", "240ms"),
-    ("azure-male-calm", "ru", "ru-RU-DmitryNeural", "0.94", "240ms"),
-    ("azure-male-warm", "et", "et-EE-KertNeural", "1.00", "160ms"),
-    ("azure-male-warm", "en", "en-US-AndrewNeural", "1.00", "160ms"),
-    ("azure-male-warm", "ru", "ru-RU-DmitryNeural", "1.00", "160ms"),
-    ("azure-brian", "en", "en-US-BrianNeural", "0.98", "180ms"),
-    ("azure-ryan", "en", "en-GB-RyanNeural", "0.98", "180ms"),
-])
+@pytest.mark.parametrize(
+    "profile,language,expected,rate,pause",
+    [
+        ("azure-male-calm", "et", "et-EE-KertNeural", "1.08", "240ms"),
+        ("azure-male-calm", "en", "en-US-DavisNeural", "1.08", "240ms"),
+        ("azure-male-calm", "ru", "ru-RU-DmitryNeural", "1.08", "240ms"),
+        ("azure-male-warm", "et", "et-EE-KertNeural", "1.14", "160ms"),
+        ("azure-male-warm", "en", "en-US-AndrewNeural", "1.14", "160ms"),
+        ("azure-male-warm", "ru", "ru-RU-DmitryNeural", "1.14", "160ms"),
+        ("azure-brian", "en", "en-US-BrianNeural", "1.12", "120ms"),
+        ("azure-ryan", "en", "en-GB-RyanNeural", "1.12", "120ms"),
+    ],
+)
 def test_added_male_profiles_preview_and_session_routing(
     client, azure, profile, language, expected, rate, pause
 ):
     speaker, requests = azure
-    preview = client.post("/api/demo/voices/preview", headers=AUTH, json={
-        "voice": profile, "language": language,
-    })
+    preview = client.post(
+        "/api/demo/voices/preview",
+        headers=AUTH,
+        json={
+            "voice": profile,
+            "language": language,
+        },
+    )
     assert preview.status_code == 200, preview.text
     assert preview.json()["voice"]["effective"] == profile
     assert not client.app.state.demo_sessions.sessions
@@ -197,14 +249,28 @@ def test_added_male_profiles_preview_and_session_routing(
     assert voice(document) == expected
     assert document.find(".//" + SSML + "prosody").get("rate") == rate
     assert document.find(".//" + MSTTS + "silence").get("value") == pause
-    started = client.post("/api/demo/session", headers=AUTH, json={
-        "voice": profile, "language": language,
-    })
+    started = client.post(
+        "/api/demo/session",
+        headers=AUTH,
+        json={
+            "voice": profile,
+            "language": language,
+        },
+    )
     assert started.status_code == 200, started.text
-    reply = client.post("/api/turn", headers=AUTH, json={
-        "session_id": started.json()["session_id"], "voice": "azure",
-        "text": {"et": "Mida soovitad?", "en": "What do you recommend?", "ru": "Что посоветуете?"}[language],
-    })
+    reply = client.post(
+        "/api/turn",
+        headers=AUTH,
+        json={
+            "session_id": started.json()["session_id"],
+            "voice": "azure",
+            "text": {
+                "et": "Mida soovitad?",
+                "en": "What do you recommend?",
+                "ru": "Что посоветуете?",
+            }[language],
+        },
+    )
     assert reply.status_code == 200, reply.text
     assert reply.json()["voice"]["effective"] == profile
     assert all(voice(document) == expected for document in requests)
@@ -214,16 +280,25 @@ def test_added_male_profiles_preview_and_session_routing(
 
 @pytest.mark.parametrize("profile", ["azure-brian", "azure-ryan"])
 @pytest.mark.parametrize("language", ["et", "ru"])
-def test_english_only_speakers_use_native_fallback_and_report_it(azure, profile, language):
+def test_english_only_speakers_use_native_fallback_and_report_it(
+    azure, profile, language
+):
     speaker, requests = azure
-    selected = DemoVoices.from_env({}).choose(profile, azure=speaker).for_language(language)
+    selected = (
+        DemoVoices.from_env({}).choose(profile, azure=speaker).for_language(language)
+    )
     assert b"".join(selected.stream("fixture")) == MP3
-    assert voice(requests[-1]) == {"et": "et-EE-AnuNeural", "ru": "ru-RU-SvetlanaNeural"}[language]
+    assert (
+        voice(requests[-1])
+        == {"et": "et-EE-AnuNeural", "ru": "ru-RU-SvetlanaNeural"}[language]
+    )
     assert selected.voice_info["effective"] == "azure"
     assert selected.voice_info["reason"] == "unsupported_language"
 
 
-@pytest.mark.parametrize("profile", ["azure-male-calm", "azure-male-warm", "azure-brian", "azure-ryan"])
+@pytest.mark.parametrize(
+    "profile", ["azure-male-calm", "azure-male-warm", "azure-brian", "azure-ryan"]
+)
 def test_new_profiles_neutral_mode_and_slow_recaps(azure, profile):
     speaker, requests = azure
     selected = DemoVoices.from_env({}).choose(profile, azure=speaker).for_language("en")
@@ -231,7 +306,9 @@ def test_new_profiles_neutral_mode_and_slow_recaps(azure, profile):
     assert b"".join(selected.stream(recap)) == MP3
     document = requests[-1]
     assert "".join(document.itertext()) == recap
-    assert float(document.find(".//" + SSML + "prosody").get("rate")) <= 0.94
+    assert document.find(".//" + SSML + "prosody").get("rate") == (
+        "0.97" if profile == "azure-male-calm" else "1.00"
+    )
     assert document.find(".//" + MSTTS + "silence") is None
     speaker._delivery = SpeechDelivery(mode="neutral")
     assert selected.synthesize("Hello!") == MP3
@@ -241,10 +318,17 @@ def test_new_profiles_neutral_mode_and_slow_recaps(azure, profile):
 
 
 @pytest.mark.parametrize("language", ["et", "en", "ru", "auto"])
-def test_audition_is_fixed_text_without_model_session_or_booking(client, azure, language):
-    response = client.post("/api/demo/voices/preview", headers=AUTH, json={
-        "language": language, "voice": "azure-male",
-    })
+def test_audition_is_fixed_text_without_model_session_or_booking(
+    client, azure, language
+):
+    response = client.post(
+        "/api/demo/voices/preview",
+        headers=AUTH,
+        json={
+            "language": language,
+            "voice": "azure-male",
+        },
+    )
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["language"] == ("et" if language == "auto" else language)
@@ -255,25 +339,35 @@ def test_audition_is_fixed_text_without_model_session_or_booking(client, azure, 
     assert "recap_delivery_id" not in data
 
 
-@pytest.mark.parametrize("body,code", [
-    ({"voice": "unknown"}, 422),
-    ({"voice": "azure-male", "language": "fi"}, 400),
-    ({"voice": "azure-male", "text": "Jah, kinnitan."}, 400),
-    ({"voice": ["azure-male"]}, 422),
-])
+@pytest.mark.parametrize(
+    "body,code",
+    [
+        ({"voice": "unknown"}, 422),
+        ({"voice": "azure-male", "language": "fi"}, 400),
+        ({"voice": "azure-male", "text": "Jah, kinnitan."}, 400),
+        ({"voice": ["azure-male"]}, 422),
+    ],
+)
 def test_audition_rejects_invalid_inputs_before_synthesis(client, azure, body, code):
-    assert client.post("/api/demo/voices/preview", headers=AUTH, json=body).status_code == code
+    assert (
+        client.post("/api/demo/voices/preview", headers=AUTH, json=body).status_code
+        == code
+    )
     assert not azure[1]
 
 
 def test_audition_authenticates_before_reading_or_synthesis(client, azure):
-    assert client.post("/api/demo/voices/preview", content=b"malformed").status_code == 403
+    assert (
+        client.post("/api/demo/voices/preview", content=b"malformed").status_code == 403
+    )
     assert not azure[1]
 
 
 def test_audition_provider_failure_is_closed_and_has_no_session(client, azure):
     azure[0]._http.close()
-    response = client.post("/api/demo/voices/preview", headers=AUTH, json={"voice": "azure-male"})
+    response = client.post(
+        "/api/demo/voices/preview", headers=AUTH, json={"voice": "azure-male"}
+    )
     assert response.status_code == 503
     assert response.json() == {"detail": "voice_preview_unavailable"}
     assert not client.app.state.demo_sessions.sessions

@@ -42,7 +42,7 @@ def test_greeting_prefixed_spa_inquiry_is_a_safe_question(client, audio_input, w
     assert result["timings_ms"]["llm"] == 0 and model.messages == []
     assert base64.b64decode(result["audio_b64"]).decode() == ASK_TIME
     if audio_input:
-        stt.transcribe.assert_called_once_with(b"fixture-speech", language="et")
+        stt.transcribe.assert_called_once_with(b"fixture-speech", language="auto")
     else:
         stt.transcribe.assert_not_called()
 

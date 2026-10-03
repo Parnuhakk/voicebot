@@ -17,9 +17,9 @@ from ..restaurant_consent import CONFIRMATION_QUESTIONS
 @dataclass(frozen=True)
 class SpeechDelivery:
     mode: str = "natural"
-    rate: float = 0.98
-    recap_rate: float = 0.94
-    sentence_pause_ms: int = 180
+    rate: float = 1.12
+    recap_rate: float = 1.00
+    sentence_pause_ms: int = 120
 
     def __post_init__(self) -> None:
         if (
@@ -38,9 +38,11 @@ class SpeechDelivery:
         try:
             return cls(
                 mode=env.get("VOICEBOT_SPEAKING_STYLE", "natural").strip(),
-                rate=float(env.get("VOICEBOT_SPEECH_RATE", "0.98")),
-                recap_rate=float(env.get("VOICEBOT_RECAP_RATE", "0.94")),
-                sentence_pause_ms=int(env.get("VOICEBOT_SENTENCE_PAUSE_MS", "180")),
+                rate=float(env.get("VOICEBOT_SPEECH_RATE", cls.rate)),
+                recap_rate=float(env.get("VOICEBOT_RECAP_RATE", cls.recap_rate)),
+                sentence_pause_ms=int(
+                    env.get("VOICEBOT_SENTENCE_PAUSE_MS", cls.sentence_pause_ms)
+                ),
             )
         except (TypeError, ValueError):
             raise ValueError("invalid speech delivery configuration") from None

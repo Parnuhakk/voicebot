@@ -34,8 +34,9 @@ caller must hear the repeated recap and then give fresh explicit consent.
 | Variable | Default | Behavior |
 | --- | --- | --- |
 | `VOICEBOT_SPEAKING_STYLE` | `natural` | Shared speech styling; `neutral` removes prosody, pronunciation aliases and expressive style. |
-| `VOICEBOT_SPEECH_RATE` | `0.98` | Normal rate multiplier, accepted range `0.85`–`1.15`. |
-| `VOICEBOT_RECAP_RATE` | `0.94` | Recap multiplier, capped at the normal rate so recaps never become faster. |
+| `VOICEBOT_SPEECH_RATE` | `1.12` | Brisk conversational rate multiplier, accepted range `0.85`–`1.15`. |
+| `VOICEBOT_RECAP_RATE` | `1.00` | Recaps retain the normal voice pace, capped at the conversational rate so they never become faster. |
+| `VOICEBOT_SENTENCE_PAUSE_MS` | `120` | Conversational sentence pauses, accepted range `100`–`500` ms. Recaps retain the provider's default pauses. |
 
 English `en-US-JennyNeural` uses Azure's supported `friendly` style at degree
 `0.8`. Estonian Anu and other configured voices keep their normal voice style,
@@ -68,10 +69,15 @@ voice as human. Listening preference remains separate from configuration tests.
 ## Activation and listening
 
 GitHub changes must reach both the web process and the separate telephone worker.
-The deployment helper preserves these three optional settings from the trusted
+The deployment helper preserves these four optional settings from the trusted
 web container; Compose supplies the defaults when they are absent. Follow the
 [English telephone deployment runbook](english-telephone.md#deploy-the-telephone-worker)
 using the existing shared booking volume.
+
+Native VAD endpointing waits at least `0.5` seconds from the last speech, instead
+of the previous `1.2` seconds. Final transcripts and full guarded replies are
+still required; speculative generation stays disabled. Faster synthesis does
+not acknowledge a recap early: its originating playback must still finish.
 
 To return to neutral speech, set `VOICEBOT_SPEAKING_STYLE=neutral` and restart
 the affected processes. Conversational wording remains available.

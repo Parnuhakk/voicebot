@@ -248,11 +248,16 @@ def test_incomplete_date_cannot_dispatch_a_stale_booking(make_state, language, b
     assert not result.get("ok") and state.pending is None
 
 
-@pytest.mark.parametrize("language,month,day", [("et", "oktoober", "neljas"), ("en", "October", "fourth"), ("ru", "октябрь", "четвертого")])
-def test_http_month_and_day_followups_retain_context(client, language, month, day):
+@pytest.mark.parametrize("language,initial,month,day", [
+    ("et", "Soovin lauda neljale kell 18:00", "oktoober", "neljas"),
+    ("en", "table at 18:00 for four", "October", "fourth"),
+    ("ru", "Столик на четверых в 18:00", "октябрь", "четвертого"),
+])
+def test_http_month_and_day_followups_retain_context(client, language, initial, month, day):
     session_id = start(client, language)["session_id"]
-    for text, key in [("table at 18:00 for four", "date"), (month, "date_incomplete")]:
+    for text, key in [(initial, "date"), (month, "date_incomplete")]:
         response = turn(client, session_id, text, language=language)
+        assert response["language"] == language
         assert response["reply"] == COPY[language][key] and response["booking_changes"] == []
     response = turn(client, session_id, day, language=language)
     state = client.app.state.demo_sessions.sessions[session_id].tools

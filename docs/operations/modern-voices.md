@@ -41,7 +41,7 @@ concurrently. Logout aborts the browser request and stops audio. Language or
 voice changes stop the earlier sample; preview is disabled during a conversation.
 
 Natural Azure delivery uses native intonation, a modest speaking rate and an
-absolute 180 ms sentence pause instead of adding artificial silence to the
+absolute 120 ms sentence pause instead of adding artificial silence to the
 provider's pause. `VOICEBOT_SENTENCE_PAUSE_MS` accepts 100–500 ms. The calm
 profile lowers normal rate by 0.04 and recap rate by 0.03, bounded at 0.85, and
 uses 240 ms sentence pauses. Recaps keep the provider's natural pauses and
@@ -131,12 +131,16 @@ full playback, not the first chunk, a seek to the end, an underrun, synthesis
 alone or a stale `ended` event. A later explicit consent turn is still required.
 The existing explicit text-reading acknowledgment remains distinct from audio.
 
-`VOICEBOT_MIC_SILENCE_MS` defaults to 650 ms, replacing the older 1.5-second
-silence wait. Values from 300 to 2,000 ms are accepted; invalid values use 650 ms.
+`VOICEBOT_MIC_SILENCE_MS` defaults to 500 ms, replacing the previous 650 ms
+silence wait. Values from 300 to 2,000 ms are accepted; invalid values use 500 ms.
 It is a bounded energy detector, not semantic voice activity
 detection: brief pauses, resumed speech, initial silence, the 200 ms voiced
 minimum, manual stop and 15-second cap remain important. Test it in the intended
 room and adjust within its validated range if pauses are cut off.
+
+Restaurant conversation controls become available when the guarded turn has
+finished. Secondary booking-list and call-history refreshes run in the background;
+a slow or failed read cannot hold the next microphone turn or approve a recap.
 
 A stalled audio consumer is retired after the bounded 120-second transport
 lifetime. This stops emission, not an in-flight booking operation or synthesis;

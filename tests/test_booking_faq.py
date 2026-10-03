@@ -54,6 +54,7 @@ GREETING = {
     "en": ENGLISH["greeting"],
     "ru": "Здравствуйте! Чем могу помочь?",
 }
+CALLER_GREETING = {"et": "Tere!", "en": "Hello!", "ru": "Здравствуйте!"}
 
 
 def stay_catalogue():
@@ -528,6 +529,10 @@ def test_an_english_topic_paraphrase_selects_english_in_auto_mode(client, previo
 )
 def test_short_planning_continuations_keep_the_approved_next_question(client, language, text, next_detail):
     session, state, dispatcher, model = setup_session(client, language)
+    # Short continuations follow a clear caller turn, not a UI language override.
+    opening = send(client, session, CALLER_GREETING[language])
+    assert opening.status_code == 200 and opening.json()["language"] == language
+    assert state.language_locked and model.messages == []
     expected = QUESTIONS[language][next_detail][0]
     model.reply = expected
     assert match_question(text, language) == ()
@@ -551,6 +556,9 @@ def test_short_planning_continuations_keep_the_approved_next_question(client, la
 )
 def test_mixed_faq_and_booking_detail_reaches_planning_with_the_complete_utterance(client, language, text, next_detail):
     session, state, dispatcher, model = setup_session(client, language)
+    opening = send(client, session, CALLER_GREETING[language])
+    assert opening.status_code == 200 and opening.json()["language"] == language
+    assert state.language_locked and model.messages == []
     assert match_question(text, language) == ()
     expected = QUESTIONS[language][next_detail][0]
     model.reply = expected
