@@ -287,7 +287,7 @@ def test_backend_error_cannot_select_a_success_phrase(error):
 
 def test_saved_estonian_guest_name_keeps_english_conversation_language():
     state = CallTools(Slots(), language="en")
-    state.observe_user_text("Demo Teine", detected_language="et", unsupported=True)
+    state.observe_user_text("Demo Teine", detected_language="et")
     assert state.language == "en" and not state.unsupported_language
 
 

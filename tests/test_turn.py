@@ -84,7 +84,7 @@ def scripted_chat(script):
 
 def groq_stt(text="Tere, tahan broneerida."):
     def handler(request):
-        return httpx.Response(200, json={"text": text})
+        return httpx.Response(200, json={"text": text, "language": "estonian"})
 
     return GroqClient("k", transport=httpx.MockTransport(handler))
 

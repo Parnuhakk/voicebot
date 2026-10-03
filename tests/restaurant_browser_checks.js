@@ -87,6 +87,25 @@ async page => {
     await page.waitForFunction(()=>state.sessionId && !state.turnBusy);
     assert((await page.locator('#demo-messages').textContent()).includes(language.greeting));
     assert.equal(requests.at(-1).body.language,language.code);
+    const unsupportedPrompt = {
+      et: 'Palun räägi eesti, vene või inglise keeles.',
+      en: 'Please speak Estonian, Russian or English.',
+      ru: 'Пожалуйста, говорите по-эстонски, по-русски или по-английски.',
+    }[language.code];
+    await page.route('**/api/turn', route => route.fulfill({
+      status: 200, contentType: 'application/json', body: JSON.stringify({
+        text_heard: '', language: language.code, reply: unsupportedPrompt,
+        audio_b64: '', input_status: 'unsupported_language',
+        tools_used: 0, booking_changes: [], booking_ids: [], warnings: [],
+        outcome: 'ok', tts_failed: true, recap_delivery_id: null,
+      }),
+    }), {times: 1});
+    await page.evaluate(() => sendTurn({audio_b64: btoa('fixture-audio')}));
+    await page.waitForFunction(() => !state.turnBusy);
+    assert.equal(await page.locator('#demo-status').textContent(), unsupportedPrompt);
+    assert((await page.locator('#demo-messages .message').last().textContent()).includes(unsupportedPrompt));
+    assert.equal(await page.locator('#demo-messages .message').count(), 2, 'unsupported speech added an empty caller message');
+    assert.equal(await page.evaluate(() => state.recap), null);
     const hoursQuestions = {
       et: ['Mis kellani te lahti olete?', 'Aga nädalavahetusel?', 'Esmaspäevast neljapäevani'],
       en: ['What are your opening hours?', 'And on weekends?', 'Monday through Thursday'],
@@ -257,5 +276,5 @@ async page => {
   assert.equal(await page.locator('html').evaluate(element=>getComputedStyle(element).backgroundColor),'rgb(245, 249, 246)','public restaurant palette changed');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'public mobile horizontal overflow');
   assert.deepEqual(errors,[]);
-  return {languages:3,confirmed:3,cancelled:3,voiceReservation:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,publicDemoUnchanged:true,pageErrors:errors.length};
+  return {languages:3,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,publicDemoUnchanged:true,pageErrors:errors.length};
 }

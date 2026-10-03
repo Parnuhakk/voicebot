@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from typing import Any
 
-from .languages import CONSENT, spoken_date, spoken_time
+from .languages import CONSENT, LANGUAGE_POLICY, spoken_date, spoken_time
 from .restaurant_data import restaurant_demo_profile
 from .restaurant_answers import (
     GUIDANCE,
@@ -422,7 +422,8 @@ class RestaurantCallTools(CallTools):
             },
         }
         return (
-            "You are the AI receptionist of the RESTAURANT in the trusted context. All reservations are fictional. "
+            LANGUAGE_POLICY
+            + "You are the AI receptionist of the RESTAURANT in the trusted context. All reservations are fictional. "
             f"Reply only in {self.language}. Keep replies warm, brief and natural; ask one missing detail at a time. "
             "You help with dining table reservations, approved menu information, opening/kitchen hours and restaurant policies. "
             "Do not offer hotel rooms, spa treatments, food ordering, payments or an unimplemented call transfer/callback. "
