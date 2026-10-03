@@ -75,6 +75,22 @@ inimesega` and `kahe täiskasvanu ja kahe lapsega`, without requesting a staff
 handoff. Grammar references: [EKI number inflection](https://teatmik.eki.ee/teatmik/arvsonade-kaanamine/)
 and [EKI number spelling](https://teatmik.eki.ee/teatmik/arvsonade-kokku-ja-lahkukirjutamine/).
 
+English and Russian use the same calendar resolver for days 1–31 and all twelve
+months. English accepts both `the fourth of October` and `October fourth`,
+cardinal days, hyphenated/spaced compound numbers, month abbreviations and
+numeric ordinal endings (`4th`). Russian accepts nominative, genitive, dative,
+instrumental and prepositional day/month forms, including clear mixed cases:
+`четвёртого октября`, `четвёртое октября`, `четвёртому октябрю`. Both `ё` and `е`
+spellings work. Relative requests include `for tomorrow`, `the day after
+tomorrow`, `на завтрашний день`, `к завтрашнему дню` and `на послезавтра`.
+Russian guest-count cases, such as `для четырёх гостей`, are separate from dates.
+The same invalid-date, range, negation, year and clarification rules apply in
+all three languages. English modal `May I book a table?` does not request May.
+Ambiguous numeric-only date conventions still require clarification; this
+change does not choose between day/month and month/day slash dates or parse
+spoken years. References: [Cambridge English dates](https://dictionary.cambridge.org/grammar/british-grammar/dates)
+and [Voronezh State University numeral grammar](https://interedu.vsu.ru/rvc/mats/refs/redkina-rusgramm/redkina-rusgramm.pdf).
+
 Successful demo confirmations and cancellations refresh the website's
 authenticated reservation list, select the actual reservation date, reset its
 page and mark the affected row. The assistant announces success only after the
