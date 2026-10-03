@@ -50,6 +50,15 @@ count toward capacity. Ambiguous component counts prompt for the total.
 
 ## Natural conversation and visible demo reservations
 
+Estonian replies use consistent polite wording and recap dates such as
+`pühapäeval, 4. oktoobril 2026`. Clock pronunciation also handles `kell 9`
+and `kell 9:30` without changing the displayed or stored values. Party details
+include `meid on neli`, `meid tuleb neli` and `tuleme neljakesi`; a standalone
+`tegelikult viis` corrects an existing guest count. Corrections require a new
+delivered recap before consent. Repetition or confusion repeats the last
+approved question or restaurant fact. A standalone decline clears the proposed
+booking details without claiming to cancel a saved booking.
+
 The assistant uses short questions in all three languages and speaks recap
 dates with month names. Estonian confirmation accepts a closed list of explicit
 whole-turn phrases, including `Jah, kinnitan.`, `kinnitan`, `jah palun kinnita`

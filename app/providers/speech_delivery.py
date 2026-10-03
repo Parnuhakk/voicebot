@@ -83,7 +83,7 @@ def spoken_estonian_date(value: str) -> str:
 
 
 _PRONUNCIATION = re.compile(
-    r"(?<!\w)(?:\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2})?)?|kell \d{2}:\d{2}|ajavöönd Europe/Tallinn|Europe/Tallinn)(?!\w)"
+    r"(?<!\w)(?:\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2})?)?|kell \d{1,2}(?::\d{2})?|ajavöönd Europe/Tallinn|Europe/Tallinn)(?![\w:]|\.\d)"
 )
 
 
@@ -133,7 +133,8 @@ def _pronounced_text(text: str, language: str) -> str:
             if "Europe/Tallinn" in original:
                 alias = "Tallinna aja järgi"
             elif original.startswith("kell "):
-                hour, minute = map(int, original[5:].split(":"))
+                clock = original[5:].split(":")
+                hour, minute = int(clock[0]), int(clock[1]) if len(clock) == 2 else 0
                 alias = "kell " + spoken_estonian_time(hour, minute)
             else:
                 date = datetime.fromisoformat(original)

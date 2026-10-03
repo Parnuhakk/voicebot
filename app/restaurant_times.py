@@ -87,7 +87,7 @@ PERIODS = {
     "night": re.compile(r"\b(?:night|öösel|ööl|ночи|ночью)\b"),
 }
 SPECIAL = re.compile(r"\b(?P<noon>noon|midday|keskpäev\w*|полдень|полудень)|\b(?P<midnight>midnight|kesköö\w*|полночь|полночи)")
-DIGITAL = re.compile(r"(?<![\w:.])(?P<h>\d{1,2})[:.](?P<m>\d{2})(?![\d:.])")
+DIGITAL = re.compile(r"(?<![\w:.])(?P<h>\d{1,2})[:.](?P<m>\d{2})(?![\d:]|\.\d)")
 MALFORMED_DIGITAL = re.compile(r"(?<![\w:.])\d{1,3}[:.]\d+(?!\w)")
 FRACTIONS = (
     (re.compile(r"\b(?:a\s+)?(?P<m>half|quarter|" + MINUTE + r")\s+(?P<direction>past|to)\s+(?P<h>" + HOUR + r")\b"), "en"),
