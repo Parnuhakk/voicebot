@@ -139,6 +139,18 @@ Large parties, accessibility, highchairs, special seating, complaints and
 unavailable facts get staff-verification guidance. The demo does not transfer a
 real call, promise a callback, take payment or place a food order.
 
+## English callers
+
+Automatic language selection recognizes natural English requests such as
+"I'd like a table" and keeps English for short replies such as "Four" or
+"Two pm", even when speech recognition supplies noisy language metadata.
+The shared web and phone policy answers from reviewed restaurant facts,
+preserves booking details across information questions, and asks for clarification
+when information is unavailable. English times from 1 to 12 without AM or PM
+require clarification; invalid times never reuse a previous requested time.
+An unrelated question cannot replay a previous booking plan. Confirmation still
+requires a delivered recap and a later explicit confirmation.
+
 ## Deployment
 
 Speech accepts only Estonian, Russian and English. Browser and native Groq

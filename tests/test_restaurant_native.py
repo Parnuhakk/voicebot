@@ -27,6 +27,7 @@ from tests.test_native_booking_terminals import (  # noqa: E402
 )
 
 
+@pytest.mark.parametrize("initial_language", ["et", "en", "ru"])
 @pytest.mark.parametrize(
     "language,utterance,confirmation",
     [
@@ -38,7 +39,7 @@ from tests.test_native_booking_terminals import (  # noqa: E402
     ],
 )
 def test_native_sdk_confirmation_is_visible_in_the_restaurant_database(
-    tmp_path, language, utterance, confirmation
+    tmp_path, language, utterance, confirmation, initial_language
 ):
     async def run():
         request_text = utterance
@@ -49,7 +50,7 @@ def test_native_sdk_confirmation_is_visible_in_the_restaurant_database(
         data = load_restaurant_data()
         path = str(tmp_path / "shared-restaurant.db")
         adapter = RestaurantAdapter(path, data=data, allow_writes=True)
-        state = make_call_tools(restaurant_dispatcher(adapter, data), language=language)
+        state = make_call_tools(restaurant_dispatcher(adapter, data), language=initial_language)
         agent = worker.TelephoneAgent(state)
         model = UnusedModel()
         session = AgentSession(
@@ -61,6 +62,7 @@ def test_native_sdk_confirmation_is_visible_in_the_restaurant_database(
             await session.start(agent=agent, record=False)
             try:
                 await native_turn(session, agent, request_text)
+                assert state.language == language
                 assert state.pending["delivery"] and not state.pending["approved"]
                 await native_turn(session, agent, confirmation)
                 assert len(state.bookings) == 1

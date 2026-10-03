@@ -190,6 +190,33 @@ def test_routine_menu_and_hours_are_grounded_without_model_calls(
     assert answer["reply"] == client.provider.spoken[-1]
 
 
+@pytest.mark.parametrize("channel", ["text", "audio"])
+def test_auto_english_booking_with_side_question_uses_grounded_english(client, channel):
+    session = start(client, "auto")["session_id"]
+    def speak(text):
+        body = {"session_id": session, "language": "auto"}
+        if channel == "audio":
+            client.provider.transcript = text
+            body["audio_b64"] = base64.b64encode(b"RIFF-synthetic-fixture").decode()
+        else:
+            body["text"] = text
+        response = client.post("/api/turn", json=body, headers=AUTH)
+        assert response.status_code == 200, response.text
+        answer = response.json()
+        assert answer["language"] == "en"
+        assert answer["reply"] == client.provider.spoken[-1]
+        assert answer["booking_changes"] == []
+        return answer
+
+    assert speak("I'd like to reserve a table")["reply"] == COPY["en"]["date"]
+    assert speak("Tomorrow")["reply"] == COPY["en"]["time"]
+    assert speak("How much does the salmon cost?")["reply"] == COPY["en"]["price"]
+    assert speak("Two pm")["reply"] == COPY["en"]["party"]
+    proposal = speak("There will be four of us")
+    assert "4 guests" in proposal["reply"] and "2:00 PM" in proposal["reply"]
+    assert proposal["recap_delivery_id"]
+
+
 @pytest.mark.parametrize(
     "language,utterance",
     [
