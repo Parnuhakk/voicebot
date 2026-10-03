@@ -297,11 +297,13 @@ def resolve_restaurant_date(
             numeric_day = re.fullmatch(r"(\d{1,2})(?:st|nd|rd|th|-(?:го|е|й|ое|ого|ому|ом))?", raw_day)
             day = int(numeric_day[1]) if numeric_day else DAY_FORMS[raw_day]
             end = match.end()
+            if text[end:end + 1] == ".":
+                end += 1
             start = match.start()
             year = None
             error = None
             # Do not consume a neighbouring guest count as a year.
-            year_match = re.match(r"(?:\s*,\s*|\s+)(\d{2,4})(?![\d:.])", text[end:])
+            year_match = re.match(r"(?:\s*,\s*|\s+)(\d{2,4})(?![\w:.])", text[end:])
             if year_match and not GUEST_NOUN.match(text[end + year_match.end() :]):
                 end += year_match.end()
                 if len(year_match[1]) != 4:

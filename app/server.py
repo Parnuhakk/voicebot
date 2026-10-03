@@ -301,6 +301,7 @@ def create_app():
         "stay_booking_ready": "search_availability" in advertised,
         "slot_booking_ready": "search_slots" in advertised,
         "booking_read_ready": stack["booking_reader"] is not None,
+        "restaurant_english_dates_times_ready": stack.get("business_type") == "restaurant",
         "booking_view_source": (
             stack.get("business_type", "hotel_spa")
             if stack.get("business_type") == "restaurant"

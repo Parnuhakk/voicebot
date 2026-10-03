@@ -76,7 +76,7 @@ HOURS = {
 
 def _pattern(words: dict[str, int]) -> str:
     # Long compound numbers must precede their shorter prefixes.
-    return r"(?:\d{1,2}|" + "|".join(re.escape(word) for word in sorted(words, key=len, reverse=True)) + ")"
+    return r"(?:-?\d{1,3}|" + "|".join(re.escape(word) for word in sorted(words, key=len, reverse=True)) + ")"
 
 
 HOUR = _pattern(HOURS)
@@ -103,10 +103,11 @@ BARE = re.compile(r"(?P<h>" + HOUR + r")(?:\s+(?P<m>" + MINUTE + r"))?")
 ALTERNATIVE = re.compile(r"\b(?:or|või|или)\s+" + HOUR + r"\b")
 TIME_RANGE = re.compile(r"\b(?:between|vahemikus|между)\s+" + HOUR + r"\b")
 MERIDIEM = re.compile(r"(?<![a-z])[ap]\.?\s*m\.?(?![a-z])")
+NEGATED_TIME = re.compile(r"\b(?:not|mitte|ei|ära|не)(?:\s+\w+){0,2}\s*$")
 
 
 def _number(value: str, *, hour=False) -> int:
-    return int(value) if value.isdigit() else (HOURS if hour else NUMBERS)[value]
+    return int(value) if value.lstrip("-").isdigit() else (HOURS if hour else NUMBERS)[value]
 
 
 def _period(text: str) -> str | None:
@@ -207,12 +208,19 @@ def parse_spoken_time(
             hour = _number(match["h"], hour=True)
             found.append(_selection(hour, _number(match["m"]) if match["m"] else 0, period, explicit=hour == 0 or hour > 12, meridiem=meridiem))
     if not found and pending and period:
+        if any(
+            NEGATED_TIME.search(text[:match.start()])
+            for pattern in PERIODS.values() for match in pattern.finditer(text)
+        ):
+            return RequestedTime(candidates=pending, invalid=True)
         hour, minute = map(int, pending[0].split(":"))
         return _selection(hour, minute, period, meridiem=meridiem)
     if not found and period and bare == "":
         return RequestedTime(invalid=True)
     if not found:
         return RequestedTime(invalid=True) if TIME_RANGE.search(text) else None
+    if any(NEGATED_TIME.search(text[:start]) for start, _ in occupied):
+        return RequestedTime(invalid=True)
     # A date/guest alternative elsewhere in the request is not a clock choice.
     alternative_time = bool(TIME_RANGE.search(text))
     for alternative in ALTERNATIVE.finditer(text):

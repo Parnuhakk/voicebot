@@ -271,7 +271,7 @@ BOOKING_REQUEST = (
 )
 
 
-def parse_restaurant_request(text, previous=None, *, now=None):
+def parse_restaurant_request(text, previous=None, *, now=None, expected_field=None):
     """Parse requested details only: never infer availability, contacts or consent."""
     if not isinstance(text, str) or len(text) > 2000:
         return None
@@ -292,7 +292,11 @@ def parse_restaurant_request(text, previous=None, *, now=None):
     text = " ".join(resolved.remaining_text.split())
     requested_time = parse_spoken_time(
         text, pending=inquiry.get("time_candidates"),
-        allow_bare="date" in inquiry and "start_time" not in inquiry,
+        allow_bare=(
+            expected_field in {"time", "ambiguous_time", "invalid_time"}
+            if expected_field is not None
+            else "date" in inquiry and "start_time" not in inquiry
+        ),
     )
     if requested_time:
         inquiry.pop("start_time", None)
@@ -443,6 +447,7 @@ class RestaurantCallTools(CallTools):
         return False
 
     def observe_user_text(self, text, **kwargs):
+        previous_response = self._restaurant_last_response
         previous_question = self._restaurant_question
         previous_language = self.language
         previous_dish, previous_diet = self._restaurant_dish, self._restaurant_diet
@@ -517,20 +522,29 @@ class RestaurantCallTools(CallTools):
             and not self.conversation.intent
         ):
             # An unrelated question must not silently replay a complete plan.
-            details = parse_restaurant_request(text, {})
+            expected_field = (
+                previous_response[1]
+                if previous_response and previous_response[0] == "question"
+                else None
+            )
+            details = parse_restaurant_request(text, {}, expected_field=expected_field)
             booking_request = re.search(BOOKING_REQUEST, text)
             question = re.search(r"^(?:what|where|why|how|do|does|is|are)\b", text)
             prior = self._restaurant_inquiry or {}
             time_followup = self._restaurant_inquiry is not None and question is None and parse_spoken_time(
                 text, pending=prior.get("time_candidates"),
-                allow_bare="date" in prior and "start_time" not in prior,
+                allow_bare=(
+                    expected_field in {"time", "ambiguous_time", "invalid_time"}
+                    if expected_field is not None
+                    else "date" in prior and "start_time" not in prior
+                ),
             ) is not None
             self._restaurant_unmatched = not booking_request and not time_followup and (
                 self._restaurant_inquiry is None or not details or question is not None
             )
             if not self._restaurant_unmatched:
                 self._restaurant_inquiry = parse_restaurant_request(
-                    text, self._restaurant_inquiry
+                    text, self._restaurant_inquiry, expected_field=expected_field
                 )
                 # Restaurant clock parsing owns AM/PM across all three languages.
                 if self.clarification == "ambiguous_time":
@@ -722,7 +736,7 @@ class RestaurantCallTools(CallTools):
         if (
             name == "plan_restaurant_reservation"
             and self._restaurant_inquiry
-            and self._restaurant_inquiry.get("date_issue")
+            and any(self._restaurant_inquiry.get(key) for key in ("date_issue", "time_candidates", "time_invalid"))
         ):
             return {"error": "clarification_required"}
         if isinstance(args, str):
