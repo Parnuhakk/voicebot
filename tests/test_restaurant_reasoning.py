@@ -494,3 +494,70 @@ def test_guest_instructions_cannot_add_facts_or_authorize_an_action(client):
     review_data = json.loads(model.calls[1]["messages"][1]["content"])
     assert "wine" not in review_data["facts"]["menu_items"]
     assert "UNTRUSTED DATA" in model.calls[1]["messages"][0]["content"]
+
+
+@pytest.mark.parametrize(
+    "language,question,unsafe",
+    [
+        ("en", "Please send a message to the chef.", "I will inform the kitchen."),
+        ("en", "What is on the menu?", "I will inform the kitchen."),
+        ("en", QUESTIONS["en"], "Your request has reached the chef."),
+        ("en", QUESTIONS["en"], "I'll handle that for you."),
+        ("en", QUESTIONS["en"], "I can save your special request."),
+        ("en", QUESTIONS["en"], "Your food order is accepted."),
+        ("en", QUESTIONS["en"], "Delivery is arranged."),
+        ("en", QUESTIONS["en"], "Your special request has been accepted."),
+        ("en", QUESTIONS["en"], "Your special request will be fulfilled."),
+        ("en", QUESTIONS["en"], "Your note has been taken."),
+        ("et", QUESTIONS["et"], "Teatan köögile teie allergiast."),
+        ("et", QUESTIONS["et"], "Panen teie erisoovi kirja."),
+        ("et", QUESTIONS["et"], "Võtan teie toidutellimuse vastu."),
+        ("et", QUESTIONS["et"], "Ma saan selle korraldada."),
+        ("ru", QUESTIONS["ru"], "Я уведомлю кухню о вашей аллергии."),
+        ("ru", QUESTIONS["ru"], "Ваше пожелание передано повару."),
+        ("ru", QUESTIONS["ru"], "Я запишу ваше пожелание."),
+        ("ru", QUESTIONS["ru"], "Ваш заказ принят."),
+        ("ru", QUESTIONS["ru"], "Доставка организована."),
+        ("ru", QUESTIONS["ru"], "Я могу это сделать."),
+        ("ru", QUESTIONS["ru"], "Ваше особое пожелание принято."),
+        ("ru", QUESTIONS["ru"], "Особая просьба будет исполнена."),
+    ],
+)
+def test_generated_capability_promises_are_rejected_for_any_question(
+    client, language, question, unsafe
+):
+    model = Model(unsafe, language, approved=True)
+    client.app.state.stack["llm_primary"] = model
+    session = start(client, language)["session_id"]
+    result = turn(client, session, question, language=language)
+    state = client.app.state.demo_sessions.sessions[session].tools
+    assert result["reply"] == (state.inquiry_reply() or COPY[language]["domain"])
+    assert result["reply"] == client.provider.spoken[-1] != unsafe
+    assert state._reasoned_reply is None and len(model.calls) == 1
+    assert not state.pending and not state.holds and not state.bookings
+    assert result["booking_changes"] == [] and result["recap_delivery_id"] is None
+
+
+@pytest.mark.parametrize(
+    "language,unsafe",
+    [
+        ("en", "I will inform the kitchen."),
+        ("en", "Your special request has been accepted."),
+        ("et", "Teatan köögile teie allergiast."),
+        ("ru", "Я уведомлю кухню о вашей аллергии."),
+    ],
+)
+def test_final_wording_boundary_rechecks_capability_safety(
+    make_state, language, unsafe
+):
+    from app.restaurant_reasoning import facts_digest, restaurant_facts
+
+    state = make_state(language)
+    state.observe_user_text(QUESTIONS[language], language=language)
+    state._reasoned_reply = (
+        state._turn_serial,
+        language,
+        unsafe,
+        facts_digest(restaurant_facts(state)),
+    )
+    assert state.guard_reply(unsafe, []) == state.inquiry_reply()

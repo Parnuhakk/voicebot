@@ -11,7 +11,14 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Any
 
-from .languages import ENGLISH_INVITATION, LANGUAGE_POLICY, english_clarification, requested_language, spoken_date, spoken_time
+from .languages import (
+    ENGLISH_INVITATION,
+    LANGUAGE_POLICY,
+    english_clarification,
+    requested_language,
+    spoken_date,
+    spoken_time,
+)
 from .restaurant_consent import CONFIRMATION_QUESTIONS, is_restaurant_confirmation
 from .restaurant_times import NUMBERS, parse_spoken_time
 from .restaurant_data import restaurant_demo_profile
@@ -20,10 +27,12 @@ from .restaurant_date_vocabulary import RUSSIAN_COUNTS
 from .providers.speech_delivery import spoken_estonian_date
 from .providers import russian_speech
 from .restaurant_answers import (
+    CAPABILITIES,
     GUIDANCE,
     INFORMATION_TOPICS,
     DETAIL_FOLLOWUP,
     RestaurantQuestion,
+    capability_booking_clause,
     format_schedule,
     match_question,
     natural_list,
@@ -60,7 +69,7 @@ COPY: dict[str, dict[str, str]] = {
         "closed": "suletud",
         "alternatives": "Sel ajal lauda ei ole. Samal päeval saan pakkuda kell {times}. Milline aeg sobib?",
         "confirmation_question": CONFIRMATION_QUESTIONS["et"],
-        "recap": "Saan pakkuda lauda {date} kell {time}, {party} inimesele restoranis {name}. Broneering kestab {duration} minutit ja on nimele {guest}. {question}"
+        "recap": "Saan pakkuda lauda {date} kell {time}, {party} inimesele restoranis {name}. Broneering kestab {duration} minutit ja on nimele {guest}. {question}",
     },
     "en": {
         "greeting": "Hello! This is an AI restaurant demo. No real table is booked here. How can I help?",
@@ -90,7 +99,7 @@ COPY: dict[str, dict[str, str]] = {
         "closed": "closed",
         "alternatives": "That time isn't available. On the same day, we have {times}. Which works for you?",
         "confirmation_question": CONFIRMATION_QUESTIONS["en"],
-        "recap": "Your test reservation: {name}, {date} at {time}, for {party} guests. The table is for {duration} minutes, under {guest}. {question}"
+        "recap": "Your test reservation: {name}, {date} at {time}, for {party} guests. The table is for {duration} minutes, under {guest}. {question}",
     },
     "ru": {
         "greeting": "Здравствуйте! Я голосовой помощник ресторана. Здесь можно сделать только тестовую бронь. Чем помочь?",
@@ -120,8 +129,8 @@ COPY: dict[str, dict[str, str]] = {
         "closed": "закрыто",
         "alternatives": "На это время столика нет. В тот же день есть {times}. Что вам удобнее?",
         "confirmation_question": CONFIRMATION_QUESTIONS["ru"],
-        "recap": "Итак, тестовая бронь в {name}: {date}, в {time}, на {party}. На имя {guest}, столик на {duration}. {question}"
-    }
+        "recap": "Итак, тестовая бронь в {name}: {date}, в {time}, на {party}. На имя {guest}, столик на {duration}. {question}",
+    },
 }
 
 
@@ -212,7 +221,11 @@ NUMBER_WORDS = {
     "nine": 9,
     "ten": 10,
     **{word: value for word, value in NUMBERS.items() if value >= 11},
-    **{word.replace(" ", "-"): value for word, value in NUMBERS.items() if value >= 21 and re.fullmatch(r"[a-z ]+", word)},
+    **{
+        word.replace(" ", "-"): value
+        for word, value in NUMBERS.items()
+        if value >= 21 and re.fullmatch(r"[a-z ]+", word)
+    },
 }
 
 
@@ -306,10 +319,18 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
     if not active:
         return None
     now = now or datetime.now(ZoneInfo("Europe/Tallinn"))
-    date_reply = expected_field in {"date", "date_invalid", "date_incomplete", "date_ambiguous"} or bool(inquiry.get("date_issue"))
+    date_reply = expected_field in {
+        "date",
+        "date_invalid",
+        "date_incomplete",
+        "date_ambiguous",
+    } or bool(inquiry.get("date_issue"))
     resolved = resolve_restaurant_date(
-        text, now, allow_bare_day=date_reply,
-        pending_day=inquiry.get("date_day"), pending_month=inquiry.get("date_month"),
+        text,
+        now,
+        allow_bare_day=date_reply,
+        pending_day=inquiry.get("date_day"),
+        pending_month=inquiry.get("date_month"),
         pending_year=inquiry.get("date_year"),
     )
     if resolved.issue:
@@ -319,10 +340,18 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
             for key in ("date_day", "date_month", "date_year"):
                 inquiry.pop(key, None)
         else:
-            if resolved.day is None and resolved.month is None and resolved.year is None:
+            if (
+                resolved.day is None
+                and resolved.month is None
+                and resolved.year is None
+            ):
                 for key in ("date_day", "date_month", "date_year"):
                     inquiry.pop(key, None)
-            for key, value in (("date_day", resolved.day), ("date_month", resolved.month), ("date_year", resolved.year)):
+            for key, value in (
+                ("date_day", resolved.day),
+                ("date_month", resolved.month),
+                ("date_year", resolved.year),
+            ):
                 if value is not None:
                     inquiry[key] = value
     elif resolved.value:
@@ -333,7 +362,8 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
     # Keep the current date parser's removal of date numerals/case forms.
     text = " ".join(resolved.remaining_text.split())
     requested_time = parse_spoken_time(
-        text, pending=inquiry.get("time_candidates"),
+        text,
+        pending=inquiry.get("time_candidates"),
         allow_bare=(
             expected_field in {"time", "ambiguous_time", "invalid_time"}
             if expected_field is not None
@@ -350,9 +380,13 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
             inquiry["time_candidates"] = requested_time.candidates
         else:
             inquiry["time_invalid"] = True
-    words = "|".join(re.escape(word) for word in sorted(NUMBER_WORDS, key=len, reverse=True))
+    words = "|".join(
+        re.escape(word) for word in sorted(NUMBER_WORDS, key=len, reverse=True)
+    )
     number = r"(\d{1,2}|" + words + r")"
-    guest_noun = r"(?:people|persons|guests|inimes\w*|külalis\w*|külalist\w*|человек\w*|гост\w*)"
+    guest_noun = (
+        r"(?:people|persons|guests|inimes\w*|külalis\w*|külalist\w*|человек\w*|гост\w*)"
+    )
     party_prefix = r"(?:for(?:\s+a\s+party\s+of)?|на|для|kokku|total)"
     party = re.search(r"\b" + party_prefix + r"\s+" + number + r"\b", text)
     if party and requested_time and requested_time.span:
@@ -360,18 +394,29 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
         if party.start() < high and party.end() > low:
             party = None
     party = party or re.search(
-        r"\b"
-        + number
-        + r"\s+" + guest_noun + r"\b",
+        r"\b" + number + r"\s+" + guest_noun + r"\b",
         text,
     )
+    party = (
+        party
+        or re.search(
+            r"\b(?:there (?:will be|are)|we (?:are|will be)|we['’]re)\s+"
+            + number
+            + r"\b",
+            text,
+        )
+        or re.search(r"\b" + number + r"\s+of us\b", text)
+    )
     party = party or re.search(
-        r"\b(?:there (?:will be|are)|we (?:are|will be)|we['’]re)\s+" + number + r"\b", text
-    ) or re.search(r"\b" + number + r"\s+of us\b", text)
-    party = party or re.search(r"\b(?:meid\s+(?:on|tuleb)|нас(?:\s+будет)?)\s+" + number + r"\b", text)
-    party = party or re.search(
-        r"\b(?:meid on|meid tuleb|me tuleme|tuleme|oleme)\s+" + number + r"\b", text
-    ) or re.search(r"\b(kahekesi|kolmekesi|neljakesi|viiekesi|kuuekesi)\b", text)
+        r"\b(?:meid\s+(?:on|tuleb)|нас(?:\s+будет)?)\s+" + number + r"\b", text
+    )
+    party = (
+        party
+        or re.search(
+            r"\b(?:meid on|meid tuleb|me tuleme|tuleme|oleme)\s+" + number + r"\b", text
+        )
+        or re.search(r"\b(kahekesi|kolmekesi|neljakesi|viiekesi|kuuekesi)\b", text)
+    )
     if not party and not requested_time and "party_size" in inquiry:
         party = re.fullmatch(r"tegelikult\s+" + number, text.strip(".!?"))
     party = party or re.search(
@@ -381,11 +426,23 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
         inquiry["party_size"] = (
             int(party[1]) if party[1].isdigit() else NUMBER_WORDS[party[1]]
         )
-    elif not requested_time and text.strip(".!?") in NUMBER_WORDS and "party_size" not in inquiry:
+    elif (
+        not requested_time
+        and text.strip(".!?") in NUMBER_WORDS
+        and "party_size" not in inquiry
+    ):
         inquiry["party_size"] = NUMBER_WORDS[text.strip(".!?")]
-    elif not requested_time and re.fullmatch(r"\d{1,2}", text) and "party_size" not in inquiry:
+    elif (
+        not requested_time
+        and re.fullmatch(r"\d{1,2}", text)
+        and "party_size" not in inquiry
+    ):
         inquiry["party_size"] = int(text)
-    if "party_size" in inquiry and (party or (not requested_time and text.strip(".!?") in NUMBER_WORDS) or re.fullmatch(r"\d{1,2}", text)):
+    if "party_size" in inquiry and (
+        party
+        or (not requested_time and text.strip(".!?") in NUMBER_WORDS)
+        or re.fullmatch(r"\d{1,2}", text)
+    ):
         inquiry.pop("party_invalid", None)
     # A component count is not the total. Include children explicitly rather
     # than silently reserving for only the first number in the sentence.
@@ -402,7 +459,9 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
             return int(match[1]) if match[1].isdigit() else NUMBER_WORDS[match[1]]
 
         components = count(adult) + count(children)
-        total = re.search(r"\b(?:total|kokku|всего)\s+" + number + r"\b", text) or re.search(r"\b" + number + r"\s+in\s+total\b", text)
+        total = re.search(
+            r"\b(?:total|kokku|всего)\s+" + number + r"\b", text
+        ) or re.search(r"\b" + number + r"\s+in\s+total\b", text)
         if total and count(total) != components:
             inquiry.pop("party_size", None)
             inquiry["party_invalid"] = True
@@ -415,21 +474,37 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
         inquiry.pop("party_size", None)
     # An offered range or conflicting totals need another answer. Time/date
     # alternatives are not guest alternatives unless a count phrase owns them.
-    alternative = re.compile(r"\b" + number + r"\s+(?:or|või|или|kuni|to)\s+" + number + r"\b")
+    alternative = re.compile(
+        r"\b" + number + r"\s+(?:or|või|или|kuni|to)\s+" + number + r"\b"
+    )
     for match in alternative.finditer(text):
-        count_prefix = re.search(r"\b" + party_prefix + r"\s*$", text[:match.start()])
-        count_suffix = re.match(r"\s+" + guest_noun + r"\b", text[match.end():])
+        count_prefix = re.search(r"\b" + party_prefix + r"\s*$", text[: match.start()])
+        count_suffix = re.match(r"\s+" + guest_noun + r"\b", text[match.end() :])
         if count_prefix or count_suffix or expected_field == "party":
             inquiry.pop("party_size", None)
             inquiry["party_invalid"] = True
-    totals = {int(match[1]) if match[1].isdigit() else NUMBER_WORDS[match[1]] for match in re.finditer(r"\b" + number + r"\s+" + guest_noun + r"\b", text)}
+    totals = {
+        int(match[1]) if match[1].isdigit() else NUMBER_WORDS[match[1]]
+        for match in re.finditer(r"\b" + number + r"\s+" + guest_noun + r"\b", text)
+    }
     if len(totals) > 1:
         inquiry.pop("party_size", None)
         inquiry["party_invalid"] = True
-    if re.search(r"\b(?:around|about|approximately|between|umbes|около|примерно|между)\s+" + number + r"(?:\s+(?:and|to|ja|kuni|и|до)\s+" + number + r")?\s+" + guest_noun + r"\b", text):
+    if re.search(
+        r"\b(?:around|about|approximately|between|umbes|около|примерно|между)\s+"
+        + number
+        + r"(?:\s+(?:and|to|ja|kuni|и|до)\s+"
+        + number
+        + r")?\s+"
+        + guest_noun
+        + r"\b",
+        text,
+    ):
         inquiry.pop("party_size", None)
         inquiry["party_invalid"] = True
-    if party and re.search(r"\b(?:not|mitte|ei|не)(?:\s+\w+){0,2}\s*$", text[:party.start()]):
+    if party and re.search(
+        r"\b(?:not|mitte|ei|не)(?:\s+\w+){0,2}\s*$", text[: party.start()]
+    ):
         inquiry.pop("party_size", None)
         inquiry["party_invalid"] = True
     return inquiry
@@ -455,6 +530,9 @@ class RestaurantCallTools(CallTools):
         self._reasoned_reply: tuple[int, str, str, str] | None = None
         self._restaurant_booking_paused = False
         self._restaurant_pending_question = False
+
+        # Selector identities only; carry disclosures through booking followups.
+        self._restaurant_capability_topics = ()
 
     def conversation_tools(self):
         public = {
@@ -540,7 +618,9 @@ class RestaurantCallTools(CallTools):
         return False
 
     def _is_confirmation(self, text, language):
-        return super()._is_confirmation(text, language) or is_restaurant_confirmation(text, language)
+        return super()._is_confirmation(text, language) or is_restaurant_confirmation(
+            text, language
+        )
 
     def observe_user_text(self, text, **kwargs):
         previous_response = self._restaurant_last_response
@@ -578,13 +658,20 @@ class RestaurantCallTools(CallTools):
         self._restaurant_question = None
         self._restaurant_unmatched = False
         text = " ".join(text.casefold().split()) if isinstance(text, str) else ""
-        offered_choice = re.fullmatch(r"(?:kell\s+|at\s+|в\s+)?(\d{1,2}:\d{2})[.!]?", text)
+        offered_choice = re.fullmatch(
+            r"(?:kell\s+|at\s+|в\s+)?(\d{1,2}:\d{2})[.!]?", text
+        )
         selected_alternative = (
-            offered_choice[1] if offered_choice and previous_alternatives
-            and offered_choice[1] in previous_alternatives else None
+            offered_choice[1]
+            if offered_choice
+            and previous_alternatives
+            and offered_choice[1] in previous_alternatives
+            else None
         )
         if (
-            self.mutation_uncertain or self.unsupported_language or self.input_recovery_reply
+            self.mutation_uncertain
+            or self.unsupported_language
+            or self.input_recovery_reply
             or kwargs.get("recognition_status") in {"stt_unavailable", "input_invalid"}
         ):
             return
@@ -595,6 +682,7 @@ class RestaurantCallTools(CallTools):
             return
         if self.conversation.intent in {"decline", "goodbye"}:
             self._restaurant_inquiry = None
+            self._restaurant_capability_topics = ()
         for item in self.restaurant["menu"]:
             if any(name.casefold() in text for name in item["name"].values()):
                 self._restaurant_dish = item["id"]
@@ -616,45 +704,67 @@ class RestaurantCallTools(CallTools):
             self._restaurant_diet = "vegetarian"
         # After answering a side question, a bare date/time/count answers the
         # booking prompt we appended, not the earlier information topic.
-        expected_field = booking_question if previously_paused else (
-            previous_response[1]
-            if previous_response and previous_response[0] == "question" else None
+        expected_field = (
+            booking_question
+            if previously_paused
+            else (
+                previous_response[1]
+                if previous_response and previous_response[0] == "question"
+                else None
+            )
         )
         booking_answer = bool(
-            previously_paused and expected_field
+            previously_paused
+            and expected_field
             and not SIDE_QUESTION.search(text)
             and parse_restaurant_request(text, {}, expected_field=expected_field)
         )
         self._restaurant_question = match_question(
             text,
-            previous=previous_question if previous_language == self.language and not booking_answer else None,
+            previous=previous_question
+            if previous_language == self.language and not booking_answer
+            else None,
             has_dish=self._restaurant_dish is not None,
             has_diet=self._restaurant_diet is not None,
         )
         if self._restaurant_question:
             self._restaurant_focus = self._restaurant_question.topics[0]
             if (
-                previous_language == self.language and previous_question
-                and any(topic in {"menu", "allergens"} for topic in previous_question.topics)
-                and any(topic in {"menu", "allergens", "price"} for topic in self._restaurant_question.topics)
-                and (self._restaurant_question.recommendation or DETAIL_FOLLOWUP.fullmatch(text) or re.search(
-                    r"\b(?:aga|see|seda|selle|sellest|and|it|this|that|а|это|он|она|него|неё)\b", text
-                ))
+                previous_language == self.language
+                and previous_question
+                and any(
+                    topic in {"menu", "allergens"} for topic in previous_question.topics
+                )
+                and any(
+                    topic in {"menu", "allergens", "price"}
+                    for topic in self._restaurant_question.topics
+                )
+                and (
+                    self._restaurant_question.recommendation
+                    or DETAIL_FOLLOWUP.fullmatch(text)
+                    or re.search(
+                        r"\b(?:aga|see|seda|selle|sellest|and|it|this|that|а|это|он|она|него|неё)\b",
+                        text,
+                    )
+                )
             ):
                 explicit_dish = self._restaurant_dish is not None
                 explicit_diet = self._restaurant_diet is not None
                 refers_to_dish = DETAIL_FOLLOWUP.fullmatch(text) or re.search(
-                    r"\b(?:see|seda|selle|sellest|it|this|that|это|он|она|него|неё)\b", text
+                    r"\b(?:see|seda|selle|sellest|it|this|that|это|он|она|него|неё)\b",
+                    text,
                 )
                 if self._restaurant_dish is None and (
                     refers_to_dish
-                    or not explicit_diet and not self._restaurant_question.recommendation
+                    or not explicit_diet
+                    and not self._restaurant_question.recommendation
                 ):
                     self._restaurant_dish = previous_dish
                 if self._restaurant_diet is None and not explicit_dish:
                     self._restaurant_diet = previous_diet
         elif any(
-            text.strip(".!?") == entry["question_" + self.language].casefold().strip(".!?")
+            text.strip(".!?")
+            == entry["question_" + self.language].casefold().strip(".!?")
             for entry in self.demo["faq"][:1]
         ):
             self._restaurant_focus = "demo"
@@ -663,6 +773,18 @@ class RestaurantCallTools(CallTools):
             text,
         ):
             self._restaurant_focus = "domain"
+        booking_text = None
+        if self._restaurant_question and any(
+            topic in CAPABILITIES for topic in self._restaurant_question.topics
+        ):
+            booking_text = capability_booking_clause(text)
+            if booking_text:
+                self._restaurant_focus = None
+                self._restaurant_capability_topics = tuple(
+                    topic
+                    for topic in self._restaurant_question.topics
+                    if topic in CAPABILITIES
+                )
         agreement = self._is_confirmation(text, self.language)
         if previously_paused and agreement and not self.pending:
             self._restaurant_focus = None
@@ -673,33 +795,59 @@ class RestaurantCallTools(CallTools):
             and not self.cancel_approval
             and not self.conversation.intent
         ):
+            planning_text = booking_text or text
             # An unrelated question must not silently replay a complete plan.
-            details = parse_restaurant_request(text, {}, expected_field=expected_field)
-            booking_request = re.search(BOOKING_REQUEST, text)
-            question = re.search(r"^(?:what|where|why|how|do|does|is|are)\b", text)
+            details = parse_restaurant_request(
+                planning_text, {}, expected_field=expected_field
+            )
+            booking_request = re.search(BOOKING_REQUEST, planning_text)
+            question = re.search(
+                r"^(?:what|where|why|how|do|does|is|are)\b", planning_text
+            )
             prior = self._restaurant_inquiry or {}
             followup = (
-                parse_restaurant_request(text, prior, expected_field=expected_field)
-                if self._restaurant_inquiry is not None else None
+                parse_restaurant_request(
+                    planning_text, prior, expected_field=expected_field
+                )
+                if self._restaurant_inquiry is not None
+                else None
             )
-            party_followup = followup is not None and question is None and (
-                followup.get("party_size") != prior.get("party_size")
+            party_followup = (
+                followup is not None
+                and question is None
+                and (followup.get("party_size") != prior.get("party_size"))
             )
-            time_followup = self._restaurant_inquiry is not None and question is None and parse_spoken_time(
-                text, pending=prior.get("time_candidates"),
-                allow_bare=(
-                    expected_field in {"time", "ambiguous_time", "invalid_time"}
-                    if expected_field is not None
-                    else "date" in prior and "start_time" not in prior
-                ),
-            ) is not None
-            resume_plan = previously_paused and not booking_question and self._is_confirmation(text, self.language)
-            self._restaurant_unmatched = not resume_plan and not booking_request and not time_followup and not party_followup and (
-                self._restaurant_inquiry is None or not details or question is not None
+            time_followup = (
+                self._restaurant_inquiry is not None
+                and question is None
+                and parse_spoken_time(
+                    planning_text,
+                    pending=prior.get("time_candidates"),
+                    allow_bare=(
+                        expected_field in {"time", "ambiguous_time", "invalid_time"}
+                        if expected_field is not None
+                        else "date" in prior and "start_time" not in prior
+                    ),
+                )
+                is not None
+            )
+            resume_plan = previously_paused and not booking_question and agreement
+            self._restaurant_unmatched = (
+                not resume_plan
+                and not booking_request
+                and not time_followup
+                and not party_followup
+                and (
+                    self._restaurant_inquiry is None
+                    or not details
+                    or question is not None
+                )
             )
             if not self._restaurant_unmatched:
                 self._restaurant_inquiry = parse_restaurant_request(
-                    text, self._restaurant_inquiry, expected_field=expected_field
+                    planning_text,
+                    self._restaurant_inquiry,
+                    expected_field=expected_field,
                 )
                 if selected_alternative and self._restaurant_inquiry is not None:
                     # The guest selected an exact server-offered 24-hour clock,
@@ -712,7 +860,9 @@ class RestaurantCallTools(CallTools):
                     self.clarification = None
                 elif self.clarification == "ambiguous_date":
                     # The shared English date guard can mistake 'at 7.05' for a date.
-                    without_clock = re.sub(r"\bat\s+\d{1,2}\.\d{2}(?![\d.])", "", text)
+                    without_clock = re.sub(
+                        r"\bat\s+\d{1,2}\.\d{2}(?![\d.])", "", planning_text
+                    )
                     self.clarification = english_clarification(without_clock)
                 inquiry = self._restaurant_inquiry or {}
                 if self.clarification is None and not inquiry.get("date_issue"):
@@ -723,33 +873,47 @@ class RestaurantCallTools(CallTools):
 
         question_turn = not agreement and bool(
             self._restaurant_focus
-            or self._restaurant_unmatched and SIDE_QUESTION.search(text)
+            or self._restaurant_unmatched
+            and SIDE_QUESTION.search(text)
             or self.conversation.intent in {"identity", "how_are_you"}
         )
         # An imperative change/cancellation must never revive the old proposal.
-        changes_booking = bool(re.search(
-            r"(?:^|[.!;,]\s*|\b(?:but|aga|но)\s+)(?:(?:please|palun|пожалуйста)\s+)?"
-            r"(?:change|move|make it|cancel|don't book|do not book|muuda|tühista|ära broneeri|перенес\w*|измени\w*|отмени\w*|не бронируй)\b", text
-        ))
+        changes_booking = bool(
+            re.search(
+                r"(?:^|[.!;,]\s*|\b(?:but|aga|но)\s+)(?:(?:please|palun|пожалуйста)\s+)?"
+                r"(?:change|move|make it|cancel|don't book|do not book|muuda|tühista|ära broneeri|перенес\w*|измени\w*|отмени\w*|не бронируй)\b",
+                text,
+            )
+        )
         if changes_booking and self._restaurant_focus:
             # Clarify the new request rather than retaining an obsolete hold or
             # silently re-planning the old details after answering the question.
             self._restaurant_inquiry = None
-        if question_turn and not changes_booking and (
-            self.conversation.intent is None or self.conversation.intent in {"identity", "how_are_you"}
+        if (
+            question_turn
+            and not changes_booking
+            and (
+                self.conversation.intent is None
+                or self.conversation.intent in {"identity", "how_are_you"}
+            )
         ):
             self._restaurant_booking_paused = self._restaurant_inquiry is not None
             self._restaurant_alternatives = previous_alternatives
             if self._restaurant_booking_paused or previous_pending:
                 self.clarification = None
             if (
-                previous_pending and time.monotonic() < previous_pending["expires_at"]
+                previous_pending
+                and time.monotonic() < previous_pending["expires_at"]
                 and previous_pending["hold_id"] in self.holds
                 and previous_pending["hold_id"] not in self.confirmed_holds
             ):
                 # Same owned hold/expiry, new proposal identity. Late playback
                 # and prior consent cannot authorize this new reading.
-                self.pending = {**previous_pending, "delivery": False, "approved": False}
+                self.pending = {
+                    **previous_pending,
+                    "delivery": False,
+                    "approved": False,
+                }
                 self._restaurant_pending_question = True
         elif self.conversation.intent in {"repeat", "thanks"}:
             self._restaurant_booking_paused = previously_paused
@@ -779,22 +943,35 @@ class RestaurantCallTools(CallTools):
         copybook = COPY[self.language]
         if not times:
             return copybook["unavailable"]
-        return copybook["alternatives"].format(times=(
-            natural_list([
-                russian_speech.spoken_time(*map(int, value.split(":")))
-                for value in times
-            ], "ru") if self.language == "ru" else ", ".join(times)
-        ))
+        return copybook["alternatives"].format(
+            times=(
+                natural_list(
+                    [
+                        russian_speech.spoken_time(*map(int, value.split(":")))
+                        for value in times
+                    ],
+                    "ru",
+                )
+                if self.language == "ru"
+                else ", ".join(times)
+            )
+        )
 
     def _resume_booking_reply(self, answer: str) -> str:
-        if self._restaurant_inquiry is None or self.pending or not self._restaurant_booking_paused:
+        if (
+            self._restaurant_inquiry is None
+            or self.pending
+            or not self._restaurant_booking_paused
+        ):
             return answer
         copybook = COPY[self.language]
         key = self._booking_question_key()
         followup = (
             self._alternatives_reply(self._restaurant_alternatives)
             if self._restaurant_alternatives is not None
-            else copybook[key] if key else copybook["resume_check"]
+            else copybook[key]
+            if key
+            else copybook["resume_check"]
         )
         # Some reviewed policies already finish with the exact missing prompt.
         if answer.endswith(followup):
@@ -823,23 +1000,34 @@ class RestaurantCallTools(CallTools):
         if self.conversation.intent:
             return None
         if self.clarification in {"ambiguous_time", "invalid_time"}:
-            return COPY[self.language][self.clarification]
+            return self._with_capabilities(COPY[self.language][self.clarification])
         if self._restaurant_focus:
             return self._resume_booking_reply(self.question_reply())
         if self._restaurant_unmatched:
-            return self._resume_booking_reply(COPY[self.language]["information_unknown"])
+            return self._resume_booking_reply(
+                COPY[self.language]["information_unknown"]
+            )
         inquiry = self._restaurant_inquiry
         if inquiry is not None:
             if inquiry.get("date_issue"):
-                return COPY[self.language][inquiry["date_issue"]]
+                return self._with_capabilities(
+                    COPY[self.language][inquiry["date_issue"]]
+                )
             for field, key in (
                 ("date", "date"),
                 ("start_time", "time"),
                 ("party_size", "party"),
             ):
                 if field not in inquiry:
-                    return COPY[self.language][key]
+                    return self._with_capabilities(COPY[self.language][key])
         return None
+
+    def _with_capabilities(self, reply, topics=None):
+        topics = self._restaurant_capability_topics if topics is None else topics
+        prefix = " ".join(
+            self.information_reply(topic) for topic in topics if topic in CAPABILITIES
+        )
+        return prefix + " " + reply if prefix else reply
 
     def question_reply(self):
         if self._restaurant_question and self._restaurant_question.date_issue:
@@ -853,10 +1041,14 @@ class RestaurantCallTools(CallTools):
 
     def information_reply(self, topic):
         copybook = COPY[self.language]
+        if topic in CAPABILITIES:
+            return CAPABILITIES[topic]["answer_" + self.language]
         if topic in {"family", "family_details"}:
             from .restaurant_family import family_reply
 
-            return family_reply(self.restaurant, self.language, details=topic == "family_details")
+            return family_reply(
+                self.restaurant, self.language, details=topic == "family_details"
+            )
         if topic in ("staff", "domain", "price"):
             return copybook[topic]
         if topic == "pets" and self.restaurant.get("pet_policy"):
@@ -864,8 +1056,11 @@ class RestaurantCallTools(CallTools):
         if topic in GUIDANCE[self.language]:
             return GUIDANCE[self.language][topic].format(
                 duration=(
-                    russian_speech.duration(self.restaurant["reservation_duration_minutes"])
-                    if self.language == "ru" else self.restaurant["reservation_duration_minutes"]
+                    russian_speech.duration(
+                        self.restaurant["reservation_duration_minutes"]
+                    )
+                    if self.language == "ru"
+                    else self.restaurant["reservation_duration_minutes"]
                 ),
                 maximum=self.restaurant["maximum_party_size"],
             )
@@ -918,7 +1113,9 @@ class RestaurantCallTools(CallTools):
                 ]
             if not menu:
                 return copybook["staff"]
-            items = natural_list([item["name"][self.language] for item in menu[:8]], self.language)
+            items = natural_list(
+                [item["name"][self.language] for item in menu[:8]], self.language
+            )
             if self._restaurant_question and self._restaurant_question.recommendation:
                 return {
                     "et": "Menüüst võiksid valida: {items}. Mis neist sulle meeldiks?",
@@ -932,13 +1129,18 @@ class RestaurantCallTools(CallTools):
                 return copybook[question.date_issue]
             requested_date = question.date if question else None
             if requested_date and requested_date in self.restaurant["closures"]:
-                return {
-                    "et": "Sel päeval oleme suletud: ",
-                    "en": "We're closed that day: ",
-                    "ru": "В этот день мы закрыты: ",
-                }[self.language] + self.restaurant["closures"][requested_date][self.language] + "."
+                return (
+                    {
+                        "et": "Sel päeval oleme suletud: ",
+                        "en": "We're closed that day: ",
+                        "ru": "В этот день мы закрыты: ",
+                    }[self.language]
+                    + self.restaurant["closures"][requested_date][self.language]
+                    + "."
+                )
             schedule = format_schedule(
-                self.restaurant, self.language,
+                self.restaurant,
+                self.language,
                 days=question.days if question else None,
                 kitchen=topic == "kitchen",
             )
@@ -952,12 +1154,14 @@ class RestaurantCallTools(CallTools):
             else:
                 reply = copybook["hours"].format(hours=schedule)
             return reply + (
-                " " + {
+                " "
+                + {
                     "et": "Erandpäevadel võivad ajad erineda. Mis kuupäeva silmas pead?",
                     "en": "Special dates may have different hours. Which date do you mean?",
                     "ru": "В отдельные даты часы могут отличаться. Какую дату вы имеете в виду?",
                 }[self.language]
-                if self.restaurant["closures"] and requested_date is None else ""
+                if self.restaurant["closures"] and requested_date is None
+                else ""
             )
         return copybook["domain"]
 
@@ -992,11 +1196,17 @@ class RestaurantCallTools(CallTools):
             (self._restaurant_focus or self._restaurant_unmatched)
             and self._restaurant_focus not in {"staff", "domain", "demo"}
             and "allergens" not in topics
+            and not any(topic in CAPABILITIES for topic in topics)
             and not (
-                self.pending or self.cancel_approval or self.turn_mutation
-                or self.mutation_uncertain or self.clarification
-                or self.unsupported_language or self.input_recovery_reply
-                or self.conversation.intent or self.results
+                self.pending
+                or self.cancel_approval
+                or self.turn_mutation
+                or self.mutation_uncertain
+                or self.clarification
+                or self.unsupported_language
+                or self.input_recovery_reply
+                or self.conversation.intent
+                or self.results
             )
         )
 
@@ -1015,7 +1225,15 @@ class RestaurantCallTools(CallTools):
         if (
             name == "plan_restaurant_reservation"
             and self._restaurant_inquiry
-            and any(self._restaurant_inquiry.get(key) for key in ("date_issue", "time_candidates", "time_invalid", "party_invalid"))
+            and any(
+                self._restaurant_inquiry.get(key)
+                for key in (
+                    "date_issue",
+                    "time_candidates",
+                    "time_invalid",
+                    "party_invalid",
+                )
+            )
         ):
             return {"error": "clarification_required"}
         if isinstance(args, str):
@@ -1076,7 +1294,9 @@ class RestaurantCallTools(CallTools):
         ) <= datetime.now(ZoneInfo(self.restaurant["timezone"])):
             return {"error": "past_datetime"}
         self._restaurant_inquiry = {
-            "date": date, "start_time": start_time, "party_size": party_size,
+            "date": date,
+            "start_time": start_time,
+            "party_size": party_size,
         }
         result = await self.dispatch(
             "search_slots", {"service": str(party_size), "date": date, "provider": "0"}
@@ -1136,6 +1356,7 @@ class RestaurantCallTools(CallTools):
         )
         self.pending["recap"] = copy.deepcopy(result["recap"])
         self.pending["expires_at"] = min(self.pending["expires_at"], hold.expires_at)
+        self.pending["restaurant_capabilities"] = self._restaurant_capability_topics
         return result
 
     def render_recap(self, hold_id=None):
@@ -1152,52 +1373,88 @@ class RestaurantCallTools(CallTools):
             date=restaurant_spoken_date(fields["date"], self.language),
             time=(
                 spoken_time(start.strftime("%H:%M"))
-                if self.language == "en" else start.strftime("%H:%M")
+                if self.language == "en"
+                else start.strftime("%H:%M")
             ),
             party=(
                 russian_speech.guest_count(fields["party_size"])
-                if self.language == "ru" else fields["party_size"]
+                if self.language == "ru"
+                else fields["party_size"]
             ),
             duration=(
                 russian_speech.duration(fields["duration_minutes"])
-                if self.language == "ru" else fields["duration_minutes"]
+                if self.language == "ru"
+                else fields["duration_minutes"]
             ),
             guest=fields["guest_name"],
             question=COPY[self.language]["confirmation_question"],
         )
+        capabilities = pending.get("restaurant_capabilities", ())
         if self._restaurant_pending_question:
             answer = self._side_question_answer()
+            capabilities = tuple(
+                topic
+                for topic in capabilities
+                if self.information_reply(topic) not in answer
+            )
+            recap = self._with_capabilities(recap, capabilities)
             return answer + " " + COPY[self.language]["resume_booking"] + " " + recap
-        return recap
+        return self._with_capabilities(recap, capabilities)
 
     def guard_reply(self, text, results):
         reply = self._restaurant_guard_reply(text, results)
         question_keys = (
-            "date", "time", "party", "ambiguous_time", "invalid_time",
-            "date_invalid", "date_ambiguous", "date_incomplete",
+            "date",
+            "time",
+            "party",
+            "ambiguous_time",
+            "invalid_time",
+            "date_invalid",
+            "date_ambiguous",
+            "date_incomplete",
         )
         self.conversation.remember_reply(reply, self.language)
         if self._restaurant_focus in INFORMATION_TOPICS and (
             reply == self._resume_booking_reply(self.question_reply())
-            or self._restaurant_pending_question and self.pending and reply == self.render_recap()
-            or self._reasoned_reply and reply == self._resume_booking_reply(self._reasoned_reply[2])
+            or self._restaurant_pending_question
+            and self.pending
+            and reply == self.render_recap()
+            or self._reasoned_reply
+            and reply == self._resume_booking_reply(self._reasoned_reply[2])
         ):
             self._restaurant_last_response = (
                 "information",
-                self._restaurant_question or RestaurantQuestion((self._restaurant_focus,)),
+                self._restaurant_question
+                or RestaurantQuestion((self._restaurant_focus,)),
                 self._restaurant_dish,
                 self._restaurant_diet,
             )
         elif any(
-            reply == COPY[self.language][key] for key in question_keys
+            reply
+            in (
+                COPY[self.language][key],
+                self._with_capabilities(COPY[self.language][key]),
+            )
+            for key in question_keys
         ):
             key = next(
                 key
                 for key in question_keys
-                if reply == COPY[self.language][key]
+                if reply
+                in (
+                    COPY[self.language][key],
+                    self._with_capabilities(COPY[self.language][key]),
+                )
             )
-            self._restaurant_last_response = ("question", key)
-        elif self._restaurant_alternatives is not None and reply == self._alternatives_reply(self._restaurant_alternatives):
+            self._restaurant_last_response = (
+                "question",
+                key,
+                self._restaurant_capability_topics,
+            )
+        elif (
+            self._restaurant_alternatives is not None
+            and reply == self._alternatives_reply(self._restaurant_alternatives)
+        ):
             self._restaurant_last_response = ("question", "time")
         elif self.conversation.intent not in {"repeat", "frustrated"}:
             self._restaurant_last_response = None
@@ -1226,8 +1483,11 @@ class RestaurantCallTools(CallTools):
         ):
             self._unknown_mutation()
             return copybook["unknown"]
-        if not self.unsupported_language and self.clarification in {"ambiguous_time", "invalid_time"}:
-            return copybook[self.clarification]
+        if not self.unsupported_language and self.clarification in {
+            "ambiguous_time",
+            "invalid_time",
+        }:
+            return self._with_capabilities(copybook[self.clarification])
         if self.clarification or self.unsupported_language or self.input_recovery_reply:
             return super().guard_reply(text, results)
         if errors:
@@ -1247,6 +1507,7 @@ class RestaurantCallTools(CallTools):
             return copybook["failed"]
         if self.turn_mutation:
             self._restaurant_inquiry = None
+            self._restaurant_capability_topics = ()
             return copybook[self.turn_mutation]
         recap = self.render_recap()
         if recap:
@@ -1256,8 +1517,7 @@ class RestaurantCallTools(CallTools):
                 return self._alternatives_reply(row.get("alternatives"))
             if isinstance(row.get("restaurant_information"), str):
                 approved = {
-                    self.information_reply(topic)
-                    for topic in INFORMATION_TOPICS
+                    self.information_reply(topic) for topic in INFORMATION_TOPICS
                 }
                 if row["restaurant_information"] in approved:
                     return row["restaurant_information"]
@@ -1271,14 +1531,23 @@ class RestaurantCallTools(CallTools):
                 and serial == self._turn_serial
                 and language == self.language
             ):
-                from .restaurant_reasoning import facts_digest, restaurant_facts
+                from .restaurant_reasoning import (
+                    facts_digest,
+                    restaurant_facts,
+                    safe_wording,
+                )
 
-                if facts_digest(restaurant_facts(self)) == digest:
+                if (
+                    safe_wording(approved, self.language)
+                    and facts_digest(restaurant_facts(self)) == digest
+                ):
                     return self._resume_booking_reply(approved)
         reply = self.inquiry_reply()
         if reply:
             return reply
-        if text == self.greeting or (self.language == "et" and text == ENGLISH_INVITATION):
+        if text == self.greeting or (
+            self.language == "et" and text == ENGLISH_INVITATION
+        ):
             return text
         if text in (
             self.fallback,
@@ -1287,10 +1556,15 @@ class RestaurantCallTools(CallTools):
             TURN_UNAVAILABLE[self.language],
         ):
             return text
-        if self.conversation.intent in {"repeat", "frustrated"} and self._restaurant_last_response:
+        if (
+            self.conversation.intent in {"repeat", "frustrated"}
+            and self._restaurant_last_response
+        ):
             selection = self._restaurant_last_response
             if selection[0] == "question":
-                return copybook[selection[1]]
+                return self._with_capabilities(
+                    copybook[selection[1]], selection[2] if len(selection) > 2 else ()
+                )
             # Remember identifiers only, then render from current trusted facts.
             self._restaurant_dish, self._restaurant_diet = selection[2:]
             self._restaurant_question = selection[1]

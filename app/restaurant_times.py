@@ -89,7 +89,8 @@ def _pattern(words: dict[str, int]) -> str:
     return r"(?:-?\d{1,3}|" + "|".join(re.escape(word) for word in sorted(words, key=len, reverse=True)) + ")"
 
 
-HOUR = _pattern(HOURS)
+# Whisper may transcribe an explicit 24-hour clock without its colon.
+HOUR = r"(?:\d{4}|" + _pattern(HOURS) + ")"
 MINUTE = _pattern(NUMBERS)
 GUEST_NOUN = r"(?:people|persons|guests|adults?|children|kids?|inimes\w*|külalis\w*|täiskasvan\w*|last|lapse\w*|человек\w*|гост\w*|взросл\w*|дет\w*|ребен\w*)"
 MINUTE_NOT_GUEST = r"(?!\s+" + GUEST_NOUN + r"\b)"
@@ -119,10 +120,10 @@ FRACTIONS = (
     (re.compile(r"\bчетверть\s+(?P<h>" + HOUR + r")\b"), "ru_quarter"),
     (re.compile(r"\bбез\s+(?P<m>четверти|" + MINUTE + r")(?:\s+минут\w*)?\s+(?P<h>" + HOUR + r")\b"), "ru_to"),
 )
-PREFIX = re.compile(r"\b(?:at|kell|kella|в|к|около)\s+(?P<h>" + HOUR + r")(?:\s+(?:час(?:а|ов)?|hours?))?(?:\s+(?:(?:ja|and|и)\s+)?(?P<m>" + MINUTE + r")\b" + MINUTE_NOT_GUEST + r")?(?:\s+(?:минут\w*|minutes?|minut\w*))?(?![\w:.])")
+PREFIX = re.compile(r"\b(?:at|kell|kella|в|к|около)\s+(?P<h>" + HOUR + r")(?:\s+(?:час(?:а|ов)?|hours?))?(?:\s+(?:(?:ja|and|и)\s+)?(?P<m>" + MINUTE + r")\b" + MINUTE_NOT_GUEST + r")?(?:\s+(?:минут\w*|minutes?|minut\w*))?(?![\w:]|\.\d)")
 SUFFIX = re.compile(r"(?<!\w)(?P<h>" + HOUR + r")(?:\s+(?P<m>" + MINUTE + r"))?\s*(?:o'clock|час(?:а|ов)?|[ap]\.?\s*m\.?)(?!\w)")
 BARE = re.compile(r"(?P<h>" + HOUR + r")(?:\s+(?P<m>" + MINUTE + r"))?")
-ALTERNATIVE = re.compile(r"\b(?:or|või|или|kuni|до|to)\s+" + HOUR + r"\b")
+ALTERNATIVE = re.compile(r"\b(?:(?:or|või|или|kuni|до|to)\s+" + HOUR + r"|(?:and|ja|и)\s+\d{4})\b")
 TIME_RANGE = re.compile(r"\b(?:between|vahemikus|между)\s+" + HOUR + r"\b|\b(?:с|from)\s+" + HOUR + r"\s+(?:до|to)\s+" + HOUR + r"\b")
 APPROXIMATE_TIME = re.compile(r"\b(?:around|about|approximately|около|примерно|umbes)\s+(?:(?:at|kell|kella|в)\s+)?" + HOUR + r"\b|\b" + HOUR + r"\s+paiku\b")
 MERIDIEM = re.compile(r"(?<![a-z])[ap]\.?\s*m\.?(?![a-z])")
@@ -237,7 +238,13 @@ def parse_spoken_time(
         for match in pattern.finditer(text):
             hour = _number(match["h"], hour=True)
             minute = _number(match["m"]) if match["m"] else 0
-            add(match, hour, minute, explicit=hour == 0 or hour > 12)
+            compact = match["h"].isdigit() and len(match["h"]) == 4
+            if compact:
+                if match["m"] or re.match(r"\s+" + GUEST_NOUN + r"\b", text[match.end():]):
+                    add(match, 24)
+                    continue
+                hour, minute = divmod(hour, 100)
+            add(match, hour, minute, explicit=compact or hour == 0 or hour > 12)
     bare = None
     if not found and allow_bare:
         bare = text
@@ -248,7 +255,13 @@ def parse_spoken_time(
         match = BARE.fullmatch(bare)
         if match:
             hour = _number(match["h"], hour=True)
-            found.append(_selection(hour, _number(match["m"]) if match["m"] else 0, period, explicit=hour == 0 or hour > 12, meridiem=meridiem))
+            minute = _number(match["m"]) if match["m"] else 0
+            compact = match["h"].isdigit() and len(match["h"]) == 4
+            if compact and match["m"]:
+                return RequestedTime(invalid=True)
+            if compact:
+                hour, minute = divmod(hour, 100)
+            found.append(_selection(hour, minute, period, explicit=compact or hour == 0 or hour > 12, meridiem=meridiem))
     if not found and pending and period:
         if any(
             NEGATED_TIME.search(text[:match.start()])
