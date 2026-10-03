@@ -19,6 +19,8 @@
 
 - Full core suite: **3116 passed, 65 skipped, 36 subtests passed**. One existing
   FastAPI/Starlette TestClient deprecation warning remains.
+- After merging the subsequent English conversation fixes: **282 targeted core
+  tests and 119 native/media tests passed**; restaurant browser checks passed again.
 - Restaurant browser checks passed with real local HTTP requests and SQLite,
   synthetic speech, all three languages, immediate receipt details, cancellation,
   reload persistence, failed writes and logout isolation.
