@@ -18,7 +18,7 @@ been supplied. ET/EN/RU language detection, Azure speech, optional modern voice
 profiles and guarded incremental browser playback are retained. The native
 LiveKit telephone worker selects the same restaurant policy and database.
 
-On `robot.arleserver.cfd`, select **English**, **Eesti** or **???????**, connect
+At `restobot.arleserver.cfd/dashboard`, select **English**, **Eesti** or **Русский**, connect
 with your existing operator token and start **Try the voice assistant**. The
 restaurant form also provides an explicit review, read acknowledgement,
 confirmation and owned cancellation flow. The token stays in page memory.
@@ -112,12 +112,15 @@ the demo phone contact; otherwise the configured Twilio/SIP number is used.
 
 ## Website architecture
 
-The [robot website](https://robot.arleserver.cfd/) is the only published
-Voicebot domain. It includes restaurant reception, table reservations and
-voice-demo workflows. The redundant Meretuule subdomain and its website are
-removed; do not publish a second guest site. In restaurant mode, the former
+The [Restobot website](https://restobot.arleserver.cfd/) opens with a public
+landing page in the restaurant calendar's visual style. The preserved operator
+workspace is at `/dashboard`; `/booking-calendar.html` provides the integrated
+table calendar with protected stored bookings and a separate fictional preview.
+The old `robot.arleserver.cfd` browser pages redirect to Restobot; old private
+API and telephone callback paths remain compatible during the migration.
+The redundant Meretuule subdomain stays removed. In restaurant mode, the former
 `/hotel` and `/hotel/` paths return HTTP 410 without redirecting elsewhere.
-See the [robot-only domain runbook](deploy/robot-domain/README.md).
+See the [Restobot domain runbook](deploy/robot-domain/README.md).
 
 `/api/bookings` and `/api/catalogue` read Easy REST through explicit allowlisted
 DTOs. `/api/demo/session` and `/api/turn` share native booking ownership/consent;

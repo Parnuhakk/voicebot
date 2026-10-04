@@ -59,6 +59,7 @@ const reservation = {
 const TEXT = {
   sidebarLabel: ["Töölaua külgriba", "Workspace sidebar", "Боковая панель рабочего стола"],
   navigationLabel: ["Töölaua jaotised", "Workspace sections", "Разделы рабочего стола"],
+  calendarTitle: ["Lauakalender", "Table calendar", "Календарь столиков"],
   proposalTimerLabel: ["Pakkumise kehtivusaeg", "Time left for this proposal", "Срок действия предложения"],
   proposalRemaining: ["Pakkumine kehtib veel {time}.", "This proposal is valid for {time}.", "Предложение действует ещё {time}."],
   proposalExpiring: [

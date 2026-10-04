@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f6f9f9" />
+    <meta name="description" content="Meretuule's protected operator calendar and separate fictional booking preview." />
+    <title>Booking calendar · RestoBot</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/booking-calendar.css?v=4ef5945b984e" />
+    <script src="/booking-calendar.js?v=7eecd8c23bf1" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to calendar</a>
+    <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <symbol id="wave" viewBox="0 0 24 24"><path d="M3 10v4m4-7v10m5-14v18m5-14v10m4-7v4" /></symbol>
+      <symbol id="calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18m-14 5h3"/></symbol>
+      <symbol id="grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+      <symbol id="phone" viewBox="0 0 24 24"><path d="m8 3 3 5-3 3c1 3 2 4 5 5l3-3 5 3c0 3-2 5-4 5C10 21 3 14 3 7c0-2 2-4 5-4Z"/></symbol>
+      <symbol id="leaf" viewBox="0 0 24 24"><path d="M20 4C9 2 2 9 5 16s15 5 15-12ZM4 21 16 9"/></symbol>
+      <symbol id="chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+      <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+      <symbol id="people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m1-16a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5v2"/></symbol>
+      <symbol id="check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+      <symbol id="icon-replay" viewBox="0 0 24 24"><path d="M3 10a9 9 0 1 1 2 8M3 4v6h6"/></symbol>
+      <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="timeline" viewBox="0 0 24 24"><path d="M7 4v16M3 8h13M11 13h10M3 18h10"/></symbol>
+      <symbol id="close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    </svg>
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="RestoBot home"><span class="brand-icon"><svg class="icon"><use href="#wave"/></svg></span>restobot<span class="brand-dot">.</span></a>
+      <div class="venue"><div class="venue-icon"><svg class="icon"><use href="#leaf"/></svg></div><div><strong>Meretuule</strong><span>Restaurant workspace</span></div></div>
+      <nav aria-label="Restaurant navigation">
+        <a class="active" href="/booking-calendar.html" aria-current="page"><svg class="icon"><use href="#calendar"/></svg>Booking calendar<span class="nav-dot"></span></a>
+        <a href="/dashboard#bookings-section"><svg class="icon"><use href="#calendar"/></svg>Saved bookings</a>
+        <a href="/dashboard#demo-section"><svg class="icon"><use href="#wave"/></svg>Try the voice assistant</a>
+      </nav>
+      <div class="sidebar-note"><div class="small-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><strong>A warm welcome,<br>before they arrive.</strong><p>Your tables and your assistant,<br>in one place.</p></div>
+      <div class="sidebar-footer"><span class="avatar">M</span><div><strong>Meretuule team</strong><span>Demo workspace</span></div></div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar"><div class="breadcrumb">Workspace<svg class="icon"><use href="#chevron"/></svg><span>Booking calendar</span></div><span class="demo-badge" id="mode-badge">Live operator view</span></header>
+      <main id="main" tabindex="-1">
+        <div class="page-heading"><div><h1>Every table. One view.</h1><p>A little less coordinating. A little more hosting.</p></div><a class="primary" id="real-booking" href="/dashboard#reservation-heading">Prepare a reservation</a><button class="primary" id="new-booking" hidden><svg class="icon"><use href="#plus"/></svg>New preview booking</button></div>
+        <section class="calendar-access" aria-label="Calendar mode and operator connection">
+          <label for="calendar-mode">Calendar mode</label><select id="calendar-mode"><option value="live" selected>Live operator calendar</option><option value="preview">Fictional preview</option></select>
+          <p id="mode-notice">Live view of saved synthetic restaurant bookings and active holds. Occupancy is private until connected.</p>
+          <form id="calendar-auth"><label for="operator-key">Operator credential</label><input id="operator-key" type="password" autocomplete="off" maxlength="512" required/><button class="primary" id="connect-calendar" type="submit">Connect calendar</button><button class="replay-button" id="refresh-calendar" type="button" disabled>Refresh</button><button class="replay-button" id="disconnect-calendar" type="button" disabled>Disconnect</button></form>
+          <p id="calendar-status" role="status" aria-live="polite">Occupancy unknown. Connect to read the calendar. Credentials stay only in page memory.</p>
+        </section>
+        <section class="calendar" aria-label="Booking date and time">
+          <div class="calendar-toolbar">
+            <div class="date-heading"><svg class="icon"><use href="#calendar"/></svg><h2 id="date-heading">7 October</h2><span class="year" id="year-label">2026</span><span class="date-divider"></span><svg class="icon"><use href="#clock"/></svg><label class="sr-only" for="time-select">Arrival time</label><select id="time-select"><option value="17:00">17.00</option><option value="17:30">17.30</option><option value="18:00">18.00</option><option value="18:30">18.30</option><option value="19:00" selected>19.00</option><option value="19:30">19.30</option><option value="20:00">20.00</option><option value="20:30">20.30</option><option value="21:00">21.00</option></select></div>
+            <div class="calendar-controls"><button class="icon-button" id="previous-week" aria-label="Previous week"><svg class="icon rotate"><use href="#chevron"/></svg></button><label class="month-picker"><span id="month-label">October 2026</span><input id="date-picker" type="date" value="2026-10-07" aria-label="Choose booking date"/></label><button class="icon-button" id="next-week" aria-label="Next week"><svg class="icon"><use href="#chevron"/></svg></button></div>
+          </div>
+          <div class="week-strip" id="week-strip" aria-label="Select a day"></div>
+        </section>
+        <div class="booking-workspace">
+          <section class="floor-panel" aria-labelledby="floor-heading">
+            <div class="floor-header"><div><h2 id="floor-heading">The dining room</h2><p id="table-summary">Loading configured tables…</p></div><div class="view-switch" role="tablist" aria-label="Booking view"><button id="floor-tab" role="tab" aria-label="Floor plan" aria-selected="true" aria-controls="floor-view" tabindex="0"><svg class="icon"><use href="#grid"/></svg><span>Floor plan</span></button><button id="timeline-tab" role="tab" aria-label="Timeline" aria-selected="false" aria-controls="timeline-view" tabindex="-1"><svg class="icon"><use href="#timeline"/></svg><span>Timeline</span></button></div></div>
+            <div class="capacity-tabs" role="tablist" aria-label="Table capacity"><button role="tab" id="capacity-all" aria-selected="true" aria-controls="table-content" tabindex="0" data-capacity="all">All tables</button></div>
+            <div id="table-content" role="tabpanel" aria-labelledby="capacity-all">
+              <div id="floor-view" role="tabpanel" aria-labelledby="floor-tab"><div class="floor-map"><div class="window-wall"><span>Window seating</span></div><div class="tables" id="tables"></div><div class="room-footer"><span class="entrance"><span aria-hidden="true">↗</span> Entrance</span><span class="room-name">Main dining room</span><span class="plant" aria-hidden="true"><svg class="icon"><use href="#leaf"/></svg></span></div></div></div>
+              <div id="timeline-view" role="tabpanel" aria-labelledby="timeline-tab" hidden><div class="timeline-scroll"><div id="timeline-grid"></div></div><p class="timeline-note" id="timeline-note">Occupancy unknown until connected.</p></div>
+            </div>
+            <div class="floor-bottom"><div class="legend"><span><i class="available-dot"></i>No conflict</span><span><i class="reserved-dot"></i>Reserved / held</span><span><i class="unknown-dot"></i>Unknown</span></div><span id="availability-count">Occupancy unknown</span></div>
+          </section>
+          <aside class="assistant-panel" id="preview-panel" aria-labelledby="assistant-heading" hidden>
+            <div class="assistant-header"><span class="assistant-icon"><svg class="icon"><use href="#wave"/></svg></span><div><h2 id="assistant-heading">Your voice assistant</h2><p>From a call to a table.</p></div><span class="assistant-indicator" aria-hidden="true"></span></div>
+            <div class="voice-stage" id="voice-stage" data-stage="ready"><div class="waveform" id="waveform" aria-hidden="true"></div><p id="voice-status" role="status" aria-live="polite">A guest is calling…</p><span id="voice-caption">Watch a booking come together</span></div>
+            <div class="conversation" id="conversation" aria-label="Sample call conversation"><div class="conversation-message guest" id="guest-message"><span class="speaker">Guest</span><p>“A table for four on 7 October, at seven in the evening, please.”</p></div><div class="request-details"><span><svg class="icon"><use href="#calendar"/></svg><span id="request-date">7 Oct</span></span><span><svg class="icon"><use href="#clock"/></svg><span id="request-time">19.00</span></span><span><svg class="icon"><use href="#people"/></svg>4 guests</span></div><div class="conversation-message assistant-message" id="assistant-message" hidden><span class="speaker">Voicebot</span><p id="assistant-reply">Let me find you a lovely spot.</p></div><div class="conversation-message guest consent-message" id="consent-message" hidden><span class="speaker">Guest</span><p>“Yes, that sounds perfect.”</p></div></div>
+            <div class="booking-result" id="booking-result" hidden><span class="result-check"><svg class="icon"><use href="#check"/></svg></span><div><strong>Demo booking confirmed</strong><span id="result-details">Table 03 · 4 guests · 19.00</span></div></div>
+            <div class="assistant-bottom"><div class="progress-track" aria-hidden="true"><span id="story-progress"></span></div><button class="replay-button" id="replay"><svg class="icon"><use href="#icon-replay"/></svg>Replay booking</button><p>A sample call. No real reservation is made.</p></div>
+          </aside>
+          <aside class="live-panel" id="live-panel"><h2>Bookings, without guesswork.</h2><p id="venue-rules">Loading venue rules…</p><p>This read-only view includes confirmed bookings and unexpired holds. It is a snapshot, not a reservation guarantee. Refresh before acting.</p><a class="primary" href="/dashboard#demo-section">Try the real voice demo</a><a href="/dashboard#bookings-section">View saved bookings</a><p>Reservations are prepared in the dashboard and saved only after the recap and explicit consent. This configured venue is fictional.</p></aside>
+        </div>
+        <section class="service-summary" aria-label="Selected seating summary"><div><span class="summary-icon"><svg class="icon"><use href="#people"/></svg></span><div><strong>Room for everyone</strong><span id="seating-description">Configured venue inventory</span></div></div><div class="seating-stat"><strong id="total-seats">—</strong><span>total seats</span></div><div class="seating-stat"><strong id="dining-duration">—</strong><span>minutes per reservation</span></div></section>
+        <footer><span>Meretuule Restaurant · Synthetic operator workspace</span><a href="/dashboard#demo-section">Open the voice demo<svg class="icon"><use href="#chevron"/></svg></a></footer>
+      </main>
+    </div>
+    <dialog id="table-dialog" aria-labelledby="table-dialog-title"><div class="dialog-heading"><h2 id="table-dialog-title">Table details</h2><button class="icon-button" data-close="table-dialog" aria-label="Close table details"><svg class="icon"><use href="#close"/></svg></button></div><p id="table-dialog-description"></p><div class="table-detail" id="table-dialog-detail"></div><button class="primary" data-close="table-dialog">Back to dining room</button></dialog>
+    <dialog id="booking-dialog" aria-labelledby="booking-dialog-title"><div class="dialog-heading"><div><h2 id="booking-dialog-title">New demo booking</h2><p>Add a sample reservation to your calendar.</p></div><button class="icon-button" data-close="booking-dialog" aria-label="Close booking form"><svg class="icon"><use href="#close"/></svg></button></div><form id="booking-form"><label for="booking-name">Guest name</label><input id="booking-name" name="name" value="Alex Morgan" required maxlength="60"/><div class="form-row"><div><label for="booking-date">Date</label><input id="booking-date" type="date" name="date" required/></div><div><label for="booking-time">Arrival time</label><select id="booking-time" name="time"></select></div></div><label for="booking-party">Number of guests</label><select id="booking-party" name="party"><option value="2">2 people</option><option value="4" selected>4 people</option><option value="8">8 people</option></select><p id="booking-error" class="form-error" role="alert" hidden></p><p class="form-help">Demo only. Saved in this page until you reload.</p><button class="primary" type="submit">Add demo booking</button></form></dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    <noscript><p class="noscript-notice">Enable JavaScript to view the table calendar and booking animation.</p></noscript>
+  </body>
+</html>

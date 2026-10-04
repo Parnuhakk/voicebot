@@ -80,10 +80,11 @@ Checked 2026-10-02 using Context7 `/llmstxt/twilio_llms_txt` and official pages:
   pinned SDK signatures and real loopback HTTP/WebSocket tests.
 
 The signature contract is fixed, never reconstructed from Host or forwarded
-headers. The voice URL is `https://robot.arleserver.cfd/api/twilio/voice`.
-The Stream URL is `wss://robot.arleserver.cfd/api/twilio/media`; signature
-validation permits only that exact WSS URL and its documented trailing-slash
-variant. No query string, HTTP scheme fallback, foreign host, or path is used.
+headers. The canonical voice URL is `https://restobot.arleserver.cfd/api/twilio/voice`.
+The Stream URL is `wss://restobot.arleserver.cfd/api/twilio/media`. During migration,
+signature validation also accepts the explicit old robot voice/media origins;
+only the exact WSS origins and their documented trailing-slash variants are
+allowed. No query string, HTTP scheme fallback, foreign host, or path is used.
 The synthetic public wire proof corroborates that fixed-URL contract. Twilio's
 actual carrier handshake still requires an independent incoming call.
 
@@ -125,7 +126,7 @@ failover retries are disabled, including agent dispatch.
 | `GET /health` | **Private liveness**, 200 with `alive:true` and a `configured` boolean, not a carrier-readiness claim. Missing configuration still gives 503 on voice/media before admission. |
 
 Successful TwiML is `<Response><Connect><Stream
-url="wss://robot.arleserver.cfd/api/twilio/media"><Parameter name="call_binding"
+url="wss://restobot.arleserver.cfd/api/twilio/media"><Parameter name="call_binding"
 value="OPAQUE_ONE_USE"/></Stream></Connect><Hangup/></Response>`.
 Do not print actual TwiML: its binding is a temporary capability. Capacity
 instead returns cached `<Play>` followed by `<Hangup>`, without creating a room.
@@ -186,7 +187,7 @@ media image and `coolify` network, has no booking volume or paid-provider keys,
 and binds host port 8082 only to loopback. It does not build or start LiveKit/SIP.
 
 The confirmed existing edge uses `http`/`https`, TLS `letsencrypt`, and the
-robot-host catchall. This bridge adds only `Host(robot.arleserver.cfd)` plus
+Voicebot host routing. This bridge accepts only the explicit Restobot/robot hosts plus
 `PathPrefix(/api/twilio/)`, priority 10000, `https`/TLS, with a matching `http`
 redirect. Health and all other ports/paths stay private. These route/priority
 boundaries are publicly verified. Do not use a fixed Twilio source-IP list.

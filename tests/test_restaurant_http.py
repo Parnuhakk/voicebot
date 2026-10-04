@@ -240,7 +240,9 @@ def test_browser_voice_policy_books_only_after_recap_receipt(
         assert "на полтора часа" in answer["reply"]
     else:
         assert "4" in answer["reply"] and "90" in answer["reply"]
-    recap = client.app.state.demo_sessions.sessions[data["session_id"]].tools.pending["recap"]
+    recap = client.app.state.demo_sessions.sessions[data["session_id"]].tools.pending[
+        "recap"
+    ]
     assert recap["party_size"] == 4 and recap["duration_minutes"] == 90
     assert answer["booking_changes"] == []
     confirmed = turn(
@@ -773,7 +775,7 @@ def test_restaurant_page_and_assets_are_local_and_content_versioned(client):
             elif tag == "link" and values.get("rel") == "stylesheet":
                 urls.append(values["href"])
 
-    page = client.get("/")
+    page = client.get("/dashboard")
     assert page.status_code == 200 and 'id="demo-language"' in page.text
     Parser().feed(page.text)
     for url in urls:

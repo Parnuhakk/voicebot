@@ -12,8 +12,8 @@ import pytest
 ACCOUNT = "AC" + "a" * 32
 CALL = "CA" + "b" * 32
 STREAM = "MZ" + "c" * 32
-VOICE_URL = "https://robot.arleserver.cfd/api/twilio/voice"
-MEDIA_URL = "wss://robot.arleserver.cfd/api/twilio/media"
+VOICE_URL = "https://restobot.arleserver.cfd/api/twilio/voice"
+MEDIA_URL = "wss://restobot.arleserver.cfd/api/twilio/media"
 # Public, deliberately non-credential test fixtures. Never use live environment.
 ENV = {
     "TWILIO_AUTH_TOKEN": "synthetic-test-only-credential",
@@ -85,7 +85,15 @@ def test_fixed_url_signature_includes_all_untrimmed_duplicate_values():
     )
 
 
-@pytest.mark.parametrize("url", [MEDIA_URL, MEDIA_URL + "/"])
+@pytest.mark.parametrize(
+    "url",
+    [
+        MEDIA_URL,
+        MEDIA_URL + "/",
+        "wss://robot.arleserver.cfd/api/twilio/media",
+        "wss://robot.arleserver.cfd/api/twilio/media/",
+    ],
+)
 def test_ws_signature_uses_only_fixed_wss_and_documented_slash(url):
     s = security()
     cfg = s.Config.from_env(ENV)
@@ -104,6 +112,33 @@ def test_ws_signature_uses_only_fixed_wss_and_documented_slash(url):
 def test_foreign_ws_signature_urls_are_rejected(url):
     s = security()
     assert not s.valid_media_signature(s.Config.from_env(ENV), sign(url))
+
+
+@pytest.mark.parametrize(
+    "url", [VOICE_URL, "https://robot.arleserver.cfd/api/twilio/voice"]
+)
+def test_voice_signature_accepts_only_explicit_new_and_legacy_origins(url):
+    s = security()
+    fields = {
+        "AccountSid": [ACCOUNT],
+        "To": [ENV["TWILIO_PHONE_NUMBER"]],
+        "CallSid": [CALL],
+    }
+    assert s.valid_voice_signature(s.Config.from_env(ENV), fields, sign(url, fields))
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://foreign.invalid/api/twilio/voice",
+        "http://restobot.arleserver.cfd/api/twilio/voice",
+        VOICE_URL + "/",
+        VOICE_URL + "?x=1",
+    ],
+)
+def test_voice_signature_rejects_untrusted_origin_variants(url):
+    s = security()
+    assert not s.valid_voice_signature(s.Config.from_env(ENV), {}, sign(url))
 
 
 @pytest.mark.parametrize(

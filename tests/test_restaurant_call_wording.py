@@ -186,7 +186,9 @@ def test_cat_answer_does_not_grant_dog_only_permission(make_state):
     answer = state.guard_reply("Jah, loomulikult!", [])
     assert answer == general_reply(state.restaurant, "other_pets", "et")
     state.restaurant.pop("pet_policy")
-    assert state.guard_reply("Jah", []) == general_reply(state.restaurant, "other_pets", "et")
+    assert state.guard_reply("Jah", []) == general_reply(
+        state.restaurant, "other_pets", "et"
+    )
 
 
 @pytest.mark.parametrize(
@@ -295,10 +297,9 @@ def test_explicit_reality_question_remains_truthful(client, language, truth):
     assert not answer["booking_changes"]
     public = client.get("/api/public/restaurant").json()
     assert public["synthetic"] is True
-    assert (
-        "fictional" in client.get("/").text.lower()
-        or "fiktiivne" in client.get("/").text.lower()
-    )
+    for path in ("/", "/dashboard"):
+        html = client.get(path).text.lower()
+        assert any(word in html for word in ("fictional", "fiktiivne", "väljamõeldud"))
 
 
 @pytest.mark.parametrize(

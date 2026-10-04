@@ -10,10 +10,10 @@
     <title>Voicebot · Restaurant reception</title>
     <script src="/operator-dashboard.js?v=e2bebda58021"></script>
     <link rel="stylesheet" href="/restaurant.css?v=1be2bdb3e744" />
-    <link rel="stylesheet" href="/operator-dashboard.css?v=0063de3a89f6" />
+    <link rel="stylesheet" href="/operator-dashboard.css?v=e757d9ddf0eb" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script src="/speech-playback.js?v=3a5d284b39c2" defer></script>
-    <script src="/restaurant.js?v=6549d4aaa9c7" defer></script>
+    <script src="/restaurant.js?v=aaf72ef746b7" defer></script>
     <script src="/speech-capture.js?v=fb9adf1eaf2e" defer></script>
   </head>
   <body>
@@ -36,6 +36,7 @@
         <div><strong>Meretuule</strong><span data-copy="demo">Fiktiivne restoranidemo.</span></div>
       </div>
       <nav class="navigation" aria-label="Töölaua jaotised" data-aria="navigationLabel">
+        <a href="/booking-calendar.html"><svg class="icon" aria-hidden="true"><use href="#i-grid" /></svg><span data-copy="calendarTitle">Lauakalender</span></a>
         <a href="#bookings-section"><svg class="icon" aria-hidden="true"><use href="#i-calendar" /></svg><span data-copy="bookingsTitle">Lauabroneeringud</span></a>
         <a href="#calls-section"><svg class="icon" aria-hidden="true"><use href="#i-journal" /></svg><span data-copy="historyTitle">Kõneajalugu</span></a>
         <a href="#demo-section"><svg class="icon" aria-hidden="true"><use href="#i-chat" /></svg><span data-copy="voiceTitle">Proovi kõneabilist</span></a>
@@ -268,7 +269,7 @@
             <p id="consent-help"></p>
           </details>
         </section>
-        <section class="panel" aria-labelledby="reservation-title">
+        <section id="reservation-heading" class="panel" tabindex="-1" aria-labelledby="reservation-title">
           <div class="panel-heading">
             <div>
               <h2 id="reservation-title" data-copy="reservationTitle">

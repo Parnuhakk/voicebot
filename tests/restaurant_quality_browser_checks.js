@@ -8,7 +8,7 @@ async page => {
   });
   await page.clock.install();
   await page.setViewportSize({width:390,height:844});
-  await page.goto('http://127.0.0.1:8766/', {waitUntil:'networkidle'});
+  await page.goto('http://127.0.0.1:8766/dashboard', {waitUntil:'networkidle'});
   const choose = async language => page.locator('.language-option').filter({has:page.locator(`input[value="${language}"]`)}).click();
   for (const [language, sidebar, navigation] of [
     ['et','Töölaua külgriba','Töölaua jaotised'],

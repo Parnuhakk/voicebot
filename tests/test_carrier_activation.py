@@ -41,6 +41,7 @@ def test_candidate_edge_is_not_a_public_or_carrier_proof():
         "::1",
         "https://example.com",
         "robot.arleserver.cfd",
+        "restobot.arleserver.cfd",
     ],
 )
 def test_edge_rejects_private_addresses_and_http_website(host):

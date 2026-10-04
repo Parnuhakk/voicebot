@@ -1,13 +1,11 @@
-"""Only the robot website publishes the restaurant reception."""
+"""Restobot publishes the landing and preserved private restaurant workspace."""
 
 from html.parser import HTMLParser
 from urllib.parse import urlsplit
 
 import pytest
 
-from tests.test_restaurant_http import client  # noqa: F401
-
-
+pytest_plugins = ["tests.test_restaurant_http"]
 RETIRED_HOST = "meretuule.arleserver.cfd"
 
 
@@ -23,7 +21,7 @@ class DemoLinks(HTMLParser):
 
 
 def test_robot_reception_does_not_link_to_the_removed_demo_site(client):
-    response = client.get("/", headers={"Host": "robot.arleserver.cfd"})
+    response = client.get("/dashboard", headers={"Host": "restobot.arleserver.cfd"})
     assert response.status_code == 200
     links = DemoLinks()
     links.feed(response.text)
@@ -36,6 +34,60 @@ def test_robot_reception_does_not_link_to_the_removed_demo_site(client):
     assert 'id="reservation-prepare"' in response.text
     assert 'id="demo-start"' in response.text
     assert 'id="demo-mic"' in response.text
+
+
+@pytest.mark.parametrize("host", ["robot.arleserver.cfd", "ROBOT.ARLESERVER.CFD."])
+@pytest.mark.parametrize(
+    "path", ["/", "/index.html", "/dashboard", "/dashboard/", "/booking-calendar.html"]
+)
+def test_old_browser_pages_redirect_to_restobot_preserving_query(client, host, path):
+    response = client.get(
+        path + "?source=calendar&language=et",
+        headers={"Host": host},
+        follow_redirects=False,
+    )
+    assert response.status_code == 308
+    assert (
+        response.headers["Location"]
+        == "https://restobot.arleserver.cfd" + path + "?source=calendar&language=et"
+    )
+    assert response.headers["Cache-Control"] == "no-store"
+
+
+def test_canonical_landing_and_workspace_are_distinct(client):
+    landing = client.get("/", headers={"Host": "restobot.arleserver.cfd"})
+    workspace = client.get("/dashboard", headers={"Host": "restobot.arleserver.cfd"})
+    assert landing.status_code == workspace.status_code == 200
+    links = DemoLinks()
+    links.feed(landing.text)
+    assert "/dashboard#demo-section" in links.destinations
+    assert "/booking-calendar.html" in links.destinations
+    assert 'id="operator-token"' not in landing.text
+    assert 'id="operator-token"' in workspace.text
+
+
+def test_old_host_api_is_not_redirected_or_authorized_by_the_migration(client):
+    headers = {"Host": "robot.arleserver.cfd"}
+    assert (
+        client.get("/health", headers=headers, follow_redirects=False).status_code
+        == 200
+    )
+    response = client.post(
+        "/api/restaurant/reservation/prepare",
+        content=b"not-json",
+        headers=headers,
+        follow_redirects=False,
+    )
+    assert response.status_code == 403
+    assert "Location" not in response.headers
+    assert response.headers["Cache-Control"] == "no-store"
+
+
+def test_canonical_workspace_supports_head_without_exposing_a_body(client):
+    response = client.head("/dashboard", headers={"Host": "restobot.arleserver.cfd"})
+    assert response.status_code == 200
+    assert response.content == b""
+    assert response.headers["Cache-Control"] == "no-store"
 
 
 @pytest.mark.parametrize("host", [RETIRED_HOST, "MERETUULE.ARLESERVER.CFD."])
