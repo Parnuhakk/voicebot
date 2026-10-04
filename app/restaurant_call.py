@@ -465,7 +465,7 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
         or re.search(r"\b(" + DINER_FORMS + r")\b", text)
     )
     if not party and not requested_time and "party_size" in inquiry:
-        party = re.fullmatch(r"tegelikult\s+" + number, text.strip(".!?"))
+        party = re.fullmatch(r"(?:actually|tegelikult)\s+" + number, text.strip(".!?"))
     if not party and not requested_time and re.search(r"\bpalun\b", text):
         party = re.fullmatch(r"(?:palun\s+)?" + number + r"(?:,?\s+palun)?[.!]?", text)
 
@@ -517,7 +517,9 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
         r"\b" + number + r"\s+(?:adults?|täiskasvan\w*|взросл\w*)\b", text
     )
     children = re.search(
-        r"\b" + number + r"\s+(?:children|kids?|last|lapse\w*|дет\w*|реб[её]н\w*)\b",
+        r"\b"
+        + number
+        + r"\s+(?:child(?:ren)?|kids?|last|lapse\w*|дет\w*|реб[её]н\w*)\b",
         text,
     )
     subset = re.search(
@@ -534,6 +536,18 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
         or partial_number(subset)
         or partial_number(subset, 2)
     )
+    if adult and children:
+        # The first components are not the total when other guests are mentioned.
+        partial_compound |= (
+            len(re.findall(r"\b(?:adults?|täiskasvan\w*|взросл\w*)\b", text)) > 1
+            or len(
+                re.findall(
+                    r"\b(?:child(?:ren)?|kids?|last|lapse\w*|дет\w*|реб[её]н\w*)\b",
+                    text,
+                )
+            )
+            > 1
+        )
     if subset:
         total, child_count = (
             int(value) if value.isdigit() else NUMBER_WORDS[value]
@@ -562,7 +576,7 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
             inquiry["party_size"] = components
             inquiry.pop("party_invalid", None)
     elif re.search(
-        r"\b(?:children|kids?|last|lapse\w*|дет\w*|реб[её]н\w*)\b", text
+        r"\b(?:child(?:ren)?|kids?|last|lapse\w*|дет\w*|реб[её]н\w*)\b", text
     ) and not re.search(r"\b(?:total|kokku|всего)\b", text):
         inquiry.pop("party_size", None)
     # An offered range or conflicting totals need another answer. Time/date
@@ -610,7 +624,7 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
         inquiry.pop("party_size", None)
         inquiry["party_invalid"] = True
     if partial_compound:
-        # A recognized unit of an unconsumed larger number is not the total,
+        # An incomplete number or set of guest components is not the total,
         # even if reserving that smaller group would fit a configured table.
         inquiry.pop("party_size", None)
         inquiry["party_invalid"] = True
@@ -713,7 +727,7 @@ def _restaurant_detail_followup(text, previous, *, expected_field=None):
             + number
             + r" (?:adults?|täiskasvan\w*|взросл\w*) (?:and|ja|и) "
             + number
-            + r" (?:children|kids?|last|lapse\w*|дет\w*|реб[её]н\w*)"
+            + r" (?:child(?:ren)?|kids?|last|lapse\w*|дет\w*|реб[её]н\w*)"
             r")(?: please| palun| пожалуйста)?",
             remaining,
         )
@@ -1354,7 +1368,13 @@ class RestaurantCallTools(CallTools):
                 )
                 or (
                     self._restaurant_inquiry is not None
-                    and re.match(r"^(?:tegelikult|hoopis)\b", planning_text)
+                    and (
+                        re.match(r"^(?:tegelikult|hoopis)\b", planning_text)
+                        or re.match(r"^actually\b", planning_text)
+                        and details
+                        and set(details)
+                        <= {"start_time", "time_candidates", "time_invalid"}
+                    )
                     or had_pending
                     or details
                     and {"start_time", "party_size"} <= details.keys()
@@ -1619,7 +1639,7 @@ class RestaurantCallTools(CallTools):
             or self.unsupported_language
         ):
             return None
-        if self.conversation.intent:
+        if self.conversation.intent and self.conversation.intent != "language_switch":
             return None
         if self.clarification in {"ambiguous_time", "invalid_time"}:
             return self._with_capabilities(COPY[self.language][self.clarification])
@@ -1821,6 +1841,8 @@ class RestaurantCallTools(CallTools):
             return {"content": self.guard_reply("", [])}
         if after_tool and self.results:
             return {"content": self.guard_reply("", self.results)}
+        if self.pending and self.conversation.intent == "language_switch":
+            return {"content": self.guard_reply("", [])}
         if (
             not allow_actions
             or self.pending

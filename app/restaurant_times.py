@@ -301,7 +301,7 @@ def _pattern(words: dict[str, int]) -> str:
 # Whisper may transcribe an explicit 24-hour clock without its colon.
 HOUR = r"(?:\d{4}|" + _pattern(HOURS) + ")"
 MINUTE = _pattern(MINUTES)
-GUEST_NOUN = r"(?:people|persons|guests|adults?|children|kids?|inimes\w*|külalis\w*|täiskasvan\w*|last|lapse\w*|человек\w*|гост\w*|взросл\w*|дет\w*|ребен\w*)"
+GUEST_NOUN = r"(?:people|persons|guests|adults?|children|child|kids?|inimes\w*|külalis\w*|täiskasvan\w*|last|lapse\w*|человек\w*|гост\w*|взросл\w*|дет\w*|ребен\w*)"
 MINUTE_NOT_GUEST = r"(?!\s+" + GUEST_NOUN + r"\b)"
 APPROXIMATE_COUNT = re.compile(
     r"\b(?:around|about|approximately|between|umbes|около|примерно|между)\s+"
@@ -540,6 +540,8 @@ def parse_spoken_time(
         text,
     )
     text = APPROXIMATE_COUNT.sub(lambda match: " " * len(match[0]), text)
+    # Grammatical "I am" is not an AM marker; keep clock span offsets intact.
+    text = re.sub(r"\b(i\s+)am\b", r"\1  ", text)
     period = _period(text)
     meridiem = bool(MERIDIEM.search(text))
     found: list[RequestedTime] = []

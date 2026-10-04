@@ -92,8 +92,8 @@ def test_native_booking_resumes_after_information_questions(
                 assert agent.chat_ctx.items[-1].text_content.endswith(recap)
                 await native_turn(session, agent, CONSENT[language])
                 assert len(state.bookings) == 1 and model.calls == 0
-                assert (
-                    agent.chat_ctx.items[-1].text_content.startswith(COPY[language]["confirmed"])
+                assert agent.chat_ctx.items[-1].text_content.startswith(
+                    COPY[language]["confirmed"]
                 )
             finally:
                 await session.aclose()
@@ -158,8 +158,8 @@ def test_native_session_keeps_first_caller_language_and_voice(
                 agent._detected_language = "et" if selected != "et" else "en"
                 await native_turn(session, agent, CONSENT[selected])
                 assert state.language == selected and len(state.bookings) == 1
-                assert (
-                    agent.chat_ctx.items[-1].text_content.startswith(COPY[selected]["confirmed"])
+                assert agent.chat_ctx.items[-1].text_content.startswith(
+                    COPY[selected]["confirmed"]
                 )
                 assert model.calls == 0
             finally:
@@ -203,6 +203,56 @@ def test_native_short_acknowledgement_keeps_language_unselected(tmp_path, weak):
                 assert agent.chat_ctx.items[-1].text_content.endswith(
                     COPY["et"]["confirmation_question"]
                 )
+            finally:
+                await session.aclose()
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "utterance",
+    [
+        "Speak English, please.",
+        "Can you please speak English?",
+        "Do you speak English?",
+        "Hello. Can we speak English?",
+    ],
+)
+def test_native_english_switch_changes_voice_without_model(tmp_path, utterance):
+    from app.providers.voice_config import SpeechConfig
+
+    async def run():
+        data = load_restaurant_data()
+        adapter = RestaurantAdapter(str(tmp_path / "switch.db"), data=data)
+        state = make_call_tools(restaurant_dispatcher(adapter, data), language="et")
+        updates = []
+        config = SpeechConfig(mode="auto")
+        agent = worker.TelephoneAgent(
+            state,
+            speech_config=config,
+            speech_provider=NS(
+                update_options=lambda **options: updates.append(options)
+            ),
+        )
+        model = UnusedModel()
+        session = AgentSession(
+            llm=model, tts=UnusedTTS(), turn_handling={"turn_detection": "manual"}
+        )
+        session.output.audio = Playback()
+        session.on("conversation_item_added", agent.on_conversation_item_added)
+        with patch("livekit.agents.Agent.default.tts_node", synthesize):
+            await session.start(agent=agent, record=False)
+            try:
+                agent._detected_language = "et"
+                await native_turn(session, agent, "Tere! Soovin menüüd.")
+                assert state.language == "et" and state.language_locked
+                agent._detected_language = "en"
+                await native_turn(session, agent, utterance)
+                assert state.language == "en"
+                assert "English" in agent.chat_ctx.items[-1].text_content
+                voice, locale = config.voice_for("en")
+                assert updates[-1] == {"voice": voice, "language": locale}
+                assert model.calls == 0 and not state.bookings
             finally:
                 await session.aclose()
 
@@ -341,10 +391,8 @@ def test_native_sdk_confirmation_is_visible_in_the_restaurant_database(
                     ).strftime("%H:%M") == ("18:00" if language == "et" else "18:30")
                 await native_turn(session, agent, confirmation)
                 assert len(state.bookings) == 1
-                assert (
-                    agent.chat_ctx.items[-1].text_content.startswith(
-                        COPY[language]["confirmed"]
-                    )
+                assert agent.chat_ctx.items[-1].text_content.startswith(
+                    COPY[language]["confirmed"]
                 )
                 assert model.calls == 0
             finally:

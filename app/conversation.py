@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from .languages import ENGLISH
+from .languages import ENGLISH, requested_language
 
 
 def normalize(text: str) -> str:
@@ -138,6 +138,7 @@ INTENTS = {
 
 REPLIES = {
     "et": {
+        "language_switch": ("Muidugi. Räägime eesti keeles. Kuidas saan aidata?",),
         "greeting": ("Tere! Kuidas saan aidata?", "Tere! Millega saan aidata?"),
         "thanks": (
             "Hea meelega!",
@@ -164,6 +165,7 @@ REPLIES = {
         ),
     },
     "en": {
+        "language_switch": ("Of course. We can speak English. How can I help?",),
         "greeting": ("Hello! How can I help you?", "Hi! What can I help you with?"),
         "thanks": (
             "You're welcome!",
@@ -193,6 +195,7 @@ REPLIES = {
         ),
     },
     "ru": {
+        "language_switch": ("Конечно, можем говорить по-русски. Чем могу помочь?",),
         "greeting": (
             "Здравствуйте! Чем могу помочь?",
             "Здравствуйте! Что вы хотите сделать?",
@@ -307,6 +310,8 @@ REPAIR = {
 
 
 def intent_for(text: str) -> str | None:
+    if requested_language(text):
+        return "language_switch"
     value = normalize(text)
     return next(
         (intent for intent, phrases in INTENTS.items() if value in phrases), None

@@ -106,6 +106,60 @@ def test_ambiguous_clocks_offer_both_periods_instead_of_guessing(text, am, pm):
     assert selection.value is None and not selection.invalid
 
 
+@pytest.mark.parametrize("intro", ["I am", "I'm"])
+@pytest.mark.parametrize(
+    "clock,value,candidates,clock_span",
+    [
+        ("7 PM", "19:00", None, "at 7"),
+        ("19:00", "19:00", None, "19:00"),
+        ("seven", None, ("07:00", "19:00"), "at seven"),
+    ],
+)
+def test_copular_am_does_not_change_requested_clock(
+    intro, clock, value, candidates, clock_span
+):
+    text = f"{intro} looking to reserve a table tomorrow at {clock} for four"
+    selection = parse_spoken_time(text)
+    assert selection is not None and not selection.invalid
+    assert selection.value == value and selection.candidates == candidates
+    start = text.casefold().index(clock_span)
+    assert selection.span == (start, start + len(clock_span))
+    assert selection.spans == (selection.span,)
+
+
+@pytest.mark.parametrize("clock", ["7am", "7 am", "7 a.m.", "7 a m", "7 a. m."])
+def test_actual_am_suffix_survives_copular_am(clock):
+    selection = parse_spoken_time(
+        f"I am calling to book a table tomorrow at {clock} for four"
+    )
+    assert selection is not None and not selection.invalid
+    assert selection.value == "07:00" and selection.candidates is None
+
+
+@pytest.mark.parametrize("period", ["AM", "am", "a.m.", "a m", "a. m."])
+def test_standalone_am_only_resolves_a_prompted_clock(period):
+    assert parse_spoken_time(period) is None
+    selection = parse_spoken_time(period, pending=("07:00", "19:00"))
+    assert selection is not None and not selection.invalid
+    assert selection.value == "07:00" and selection.candidates is None
+
+
+@pytest.mark.parametrize("intro", ["I am", "I'm"])
+def test_actual_am_pm_conflict_still_needs_clarification(intro):
+    selection = parse_spoken_time(
+        f"{intro} calling to book a table tomorrow at 7 AM or PM for four"
+    )
+    assert selection is not None and selection.invalid
+    assert selection.value is None and selection.candidates is None
+
+
+def test_singular_child_count_never_becomes_clock_minutes():
+    selection = parse_spoken_time("at seven one child")
+    assert selection is not None and not selection.invalid
+    assert selection.candidates == ("07:00", "19:00")
+    assert selection.span == (0, len("at seven"))
+
+
 @pytest.mark.parametrize(
     "text",
     [

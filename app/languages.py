@@ -215,7 +215,11 @@ def requested_language(text: object) -> str | None:
         ]
     patterns = {
         "ru": r"(?:russian(?: please)?|(?:please )?(?:speak|answer|continue)(?: to me)? (?:in )?russian|(?:can|could) (?:we|you) (?:speak|continue)(?: to me)? (?:in )?russian(?: please)?|(?:please )?use russian|(?:palun )?(?:räägi|vastake|vasta|jätka)(?: palun)? vene keeles|(?:palun )?vene keeles|(?:пожалуйста )?(?:говорите|говори|отвечайте|отвечай|продолжайте|продолжай) (?:по-русски|на русском(?: языке)?)(?: пожалуйста)?|(?:по-русски|на русском(?: языке)?|русский)(?: пожалуйста)?)",
-        "en": r"(?:english(?: please)?|(?:please )?(?:speak|answer|continue)(?: to me)? (?:in )?english|(?:can|could) (?:we|you) (?:speak|continue)(?: to me)? (?:in )?english(?: please)?|(?:please )?use english|(?:palun )?(?:räägi|vastake|vasta|jätka)(?: palun)? inglise keeles|(?:palun )?inglise keeles)",
+        "en": r"(?:(?:hello|hi|hey)[.!?]* )?(?:english(?: please)?|"
+        r"(?:please )?(?:speak|answer|continue)(?: to me)? (?:in )?english(?: please)?|"
+        r"(?:can|could) (?:we|you) (?:please )?(?:speak|answer|continue)(?: to me)? (?:in )?english(?: please)?|"
+        r"do you speak english|(?:please )?use english|"
+        r"(?:palun )?(?:räägi|vastake|vasta|jätka)(?: palun)? inglise keeles|(?:palun )?inglise keeles)",
         "et": r"(?:estonian(?: please)?|(?:please )?(?:speak|answer|continue)(?: to me)? (?:in )?estonian|(?:can|could) (?:we|you) (?:speak|continue)(?: to me)? (?:in )?estonian(?: please)?|(?:please )?use estonian|(?:palun )?(?:räägi|vastake|vasta|jätka)(?: palun)? eesti keeles|(?:palun )?eesti keeles)",
     }
     return next(
