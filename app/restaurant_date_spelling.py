@@ -9,6 +9,7 @@ from functools import lru_cache
 
 TOKEN = re.compile(r"\d+(?:st|nd|rd|th)?|[^\W\d_]+", re.UNICODE)
 JOINERS = {"of", "the", "day", "числа"}
+TEMPORAL_CONNECTORS = {"pärast", "parast", "enne", "üle", "ule", "läbi", "labi", "ajal", "paiku"}
 GUEST = re.compile(r"\s+(?:people|guests?|persons?|inimes\w*|külalis\w*|гост\w*|человек\w*)\b")
 DATE_CONTEXT = re.compile(
     r"\b(?:table|reserv\w*|book\w*|lau(?:d|da|a\w*)|broneer\w*|столик\w*|брон\w*|"
@@ -116,7 +117,7 @@ class CalendarSpelling:
         protected_spans = [match.span() for pattern in self.protected for match in pattern.finditer(text)]
         protected_tokens = {
             index for index, token in enumerate(tokens)
-            if DATE_CONTEXT.fullmatch(token[0]) or YEAR_WORD.fullmatch(token[0]) or CLOCK_WORD.fullmatch(token[0])
+            if token[0] in TEMPORAL_CONNECTORS or DATE_CONTEXT.fullmatch(token[0]) or YEAR_WORD.fullmatch(token[0]) or CLOCK_WORD.fullmatch(token[0])
             or any(token.start() < right and token.end() > left for left, right in protected_spans)
         }
 

@@ -65,6 +65,10 @@ def _number_words() -> dict[str, int]:
 
 NUMBERS = _number_words()
 NUMBERS.update(ESTONIAN_COUNTS)
+MINUTES = {
+    **NUMBERS,
+    **{f"null {word}": digit for digit, word in enumerate(("üks", "kaks", "kolm", "neli", "viis", "kuus", "seitse", "kaheksa", "üheksa"), 1)},
+}
 HOURS = {
     **NUMBERS,
     "час": 1,
@@ -90,7 +94,7 @@ def _pattern(words: dict[str, int]) -> str:
 
 
 HOUR = _pattern(HOURS)
-MINUTE = _pattern(NUMBERS)
+MINUTE = _pattern(MINUTES)
 GUEST_NOUN = r"(?:people|persons|guests|adults?|children|kids?|inimes\w*|külalis\w*|täiskasvan\w*|last|lapse\w*|человек\w*|гост\w*|взросл\w*|дет\w*|ребен\w*)"
 MINUTE_NOT_GUEST = r"(?!\s+" + GUEST_NOUN + r"\b)"
 APPROXIMATE_COUNT = re.compile(r"\b(?:around|about|approximately|between|umbes|около|примерно|между)\s+" + HOUR + r"(?:\s+(?:and|to|ja|kuni|и|до)\s+" + HOUR + r")?\s+" + GUEST_NOUN + r"\b")
@@ -109,19 +113,20 @@ NAMED_FRACTIONS = (
 DIGITAL = re.compile(r"(?<![\w:.])(?P<h>\d{1,2})[:.](?P<m>\d{2})(?![\d:]|\.\d)")
 MALFORMED_DIGITAL = re.compile(r"(?<![\w:.])\d{1,3}[:.]\d+(?!\w)")
 FRACTIONS = (
-    (re.compile(r"\b(?P<h>" + HOUR + r")\s+(?:and\s+(?:a\s+)?half|с\s+половиной)\b"), "after_half"),
+    (re.compile(r"\b(?P<h>" + HOUR + r")\s+(?:and\s+(?:a\s+)?half|ja\s+pool|с\s+половиной)\b"), "after_half"),
     (re.compile(r"\b(?:a\s+)?(?P<m>half|quarter|" + MINUTE + r")(?:\s+minutes?)?\s+(?P<direction>past|to|after|before)\s+(?P<h>" + HOUR + r")\b"), "en"),
     (re.compile(r"\b(?P<h>" + HOUR + r")\s+läbi\s+(?P<m>" + MINUTE + r")(?:\s+minut\w*)?\b"), "et_past"),
-    (re.compile(r"\b(?P<m>" + MINUTE + r")\s+minut\w*\s+enne\s+(?P<h>" + HOUR + r")\b"), "et_to"),
+    (re.compile(r"\b(?P<m>" + MINUTE + r")\s+minut\w*\s+(?P<direction>enne|üle)\s+(?P<h>" + HOUR + r")\b"), "et_minutes"),
     (re.compile(r"\bhalf\s+(?P<h>" + HOUR + r")\b"), "en_half"),
     (re.compile(r"\b(?P<m>kolmveerand|veerand|pool)\s+(?P<h>" + HOUR + r")\b"), "et"),
     (re.compile(r"\b(?:пол\s*|половин[аеуы]\s+)(?P<h>" + HOUR + r")\b"), "ru_half"),
     (re.compile(r"\bчетверть\s+(?P<h>" + HOUR + r")\b"), "ru_quarter"),
     (re.compile(r"\bбез\s+(?P<m>четверти|" + MINUTE + r")(?:\s+минут\w*)?\s+(?P<h>" + HOUR + r")\b"), "ru_to"),
 )
-PREFIX = re.compile(r"\b(?:at|kell|kella|в|к|около)\s+(?P<h>" + HOUR + r")(?:\s+(?:час(?:а|ов)?|hours?))?(?:\s+(?:(?:ja|and|и)\s+)?(?P<m>" + MINUTE + r")\b" + MINUTE_NOT_GUEST + r")?(?:\s+(?:минут\w*|minutes?|minut\w*))?(?![\w:.])")
-SUFFIX = re.compile(r"(?<!\w)(?P<h>" + HOUR + r")(?:\s+(?P<m>" + MINUTE + r"))?\s*(?:o'clock|час(?:а|ов)?|[ap]\.?\s*m\.?)(?!\w)")
+PREFIX = re.compile(r"\b(?:at|kell|kella|в|к|около)\s+(?P<h>" + HOUR + r")(?:\s+(?:час(?:а|ов)?|hours?))?(?:\s+(?:(?:ja|and|и)\s+)?(?P<m>" + MINUTE + r")\b" + MINUTE_NOT_GUEST + r")?(?:\s+(?:минут\w*|minutes?|minut\w*))?(?:\s+ajal)?(?![\w:.])")
+SUFFIX = re.compile(r"(?<!\w)(?P<h>" + HOUR + r")(?:\s+(?P<m>" + MINUTE + r"))?\s*(?:o'clock|час(?:а|ов)?|[ap]\.?\s*m\.?|ajal)(?!\w)")
 BARE = re.compile(r"(?P<h>" + HOUR + r")(?:\s+(?P<m>" + MINUTE + r"))?")
+CLOCK_TAIL = re.compile(r"^\s+(?:(?:ja|and|и)\s+)?(?P<n>-?\d+|" + MINUTE + r"|half|quarter|pool|poolteist|veerand|kolmveerand|läbi|с\s+половиной|четверт[ьи]|половин\w*)\b")
 ALTERNATIVE = re.compile(r"\b(?:or|või|или|kuni|до|to)\s+" + HOUR + r"\b")
 TIME_RANGE = re.compile(r"\b(?:between|vahemikus|между)\s+" + HOUR + r"\b|\b(?:с|from)\s+" + HOUR + r"\s+(?:до|to)\s+" + HOUR + r"\b")
 APPROXIMATE_TIME = re.compile(r"\b(?:around|about|approximately|около|примерно|umbes)\s+(?:(?:at|kell|kella|в)\s+)?" + HOUR + r"\b|\b" + HOUR + r"\s+paiku\b")
@@ -130,7 +135,7 @@ NEGATED_TIME = re.compile(r"\b(?:not|mitte|ei|ära|не)(?:\s+\w+){0,2}\s*$")
 
 
 def _number(value: str, *, hour=False) -> int:
-    return int(value) if value.lstrip("-").isdigit() else (HOURS if hour else NUMBERS)[value]
+    return int(value) if value.lstrip("-").isdigit() else (HOURS if hour else MINUTES)[value]
 
 
 def _period(text: str) -> str | None:
@@ -224,7 +229,7 @@ def parse_spoken_time(
                 if not 1 <= minute <= 59:
                     add(match, 24)
                     continue
-                before = kind in {"ru_to", "et_to"} or kind == "en" and match["direction"] in {"to", "before"}
+                before = kind == "ru_to" or kind in {"en", "et_minutes"} and match["direction"] in {"to", "before", "enne"}
                 hour = (target - 1) % 12 if before and target <= 12 else target - 1 if before else target
                 minute = 60 - minute if before else minute
             add(match, hour, minute, explicit=target > 12)
@@ -261,6 +266,14 @@ def parse_spoken_time(
         return RequestedTime(invalid=True)
     if not found:
         return RequestedTime(invalid=True) if TIME_RANGE.search(text) else None
+    # An adjacent unconsumed clock fragment is not permission to use its prefix.
+    # Explicit guest nouns and Estonian party case forms are separate selectors.
+    for start, end in occupied:
+        tail = CLOCK_TAIL.match(text[end:])
+        if tail and tail["n"] not in {"ühele", "kahele", "kolmele", "neljale", "viiele", "kuuele", "seitsmele", "kaheksale"} and not re.match(
+            r"\s+" + GUEST_NOUN + r"\b", text[end + tail.end():],
+        ):
+            return RequestedTime(invalid=True, span=(start, end + tail.end()))
     if any(NEGATED_TIME.search(text[:start]) for start, _ in occupied):
         return RequestedTime(invalid=True)
     # A date/guest alternative elsewhere in the request is not a clock choice.

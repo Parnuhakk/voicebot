@@ -294,6 +294,7 @@ for tens, prefixes, units in (
 OFFSET_NUMBER = r"(?:-?\d{1,4}|" + _alternatives(OFFSET_COUNTS) + ")"
 OFFSETS = (
     re.compile(r"(?<![\w-])(?P<n>" + OFFSET_NUMBER + r")\s+(?P<unit>päeva|päev|nädala|nädalat|nädal)\s+pärast\b"),
+    re.compile(r"\b(?P<unit>nädala)\s+pärast\b"),
     re.compile(r"\bin\s+(?P<n>" + OFFSET_NUMBER + r")\s+(?P<unit>days?|weeks?)\b"),
     re.compile(r"(?<![\w-])(?P<n>" + OFFSET_NUMBER + r")\s+(?P<unit>days?|weeks?)\s+from\s+(?:now|today)\b"),
     re.compile(r"\bчерез\s+(?P<n>" + OFFSET_NUMBER + r")\s+(?P<unit>день|дня|дней|неделю|недели|недель)\b"),
@@ -471,6 +472,12 @@ def resolve_restaurant_date(
     for pattern in OFFSETS:
         for match in pattern.finditer(text):
             raw = match.groupdict().get("n")
+            if raw is None and match["unit"] == "nädala" and re.search(
+                r"\b(?:\d+|pool|poole|paar|paari|mõne|mitme|\w*(?:kümmend|kümne|sada|saja|tuhat|tuhande\w*))\s+$",
+                text[:match.start()],
+            ):
+                record(*match.span(), None, "date_ambiguous")
+                continue
             count = int(raw) if raw and raw.lstrip("-").isdigit() else OFFSET_COUNTS[raw] if raw else 1
             factor = 7 if re.search(r"week|nädal|недел", match["unit"]) else 1
             if 0 <= count * factor <= 3660:
@@ -486,7 +493,7 @@ def resolve_restaurant_date(
     if allow_bare_day and re.fullmatch(r"\d{1,2}[./-]\d{1,2}\.?", text.strip(" !?,")):
         record(0, len(text), None, "date_ambiguous")
     if allow_bare_day and not spans:
-        bare_day = re.fullmatch(r"(?:(?:on|the|na|на|kuupäeval|kuupäevaks)\s+)*(?P<day>" + DAY_PATTERN + r")[.!?,]*", text)
+        bare_day = re.fullmatch(r"(?:(?:on|the|na|на|kuupäeval|kuupäevaks)\s+)*(?P<day>" + DAY_PATTERN + r")[.!?,]*(?:\s+palun[.!?,]*)?", text)
         if bare_day:
             raw = bare_day["day"].rstrip(".")
             numeric = re.fullmatch(r"(\d{1,2})(?:st|nd|rd|th|-(?:го|е|й|ое|ого|ому|ом))?", raw)
