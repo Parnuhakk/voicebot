@@ -228,6 +228,8 @@ def select_language(text: str, detected: object, current: str) -> str:
         return "et"
     if not re.search(r"[^\W\d_]", text) or normalized in {
         "yes",
+        "yeah",
+        "yep",
         "no",
         "ok",
         "okay",

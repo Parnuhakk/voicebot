@@ -6,7 +6,7 @@
     {
       "id": "booking-101", "route": "static",
       "question_et": "Kas saate minu allergiast köögile teatada?",
-      "variants_et": ["Kas saate mu allergia broneeringule kirja panna?", "Kas saate lisada broneeringule erisoovi?", "Teatage köögile mu pähkliallergiast.", "Märkige minu allergia üles."],
+      "variants_et": ["Kas saate mu allergia broneeringule kirja panna?", "Kas saate lisada broneeringule erisoovi?", "Teatage köögile mu pähkliallergiast.", "Märkige minu allergia üles.", "Kas saate minu allergiast kõügile teatada?", "Kas saate lisada proneeringule eri soovi?", "Kas saate mu allergiaproneeringule kirja panna?"],
       "answer_et": "Ma ei salvesta erisoove ega saada köögile teateid. Allergiaohutust ma kinnitada ei saa.",
       "question_en": "Can you tell the kitchen about my allergy?",
       "variants_en": ["Can you record an allergy note?", "Can you add a special request to my booking?", "Tell the kitchen about my peanut allergy.", "Make a note of my allergy."],

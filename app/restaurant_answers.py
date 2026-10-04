@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 from .booking_faq import FAQ_PATH, load_faq, normalize
 from .restaurant_data import DAYS
 from .restaurant_dates import resolve_restaurant_date
-from .restaurant_times import DIGITAL, PREFIX, SUFFIX
+from .restaurant_times import ALTERNATIVE, DIGITAL, PREFIX, SUFFIX, parse_spoken_time
 from .restaurant_family import family_topic
 
 
@@ -188,18 +188,6 @@ def match_question(
         return None
     matches = []
     information_text = text
-    # Clock units are not opening-hours questions. Keep any independent hours,
-    # opening/closing, safety or capability wording intact.
-    for pattern in (DIGITAL, PREFIX, SUFFIX):
-        for clock in pattern.finditer(text):
-            start, end = clock.span()
-            if unit := re.match(r"\s+hours\b", text[end:]):
-                end += unit.end()
-            information_text = (
-                information_text[:start]
-                + re.sub(r"\bhours\b", "     ", information_text[start:end])
-                + information_text[end:]
-            )
     for topic, pattern in CAPABILITY_PATTERNS.items():
         if match := pattern.search(text):
             matches.append((match.start(), topic))
@@ -208,6 +196,35 @@ def match_question(
             information_text = pattern.sub(
                 lambda match: " " * len(match.group()), information_text
             )
+    # "At 1800 hours" gives a clock unit, not an opening-hours question.
+    # Mask only that unit, retaining offsets and every explicit information cue.
+    for clock in (
+        *DIGITAL.finditer(information_text),
+        *PREFIX.finditer(information_text),
+        *SUFFIX.finditer(information_text),
+        *re.finditer(r"\b\d{4}\s+hours\b", information_text),
+    ):
+        start, end = clock.span()
+        suffix = re.match(r"\s+hours\b", information_text[end:])
+        # A second hours unit after captured minutes is not another clock unit.
+        if suffix and not re.search(r"\bhours\b", information_text[start:end]):
+            end += suffix.end()
+        while alternative := ALTERNATIVE.search(information_text, end):
+            if information_text[end : alternative.start()].strip():
+                break
+            # Do not expose a first time when raw parsing ignored the choice.
+            selection = parse_spoken_time(text)
+            if selection is None or not selection.invalid:
+                end = start
+                break
+            end = alternative.end()
+            suffix = re.match(r"\s+hours\b", information_text[end:])
+            end += suffix.end() if suffix else 0
+        information_text = (
+            information_text[:start]
+            + re.sub(r"\bhours\b", "     ", information_text[start:end])
+            + information_text[end:]
+        )
     matches.extend(
         (match.start(), topic)
         for topic, pattern in PATTERNS.items()

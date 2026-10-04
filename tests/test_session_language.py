@@ -70,6 +70,55 @@ def test_number_only_input_cannot_lock_language_from_misleading_metadata(
     assert state.language == "en" and state.language_locked
 
 
+@pytest.mark.parametrize("weak", ["Yeah.", "Yep!"])
+@pytest.mark.parametrize("metadata", ["english", "estonian", "russian"])
+def test_short_acknowledgement_does_not_lock_before_a_clear_booking(
+    make_state, weak, metadata
+):
+    state = make_state("et")
+    state.observe_user_text(weak, detected_language=metadata)
+    assert state.language == "et" and not state.language_locked
+    assert not state.pending and not state.bookings
+    state.observe_user_text(
+        "Soovin homme lauda neljale inimesele kell kuus õhtul.",
+        detected_language="english",
+    )
+    assert state.language == "et" and state.language_locked
+    assert trusted_booking_response(state) == {
+        "name": "plan_restaurant_reservation",
+        "arguments": {"date": tomorrow(), "start_time": "18:00", "party_size": 4},
+    }
+
+
+@pytest.mark.parametrize("weak", ["Yeah.", "Yep!"])
+def test_audio_http_short_acknowledgement_does_not_choose_language(client, weak):
+    session = start(client, "auto")["session_id"]
+    recognizer = MetadataRecognition()
+    client.app.state.stack["stt"] = recognizer
+    body = {
+        "session_id": session,
+        "audio_b64": base64.b64encode(b"synthetic-audio").decode(),
+    }
+    recognizer.text, recognizer.source = weak, "en"
+    premature = client.post("/api/turn", headers=AUTH, json=body)
+    assert premature.status_code == 200
+    tools = client.app.state.demo_sessions.sessions[session].tools
+    assert premature.json()["language"] == "et" and not tools.language_locked
+    assert premature.json()["booking_changes"] == [] and not tools.bookings
+    recognizer.text = "Soovin homme lauda neljale inimesele kell kuus õhtul."
+    recognizer.source = "et"
+    reply = client.post("/api/turn", headers=AUTH, json=body)
+    assert reply.status_code == 200
+    assert reply.json()["language"] == "et"
+    assert reply.json()["reply"].endswith(COPY["et"]["confirmation_question"])
+    assert reply.json()["recap_delivery_id"] and reply.json()["booking_changes"] == []
+    assert tools.pending["recap"]["date"] == tomorrow()
+    assert tools.pending["recap"]["start"].endswith("18:00:00")
+    assert tools.pending["recap"]["party_size"] == 4
+    assert not tools.pending["delivery"] and not tools.pending["approved"]
+    assert not tools.bookings
+
+
 def test_english_booking_details_keep_language_and_values(make_state):
     state = make_state()
     for text, metadata, question in [
