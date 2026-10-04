@@ -11,17 +11,16 @@ import unicodedata
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
+from .restaurant_date_spelling import CalendarSpelling
 from .restaurant_date_vocabulary import (
     ENGLISH_CARDINALS,
     ENGLISH_DAY_FORMS,
     ENGLISH_MONTH_FORMS,
+    RUSSIAN_COUNTS,
     RUSSIAN_DAY_FORMS,
     RUSSIAN_MONTH_FORMS,
-    RUSSIAN_COUNTS,
 )
-from .restaurant_date_spelling import CalendarSpelling
 from .restaurant_date_years import SpokenYears
-
 
 CASE_ENDINGS = (
     "",

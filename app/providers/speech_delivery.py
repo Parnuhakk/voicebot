@@ -21,7 +21,7 @@ class SpeechDelivery:
     mode: str = "natural"
     rate: float = 1.12
     recap_rate: float = 1.00
-    sentence_pause_ms: int = 120
+    sentence_pause_ms: int = 0
     native_timing: bool = False
 
     def __post_init__(self) -> None:
@@ -31,7 +31,8 @@ class SpeechDelivery:
             or not 0.85 <= self.recap_rate <= 1.15
             or isinstance(self.sentence_pause_ms, bool)
             or not isinstance(self.sentence_pause_ms, int)
-            or not 100 <= self.sentence_pause_ms <= 500
+            or self.sentence_pause_ms != 0
+            and not 100 <= self.sentence_pause_ms <= 500
             or not isinstance(self.native_timing, bool)
         ):
             raise ValueError("invalid speech delivery configuration")
@@ -341,15 +342,14 @@ def speech_markup(
         body = f'<mstts:express-as style="friendly" styledegree="0.8">{body}</mstts:express-as>'
     elif voice == "en-GB-RyanNeural" and language == "en-GB":
         body = f'<mstts:express-as style="chat" styledegree="0.8">{body}</mstts:express-as>'
-    # Short sentence pauses keep replies conversational. Recaps retain the
-    # provider's default pauses so dates and consent remain easy to follow.
-    # Russian neural voices keep their own sentence timing and question
-    # intonation. An identical forced pause after every sentence flattens it.
+    # Let the provider use natural timing by default. Fixed pauses are only
+    # for explicitly constructed legacy delivery profiles, never recap speech.
     if (
         not recap
         and language != "ru-RU"
         and not delivery.native_timing
         and not multilingual
+        and delivery.sentence_pause_ms > 0
     ):
         body = (
             f'<mstts:silence type="Sentenceboundary-exact" '

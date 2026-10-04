@@ -125,6 +125,28 @@ def test_clock_tail_validation_leaves_adjacent_guest_counts_alone(text):
     }
 
 
+@pytest.mark.parametrize(
+    "count,party",
+    [
+        ("ühele", 1),
+        ("kahele", 2),
+        ("kolmele", 3),
+        ("neljale", 4),
+        ("viiele", 5),
+        ("kuuele", 6),
+        ("seitsmele", 7),
+        ("kaheksale", 8),
+    ],
+)
+def test_dative_guest_counts_after_the_hour_are_not_minutes(count, party):
+    assert parse_restaurant_request(f"Soovin lauda homme kell 14 {count}", now=NOW) == {
+        "date": "2026-10-04",
+        "start_time": "14:00",
+        "party_size": party,
+    }
+    assert parse_spoken_time(f"kell kuus {count} õhtul").value == "18:00"
+
+
 @pytest.mark.parametrize("date_reply", [False, True])
 @pytest.mark.parametrize(
     "text",

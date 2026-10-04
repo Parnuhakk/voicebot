@@ -16,8 +16,8 @@ from app.providers.azure_voices import validated_voice
 from app.providers.demo_voices import DemoVoices
 from app.providers.speech_delivery import SpeechDelivery
 from app.providers.voice_config import SpeechConfig
-from tests.test_azure_voice_profiles import MP3, MSTTS, SSML, voice
 from tests import test_azure_voice_profiles
+from tests.test_azure_voice_profiles import MP3, MSTTS, SSML, voice
 from tests.test_restaurant_http import AUTH
 
 XML_LANG = "{http://www.w3.org/XML/1998/namespace}lang"
@@ -28,12 +28,23 @@ client = test_azure_voice_profiles.client
 
 def expected_voice(profile, language):
     if language == "et":
-        return "et-EE-AnuNeural" if profile == PROFILES[0] else "et-EE-KertNeural"
+        return (
+            "en-US-NovaTurboMultilingualNeural"
+            if profile == PROFILES[0]
+            else "et-EE-KertNeural"
+        )
     return (
         "en-US-EmmaMultilingualNeural"
         if profile == PROFILES[0]
         else "en-US-AndrewMultilingualNeural"
     )
+
+
+def test_conversational_catalog_names_the_new_estonian_speaker(azure):
+    speaker, _ = azure
+    catalog = DemoVoices.from_env({}).catalog(azure=speaker)
+    profile = next(row for row in catalog if row["id"] == "azure-conversational")
+    assert profile["label"] == "Nova Turbo / Emma (conversational)"
 
 
 @pytest.mark.parametrize("profile", PROFILES)
@@ -73,10 +84,13 @@ def test_session_keeps_conversational_voice_for_greeting_and_followup(
     assert all(doc.find(".//" + MSTTS + "silence") is None for doc in requests)
     for doc in requests:
         lang = doc.find(".//" + SSML + "lang")
-        if language == "et":
+        if language == "et" and profile == "azure-conversational-male":
             assert lang is None
         else:
-            assert lang.get(XML_LANG) == {"en": "en-US", "ru": "ru-RU"}[language]
+            assert (
+                lang.get(XML_LANG)
+                == {"et": "et-EE", "en": "en-US", "ru": "ru-RU"}[language]
+            )
     assert speaker._voice == "et-EE-AnuNeural"
     assert speaker._delivery == SpeechDelivery()
 
@@ -270,6 +284,6 @@ def test_native_sdk_russian_multilingual_locale_and_switch_use_complete_markup()
         assert requests[1].find(".//" + SSML + "lang").get(XML_LANG) == "en-US"
         assert all(doc.find(".//" + MSTTS + "silence") is None for doc in requests[:2])
         assert requests[2].find(".//" + SSML + "lang") is None
-        assert requests[2].find(".//" + MSTTS + "silence").get("value") == "120ms"
+        assert requests[2].find(".//" + MSTTS + "silence") is None
 
     asyncio.run(run())

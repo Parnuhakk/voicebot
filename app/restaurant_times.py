@@ -183,7 +183,8 @@ def _number_words() -> dict[str, int]:
 NUMBERS = _number_words()
 NUMBERS.update(ESTONIAN_COUNTS)
 MINUTES = {
-    **NUMBERS,
+    # Dative Estonian numbers identify diners ("neljale"), not minutes.
+    **{word: value for word, value in NUMBERS.items() if not word.endswith("le")},
     **{
         f"null {word}": digit
         for digit, word in enumerate(

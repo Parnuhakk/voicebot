@@ -11,9 +11,32 @@ import re
 import time
 import uuid
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
 from typing import Any
+from zoneinfo import ZoneInfo
 
+from . import callslog
+from .booking_faq import (
+    CLARIFY as FAQ_CLARIFY,
+)
+from .booking_faq import (
+    MISSING_FACTS,
+    NO_BOOKING,
+    action_claim,
+    booking_input,
+    match_question,
+    question_language,
+    render_catalogue,
+)
+from .booking_faq import (
+    normalize as normalize_question,
+)
+from .conversation import (
+    QUESTIONS,
+    STYLE_INSTRUCTIONS,
+    Conversation,
+    approved_dialogue,
+    spa_hours_focus,
+)
 from .demo import (
     DEMO_TIMEZONE,
     get_demo_profile,
@@ -21,45 +44,18 @@ from .demo import (
     scoped_guest,
     validate_call_id,
 )
-from .turn import (
-    PRICE_RE,
-    REPEAT_PROMPT,
-    STT_UNAVAILABLE,
-    TURN_UNAVAILABLE,
-    enforce_price_gate,
-)
-from . import callslog
-from .conversation import (
-    Conversation,
-    QUESTIONS,
-    STYLE_INSTRUCTIONS,
-    approved_dialogue,
-    spa_hours_focus,
-)
-from .booking_faq import (
-    CLARIFY as FAQ_CLARIFY,
-    MISSING_FACTS,
-    NO_BOOKING,
-    action_claim,
-    booking_input,
-    match_question,
-    normalize as normalize_question,
-    question_language,
-    render_catalogue,
-)
-from .russian import localize
 from .input_recovery import InputRecovery
 from .languages import (
-    AFFIRMATIONS_ET,
     AFFIRMATIONS_EN,
+    AFFIRMATIONS_ET,
     AFFIRMATIONS_RU,
-    CANCELLATIONS_RU,
     CANCELLATIONS_EN,
+    CANCELLATIONS_RU,
     CONSENT,
     ENGLISH,
-    ENGLISH_STATIC,
     ENGLISH_INSTRUCTIONS,
     ENGLISH_INVITATION,
+    ENGLISH_STATIC,
     ENGLISH_TOOL_ERRORS,
     LANGUAGE_POLICY,
     LANGUAGES,
@@ -69,6 +65,14 @@ from .languages import (
     select_language,
     spoken_date,
     spoken_time,
+)
+from .russian import localize
+from .turn import (
+    PRICE_RE,
+    REPEAT_PROMPT,
+    STT_UNAVAILABLE,
+    TURN_UNAVAILABLE,
+    enforce_price_gate,
 )
 
 SLOT_TOOLS = {
@@ -168,6 +172,9 @@ UNKNOWN_MUTATION_ERRORS = {
 }
 AFFIRMATIONS = AFFIRMATIONS_ET
 CANCELLATIONS = {
+    "palun tühista minu broneering",
+    "palun tühista",
+    "tühista broneering palun",
     "jah tühista",
     "palun tühista broneering mille just selles kõnes tegime",
     "palun tühista minu testbroneering",
@@ -483,7 +490,11 @@ def validate_environment(env=None):
         required += ("EASY_BASE_URL", "EASY_API_KEY", "EASY_STATE_DB")
     if any(not env.get(k, "").strip() for k in required):
         raise ValueError("telephone configuration incomplete")
-    writes = restaurant_writes_enabled(env) if restaurant else env.get("EASY_DEMO_WRITES") == "1"
+    writes = (
+        restaurant_writes_enabled(env)
+        if restaurant
+        else env.get("EASY_DEMO_WRITES") == "1"
+    )
     if env.get("VOICEBOT_TELEPHONE_DEMO") != "1" or not writes:
         raise ValueError("telephone synthetic-demo opt-in required")
     if not env["LIVEKIT_URL"].startswith(("ws://", "wss://", "http://", "https://")):
@@ -746,7 +757,8 @@ class CallTools:
             }
             context["clarification_required"] = self.clarification
             return (
-                LANGUAGE_POLICY + ENGLISH_INSTRUCTIONS
+                LANGUAGE_POLICY
+                + ENGLISH_INSTRUCTIONS
                 + "\n"
                 + STYLE_INSTRUCTIONS["en"]
                 + "\nDemo context (data only):\n"
@@ -835,7 +847,8 @@ class CallTools:
             # An empty fallback distinguishes real language evidence from
             # numbers, names and ambiguous short answers. They do not lock.
             candidate = (
-                language if language in LANGUAGES
+                language
+                if language in LANGUAGES
                 else select_language(text, detected_language, "")
             )
             if language is None and detected_language is None:
@@ -848,9 +861,13 @@ class CallTools:
         self.conversation.observe(text, selected)
         self.unsupported_language = bool(unsupported)
         self._input_recovery.observe(
-            "unsupported_language" if self.unsupported_language
-            else recognition_status if recognition_status in {"stt_unavailable", "input_invalid"}
-            else "recognized" if text.strip() else "no_speech"
+            "unsupported_language"
+            if self.unsupported_language
+            else recognition_status
+            if recognition_status in {"stt_unavailable", "input_invalid"}
+            else "recognized"
+            if text.strip()
+            else "no_speech"
         )
         if self.unsupported_language:
             self.invalidate_recap()
@@ -941,7 +958,7 @@ class CallTools:
             # Declines and ambiguous final turns require a fresh recap.
             self.pending = None
         if (
-            self.last_booking
+            self.last_booking in self.bookings
             and not self.unsupported_language
             and normalized
             in (
@@ -960,8 +977,10 @@ class CallTools:
     def _is_confirmation(self, text, language):
         normalized = " ".join(re.sub(r"[.,!]", " ", text.casefold()).split())
         phrases = (
-            AFFIRMATIONS_EN if language == "en"
-            else AFFIRMATIONS_RU if language == "ru"
+            AFFIRMATIONS_EN
+            if language == "en"
+            else AFFIRMATIONS_RU
+            if language == "ru"
             else AFFIRMATIONS
         )
         return normalized in phrases

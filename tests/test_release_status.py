@@ -4,8 +4,8 @@ import json
 import time
 from unittest.mock import patch
 
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 
 from app import release_status as releases
 from app.server import create_app
@@ -197,7 +197,7 @@ def test_public_status_exposes_receipt_without_claiming_real_carrier_verificatio
     assert response.headers["Cache-Control"] == "no-store"
     telephone = response.json()["telephone"]
     assert telephone["release"]["status"] == "in_sync"
-    assert telephone["sentence_pause_ms"] == 120
+    assert telephone["sentence_pause_ms"] == 0
     assert telephone["carrier_call_verified"] is False
     assert telephone["public_ingress_verified"] is False
 

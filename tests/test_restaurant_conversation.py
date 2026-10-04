@@ -10,10 +10,10 @@ import pytest
 from app.booking.restaurant import RestaurantAdapter
 from app.booking_response import trusted_booking_response
 from app.business import restaurant_dispatcher
+from app.call_factory import make_call_tools
 from app.languages import AFFIRMATIONS_ET, CONSENT, ENGLISH_INVITATION, select_language
 from app.restaurant_call import COPY, parse_restaurant_request, restaurant_spoken_date
 from app.restaurant_data import load_restaurant_data
-from app.call_factory import make_call_tools
 
 
 @pytest.fixture

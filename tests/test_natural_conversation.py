@@ -1,21 +1,22 @@
 """Conversational delivery keeps booking truth and recap delivery authoritative."""
 
 import asyncio
+import xml.etree.ElementTree as ET
 from contextlib import asynccontextmanager
 from types import SimpleNamespace as NS
 from unittest.mock import Mock, patch
-import xml.etree.ElementTree as ET
 
 import httpx
 import pytest
 
-from app.conversation import Conversation, QUESTIONS, approved_dialogue, intent_for
+from app.conversation import QUESTIONS, Conversation, approved_dialogue, intent_for
 from app.languages import CONSENT, ENGLISH
 from app.providers.azure_tts import AzureTtsClient, ssml
 from app.providers.speech_delivery import SpeechDelivery, spoken_estonian_date
-from app.telephone import CallTools, UNKNOWN_REPLY, UNVERIFIED_REPLY
+from app.telephone import UNKNOWN_REPLY, UNVERIFIED_REPLY, CallTools
+from tests.test_product_demo import SimpleLlm, send, start
+from tests.test_product_demo import client as demo_client
 from tests.test_telephone import Slots, prepared
-from tests.test_product_demo import SimpleLlm, client as demo_client, send, start
 
 client = demo_client
 SSML = "{http://www.w3.org/2001/10/synthesis}"
@@ -529,9 +530,10 @@ def test_http_retry_keeps_the_same_voice_markup_and_recap_rate():
 
 def test_native_social_reply_uses_public_llm_node_without_model_request():
     pytest.importorskip("livekit.agents")
-    from app.worker import TelephoneAgent
     from livekit.agents import llm
     from livekit.agents.voice.agent import ModelSettings
+
+    from app.worker import TelephoneAgent
 
     async def run():
         state = CallTools(Slots(), language="en")
@@ -552,9 +554,10 @@ def test_native_social_reply_uses_public_llm_node_without_model_request():
 
 def test_native_booking_request_still_uses_provider_planning():
     pytest.importorskip("livekit.agents")
-    from app.worker import TelephoneAgent
     from livekit.agents import llm
     from livekit.agents.voice.agent import ModelSettings
+
+    from app.worker import TelephoneAgent
 
     async def run():
         state = CallTools(Slots(), language="en")
@@ -581,10 +584,11 @@ def test_late_completion_of_old_recap_cannot_authorize_repeated_or_switched_reca
     utterance,
 ):
     pytest.importorskip("livekit.agents")
-    from app.worker import TelephoneAgent
     from livekit import rtc
     from livekit.agents import llm
     from livekit.agents.voice.speech_handle import SpeechHandle
+
+    from app.worker import TelephoneAgent
 
     async def run():
         state = CallTools(Slots())
