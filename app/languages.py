@@ -238,7 +238,12 @@ def select_language(text: str, detected: object, current: str) -> str:
         return "ru"
     if normalized in AFFIRMATIONS_ET | {"jah tühista"}:
         return "et"
-    if not re.search(r"[^\W\d_]", text) or normalized in {
+    if not re.search(r"[^\W\d_]", text) or normalized.rstrip(" ?") in {
+        "ja",
+        "jaa",
+        "yah",
+        "ya",
+        "ah",
         "yes",
         "yeah",
         "yep",
