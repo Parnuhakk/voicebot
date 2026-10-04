@@ -389,7 +389,7 @@ async page => {
     await page.locator('#reservation-party').fill('4');
     await page.locator('#reservation-prepare').click();
     await page.waitForFunction(()=>reservation.holdId && !reservation.busy);
-    assert((await page.locator('#reservation-recap-text').textContent()).includes(language.code === 'ru' ? 'на четырёх гостей' : '4'));
+    assert((await page.locator('#reservation-recap-text').textContent()).includes({et:'Külalisi: 4',en:'Guests: 4',ru:'Гостей: 4'}[language.code]));
     assert(await page.locator('#reservation-date').isDisabled(),'held recap allowed editable dates');
     assert(await page.getByRole('radio', {name:'Eesti', exact:true}).isDisabled(),'owned booking language changed');
     assert(await page.locator('#reservation-confirm').isDisabled(),'recap automatically granted consent');

@@ -172,6 +172,7 @@ const TEXT = {
   receiptGuests: ["Külalisi", "Guests", "Гостей"],
   receiptTable: ["Laud", "Table", "Столик"],
   receiptNumber: ["Broneeringu number", "Reservation number", "Номер бронирования"],
+  recapGuestName: ["Külalise nimi", "Guest name", "Имя гостя"],
   skip: ["Hüppa sisu juurde", "Skip to content", "Перейти к содержимому"],
   brand: ["Restorani vastuvõtt", "Restaurant reception", "Ресепшн ресторана"],
   title: [
@@ -246,6 +247,11 @@ const TEXT = {
     "Сначала подключитесь с токеном оператора.",
   ],
   exampleTable: ["Lauabroneering", "Table reservation", "Бронирование столика"],
+  exampleIncomplete: [
+    "Puuduva ajaga soov",
+    "Missing-time request",
+    "Запрос без времени",
+  ],
   exampleMenu: ["Menüü", "Menu", "Меню"],
   exampleRecommendation: ["Toidusoovitus", "Food recommendation", "Совет по меню"],
   exampleHours: ["Lahtiolekuajad", "Opening hours", "Часы работы"],
@@ -305,6 +311,41 @@ const TEXT = {
   ],
   date: ["Kuupäev", "Date", "Дата"],
   time: ["Saabumisaeg", "Arrival time", "Время прибытия"],
+  timeHelp: [
+    "Kuupäev ja saabumisaeg on Tallinna ajas. Vali aeg {step}-minutilise sammuga.",
+    "Dates and arrival times use Tallinn time. Choose a time in {step}-minute steps.",
+    "Дата и время прибытия указаны по времени Таллина. Выберите время с шагом {step} минут.",
+  ],
+  dateRequired: [
+    "Vali broneeringu kuupäev.",
+    "Choose a reservation date.",
+    "Выберите дату бронирования.",
+  ],
+  dateInvalid: [
+    "Vali kuupäev vahemikus {min}–{max} (Tallinna aeg).",
+    "Choose a date from {min}–{max} (Tallinn time).",
+    "Выберите дату от {min} до {max} (время Таллина).",
+  ],
+  timeRequired: [
+    "Vali saabumisaeg (Tallinna aeg).",
+    "Choose an arrival time (Tallinn time).",
+    "Выберите время прибытия (время Таллина).",
+  ],
+  timeInvalid: [
+    "Vali saabumisaeg {step}-minutilise sammuga (Tallinna aeg).",
+    "Choose an arrival time in {step}-minute steps (Tallinn time).",
+    "Выберите время прибытия с шагом {step} минут (время Таллина).",
+  ],
+  timePast: [
+    "Vali tulevane saabumisaeg (Tallinna aeg).",
+    "Choose a future arrival time (Tallinn time).",
+    "Выберите будущее время прибытия (время Таллина).",
+  ],
+  partyInvalid: [
+    "Sisesta täisarv: 1–{max} külalist koos lastega. Suurema grupi puhul pöördu personali poole.",
+    "Enter a whole number: 1–{max} guests including children. Contact staff for a larger group.",
+    "Введите целое число: 1–{max} гостей, включая детей. Для большей группы обратитесь к персоналу.",
+  ],
   party: [
     "Külalisi koos lastega",
     "Guests including children",
@@ -328,9 +369,9 @@ const TEXT = {
     "Отменить это бронирование",
   ],
   capacityHelp: [
-    "Suure grupi ja erisoovid peab kinnitama personal.",
-    "Staff must confirm large groups and special requests.",
-    "Большие группы и особые пожелания подтверждает персонал.",
+    "Demo: 1–{max} külalist koos lastega. Suurema grupi ja erisoovid kinnitab personal.",
+    "Demo: 1–{max} guests including children. Staff must confirm larger groups and special requests.",
+    "Демо: 1–{max} гостей, включая детей. Большие группы и особые пожелания подтверждает персонал.",
   ],
   bookingsTitle: [
     "Lauabroneeringud",
@@ -611,22 +652,79 @@ function reservationRequest() {
 function sameReservationRequest() {
   return JSON.stringify(reservationRequest()) === JSON.stringify(reservation.proposalRequest);
 }
-function showReservationProposal(data, requestedAt) {
-  if (typeof data.hold_id !== "string" || !data.hold_id ||
-      typeof data.recap_text !== "string" || !data.recap_text.trim() ||
-      typeof data.recap_delivery_id !== "string" || !/^[a-f0-9]{32}$/.test(data.recap_delivery_id) ||
-      typeof data.recap?.date !== "string" ||
-      !Number.isFinite(data.recap_expires_in_s) || data.recap_expires_in_s <= 0)
-    throw new Error("invalid proposal");
+function validatePreparation(data, requested, expectedHoldId) {
+  const recap = data?.recap,
+    table = state.restaurant.tables.find((item) => item.id === recap?.providerId),
+    guestName = [data?.guest?.firstName, data?.guest?.lastName].join(" ");
+  if (
+    data?.ok !== true ||
+    data.error ||
+    data.restaurant_unavailable ||
+    data.synthetic !== true ||
+    data.kind !== "slot" ||
+    data.business_type !== "restaurant" ||
+    typeof data.hold_id !== "string" ||
+    !data.hold_id.trim() ||
+    (expectedHoldId && data.hold_id !== expectedHoldId) ||
+    typeof data.guest_fixture_id !== "string" ||
+    !data.guest_fixture_id.trim() ||
+    typeof data.recap_text !== "string" ||
+    !data.recap_text.trim() ||
+    typeof data.recap_delivery_id !== "string" ||
+    !/^[a-f0-9]{32}$/.test(data.recap_delivery_id) ||
+    !Number.isFinite(data.recap_expires_in_s) ||
+    data.recap_expires_in_s <= 0 ||
+    recap?.date !== requested.date ||
+    recap?.start !== `${requested.date}T${requested.start_time}:00` ||
+    recap?.party_size !== requested.party_size ||
+    recap?.timezone !== "Europe/Tallinn" ||
+    recap?.restaurant_name !== state.restaurant.name ||
+    typeof recap?.provider_name !== "string" ||
+    !recap.provider_name.trim() ||
+    !table || table.name !== recap.provider_name || table.capacity < requested.party_size ||
+    typeof recap?.guest_name !== "string" ||
+    !recap.guest_name.trim() ||
+    recap.guest_name !== guestName ||
+    recap?.duration_minutes !== state.restaurant.reservation_duration_minutes
+  )
+    throw new Error("Invalid reservation result");
+}
+function showReservationProposal(data, requestedAt, expectedHoldId = null) {
+  const requested = reservation.proposalRequest;
+  try {
+    validatePreparation(data, requested, expectedHoldId);
+  } catch (error) {
+    // The current prepare/renew epoch already retired earlier reads. Keep that
+    // epoch so its catch/finally can announce failure and release controls.
+    clearReservationClock();
+    reservation.holdId = reservation.renewalHoldId = reservation.expiresAt = null;
+    reservation.recapDeliveryId = reservation.recapText = reservation.recapLanguage = null;
+    reservation.proposalRequest = reservation.date = null;
+    reservation.acknowledged = false;
+    $("reservation-recap").hidden = $("reservation-renew").hidden = true;
+    $("reservation-recap-text").textContent = "";
+    throw error;
+  }
+  const copy = demoCopy();
+  // Bind the exact displayed structured facts to the current receipt/locale.
+  // Canonical read guards still compare this snapshot with the live DOM text.
+  const text = [
+    data.recap.restaurant_name,
+    `${copy.receiptDate}: ${formatBookingDate(data.recap.date)}`,
+    `${copy.receiptTime}: ${requested.start_time} (${data.recap.duration_minutes} min)`,
+    `${copy.receiptGuests}: ${requested.party_size}`,
+    `${copy.receiptTable}: ${data.recap.provider_name}`,
+    `${copy.recapGuestName}: ${data.recap.guest_name}`,
+  ].join(" · ");
   clearReservationClock();
   reservation.holdId = reservation.renewalHoldId = data.hold_id;
   reservation.recapDeliveryId = data.recap_delivery_id;
-  reservation.recapText = data.recap_text;
+  reservation.recapText = text;
   reservation.recapLanguage = state.demoLanguage;
   reservation.acknowledged = false;
   reservation.date = data.recap.date;
   reservation.expiresAt = requestedAt + data.recap_expires_in_s * 1000;
-  $("reservation-recap-text").textContent = data.recap_text;
+  $("reservation-recap-text").textContent = text;
   $("reservation-recap").hidden = false;
   $("reservation-renew").hidden = false;
   startReservationClock();
@@ -680,6 +778,7 @@ function localize() {
     ru: "Прослушайте или прочитайте итог бронирования. Если всё подходит, ответьте утвердительно или нажмите кнопку подтверждения. «Да, отмените.» отменяет только бронирование из этого разговора. Не вводите настоящие контакты.",
   }[uiLanguage()];
   renderInformation();
+  renderReservationGuidance();
   renderVoices();
   controls();
 }
@@ -1323,6 +1422,66 @@ async function endDemo() {
     }
   }
 }
+function renderReservationGuidance() {
+  const copy = demoCopy();
+  $("reservation-party-help").textContent = copy.capacityHelp.replace(
+    "{max}",
+    $("reservation-party").max,
+  );
+  $("reservation-time-help").textContent = copy.timeHelp.replace(
+    "{step}",
+    Number($("reservation-time").step) / 60,
+  );
+}
+function validateReservation(focus = true) {
+  const copy = demoCopy(),
+    form = $("reservation-form"),
+    date = $("reservation-date"),
+    time = $("reservation-time"),
+    party = $("reservation-party"),
+    hadErrors = !!form.querySelector('[aria-invalid="true"]');
+  date.min = tallinnDay();
+  date.max = tallinnDay(state.restaurant?.advance_days ?? 90);
+  const now = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Tallinn",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date());
+  time.setCustomValidity(
+    date.value === date.min && time.value && time.value <= now
+      ? copy.timePast
+      : "",
+  );
+  const messages = {
+    [date.id]:
+      date.validity.valueMissing || date.validity.badInput
+        ? copy.dateRequired
+        : copy.dateInvalid.replace("{min}", date.min).replace("{max}", date.max),
+    [time.id]: time.validity.customError
+      ? copy.timePast
+      : time.validity.valueMissing || time.validity.badInput
+        ? copy.timeRequired
+        : copy.timeInvalid.replace("{step}", Number(time.step) / 60),
+    [party.id]: copy.partyInvalid.replace("{max}", party.max),
+  };
+  let first;
+  for (const input of [date, time, party]) {
+    const error = $(input.id + "-error");
+    error.hidden = input.validity.valid;
+    error.textContent = input.validity.valid ? "" : messages[input.id];
+    if (input.validity.valid) input.removeAttribute("aria-invalid");
+    else {
+      input.setAttribute("aria-invalid", "true");
+      first ||= input;
+    }
+  }
+  if (first) {
+    status("reservation-status", messages[first.id], "error");
+    if (focus) first.focus();
+  } else if (hadErrors) status("reservation-status", copy.reservationReady);
+  return !first;
+}
 async function prepareReservation() {
   if (
     !state.connected ||
@@ -1333,6 +1492,7 @@ async function prepareReservation() {
     reservation.bookingId
   )
     return;
+  if (!validateReservation()) return;
   if (reservation.renewalHoldId && sameReservationRequest())
     return renewReservation();
   clearReservationRecap();
@@ -1371,11 +1531,20 @@ async function prepareReservation() {
       !state.connected
     )
       return;
-    if (data.restaurant_unavailable || !data.ok) {
+    if (data?.restaurant_unavailable === true && !data.error && data.ok !== true) {
+      if (
+        !Array.isArray(data.alternatives) ||
+        data.alternatives.some(
+          (time) =>
+            typeof time !== "string" ||
+            !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time),
+        )
+      )
+        throw new Error("Invalid availability result");
       status(
         "reservation-status",
         demoCopy().unavailable +
-          (data.alternatives?.length ? " " + data.alternatives.join(", ") : ""),
+          (data.alternatives.length ? " " + data.alternatives.join(", ") : ""),
         "error",
       );
       return;
@@ -1385,7 +1554,8 @@ async function prepareReservation() {
       ? demoCopy().recapTitle : demoCopy().proposalExpired);
   } catch (error) {
     if (generation === state.generation && epoch === reservation.epoch)
-      status("reservation-status", demoCopy().failed, "error");
+      status("reservation-status", error.code === "slot_unavailable"
+        ? demoCopy().unavailable : demoCopy().failed, "error");
   } finally {
     if (generation === state.generation && epoch === reservation.epoch) {
       reservation.busy = false;
@@ -1474,8 +1644,7 @@ async function renewReservation() {
       session_id: session, hold_id: hold,
     });
     if (generation !== state.generation || session !== reservation.sessionId || epoch !== reservation.epoch) return;
-    if (!data.ok || data.error) throw new Error("invalid proposal");
-    showReservationProposal(data, requestedAt);
+    showReservationProposal(data, requestedAt, hold);
     status("reservation-status", currentReservationProposal()
       ? demoCopy().proposalRenewed : demoCopy().proposalExpired);
   } catch (error) {
@@ -1712,6 +1881,7 @@ function renderInformation() {
   $("reservation-duration").textContent =
     data.reservation_duration_minutes + " min";
   $("reservation-date").max = tallinnDay(data.advance_days);
+  renderReservationGuidance();
   $("service-status").textContent = state.voiceReady
     ? demoCopy().voiceConfigured
     : demoCopy().voiceMissing;
@@ -1818,6 +1988,8 @@ $("demo-language").addEventListener("change", (event) => {
         : demoCopy().bookingMissing
       : demoCopy().signIn,
   );
+  if ($("reservation-form").querySelector('[aria-invalid="true"]'))
+    validateReservation(false);
 });
 $("demo-recap-read").addEventListener("click", () => {
   acknowledgeRecap(state.recap);
@@ -1829,6 +2001,11 @@ for (const button of document.querySelectorAll("[data-example]"))
         "Soovin broneerida laua.",
         "I'd like to reserve a table.",
         "Я хочу забронировать столик.",
+      ],
+      incomplete: [
+        "Soovin homme lauda neljale.",
+        "I'd like a table for four tomorrow.",
+        "Хочу столик на четверых завтра.",
       ],
       menu: ["Milline on menüü?", "What is on the menu?", "Что есть в меню?"],
       recommendation: [
@@ -1851,6 +2028,18 @@ for (const button of document.querySelectorAll("[data-example]"))
 $("reservation-form").addEventListener("submit", (event) => {
   event.preventDefault();
   prepareReservation();
+});
+$("reservation-form").addEventListener(
+  "invalid",
+  (event) => {
+    event.preventDefault();
+    validateReservation();
+  },
+  true,
+);
+$("reservation-form").addEventListener("input", () => {
+  if ($("reservation-form").querySelector('[aria-invalid="true"]'))
+    validateReservation(false);
 });
 $("reservation-read").addEventListener("click", readReservation);
 $("reservation-renew").addEventListener("click", renewReservation);

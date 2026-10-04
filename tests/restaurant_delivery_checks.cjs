@@ -262,6 +262,14 @@ for (const statusCode of [200, 503]) test(`private ${statusCode} JSON is retired
       await sleep(100);
     }
     if (!ready) throw new Error('local restaurant fixture failed: ' + (spawnError?.message || diagnostics));
+    // Derive the positive direct payload from this disposable server, not a
+    // recap skeleton. Keep per-case receipt/ack mutations below independent.
+    const headers = {Authorization:'Bearer restaurant-fixture-operator', 'Content-Type':'application/json'};
+    const session = await (await fetch(origin + '/api/booking/session', {method:'POST', headers, body:JSON.stringify({language:'en'}), signal:AbortSignal.timeout(5000)})).json();
+    const day = new Date(Date.now() + 86400000).toLocaleDateString('en-CA', {timeZone:'Europe/Tallinn'});
+    const preparation = await (await fetch(origin + '/api/restaurant/reservation/prepare', {method:'POST', headers, body:JSON.stringify({session_id:session.session_id, date:day, start_time:'14:00', party_size:4}), signal:AbortSignal.timeout(5000)})).json();
+    assert.equal(preparation.ok, true); assert.match(preparation.recap_delivery_id, /^[a-f0-9]{32}$/); assert(preparation.recap_expires_in_s > 0);
+    assert.equal((await fetch(origin + '/api/demo/session/' + session.session_id, {method:'DELETE', headers, signal:AbortSignal.timeout(5000)})).status, 200);
     browser = await chromium.launch({headless:true});
     for (const {name, run} of cases.filter(item => !process.argv[4] || item.name.includes(process.argv[4]))) {
       const context = await browser.newContext({serviceWorkers:'block'}), external = [], errors = [];
@@ -286,7 +294,10 @@ for (const statusCode of [200, 503]) test(`private ${statusCode} JSON is retired
         if (endpoint === '/api/catalogue' && f.catalogueStatus) return json({detail:'fixture failure'}, f.catalogueStatus);
         if (endpoint === '/api/turn') return json({reply:'Fictional restaurant recap: four guests, 90 minutes.', language:'en', text_heard:body.text || 'Fictional audio', outcome:'tts_failed', tts_failed:true, audio_b64:'', recap_delivery_id:posts(f, endpoint).length === 1 ? receipt : null, recap_expires_in_s:60, booking_changes:[]});
         if (endpoint === '/api/booking/session') return json({session_id:'direct-fixture'});
-        if (endpoint === '/api/restaurant/reservation/prepare') return json({ok:true, hold_id:'hold-fixture', recap_delivery_id:f.receipt, recap_expires_in_s:60, recap:{date:body.date}, recap_text:'Fictional table for four guests at 14:00; 90 minutes.'});
+        if (endpoint === '/api/restaurant/reservation/prepare') {
+          assert.equal(body.date, preparation.recap.date); assert.equal(body.start_time, '14:00'); assert.equal(body.party_size, 4);
+          return json({...preparation, hold_id:'hold-fixture', recap_delivery_id:f.receipt, recap_expires_in_s:60});
+        }
         if (endpoint === '/api/booking/recap') {
           if (f.stallRecap) await new Promise(resolve => {f.releaseRecap = resolve;});
           return json({acknowledged:f.acknowledged, hold_id:f.ackHold || body.hold_id});

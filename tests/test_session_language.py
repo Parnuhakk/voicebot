@@ -195,6 +195,43 @@ def test_first_english_social_turn_can_select_english(make_state, text):
     assert state.language == "en" and state.language_locked
 
 
+@pytest.mark.parametrize(
+    "text", ["Do the dishes contain nuts?", "Do the rooms have Wi-Fi? Two adults."]
+)
+def test_first_english_do_the_question_selects_language_without_a_hint(
+    make_state, text
+):
+    state = make_state()
+    assert state.language == "et" and not state.language_locked
+    state.observe_user_text(text)
+    assert state.language == "en" and state.language_locked
+    state.observe_user_text("14:00", detected_language="estonian")
+    assert state.language == "en" and state.pending is None and not state.bookings
+
+
+@pytest.mark.parametrize(
+    "text", ["Do the dishes contain nuts?", "Do the rooms have Wi-Fi? Two adults."]
+)
+def test_http_first_english_do_the_question_overrides_initial_estonian_voice(
+    client, text
+):
+    identifier = start(client, "et")["session_id"]
+    response = client.post(
+        "/api/turn",
+        headers=AUTH,
+        json={
+            "session_id": identifier,
+            "language": "et",
+            "text": text,
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["language"] == "en"
+    assert response.json()["booking_changes"] == []
+    state = client.app.state.demo_sessions.sessions[identifier].tools
+    assert state.language_locked and state.pending is None and not state.bookings
+
+
 class MetadataRecognition:
     def __init__(self):
         self.text = ""

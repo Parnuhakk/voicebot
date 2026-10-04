@@ -259,7 +259,7 @@ def select_language(text: str, detected: object, current: str) -> str:
         r"\b(?:hello|hi|hey|please|where|when|what|how|book|booking|want|need|reserve|thank|"
         r"tomorrow|today|tonight|thanks|goodbye|bye|repeat|understand|confusing)\b|"
         r"\b(?:i|we|you|there|it|that)\s+(?:would|will|have|are|is|can|like)\b|"
-        r"\b(?:i['’]d|we['’]d|i['’]m|we['’]re|can i|can you|can we|do you|does the|"
+        r"\b(?:i['’]d|we['’]d|i['’]m|we['’]re|can i|can you|can we|do you|do the|does the|"
         r"is there|is the|is this|is that|is it|are you|are there|does it|does your|could i|could you|"
         r"a table|a reservation|a booking|good morning|good afternoon|good evening|"
         r"for (?:two|three|four|five|six))\b",

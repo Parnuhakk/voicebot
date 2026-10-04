@@ -128,7 +128,7 @@ PATTERNS = {
     "price": r"\b(?:prices?|costs?|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maks(?:ab|avad|ma)|цен\w*|стоим\w*|сколько(?:\s+\w+){0,2}\s+сто(?:ит|ят|ить))\b",
     "menu": r"menüü?|menu|меню|vegan|веган|vegetarian|taimetoit|вегетар|\b(?:dishes|serve|roogi|блюд\w*)\b|mis.*süüa|mida.*(?:süüa|pakute)",
     "kitchen": r"kitchen|köök|köögi|кухн|(?:kell|kellaajani|millal).*süüa|when.*(?:food|eat)|(?:до скольки|когда).*еда",
-    "hours": r"\b(?:hours|open\w*|close\w*|shut|lahtiole\w*|avatud|avate|lahti|kinni|sulge\w*|tööa\w*|откры\w*|закры\w*|работа\w*|часы\s+работы)\b",
+    "hours": r"\b(?:hours|open\w*|close\w*|shut|lahtiole\w*|avatud|avate|avane\w*|lahti|kinni|sulg\w*|tööa\w*|откры\w*|закры\w*|работа\w*|часы\s+работы)\b",
     "location": r"\b(?:where are you|where is (?:the )?restaurant|where is it|address|location|located|aadress|asute|asub|kus|где|адрес|находит\w*)\b",
     "duration": r"(?:how long|kui kaua|сколько времени|как долго).*(?:table|stay|keep|laua|laud|broneering|стол|брон)|(?:reservation|broneering|брон\w*).*(?:last|kest|длит)",
     "groups": r"\b(?:group\w*|grup\w*|seltskonn\w*|firmapidu|sünnipäev\w*|групп\w*|компани\w*)\b",
@@ -142,7 +142,7 @@ PATTERNS = {
     "accessibility": r"wheelchair|accessible|accessibility|ratastool|ligipääs|инвалид|коляск|доступн",
     "terrace": r"terrac|terrass|outside seating|outdoor seating|террас",
     "extras": r"dessert|magustoit|magustoitu|drinks?|vein|wine|jook|joog|напит|десерт",
-    "staff": r"\b(?:staff|human|transfer|callback|personali\w*|teenindaja\w*|töötaja\w*|персонал\w*|сотрудник\w*|оператор\w*|перевед\w*)\b|\b(?:order|delivery|takeaway|tellim\w*|kojuvedu|достав\w*|заказ\w*)\b|\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b.*\binimese\w*\b|\binimese\w*\b.*\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b",
+    "staff": r"\b(?:staff|human|transfer|callback|personali\w*|teenindaja\w*|töötaja\w*|персонал\w*|сотрудник\w*|оператор\w*|перевед\w*)\b|\b(?:speak|talk) to (?:a |the )?person\b|\b(?:order|delivery|takeaway|tellim\w*|kojuvedu|достав\w*|заказ\w*)\b|\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b.*\binimese\w*\b|\binimese\w*\b.*\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b",
     "policies": r"polic|reegl|tingimus|правил",
 }
 
@@ -180,6 +180,7 @@ def match_question(
     previous: RestaurantQuestion | None = None,
     has_dish: bool = False,
     has_diet: bool = False,
+    medical_concern: bool = False,
     now: datetime | None = None,
 ) -> RestaurantQuestion | None:
     text = " ".join(text.casefold().split())
@@ -285,11 +286,22 @@ def match_question(
     # A short food follow-up does not turn an existing medical concern into
     # permission to generate a recommendation or a safety assurance.
     if (
-        previous
-        and "allergens" in previous.topics
+        (
+            previous
+            and "allergens" in previous.topics
+            or medical_concern
+            and (
+                recommendation
+                or "menu" in topics
+                or (has_dish or has_diet)
+                and all(topic in {"menu", "allergens", "price"} for topic in topics)
+            )
+        )
         and not BOOKING_REQUEST.search(text)
         and (
             recommendation
+            or medical_concern
+            and "menu" in topics
             or detail_followup
             or all(topic in {"menu", "allergens", "price"} for topic in topics)
             and (
