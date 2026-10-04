@@ -29,7 +29,7 @@ SCOPE, FOREIGN = "a" * 32, "b" * 32
 NOW = datetime(2026, 10, 3, 10, tzinfo=ZoneInfo("Europe/Tallinn"))
 DAY = (NOW + timedelta(days=14)).date()
 NATURAL_CONSENT = {
-    "et": "Jah, sobib.",
+    "et": "Jah, olen nõus.",
     "en": "Yes, that works for me.",
     "ru": "Да, подходит.",
 }
@@ -815,6 +815,61 @@ def test_spoken_caller_dates_use_one_named_month_and_recover_ambiguous_input(
         now=NOW,
         expected_field="date_ambiguous",
     ) == {"date": "2026-10-17"}
+
+
+@pytest.mark.parametrize(
+    "day_number,ordinal",
+    [
+        (1, "esimesel"),
+        (2, "teisel"),
+        (3, "kolmandal"),
+        (4, "neljandal"),
+        (5, "viiendal"),
+        (6, "kuuendal"),
+        (7, "seitsmendal"),
+        (8, "kaheksandal"),
+        (9, "üheksandal"),
+        (10, "kümnendal"),
+        (11, "üheteistkümnendal"),
+        (12, "kaheteistkümnendal"),
+        (13, "kolmeteistkümnendal"),
+        (14, "neljateistkümnendal"),
+        (15, "viieteistkümnendal"),
+        (16, "kuueteistkümnendal"),
+        (17, "seitsmeteistkümnendal"),
+        (18, "kaheksateistkümnendal"),
+        (19, "üheksateistkümnendal"),
+        (20, "kahekümnendal"),
+        (21, "kahekümne esimesel"),
+        (22, "kahekümne teisel"),
+        (23, "kahekümne kolmandal"),
+        (24, "kahekümne neljandal"),
+        (25, "kahekümne viiendal"),
+        (26, "kahekümne kuuendal"),
+        (27, "kahekümne seitsmendal"),
+        (28, "kahekümne kaheksandal"),
+        (29, "kahekümne üheksandal"),
+        (30, "kolmekümnendal"),
+        (31, "kolmekümne esimesel"),
+    ],
+)
+def test_estonian_caller_speaks_calendar_day_words(probe, day_number, ordinal):
+    from app.restaurant_call import parse_restaurant_request
+
+    day = datetime(2026, 10, day_number).date()
+    phrases = probe.scenario("et", day)
+    assert phrases["details"]["date"] == f"{ordinal} oktoobril 2026"
+    assert parse_restaurant_request(
+        phrases["request"],
+        now=datetime(2026, 9, 20, 12, tzinfo=ZoneInfo("Europe/Tallinn")),
+    ) == {"date": f"2026-10-{day_number:02d}", "start_time": "18:00", "party_size": 4}
+
+
+def test_estonian_caller_uses_the_recognizable_natural_affirmative(probe):
+    from app.restaurant_consent import is_restaurant_confirmation
+
+    assert probe.scenario("et", DAY)["consent"] == "Jah, olen nõus."
+    assert is_restaurant_confirmation("Jah, olen nõus.", "et")
 
 
 @pytest.mark.parametrize(

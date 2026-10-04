@@ -9,7 +9,7 @@ import pytest
 from app.booking_response import trusted_booking_response
 from app.booking_faq import FAQ_PATH, load_faq
 from app.restaurant_call import COPY
-from tests.test_restaurant_conversation import make_state, prepare
+from tests.test_restaurant_conversation import make_state, prepare, tomorrow
 from tests.test_restaurant_http import AUTH, client, start
 
 
@@ -127,6 +127,71 @@ def test_partial_estonian_note_asr_variants_cannot_change_english_booking(
     state.observe_user_text(question, is_final=False, detected_language="et")
     assert state.language == "en" and state.booking_inquiry == inquiry
     assert trusted_booking_response(state) == {"content": COPY["en"]["time"]}
+
+
+@pytest.mark.parametrize(
+    "clock", ["18 hours", "1800 hours", "six hours in the evening", "18:00 hours"]
+)
+def test_clock_hour_unit_reaches_native_booking_not_opening_hours(make_state, clock):
+    state = make_state("et")
+    state.observe_user_text("Yes.", detected_language="et")
+    assert not state.language_locked and not state.bookings
+    state.observe_user_text(
+        f"Please reserve a table for four people tomorrow at {clock}.",
+        detected_language="en",
+    )
+    assert state.language == "en" and state.language_locked
+    assert trusted_booking_response(state) == {
+        "name": "plan_restaurant_reservation",
+        "arguments": {"date": tomorrow(), "start_time": "18:00", "party_size": 4},
+    }
+    assert state._restaurant_question is None
+    assert not state.holds and not state.bookings and not state.pending
+
+
+@pytest.mark.parametrize(
+    "clock", ["18 hours", "six hours in the evening", "18:00 hours"]
+)
+def test_clock_hour_unit_audio_http_prepares_only_an_owned_recap(client, clock):
+    session = start(client, "auto")["session_id"]
+    client.provider.transcript = (
+        f"Please reserve a table for four people tomorrow at {clock}."
+    )
+    response = client.post(
+        "/api/turn",
+        headers=AUTH,
+        json={
+            "session_id": session,
+            "audio_b64": base64.b64encode(b"RIFF-synthetic-fixture").decode(),
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()
+    assert result["language"] == "en"
+    assert result["reply"].endswith(COPY["en"]["confirmation_question"])
+    assert result["recap_delivery_id"] and result["booking_changes"] == []
+    tools = client.app.state.demo_sessions.sessions[session].tools
+    assert tools.pending["recap"]["date"] == tomorrow()
+    assert tools.pending["recap"]["start"].endswith("18:00:00")
+    assert tools.pending["recap"]["party_size"] == 4
+    assert not tools.pending["delivery"] and not tools.pending["approved"]
+    assert not tools.bookings
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "What are your hours at six hours in the evening?",
+        "Are you open tomorrow at 18 hours?",
+        "Please reserve a table for four people tomorrow at 18 hours. What are your opening hours?",
+    ],
+)
+def test_real_opening_hours_question_survives_a_clock_unit(make_state, text):
+    state = make_state("en")
+    state.observe_user_text(text, language="en")
+    assert state._restaurant_question.topics == ("hours",)
+    assert "content" in trusted_booking_response(state)
+    assert not state.holds and not state.bookings and not state.pending
 
 
 @pytest.mark.parametrize(
