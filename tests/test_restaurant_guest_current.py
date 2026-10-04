@@ -116,10 +116,20 @@ def test_mixed_correction_cannot_reuse_stale_four_diner_preferences(
     )
     state.observe_user_text(text, language=language)
     assert (state.booking_inquiry or {}).get("party_size") != 4
-    assert "name" not in (trusted_booking_response(state) or {})
+    if text == MIXED[0][1]:
+        assert state.booking_inquiry == {"date": tomorrow(), "party_size": 5}
+    else:
+        assert "name" not in (trusted_booking_response(state) or {})
     state.observe_user_text("14:00", language=language)
     assert (state.booking_inquiry or {}).get("party_size") != 4
-    assert "name" not in (trusted_booking_response(state) or {})
+    if text == MIXED[0][1]:
+        assert trusted_booking_response(state)["arguments"] == {
+            "date": tomorrow(),
+            "party_size": 5,
+            "start_time": "14:00",
+        }
+    else:
+        assert "name" not in (trusted_booking_response(state) or {})
     assert state.pending is None and not state.bookings
 
 
@@ -394,7 +404,12 @@ def test_review_r1_allergy_classification_never_reaches_an_approving_model(
         assert state.restaurant["menu"][0]["name"][language] in reply
         assert reply != permission and not state.bookings
         if stage.startswith("mixed"):
-            assert state.booking_inquiry is None and state.pending is None
+            expected = (
+                {"date": tomorrow(), "party_size": 5}
+                if language == "en" and stage == "mixed"
+                else None
+            )
+            assert state.booking_inquiry == expected and state.pending is None
         elif previous:
             assert state.pending is not previous
             assert state.pending["hold_id"] == previous["hold_id"]
@@ -477,7 +492,12 @@ def test_review_r1_http_allergy_warning_is_spoken_without_model_or_consent(
             and not state.holds
         )
         if stage.startswith("mixed"):
-            assert state.booking_inquiry is None
+            expected = (
+                {"date": tomorrow(), "party_size": 5}
+                if language == "en" and stage == "mixed"
+                else None
+            )
+            assert state.booking_inquiry == expected
     assert not client.get("/api/bookings?date=" + tomorrow(), headers=AUTH).json()[
         "items"
     ]
@@ -804,14 +824,16 @@ def test_review_r4_http_mixed_question_cannot_speak_unsupported_waiting_list_or_
     client.app.state.stack["llm_primary"] = model
     answer = turn(client, session, text, language=language)
     state = client.app.state.demo_sessions.sessions[session].tools
-    assert (
-        answer["reply"]
-        == COPY[language]["information_unknown"]
-        == client.provider.spoken[-1]
-    )
-    assert answer["reply"] != promise and len(model.calls) == 1
+    assert answer["reply"] == client.provider.spoken[-1] != promise
+    if language == "en":
+        assert state.question_reply() in answer["reply"]
+        assert state.booking_inquiry == {"date": tomorrow(), "party_size": 5}
+        assert len(model.calls) == (0 if "waiting list" in text else 1)
+    else:
+        assert answer["reply"] == COPY[language]["information_unknown"]
+        assert len(model.calls) == 1 and state.booking_inquiry is None
     assert answer["booking_changes"] == [] and answer["recap_delivery_id"] is None
-    assert state.booking_inquiry is None and state.pending is None
+    assert state.pending is None
     assert not state.holds and not state.bookings
     assert not client.get("/api/bookings?date=" + tomorrow(), headers=AUTH).json()[
         "items"
@@ -1107,11 +1129,21 @@ def test_mixed_recommendation_detail_or_hours_clause_cannot_keep_four(
     )
     state.guard_reply("", [])
     state.observe_user_text(text, language=language)
-    assert state.booking_inquiry is None
+    known = text == "What do you recommend to eat? Actually we are five."
+    assert state.booking_inquiry == (
+        {"date": tomorrow(), "party_size": 5} if known else None
+    )
     assert "name" not in (trusted_booking_response(state) or {})
     state.observe_user_text("14:00", language=language)
     assert (state.booking_inquiry or {}).get("party_size") != 4
-    assert "name" not in (trusted_booking_response(state) or {})
+    if known:
+        assert trusted_booking_response(state)["arguments"] == {
+            "date": tomorrow(),
+            "party_size": 5,
+            "start_time": "14:00",
+        }
+    else:
+        assert "name" not in (trusted_booking_response(state) or {})
     assert state.pending is None and not state.holds and not state.bookings
 
 
@@ -1272,11 +1304,21 @@ def test_http_mixed_correction_uses_controlled_clarification_without_stale_inqui
     assert planner.calls == 0
     assert response["booking_changes"] == []
     tools = client.app.state.demo_sessions.sessions[session].tools
-    assert tools.booking_inquiry is None and tools.pending is None
+    known = text == MIXED[0][1]
+    assert tools.booking_inquiry == (
+        {"date": tomorrow(), "party_size": 5} if known else None
+    )
+    assert tools.pending is None
     assert not tools.holds and not tools.bookings
     followup = turn(client, session, "14:00", language=language)
-    assert followup["recap_delivery_id"] is None and followup["booking_changes"] == []
-    assert not tools.holds and not tools.bookings
+    assert followup["booking_changes"] == [] and not tools.bookings
+    if known:
+        assert (
+            followup["recap_delivery_id"] and tools.pending["recap"]["party_size"] == 5
+        )
+        assert not tools.pending["delivery"] and not tools.pending["approved"]
+    else:
+        assert followup["recap_delivery_id"] is None and not tools.holds
 
 
 @pytest.mark.parametrize(

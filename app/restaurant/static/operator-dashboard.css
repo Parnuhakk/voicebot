@@ -65,7 +65,7 @@
   .operator-dashboard .navigation { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 8px; gap: 2px; }
   .operator-dashboard .navigation a { min-height: 44px; padding: 8px; gap: 8px; font-size: 12px; }
   .operator-dashboard .site-header { min-height: 44px; padding: 8px 18px; gap: 8px; }
-  .operator-dashboard .breadcrumb { gap: 6px; }
+  .operator-dashboard .breadcrumb { flex: 1; min-width: 0; gap: 6px; }
   .operator-dashboard main { padding: 16px 18px; }
   .operator-dashboard .intro { gap: 12px; margin-bottom: 14px; }
   .operator-dashboard h1 { font-size: 26px; }

@@ -193,6 +193,23 @@ def test_payload_cannot_introduce_ssml_and_neutral_mode_remains_literal():
     assert not list(neutral.iter(SSML + "prosody"))
 
 
+def test_actual_russian_recap_introduction_preserves_venue_alias_and_canonical_text(
+    client,
+):
+    session = start(client, "ru")["session_id"]
+    result = turn(client, session, "Столик на четверых завтра в 18:00", language="ru")
+    text = result["reply"]
+    assert text.startswith("Могу предложить столик: ")
+    markup = ET.fromstring(ssml(text, "ru-RU-SvetlanaNeural", "ru-RU"))
+    assert "Меретууле" in [node.get("alias") for node in markup.iter(SSML + "sub")]
+    assert "".join(markup.itertext()) == text
+    state = client.app.state.demo_sessions.sessions[session].tools
+    assert state.pending["recap"]["party_size"] == 4
+    assert state.pending["recap"]["duration_minutes"] == 90
+    assert state.pending["recap"]["date"] == tomorrow()
+    assert result["booking_changes"] == []
+
+
 @pytest.mark.parametrize("voice", ["ru-RU-SvetlanaNeural", "ru-RU-DmitryNeural"])
 def test_weekly_schedule_is_short_sentences_and_spoken_clock_ranges(voice):
     schedule = format_schedule(load_restaurant_data(), "ru") + "."

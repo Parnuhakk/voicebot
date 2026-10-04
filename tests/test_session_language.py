@@ -55,6 +55,21 @@ def test_weak_or_rejected_first_input_does_not_choose_language(make_state, weak)
     assert state.language_locked and state.language == "ru"
 
 
+@pytest.mark.parametrize(
+    "number",
+    ["Fourteen", "twenty four", "neli", "neliteist", "четыре", "двадцать четыре"],
+)
+@pytest.mark.parametrize("metadata", ["english", "estonian", "russian"])
+def test_number_only_input_cannot_lock_language_from_misleading_metadata(
+    make_state, number, metadata
+):
+    state = make_state("et")
+    state.observe_user_text(number, detected_language=metadata)
+    assert state.language == "et" and not state.language_locked
+    state.observe_user_text(OPENERS["en"], detected_language="estonian")
+    assert state.language == "en" and state.language_locked
+
+
 def test_english_booking_details_keep_language_and_values(make_state):
     state = make_state()
     for text, metadata, question in [

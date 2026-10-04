@@ -11,7 +11,13 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Any
 
+from .restaurant_family import family_topic
+
 from .languages import (
+    AFFIRMATIONS_ET,
+    AFFIRMATIONS_EN,
+    AFFIRMATIONS_RU,
+    CONSENT,
     ENGLISH_INVITATION,
     LANGUAGE_POLICY,
     english_clarification,
@@ -54,7 +60,7 @@ COPY: dict[str, dict[str, str]] = {
         "invalid_time": "Mis täpne kellaaeg sobib? Näiteks kell 18.30.",
         "party": "Mitmele inimesele lauda soovite? Palun arvestage ka lapsed.",
         "unavailable": "Sel ajal sobivat lauda ei ole. Kas sobiks mõni teine kellaaeg või päev?",
-        "unknown": "Ma ei saanud kinnitust, kas broneering salvestus. Palun kontrollige broneeringu olekut enne uuesti proovimist.",
+        "unknown": "Ma ei saanud toimingu tulemust kinnitada. Palun ärge korrake seda; kontrollige broneeringu olekut.",
         "confirmed": "Teie lauabroneering on kinnitatud.",
         "cancelled": "Teie broneering on tühistatud.",
         "existing": "See laud on juba broneeritud. Teist broneeringut ma ei teinud.",
@@ -85,7 +91,7 @@ COPY: dict[str, dict[str, str]] = {
         "invalid_time": "What exact time works for you? For example, 6:30 PM.",
         "party": "How many of you are coming, including children?",
         "unavailable": "There is no suitable table at that time. Would you like another time or date?",
-        "unknown": "I couldn't check whether the reservation was saved. Please check its status before trying again.",
+        "unknown": "I couldn't confirm the result. Please don't repeat the action; check the reservation's status.",
         "confirmed": "Your table reservation is confirmed.",
         "cancelled": "Your reservation is cancelled.",
         "existing": "That table is already booked. I haven't made a second reservation.",
@@ -116,7 +122,7 @@ COPY: dict[str, dict[str, str]] = {
         "invalid_time": "Во сколько именно? Например, в 18:30.",
         "party": "Сколько вас будет, вместе с детьми?",
         "unavailable": "На это время столика нет. Подойдёт другое время или день?",
-        "unknown": "Не получилось проверить, сохранилась ли бронь. Сначала проверьте её статус, чтобы не сделать её дважды.",
+        "unknown": "Не удалось подтвердить результат действия. Не повторяйте его; проверьте статус брони.",
         "confirmed": "Готово, бронь подтверждена.",
         "cancelled": "Готово, бронь отменена.",
         "existing": "Этот столик уже забронирован. Дублировать бронь не будем.",
@@ -134,7 +140,7 @@ COPY: dict[str, dict[str, str]] = {
         "closed": "закрыто",
         "alternatives": "На это время столика нет. В тот же день есть {times}. Что вам удобнее?",
         "confirmation_question": CONFIRMATION_QUESTIONS["ru"],
-        "recap": "Могу предложить столик в {name}: {date}, в {time}, на {party}. На имя {guest}, столик на {duration}. {question}",
+        "recap": "Могу предложить столик: {name}, {date}, в {time}, на {party}. На имя {guest}, столик на {duration}. {question}",
     },
 }
 
@@ -309,7 +315,7 @@ BOOKING_REQUEST = (
     r"lau(?:d|da|a(?:le|ks|ga|s|st)?)|broneer\w*|брон\w*|столик\w*)\b"
 )
 SIDE_QUESTION = re.compile(
-    r"\?|^(?:kas|mis|mida|millal|kuidas|kus|miks|what|where|why|how|do|does|is|are|can|"
+    r"\?|^(?:kas|mis|mida|millal|milline|kuidas|kus|miks|what|where|why|how|do|does|is|are|can|"
     r"как|что|где|почему|можно|сколько)\b"
 )
 
@@ -621,6 +627,28 @@ def _restaurant_detail_followup(text, previous, *, expected_field=None):
     )
 
 
+def _restaurant_correction_detail(text, previous, *, expected_field=None):
+    """Recognized correction markers cannot hide an unparsed neighboring clause."""
+    if _restaurant_detail_followup(text, previous, expected_field=expected_field):
+        return True
+    value = text.strip(" .!?;")
+    value = re.sub(r"^(?:actually|tegelikult|hoopis|лучше)\s+", "", value)
+    value = re.sub(
+        r"\s+(?:instead|hoopis|вместо (?:четверых|прежнего времени))$", "", value
+    )
+    if "," in value:
+        return False
+    if _restaurant_detail_followup(value, previous, expected_field=expected_field):
+        return True
+    # A whole invalid clock is a clarification, not the earlier valid clock.
+    clock = parse_spoken_time(value)
+    return bool(
+        clock
+        and clock.invalid
+        and re.fullmatch(r"(?:at|kell|в|к)\s+\d{1,2}[:.]\d{2}", value)
+    )
+
+
 def _read_only_restaurant_question(text, menu):
     """Only whole known read forms can retain an earlier reservation inquiry."""
     if len(text) > 2000:
@@ -671,6 +699,7 @@ def _read_only_restaurant_question(text, menu):
             r"kas saan ootenimekirja|can you add me to (?:a |the )?(?:waitlist|waiting list)|можно записаться в лист ожидания|"
             r"kus saab parkida|where can i park|где можно припарковаться|где парковка|"
             r"can (?:\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten) children use (?:the )?terrace|"
+            r"(?:do you take )?groups of \d{1,2}|"
             r"kas (?:teil |lastele )?(?:on )?(?:joonistamisvõimalus|mänguasju|mängunurk|lastemenüü)(?: on olemas| olemas)?|"
             r"kas lastega saab tulla|kas lastele on midagi teha|mis road lastemenüüs on|"
             r"kas mängunurgas on järelevalve|kas mänguasjade kasutamine on tasuta|"
@@ -803,6 +832,7 @@ class RestaurantCallTools(CallTools):
         )
 
     def observe_user_text(self, text, **kwargs):
+        had_pending = self.pending is not None
         previous_response = self._restaurant_last_response
         previous_unmatched = self._restaurant_unmatched
         previous_question = self._restaurant_question
@@ -924,6 +954,7 @@ class RestaurantCallTools(CallTools):
             self._restaurant_focus = self._restaurant_question.topics[0]
             if (
                 previous_language == self.language
+                and not family_topic(text)
                 and previous_question
                 and any(
                     topic in {"menu", "allergens"} for topic in previous_question.topics
@@ -998,6 +1029,13 @@ class RestaurantCallTools(CallTools):
                     if topic in CAPABILITIES
                 )
         agreement = self._is_confirmation(text, self.language)
+        normalized = " ".join(re.sub(r"[.,!]", " ", text).split())
+        affirmations = {
+            "et": AFFIRMATIONS_ET,
+            "en": AFFIRMATIONS_EN,
+            "ru": AFFIRMATIONS_RU,
+        }[self.language]
+        recap_retry = had_pending and normalized in affirmations | {"jah", "yes", "да"}
         if previously_paused and agreement and not self.pending:
             self._restaurant_focus = None
             self._restaurant_question = None
@@ -1009,11 +1047,42 @@ class RestaurantCallTools(CallTools):
                 text,
             )
         )
+        clauses = re.sub(
+            r"(?<=\d)\.(?=\s+\S)",
+            lambda match: (
+                ";" if SIDE_QUESTION.match(text[match.end() :].lstrip()) else "."
+            ),
+            text,
+        )
+        correction_clauses = [
+            clause.strip()
+            for clause in re.split(r"(?<=[!?;])\s*|(?<!\d)\.(?!\d)\s*", clauses)
+            if clause.strip(" .!?;")
+        ]
+        known_correction = (
+            self._restaurant_inquiry is not None
+            and len(correction_clauses) > 1
+            and any(
+                not match_question(clause)
+                and _restaurant_correction_detail(
+                    clause, self._restaurant_inquiry, expected_field=expected_field
+                )
+                for clause in correction_clauses
+            )
+            and all(
+                _read_only_restaurant_question(clause, self.restaurant["menu"])
+                or _restaurant_correction_detail(
+                    clause, self._restaurant_inquiry, expected_field=expected_field
+                )
+                for clause in correction_clauses
+            )
+        )
         if (
             self._restaurant_inquiry is not None
             and self._restaurant_focus
             and not exact_faq
             and not booking_text
+            and not known_correction
             and not _read_only_restaurant_question(text, self.restaurant["menu"])
         ):
             # A mixed correction is not an interlude: never reuse stale diners,
@@ -1051,8 +1120,20 @@ class RestaurantCallTools(CallTools):
             )
             prior = self._restaurant_inquiry or {}
             resume_plan = previously_paused and not booking_question and agreement
-            retain_details = resume_plan or _restaurant_detail_followup(
-                planning_text, prior, expected_field=expected_field
+            retain_details = (
+                recap_retry
+                or resume_plan
+                or _restaurant_detail_followup(
+                    planning_text, prior, expected_field=expected_field
+                )
+                or (
+                    had_pending
+                    or details
+                    and {"start_time", "party_size"} <= details.keys()
+                )
+                and _restaurant_correction_detail(
+                    planning_text, prior, expected_field=expected_field
+                )
             )
             followup = (
                 parse_restaurant_request(
@@ -1083,7 +1164,7 @@ class RestaurantCallTools(CallTools):
                 is not None
             )
             self._restaurant_unmatched = (
-                not resume_plan
+                not (recap_retry or resume_plan)
                 and not booking_request
                 and not time_followup
                 and not party_followup
@@ -1142,7 +1223,31 @@ class RestaurantCallTools(CallTools):
             and SIDE_QUESTION.search(text)
             or self.conversation.intent in {"identity", "how_are_you"}
         )
-        if changes_booking and self._restaurant_focus:
+        corrected_inquiry = None
+        if question_turn and self._restaurant_inquiry is not None:
+            prior = self._restaurant_inquiry
+            corrected = prior
+            # Only non-information declarative clauses can correct a booking.
+            # Question dates/counts and dietary context must not change it.
+            # Numeric sentence endings before a question are not internal
+            # clock/date dots or day ordinals such as "4. October".
+            for clause in correction_clauses:
+                clause = clause.strip()
+                if not clause or SIDE_QUESTION.search(clause) or match_question(clause):
+                    continue
+                parsed = parse_restaurant_request(
+                    clause, corrected, expected_field=expected_field
+                )
+                if parsed is not None:
+                    corrected = parsed
+            if corrected != prior:
+                corrected_inquiry = corrected
+                self.invalidate_recap()
+                self._restaurant_inquiry = corrected
+                self._restaurant_booking_paused = True
+                self.clarification = None
+                changes_booking = True
+        if changes_booking and self._restaurant_focus and corrected_inquiry is None:
             # Clarify the new request rather than retaining an obsolete hold or
             # silently re-planning the old details after answering the question.
             self._restaurant_inquiry = None
@@ -1335,6 +1440,17 @@ class RestaurantCallTools(CallTools):
         if topic == "policies":
             return self.restaurant["policies"][self.language]
         if topic == "allergens":
+            if (
+                self._restaurant_dish is None
+                and self._restaurant_question
+                and self._restaurant_question.family_allergens
+            ):
+                unknown = {
+                    "et": "Lastemenüü roogade ja koostisosade kohta mul kinnitatud infot ei ole.",
+                    "en": "I don't have a confirmed list of dishes or ingredients for the children's menu.",
+                    "ru": "У меня нет подтверждённого списка блюд и ингредиентов детского меню.",
+                }[self.language]
+                return unknown + " " + self.restaurant["allergy_notice"][self.language]
             labels: dict[str, dict[str, str]] = {
                 "celery": {"et": "seller", "en": "celery", "ru": "сельдерей"},
                 "fish": {"et": "kala", "en": "fish", "ru": "рыба"},
@@ -1567,6 +1683,26 @@ class RestaurantCallTools(CallTools):
             "start_time": start_time,
             "party_size": party_size,
         }
+        for hold_id in reversed(self._hold_order):
+            slot = self.held_slots.get(hold_id)
+            if (
+                hold_id not in self.holds
+                or hold_id in self.confirmed_holds
+                or not slot
+                or slot["date"] != date
+                or datetime.fromisoformat(slot["start"]) != requested
+                or slot["serviceId"] != str(party_size)
+            ):
+                continue
+            # Ambiguous consent revokes the recap, not the durable owned table.
+            hold = await self.dispatcher._slot.get_hold(hold_id)
+            if self._turn_serial != turn_serial:
+                return {"error": "turn_superseded"}
+            if hold is not None:
+                return await self.dispatch(
+                    "prepare_demo_booking",
+                    {"hold_id": hold_id, "guest_fixture_id": guest_fixture_id},
+                )
         result = await self.dispatch(
             "search_slots", {"service": str(party_size), "date": date, "provider": "0"}
         )
@@ -1615,9 +1751,20 @@ class RestaurantCallTools(CallTools):
         hold = await self.dispatcher._slot.get_hold(hold_id)
         if self._turn_serial != turn_serial or self.pending is not pending:
             return {"error": "turn_superseded"}
-        if hold is None:
+        if hold is None or time.monotonic() >= hold.expires_at:
             self.invalidate_recap()
             return {"error": "hold_expired_or_unknown"}
+        if any(
+            hold.payload.get(key) != value
+            for key, value in self.held_slots[hold_id].items()
+        ):
+            self.invalidate_recap()
+            return {"error": "booking_unavailable"}
+        try:
+            self.dispatcher._slot._validate_slot_configuration(hold.payload)
+        except ValueError:
+            self.invalidate_recap()
+            return {"error": "slot_unavailable"}
         result["recap"].update(
             party_size=hold.payload["party_size"],
             duration_minutes=hold.payload["duration_minutes"],

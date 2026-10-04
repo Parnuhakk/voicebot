@@ -188,7 +188,9 @@ def test_public_status_exposes_receipt_without_claiming_real_carrier_verificatio
 ):
     path, _ = receipt(tmp_path)
     actual = releases.status
-    with patch.object(releases, "status", side_effect=lambda: actual(path=path)):
+    with patch.object(
+        releases, "status", side_effect=lambda **kwargs: actual(path=path, **kwargs)
+    ):
         with TestClient(create_app()) as client:
             response = client.get("/api/status")
     assert response.status_code == 200
@@ -198,6 +200,59 @@ def test_public_status_exposes_receipt_without_claiming_real_carrier_verificatio
     assert telephone["sentence_pause_ms"] == 120
     assert telephone["carrier_call_verified"] is False
     assert telephone["public_ingress_verified"] is False
+
+
+def test_same_path_configuration_drift_cannot_refresh_a_loaded_website_receipt(
+    tmp_path, monkeypatch
+):
+    from app.restaurant_data import load_restaurant_data
+
+    config = tmp_path / "restaurant.json"
+    original = load_restaurant_data()
+    config.write_text(json.dumps(original))
+    monkeypatch.setenv("VOICEBOT_BUSINESS_TYPE", "restaurant")
+    monkeypatch.setenv("RESTAURANT_CONFIG_PATH", str(config))
+    for key, filename in [
+        ("CALLS_DB", "calls.db"),
+        ("RESTAURANT_STATE_DB", "restaurant.db"),
+        ("EASY_STATE_DB", "easy.db"),
+        ("STAY_STATE_DB", "stay.db"),
+    ]:
+        monkeypatch.setenv(key, str(tmp_path / filename))
+    path, payload = receipt(tmp_path)
+    actual = releases.status
+    with patch.object(
+        releases, "status", side_effect=lambda **kwargs: actual(path=path, **kwargs)
+    ):
+        with TestClient(create_app()) as client:
+            loaded = client.get("/api/status").json()["telephone"]["release"][
+                "web_fingerprint"
+            ]
+            changed = dict(original, reservation_duration_minutes=120)
+            config.write_text(json.dumps(changed))
+            assert releases.identity() != loaded
+            assert (
+                client.get("/api/status").json()["telephone"]["release"][
+                    "web_fingerprint"
+                ]
+                == loaded
+            )
+            assert (
+                client.app.state.stack["restaurant_data"][
+                    "reservation_duration_minutes"
+                ]
+                == 90
+            )
+            with pytest.raises(ValueError, match="release_identity_mismatch"):
+                releases.record(SHA, loaded, path=path)
+            assert json.loads(path.read_text()) == payload
+            # Even a receipt produced by the old fresh-file CLI path is not
+            # alignment proof for the website's still-loaded configuration.
+            releases.record(SHA, releases.identity(), path=path)
+            assert (
+                client.get("/api/status").json()["telephone"]["release"]["status"]
+                == "out_of_sync"
+            )
 
 
 def test_cli_invalid_arguments_print_only_a_fixed_code(capsys):

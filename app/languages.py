@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Any
 from .russian import detect_language
 from .input_recovery import WRITE_LANGUAGE_PROMPT
+from .restaurant_times import NUMBERS
 
 LANGUAGES = ("et", "en", "ru")
 SUPPORTED_LANGUAGE_PROMPT = WRITE_LANGUAGE_PROMPT
@@ -236,20 +237,7 @@ def select_language(text: str, detected: object, current: str) -> str:
         "нет",
     }:
         return current
-    if normalized in {
-        "one",
-        "two",
-        "three",
-        "four",
-        "five",
-        "six",
-        "seven",
-        "eight",
-        "nine",
-        "ten",
-        "eleven",
-        "twelve",
-    } or re.fullmatch(
+    if normalized.replace("-", " ") in NUMBERS or re.fullmatch(
         r"(?:\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)"
         r"\s+(?:a\s*m|p\s*m|am|pm)",
         normalized,

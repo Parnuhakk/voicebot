@@ -497,6 +497,80 @@ def test_guest_instructions_cannot_add_facts_or_authorize_an_action(client):
 
 
 @pytest.mark.parametrize(
+    "unsafe",
+    [
+        "We can seat four at 19:00 tomorrow.",
+        "Your reservation is all set.",
+        "Your reservation\nis all set.",
+        "Your reservation is all\nset.",
+    ],
+)
+def test_approving_model_cannot_speak_unverified_availability_or_booking_status(
+    client, unsafe
+):
+    model = Model(unsafe)
+    model.candidate["fact_ids"] = ["capacity_rules"]
+    client.app.state.stack["llm_primary"] = model
+    session = start(client, "en")["session_id"]
+    result = turn(client, session, "Do you have seating for four at 19:00 tomorrow?")
+    state = client.app.state.demo_sessions.sessions[session].tools
+    assert result["reply"] != unsafe
+    assert result["reply"] == state.inquiry_reply() == client.provider.spoken[-1]
+    assert result["booking_changes"] == [] and not state.bookings
+    assert state._reasoned_reply is None and len(model.calls) == 1
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "What is your address, opening hours, and parking? Is soup safe for a severe milk allergy?",
+        "What is your address, opening hours, and parking? Can you prevent cross-contact?",
+        "What is your address, opening hours, and parking? Is the soup suitable for coeliac disease?",
+        "What is your address, opening hours, and parking? Is the soup suitable for celiac disease?",
+    ],
+)
+def test_allergy_safety_after_three_topics_cannot_reach_generated_answers(
+    client, question
+):
+    unsafe = "The soup is fine for your milk allergy; our kitchen prevents all cross-contact."
+    model = Model(unsafe)
+    client.app.state.stack["llm_primary"] = model
+    session = start(client, "en")["session_id"]
+    result = turn(client, session, question)
+    state = client.app.state.demo_sessions.sessions[session].tools
+    assert model.calls == []
+    assert state.restaurant["allergy_notice"]["en"] in result["reply"]
+    assert (
+        result["reply"] != unsafe and "allergens" in state._restaurant_question.topics
+    )
+    assert result["booking_changes"] == [] and not state.bookings
+
+
+@pytest.mark.parametrize("padding,length", [(True, 600), (False, 600), (False, 601)])
+def test_reviewed_answer_uses_the_same_normalized_speech_length_bound(
+    client, padding, length
+):
+    reply = "A helpful menu description " + "a" * (length - 27)
+    assert len(reply) == length
+    candidate = " \n" + reply + "\n " if padding else reply
+    model = Model(candidate)
+    client.app.state.stack["llm_primary"] = model
+    session = start(client, "en")["session_id"]
+    result = turn(client, session, QUESTIONS["en"])
+    if length <= 600:
+        assert result["reply"] == reply == client.provider.spoken[-1]
+        assert result["warnings"] == [] and len(model.calls) == 2
+        reviewed = json.loads(model.calls[1]["messages"][1]["content"])
+        assert reviewed["candidate"]["reply"] == reply
+    else:
+        assert result["reply"] != reply and len(model.calls) == 1
+        assert result["warnings"] == [
+            {"stage": "llm", "code": "grounded_reply_unavailable"}
+        ]
+    assert result["booking_changes"] == []
+
+
+@pytest.mark.parametrize(
     "language,unwanted",
     [
         ("et", "Selles demos soovitan köögiviljasuppi."),

@@ -15,6 +15,7 @@ from pathlib import Path
 
 from livekit import api, rtc
 from livekit.agents import Agent, AgentServer, AgentSession, JobContext, cli, llm, stt
+from livekit.agents.language import LanguageCode
 from livekit.agents.types import TimedString, USERDATA_TIMED_TRANSCRIPT
 from livekit.plugins import groq, silero
 
@@ -99,7 +100,7 @@ class TelephoneAgent(Agent):
                         # Keep a nonempty marker to finish the turn without leaking
                         # foreign speech or losing the normal rejection/retry path.
                         data.text = REJECTED_TRANSCRIPT[self.state.language]
-                        data.language = self.state.language
+                        data.language = LanguageCode(self.state.language)
             yield event
 
     async def on_user_turn_completed(self, turn_ctx, new_message):

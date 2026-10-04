@@ -39,6 +39,13 @@ async def count():
         await client.aclose()
 asyncio.run(count())
 """
+WEB_IDENTITY = """import json,os,urllib.request
+port = int(os.environ.get("PORT", "8000"))
+assert 1 <= port <= 65535
+with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/status", timeout=5) as response:
+    data = json.load(response)
+print(data["telephone"]["release"]["web_fingerprint"])
+"""
 
 
 def require(condition):
@@ -219,15 +226,22 @@ def report_release(web, items, sha, profile, env):
     observed = targets(env, items, healthy_only=True)
     require(current(observed, sha, web["Id"], profile))
     fingerprint = output(
-        ["docker", "exec", web["Id"], "python", "-m", "app.release_status", "identity"],
+        ["docker", "exec", web["Id"], "python", "-c", WEB_IDENTITY],
         env,
     )
     require(re.fullmatch(r"[0-9a-f]{64}", fingerprint))
     source(env, web["Id"])
     run(
         [
-            "docker", "exec", items[0]["Id"], "python", "-m",
-            "app.release_status", "record", sha, fingerprint,
+            "docker",
+            "exec",
+            items[0]["Id"],
+            "python",
+            "-m",
+            "app.release_status",
+            "record",
+            sha,
+            fingerprint,
         ],
         env,
     )
@@ -319,7 +333,9 @@ def reconcile(repository, state, base):
             k: v
             for k, v in resolved.items()
             if (
-                k.startswith(("AZURE_", "GROQ_", "VOICEBOT_", "RESTAURANT_", "STAY_", "EASY_"))
+                k.startswith(
+                    ("AZURE_", "GROQ_", "VOICEBOT_", "RESTAURANT_", "STAY_", "EASY_")
+                )
                 or k == "CALLS_DB"
             )
             and not k.endswith(("KEY", "SECRET", "TOKEN"))
@@ -392,6 +408,8 @@ def reconcile(repository, state, base):
                         stopped_id = bridge["Id"]
                     source(base, web["Id"])
                     inspect(name, base, old[1]["Id"], healthy_only=False)
+                force = [] if healthy(existing[index]) else ["--force-recreate"]
+                run(command + UP + force + [service], env, timeout=1200)
             except Exception as error:
                 if stopped_id:
                     try:
@@ -403,8 +421,6 @@ def reconcile(repository, state, base):
                 if isinstance(error, Changed):
                     return "DEFER: release_changed"
                 raise
-            force = [] if healthy(existing[index]) else ["--force-recreate"]
-            run(command + UP + force + [service], env, timeout=1200)
             try:
                 source(base, web["Id"])
             except Changed:

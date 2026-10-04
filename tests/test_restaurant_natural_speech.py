@@ -14,7 +14,8 @@ from app.restaurant_answers import (
 )
 from app.restaurant_data import DAYS, load_restaurant_data
 
-pytest_plugins = ["tests.test_restaurant_conversation", "tests.test_restaurant_http"]
+from tests.test_restaurant_conversation import make_state  # noqa: F401
+from tests.test_restaurant_http import client  # noqa: F401
 
 
 @pytest.mark.parametrize(
@@ -61,6 +62,49 @@ def test_explicit_detail_followup_retains_schedule_day(
     state.observe_user_text(followup, language=language)
     assert state.guard_reply("", []) == answer
     assert state._restaurant_question.days == (6,)
+
+
+@pytest.mark.parametrize(
+    "language,question,followup",
+    [
+        ("et", "Kas lõhe sisaldab piima?", "Räägi sellest lähemalt"),
+        ("en", "Does salmon contain milk?", "Please tell me more"),
+        ("ru", "Лосось содержит молоко?", "Можно подробнее"),
+    ],
+)
+def test_allergen_detail_followup_keeps_dish_declarations_and_safety_notice(
+    make_state, language, question, followup
+):
+    state = make_state(language)
+    state.observe_user_text(question, language=language)
+    answer = state.guard_reply("", [])
+    assert state.restaurant["allergy_notice"][language] in answer
+    state.observe_user_text(followup, language=language)
+    assert state.guard_reply("", []) == answer
+    assert state._restaurant_dish == "salmon"
+    assert state._restaurant_question.topics == ("allergens",)
+    assert state.pending is None and not state.bookings
+
+
+@pytest.mark.parametrize(
+    "language,question,followup",
+    [
+        ("et", "Kas suuremaid gruppe võetakse vastu?", "Palun täpsusta"),
+        ("en", "Do you accept larger groups?", "Please tell me more"),
+        ("ru", "Вы принимаете большие группы?", "Можно подробнее"),
+    ],
+)
+def test_group_policy_detail_followup_keeps_staff_guidance(
+    make_state, language, question, followup
+):
+    state = make_state(language)
+    state.observe_user_text(question, language=language)
+    answer = state.guard_reply("", [])
+    assert state._restaurant_question.topics == ("groups",)
+    state.observe_user_text(followup, language=language)
+    assert state.guard_reply("", []) == answer
+    assert state._restaurant_question.topics == ("groups",)
+    assert state.pending is None and not state.bookings
 
 
 @pytest.mark.parametrize(

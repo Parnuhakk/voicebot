@@ -104,7 +104,7 @@ _RUSSIAN_PRONUNCIATION = re.compile(
     r"|(?P<range>с\s+(?P<start>\d{1,2}(?::\d{2})?)\s+до\s+(?P<end>\d{1,2}(?::\d{2})?))"
     r"|(?P<clock>в\s+(?P<time>\d{1,2}:\d{2}))"
     r"|(?P<zone>(?:часовой пояс\s+)?Europe/Tallinn)"
-    r"|(?P<venue>Meretuule Demo Restaurant)"
+    r"|(?P<venue>Meretuule(?: Demo Restaurant)?)"
     r")(?![\w:]|\.\d)",
     re.IGNORECASE,
 )
@@ -146,7 +146,7 @@ def _russian_alias(match: re.Match[str], text: str) -> str:
     if match["zone"]:
         return "по времени Таллина"
     if match["venue"]:
-        return "деморесторан Меретууле"
+        return "деморесторан Меретууле" if " " in match["venue"] else "Меретууле"
     accusative = bool(re.search(r"\bна\s*$", text[: match.start()], re.IGNORECASE))
     if match["date"]:
         year = match["year"]

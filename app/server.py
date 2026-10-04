@@ -384,7 +384,9 @@ def create_app():
                 "speech_rate": delivery.rate,
                 "recap_rate": delivery.recap_rate,
                 "sentence_pause_ms": delivery.sentence_pause_ms,
-                "release": telephone_release_status(),
+                "release": telephone_release_status(
+                    restaurant_data=stack.get("restaurant_data")
+                ),
                 "media_credentials_configured": stack["livekit"] is not None,
                 "worker_health_probe": "separate_private_endpoint",
                 "public_ingress_verified": False,
@@ -590,6 +592,8 @@ def create_app():
         except BaseException:
             if key is not None:
                 sessions.release(session)
+            else:
+                callslog.history_safe(call_history.end, session.tools.call_id)
             raise
 
         streaming = any(
@@ -600,11 +604,10 @@ def create_app():
         if streaming:
             from .browser_audio import AudioEvents, StreamingSpeaker
 
-            originating_turn = session.turn_count
-
             def invalidate_receipt():
                 with sessions.lock:
-                    if session.turn_count == originating_turn:
+                    receipt = session.recap_delivery
+                    if receipt is not None and receipt.get("transport") is events:
                         session.recap_delivery = None
 
             events = AudioEvents(invalidate_receipt)
@@ -622,6 +625,7 @@ def create_app():
                     recap_delivery_id=recap_delivery_id,
                     tts_override=selected,
                     emit=events.emit if events is not None else None,
+                    receipt_transport=events,
                 )
                 response["session_id"] = key
                 if key is None:

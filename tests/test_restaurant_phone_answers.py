@@ -9,7 +9,7 @@ import pytest
 from app.booking_response import trusted_booking_response
 from app.booking_faq import FAQ_PATH, load_faq
 from app.restaurant_call import COPY
-from tests.test_restaurant_conversation import make_state, prepare
+from tests.test_restaurant_conversation import make_state, prepare, tomorrow
 from tests.test_restaurant_http import AUTH, client, start
 
 
@@ -45,6 +45,71 @@ CASES = [
         "Я не принимаю заказы еды, навынос или с доставкой. Могу помочь с бронированием столика.",
     ),
 ]
+
+
+@pytest.mark.parametrize(
+    "clock", ["18 hours", "1800 hours", "six hours in the evening", "18:00 hours"]
+)
+def test_clock_hour_unit_reaches_native_booking_not_opening_hours(make_state, clock):
+    state = make_state("et")
+    state.observe_user_text("Yes.", detected_language="et")
+    assert not state.language_locked and not state.bookings
+    state.observe_user_text(
+        f"Please reserve a table for four people tomorrow at {clock}.",
+        detected_language="en",
+    )
+    assert state.language == "en" and state.language_locked
+    assert trusted_booking_response(state) == {
+        "name": "plan_restaurant_reservation",
+        "arguments": {"date": tomorrow(), "start_time": "18:00", "party_size": 4},
+    }
+    assert state._restaurant_question is None
+    assert not state.holds and not state.bookings and not state.pending
+
+
+@pytest.mark.parametrize(
+    "clock", ["18 hours", "six hours in the evening", "18:00 hours"]
+)
+def test_clock_hour_unit_audio_http_prepares_only_an_owned_recap(client, clock):
+    session = start(client, "auto")["session_id"]
+    client.provider.transcript = (
+        f"Please reserve a table for four people tomorrow at {clock}."
+    )
+    response = client.post(
+        "/api/turn",
+        headers=AUTH,
+        json={
+            "session_id": session,
+            "audio_b64": base64.b64encode(b"RIFF-synthetic-fixture").decode(),
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()
+    assert result["language"] == "en"
+    assert result["reply"].endswith(COPY["en"]["confirmation_question"])
+    assert result["recap_delivery_id"] and result["booking_changes"] == []
+    tools = client.app.state.demo_sessions.sessions[session].tools
+    assert tools.pending["recap"]["date"] == tomorrow()
+    assert tools.pending["recap"]["start"].endswith("18:00:00")
+    assert tools.pending["recap"]["party_size"] == 4
+    assert not tools.pending["delivery"] and not tools.pending["approved"]
+    assert not tools.bookings
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "What are your hours at six hours in the evening?",
+        "Are you open tomorrow at 18 hours?",
+        "Please reserve a table for four people tomorrow at 18 hours. What are your opening hours?",
+    ],
+)
+def test_real_opening_hours_question_survives_a_clock_unit(make_state, text):
+    state = make_state("en")
+    state.observe_user_text(text, language="en")
+    assert state._restaurant_question.topics == ("hours",)
+    assert "content" in trusted_booking_response(state)
+    assert not state.holds and not state.bookings and not state.pending
 
 
 @pytest.mark.parametrize(
@@ -505,3 +570,59 @@ def test_capability_disclosure_is_not_delegated_to_free_wording(
     assert response.json()["reply"] == expected and model.calls == 0
     state = client.app.state.demo_sessions.sessions[session].tools
     assert not state.holds and not state.bookings
+
+
+@pytest.mark.parametrize(
+    "topic,question",
+    [
+        ("food_orders", "Can I order takeaway?"),
+        ("special_requests", "Can you record an allergy note?"),
+    ],
+)
+def test_capability_after_three_information_topics_cannot_lose_its_disclosure(
+    client, topic, question
+):
+    from tests.test_restaurant_reasoning import Model
+
+    model = Model("I will handle that request.")
+    client.app.state.stack["llm_primary"] = model
+    session = start(client, "en")["session_id"]
+    response = client.post(
+        "/api/turn",
+        headers=AUTH,
+        json={
+            "session_id": session,
+            "text": "Where are you? What are your opening hours? Do you have parking? "
+            + question,
+        },
+    )
+    assert response.status_code == 200
+    state = client.app.state.demo_sessions.sessions[session].tools
+    assert model.calls == []
+    assert state.information_reply(topic) in response.json()["reply"]
+    assert response.json()["reply"] == client.provider.spoken[-1]
+    assert not state.pending and not state.holds and not state.bookings
+    assert response.json()["booking_changes"] == []
+
+
+@pytest.mark.parametrize("later", ["Cancel that.", "Actually, move that to 15:00."])
+def test_mixed_booking_clause_cannot_ignore_a_later_cancellation_or_correction(
+    client, later
+):
+    session = start(client, "en")["session_id"]
+    response = client.post(
+        "/api/turn",
+        headers=AUTH,
+        json={
+            "session_id": session,
+            "text": "Can I order takeaway? Book a table tomorrow at 14:00 for four. "
+            + later,
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()
+    state = client.app.state.demo_sessions.sessions[session].tools
+    assert state.information_reply("food_orders") in result["reply"]
+    assert result["booking_changes"] == [] and result["recap_delivery_id"] is None
+    assert not state.pending and not state.holds and not state.bookings
+    assert state.booking_inquiry is None

@@ -12,7 +12,9 @@ LABELS = {
     "en": ("drawing activities", "toys", "a play corner", "a children's menu"),
     "ru": ("возможность порисовать", "игрушки", "игровой уголок", "детское меню"),
 }
-MENU = re.compile(r"lastemenüü|laste\s+menüü|(?:children'?s?|kids'?|child)\s+menu|детск\w*\s+меню")
+MENU = re.compile(
+    r"lastemenüü|laste\s+menüü|(?:children'?s?|kids'?|child)\s+menu|детск\w*\s+меню"
+)
 ACTIVITIES = re.compile(
     r"joonist\w*|värvim\w*|mänguas\w*|mängunur\w*|laste\s+(?:nurk|tegevus)\w*|"
     + r"colou?ring|crayons?|drawing|art supplies|toys?|play\s+(?:corner|area|room)|"
@@ -36,7 +38,8 @@ DETAILS = re.compile(
     + r"присмотр|нян|возраст|убира\w*|чист\w*|бесплат|платн|стоит|стоим|брон"
 )
 MENU_DETAILS = re.compile(
-    r"mis\s+(?:road|toidud|valik)|mida.*(?:süüa|lastemenüüs|pakute)|"
+    r"allerg|allergeen|аллерг|ingredient|koostis|состав|sisald|contain|"
+    + r"mis\s+(?:road|toidud|valik)|mida.*(?:süüa|lastemenüüs|pakute)|"
     + r"what.*(?:dishes|food|serve|include|on|in)|"
     + r"(?:какие|что).*(?:блюд|ед|меню|входит)|pasta|pizza|friik|burger|паст|пицц"
 )
@@ -54,13 +57,25 @@ def family_topic(text: str) -> str | None:
     return "family"
 
 
-def family_reply(data: Mapping[str, object], language: str, *, details: bool = False) -> str:
+def family_reply(
+    data: Mapping[str, object], language: str, *, details: bool = False
+) -> str:
     raw = data.get("family_facilities")
-    known: Mapping[str, object] = cast(Mapping[str, object], raw) if isinstance(raw, Mapping) else {}
-    available = [label for key, label in zip(FACILITIES, LABELS[language]) if known.get(key) is True]
+    known: Mapping[str, object] = (
+        cast(Mapping[str, object], raw) if isinstance(raw, Mapping) else {}
+    )
+    available = [
+        label
+        for key, label in zip(FACILITIES, LABELS[language])
+        if known.get(key) is True
+    ]
     if available:
         connector = {"et": " ja ", "en": " and ", "ru": " и "}[language]
-        names = connector.join(available) if len(available) < 3 else ", ".join(available[:-1]) + connector + available[-1]
+        names = (
+            connector.join(available)
+            if len(available) < 3
+            else ", ".join(available[:-1]) + connector + available[-1]
+        )
         reply = {
             "et": f"Lastele on olemas {names}.",
             "en": f"For children, we have {names}.",
@@ -73,9 +88,12 @@ def family_reply(data: Mapping[str, object], language: str, *, details: bool = F
             "ru": "У меня нет подтверждённой информации об удобствах для детей.",
         }[language]
     if details or len(available) != len(FACILITIES):
-        reply += " " + {
-            "et": "Täpse valiku, kasutustingimused ja muud üksikasjad palun täpsustage restorani töötajaga.",
-            "en": "Please check the exact choices, conditions of use and other details with the restaurant team.",
-            "ru": "Точный выбор, условия использования и другие подробности уточните у сотрудника ресторана.",
-        }[language]
+        reply += (
+            " "
+            + {
+                "et": "Täpse valiku, kasutustingimused ja muud üksikasjad palun täpsustage restorani töötajaga.",
+                "en": "Please check the exact choices, conditions of use and other details with the restaurant team.",
+                "ru": "Точный выбор, условия использования и другие подробности уточните у сотрудника ресторана.",
+            }[language]
+        )
     return reply

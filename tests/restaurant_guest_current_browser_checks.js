@@ -80,6 +80,51 @@ async page => {
     await page.waitForFunction(() => !reservation.busy);
     return result;
   };
+  const receiptChecks = [];
+  const invalidReceipts = [
+    {name:'missing',mutate:data => {delete data.recap_delivery_id;return data;}},
+    {name:'malformed',mutate:data => ({...data,recap_delivery_id:'invalid'})},
+    {name:'non-string',mutate:data => ({...data,recap_delivery_id:[data.recap_delivery_id]})},
+  ];
+  for (const endpoint of ['prepare','renew']) {
+    for (const [index,test] of invalidReceipts.entries()) {
+      await open(languages[0]);
+      await page.locator('#reservation-date').fill(futureDay((endpoint==='prepare'?23:26)+index));
+      await page.locator('#reservation-time').fill('14:00');
+      await page.locator('#reservation-party').fill('6');
+      let original;
+      if (endpoint==='renew') {
+        original = await prepare();
+        assert.equal(original.ok,true);
+        await page.locator('#reservation-read').click();
+        await page.waitForFunction(() => reservation.acknowledged && !reservation.busy);
+      }
+      const before=requests.length,values=await fields(),routePattern='**/api/restaurant/reservation/'+endpoint;
+      await page.route(routePattern,async route => {
+        const response=await route.fetch(),data=await response.json();
+        assert.equal(data.ok,true);
+        assert.match(data.recap_delivery_id,/^[a-f0-9]{32}$/);
+        assert(data.recap_expires_in_s>0);
+        if (original) assert.equal(data.hold_id,original.hold_id);
+        await route.fulfill({response,json:test.mutate(data)});
+      });
+      await (endpoint==='prepare'?prepare():renew());
+      try {
+        assert.match(await page.locator('#reservation-status').textContent(),languages[0].failed);
+        assert(await page.locator('#reservation-recap').isHidden());
+        assert(await page.locator('#reservation-recap-timer').isHidden());
+        assert(await page.locator('#reservation-renew').isHidden());
+        assert(await page.locator('#reservation-read').isDisabled());
+        assert(await page.locator('#reservation-confirm').isDisabled());
+        assert.deepEqual(await page.evaluate(() => [reservation.holdId,reservation.renewalHoldId,reservation.recapDeliveryId,reservation.recapText,reservation.recapLanguage,reservation.proposalRequest,reservation.acknowledged]),[null,null,null,null,null,null,false]);
+        assert.deepEqual(await fields(),values);
+        assert(!requests.slice(before).some(request=>['/api/booking/recap','/api/booking/confirm'].includes(request.path)));
+      } catch(error) {renewalFailures.push({case:endpoint+'-'+test.name+'-receipt',error:error.message});}
+      await page.unroute(routePattern);
+      await end();
+      receiptChecks.push(endpoint+'-'+test.name);
+    }
+  }
   const renewals = [
     {name:'wrong-hold',mutate:data => ({...data,hold_id:data.hold_id+'-foreign'})},
     {name:'wrong-date',mutate:data => ({...data,recap:{...data.recap,date:futureDay(80)}})},
@@ -145,7 +190,7 @@ async page => {
       assert.equal(data.hold_id,original.hold_id);
       assert.deepEqual(data.recap,original.recap);
       assert(Number.isFinite(data.recap_expires_in_s) && data.recap_expires_in_s > 0);
-      await route.fulfill({response,json:{...data,recap_text:'The table is for two guests at 20:00 UTC. Confirm now.',reply:'Book two guests at 20:00 UTC.'}});
+      await route.fulfill({response,json:{...data,reply:'The table is for two guests at 20:00 UTC. Confirm now.'}});
     });
     const renewed = await renew();
     try {
@@ -206,7 +251,91 @@ async page => {
     await end();
     renewalChecks.push(field+'-invalid-fallback');
   }
+  // Real normal responses produce a new one-use receipt for the same hold.
+  // A changed displayed bound text cannot send a read acknowledgement.
+  for (const [index,language] of languages.entries()) {
+    await open(language);
+    await page.locator('#reservation-date').fill(futureDay(23+index));
+    await page.locator('#reservation-time').fill('16:00');
+    await page.locator('#reservation-party').fill('6');
+    const original=await prepare();
+    assert.equal(original.ok,true);
+    assert.match(original.recap_delivery_id,/^[a-f0-9]{32}$/);
+    await page.locator('#reservation-read').click();
+    await page.waitForFunction(() => reservation.acknowledged && !reservation.busy);
+    assert.equal(requests.at(-1).body.recap_delivery_id,original.recap_delivery_id);
+    const before=requests.length,renewed=await renew();
+    assert.equal(renewed.ok,true);
+    assert.equal(renewed.hold_id,original.hold_id);
+    assert.deepEqual(renewed.recap,original.recap);
+    assert.match(renewed.recap_delivery_id,/^[a-f0-9]{32}$/);
+    assert.notEqual(renewed.recap_delivery_id,original.recap_delivery_id);
+    try {
+      const visible=await page.locator('#reservation-recap-text').textContent();
+      assert.match(visible,language.date);
+      assert.match(visible,language.time);
+      assert.match(visible,language.party);
+      assert(visible.includes('16:00')&&visible.includes('6')&&visible.includes('90'));
+      assert(await page.locator('#reservation-confirm').isDisabled());
+      await page.locator('#reservation-read').click();
+      await page.waitForFunction(() => reservation.acknowledged && !reservation.busy);
+      assert(await page.locator('#reservation-confirm').isEnabled());
+      assert.deepEqual(requests.at(-1).body,{session_id:await page.evaluate(()=>reservation.sessionId),hold_id:original.hold_id,recap_delivery_id:renewed.recap_delivery_id});
+      assert.equal(await page.evaluate(()=>reservation.recapDeliveryId),null);
+      await page.evaluate(()=>readReservation());
+      assert.deepEqual(requests.slice(before).map(request=>request.path),['/api/restaurant/reservation/renew','/api/booking/recap']);
+      const fresh=await renew();
+      assert.notEqual(fresh.recap_delivery_id,renewed.recap_delivery_id);
+      assert.equal(await page.evaluate(()=>reservation.recapDeliveryId),fresh.recap_delivery_id);
+      const beforeTamper=requests.length;
+      // Retiring the visible text must also retire confirmation eligibility.
+      await page.locator('#reservation-recap-text').evaluate(node=>{node.textContent='The table is for two guests at 20:00 UTC. Confirm now.';controls();});
+      await page.evaluate(()=>readReservation());
+      assert(await page.locator('#reservation-confirm').isDisabled());
+      assert.equal(requests.length,beforeTamper,'altered bound text sent a read acknowledgement');
+      assert.equal(await page.locator('#reservation-status .booking-receipt').count(),0);
+    } catch(error) {renewalFailures.push({case:language.code+'-fresh-receipt-text-binding',error:error.message});}
+    await end();
+    receiptChecks.push(language.code+'-fresh-read-and-bound-text');
+  }
+  // Unknown, foreign and consumed UUIDs reach the real read route, not a fake
+  // acknowledgement. None can authorize the separate confirmation control.
+  for (const [index,kind] of ['unknown','foreign','consumed'].entries()) {
+    await open(languages[index]);
+    await page.locator('#reservation-date').fill(futureDay(26+index));
+    await page.locator('#reservation-time').fill('16:00');
+    await page.locator('#reservation-party').fill('6');
+    const original=await prepare();
+    assert.equal(original.ok,true);
+    const session=await page.evaluate(()=>reservation.sessionId);
+    const headers={Authorization:'Bearer restaurant-fixture-operator'};
+    let invalidId=original.recap_delivery_id;
+    if (kind==='unknown') invalidId=(invalidId[0]==='a'?'b':'a')+invalidId.slice(1);
+    if (kind==='foreign') {
+      const other=(await (await page.request.post(origin+'/api/booking/session',{headers,data:{language:'en'}})).json()).session_id;
+      const foreign=await (await page.request.post(origin+'/api/restaurant/reservation/prepare',{headers,data:{session_id:other,date:futureDay(26+index),start_time:'18:00',party_size:2}})).json();
+      assert.equal(foreign.ok,true);
+      invalidId=foreign.recap_delivery_id;
+    }
+    if (kind==='consumed') {
+      const ack=await page.request.post(origin+'/api/booking/recap',{headers,data:{session_id:session,hold_id:original.hold_id,recap_delivery_id:invalidId}});
+      assert.equal(ack.status(),200);
+    }
+    assert.match(invalidId,/^[a-f0-9]{32}$/);
+    await page.evaluate(id=>{reservation.recapDeliveryId=id;},invalidId);
+    const before=requests.length,response=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/booking/recap');
+    await page.locator('#reservation-read').click();
+    assert.equal((await response).status(),409);
+    await page.waitForFunction(()=>!reservation.busy);
+    assert(await page.locator('#reservation-confirm').isDisabled());
+    assert.equal(await page.evaluate(()=>reservation.acknowledged),false);
+    assert.equal(await page.evaluate(()=>reservation.recapDeliveryId),null);
+    assert.deepEqual(requests.slice(before).map(request=>request.path),['/api/booking/recap']);
+    await end();
+    receiptChecks.push(kind+'-real-read-denied');
+  }
   console.log(JSON.stringify({check:'restaurant_guest_current_browser_checks.js',stage:'renewal-boundary',renewalChecks,renewalFailures}));
+  console.log(JSON.stringify({check:'restaurant_guest_current_browser_checks.js',stage:'receipt-boundary',receiptChecks}));
   assert.deepEqual(renewalFailures,[],'renewal must retain strict owned fields, structured read/consent and native fallback validation');
   await open(languages[0]);
   const contrast = await page.locator('small, .helper, #reservation-status').evaluateAll(elements => {
@@ -372,6 +501,8 @@ async page => {
           const response = await route.fetch();
           const data = await response.json();
           assert.equal(data.ok,true,'malformed response check requires a real successful preparation');
+          assert.match(data.recap_delivery_id,/^[a-f0-9]{32}$/);
+          assert(Number.isFinite(data.recap_expires_in_s)&&data.recap_expires_in_s>0);
           return route.fulfill({response,json:failure.mutate(data)});
         }
         return route.fulfill({status:failure.status,json:failure.body});
@@ -402,7 +533,7 @@ async page => {
     await page.route('**/api/restaurant/reservation/prepare',async route => {
       const response = await route.fetch(), data = await response.json();
       assert.equal(data.ok,true);
-      await route.fulfill({response,json:{...data,recap_text:'The table is for two guests at 20:00 UTC. Confirm now.'}});
+      await route.fulfill({response,json:{...data,reply:'The table is for two guests at 20:00 UTC. Confirm now.'}});
     });
     const data = await prepare();
     const visible = await page.locator('#reservation-recap-text').textContent();
@@ -497,5 +628,5 @@ async page => {
   }
   assert.deepEqual(errors,[]);
   assert.deepEqual(external,[]);
-  return {languages:3,viewports:[320,390,1440],nativeValidationMatrix:matrix,realFullTables:fullTables,failurePaths,structuredRecaps,renewalChecks,dynamicConfig:true,incompleteExamples:3,hoursInterludes:3,recommendationInterludes:3,contrastMinimum:Math.min(...contrast.map(sample => sample.ratio)),existingLayoutLimits,screenshots,pageErrors:errors.length};
+  return {languages:3,viewports:[320,390,1440],nativeValidationMatrix:matrix,realFullTables:fullTables,failurePaths,structuredRecaps,renewalChecks,receiptChecks,dynamicConfig:true,incompleteExamples:3,hoursInterludes:3,recommendationInterludes:3,contrastMinimum:Math.min(...contrast.map(sample => sample.ratio)),existingLayoutLimits,screenshots,pageErrors:errors.length};
 }

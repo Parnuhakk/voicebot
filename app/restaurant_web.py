@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import uuid
 import time
 
 from fastapi import Header, HTTPException, Request
@@ -25,17 +26,27 @@ def add_restaurant_routes(app, sessions):
             return _result(result)
         pending = session.tools.pending
         recap = session.tools.render_recap()
-        if not pending or not recap:
-            return _result({"error": "hold_expired_or_unknown"})
-        return _result({
-            **result,
-            "recap_text": recap,
-            "recap_expires_in_s": max(
-                0.0, min(pending["expires_at"], session.expires_at) - time.monotonic()
-            ),
-            "kind": "slot",
-            "business_type": "restaurant",
-        })
+        if not session._recap_is_current(pending, recap):
+            raise HTTPException(409, "booking_recap_expired_or_unknown")
+        session.booking_recap_delivery = {
+            "id": uuid.uuid4().hex,
+            "pending": pending,
+            "text": recap,
+            "language": session.tools.language,
+        }
+        return _result(
+            {
+                **result,
+                "recap_text": recap,
+                "recap_delivery_id": session.booking_recap_delivery["id"],
+                "recap_expires_in_s": max(
+                    0.0,
+                    min(pending["expires_at"], session.expires_at) - time.monotonic(),
+                ),
+                "kind": "slot",
+                "business_type": "restaurant",
+            }
+        )
 
     @app.get("/api/public/restaurant")
     @app.get("/api/public/property")
@@ -47,7 +58,8 @@ def add_restaurant_routes(app, sessions):
             "restaurant": data,
             "supported_languages": ["et", "en", "ru"],
             "family_facilities_summary": {
-                language: family_reply(data, language) for language in ("et", "en", "ru")
+                language: family_reply(data, language)
+                for language in ("et", "en", "ru")
             },
             "booking_time_examples": copy.deepcopy(TIME_INPUT_EXAMPLES),
             "opening_hours_summary": {
@@ -103,6 +115,7 @@ def add_restaurant_routes(app, sessions):
                 {"session_id", "date", "start_time", "party_size", "guest_fixture_id"},
                 {"date", "start_time", "party_size"},
             )
+            session.booking_recap_delivery = None
             session.tools.observe_user_text(
                 "Prepare this restaurant table reservation.",
                 language=session.tools.language,
@@ -120,9 +133,7 @@ def add_restaurant_routes(app, sessions):
             sessions.release(session)
 
     @app.post("/api/restaurant/reservation/renew")
-    async def renew(
-        request: Request, authorization: str | None = Header(default=None)
-    ):
+    async def renew(request: Request, authorization: str | None = Header(default=None)):
         body, session = await owned(request, authorization)
         try:
             _fields(body, {"session_id", "hold_id"}, {"hold_id"})
@@ -140,6 +151,7 @@ def add_restaurant_routes(app, sessions):
             if pending.get("hold_id") != hold_id:
                 raise HTTPException(409, "booking_proposal_unavailable")
             guest = pending["guest_fixture_id"]
+            session.booking_recap_delivery = None
             session.tools.observe_user_text(
                 "Prepare this restaurant table reservation.",
                 language=session.tools.language,
@@ -156,8 +168,23 @@ def add_restaurant_routes(app, sessions):
     async def recap(request: Request, authorization: str | None = Header(default=None)):
         body, session = await owned(request, authorization)
         try:
-            _fields(body, {"session_id", "hold_id"}, {"hold_id"})
-            if not session.tools.mark_recap_delivered(body["hold_id"]):
+            _fields(
+                body,
+                {"session_id", "hold_id", "recap_delivery_id"},
+                {"hold_id", "recap_delivery_id"},
+            )
+            receipt, session.booking_recap_delivery = (
+                session.booking_recap_delivery,
+                None,
+            )
+            if (
+                receipt is None
+                or body["recap_delivery_id"] != receipt["id"]
+                or body["hold_id"] != receipt["pending"]["hold_id"]
+                or receipt["language"] != session.tools.language
+                or not session._recap_is_current(receipt["pending"], receipt["text"])
+                or not session.tools.mark_recap_delivered(body["hold_id"])
+            ):
                 raise HTTPException(409, "booking_recap_expired_or_unknown")
             return {"acknowledged": True, "hold_id": body["hold_id"]}
         finally:
@@ -172,6 +199,7 @@ def add_restaurant_routes(app, sessions):
             )
             if body["consent"] is not True:
                 raise HTTPException(400, "explicit_consent_required")
+            session.booking_recap_delivery = None
             language = session.tools.language
             session.tools.observe_user_text(
                 CANCEL[language] if cancel else CONSENT[language], language=language

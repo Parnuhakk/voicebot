@@ -3,6 +3,9 @@
 import asyncio
 import base64
 import copy
+from datetime import datetime, timedelta
+from pathlib import Path
+import sqlite3
 
 import pytest
 
@@ -185,12 +188,204 @@ def test_question_numbers_and_dates_do_not_change_pending_booking(client):
         "Are you open on Sunday at 19:00?",
         "What is Wi-Fi for six devices?",
         "Can seven children use the terrace?",
+        "Do you take groups of 20?",
+        "Groups of 20?",
     ]:
         side = turn(client, session, question)
         assert state.booking_inquiry == retained and side["reply"].endswith(
             proposal["reply"]
         )
         assert side["booking_changes"] == [] and not state.pending["approved"]
+
+
+@pytest.mark.parametrize("language", ["et", "en", "ru"])
+def test_dietary_question_preface_cannot_correct_booking_count(client, language):
+    session = start(client, language)["session_id"]
+    proposal = turn(client, session, FULL_REQUEST[language], language=language)
+    state = client.app.state.demo_sessions.sessions[session].tools
+    retained = state.booking_inquiry
+    previous = state.pending
+    side = turn(client, session, QUESTIONS[language], language=language)
+    assert state.booking_inquiry == retained
+    assert state.pending is not previous
+    assert state.pending["hold_id"] == previous["hold_id"]
+    assert not state.pending["delivery"] and not state.pending["approved"]
+    assert side["reply"].endswith(proposal["reply"])
+    assert side["recap_delivery_id"] != proposal["recap_delivery_id"]
+    assert not side["booking_changes"]
+
+
+@pytest.mark.parametrize("language", ["et", "en", "ru"])
+@pytest.mark.parametrize(
+    "field", ["party_size", "date", "start_time", "start_time_terminal_numeric"]
+)
+@pytest.mark.parametrize("channel", ["text", "audio"])
+def test_mixed_correction_and_menu_question_cannot_restore_obsolete_proposal(
+    client, language, field, channel
+):
+    correction = {
+        "en": {
+            "party_size": "Actually for six guests.",
+            "date": "The day after tomorrow instead.",
+            "start_time": "At 18:00 instead.",
+            "start_time_terminal_numeric": "At 18:00.",
+        },
+        "et": {
+            "party_size": "Tegelikult kuuele külalisele.",
+            "date": "Ülehomme hoopis.",
+            "start_time": "Kell 18:00 hoopis.",
+            "start_time_terminal_numeric": "Kell 18:00.",
+        },
+        "ru": {
+            "party_size": "На шестерых вместо четверых.",
+            "date": "Лучше послезавтра.",
+            "start_time": "В 18:00 вместо прежнего времени.",
+            "start_time_terminal_numeric": "В 18:00.",
+        },
+    }[language][field]
+    field = field.removesuffix("_terminal_numeric")
+    agreement = {
+        "et": "Jah, sobib.",
+        "en": "Yes, that works for me.",
+        "ru": "Да, подходит.",
+    }[language]
+    session = start(client, language)["session_id"]
+    proposal = speak(client, session, FULL_REQUEST[language], language, channel)
+    state = client.app.state.demo_sessions.sessions[session].tools
+    previous = state.pending
+    old_hold, old_receipt = previous["hold_id"], proposal["recap_delivery_id"]
+    expected = state.booking_inquiry
+    expected[field] = {
+        "party_size": 6,
+        "start_time": "18:00",
+        "date": (datetime.fromisoformat(tomorrow()) + timedelta(days=1))
+        .date()
+        .isoformat(),
+    }[field]
+
+    def rows():
+        database = Path(state.dispatcher._slot.state_db).as_uri() + "?mode=ro"
+        with sqlite3.connect(database, uri=True) as db:
+            return db.execute(
+                "SELECT hold_id,party_size,start_local,status FROM restaurant_reservations WHERE restaurant_id=?",
+                (state.restaurant["restaurant_id"],),
+            ).fetchall()
+
+    side = speak(
+        client,
+        session,
+        correction + " " + SIDE_QUESTIONS[language][1],
+        language,
+        channel,
+        old_receipt,
+    )
+    assert not side["booking_changes"] and rows() == []
+    assert state.pending is None, "a mixed correction must not restore the old hold"
+    assert side["recap_delivery_id"] is None, (
+        "an obsolete proposal must not gain a new receipt"
+    )
+    assert state.booking_inquiry == expected
+    assert not side["reply"].endswith(proposal["reply"])
+    previous["delivery"] = True  # a late old audio callback is still powerless
+    assert state.pending is None
+    denied = asyncio.run(state.dispatch("confirm_slot_booking", {"hold_id": old_hold}))
+    assert denied["error"] == "consent_required" and rows() == []
+    stale = client.post(
+        "/api/turn",
+        headers=AUTH,
+        json={
+            "session_id": session,
+            "text": agreement,
+            "language": language,
+            "recap_delivery_id": old_receipt,
+        },
+    )
+    assert stale.status_code == 409 and rows() == []
+    # This agreement can only request a new availability check and recap.
+    corrected = speak(client, session, agreement, language, channel)
+    assert (
+        corrected["recap_delivery_id"] and corrected["recap_delivery_id"] != old_receipt
+    )
+    assert not corrected["booking_changes"] and rows() == []
+    assert state.pending["hold_id"] != old_hold
+    corrected_hold = state.pending["hold_id"]
+    assert state.pending["recap"]["party_size"] == expected["party_size"]
+    assert (
+        state.pending["recap"]["start"]
+        == expected["date"] + "T" + expected["start_time"] + ":00"
+    )
+    denied = asyncio.run(state.dispatch("confirm_slot_booking", {"hold_id": old_hold}))
+    assert denied["error"] == "consent_required" and rows() == []
+    saved = speak(
+        client, session, agreement, language, channel, corrected["recap_delivery_id"]
+    )
+    assert saved["reply"] == COPY[language]["confirmed"]
+    assert len(saved["booking_changes"]) == 1
+    assert rows() == [
+        (
+            corrected_hold,
+            expected["party_size"],
+            expected["date"] + "T" + expected["start_time"] + ":00",
+            "confirmed",
+        )
+    ]
+    replay = client.post(
+        "/api/turn",
+        headers=AUTH,
+        json={
+            "session_id": session,
+            "text": agreement,
+            "language": language,
+            "recap_delivery_id": old_receipt,
+        },
+    )
+    assert replay.status_code == 409 and len(rows()) == 1
+
+
+@pytest.mark.parametrize(
+    "text,missing,issue",
+    [
+        ("31 February instead. What is on the menu?", "date", "date_invalid"),
+        ("At 25:00 instead. What is on the menu?", "start_time", "time_invalid"),
+        ("At seven instead. What is on the menu?", "start_time", "time_candidates"),
+        (
+            "Actually for four or five guests. What is on the menu?",
+            "party_size",
+            "party_invalid",
+        ),
+    ],
+)
+def test_mixed_unclear_correction_cannot_restore_old_summary(
+    client, text, missing, issue
+):
+    session = start(client)["session_id"]
+    proposal = turn(client, session, FULL_REQUEST["en"])
+    state = client.app.state.demo_sessions.sessions[session].tools
+    retained = state.booking_inquiry
+    old_hold = state.pending["hold_id"]
+    answer = turn(client, session, text, receipt=proposal["recap_delivery_id"])
+    assert state.pending is None and answer["recap_delivery_id"] is None
+    assert answer["booking_changes"] == []
+    inquiry = state.booking_inquiry
+    assert missing not in inquiry
+    if missing == "date":
+        assert inquiry.get("date_issue") == issue
+    else:
+        assert inquiry.get(issue)
+    assert all(
+        inquiry[key] == value for key, value in retained.items() if key != missing
+    )
+    with sqlite3.connect(
+        Path(state.dispatcher._slot.state_db).as_uri() + "?mode=ro", uri=True
+    ) as db:
+        assert (
+            db.execute("SELECT COUNT(*) FROM restaurant_reservations").fetchone()[0]
+            == 0
+        )
+    # Even an attempted model confirmation cannot use the old owned identifier.
+    result = asyncio.run(state.dispatch("confirm_slot_booking", {"hold_id": old_hold}))
+    assert result.get("error") in {"consent_required", "clarification_required"}
+    assert not state.bookings
 
 
 def test_late_native_playback_cannot_approve_new_side_question_recap(make_state):
@@ -392,11 +587,19 @@ def test_speech_failure_after_side_question_cannot_authorize_write(client, monke
 @pytest.mark.parametrize("prepared", [False, True])
 def test_social_question_answers_and_returns_to_booking(client, question, prepared):
     session = start(client)["session_id"]
-    original = turn(client, session, FULL_REQUEST["en"] if prepared else "A table tomorrow at 2 pm")
+    original = turn(
+        client, session, FULL_REQUEST["en"] if prepared else "A table tomorrow at 2 pm"
+    )
     state = client.app.state.demo_sessions.sessions[session].tools
     retained = state.booking_inquiry
     side = turn(client, session, question)
-    expected = state.greeting if state.conversation.intent == "identity" else state.conversation.reply
+    expected = (
+        state.greeting
+        if state.conversation.intent == "identity"
+        else state.conversation.reply
+    )
     assert side["reply"].startswith(expected)
-    assert side["reply"].endswith(original["reply"] if prepared else COPY["en"]["party"])
+    assert side["reply"].endswith(
+        original["reply"] if prepared else COPY["en"]["party"]
+    )
     assert state.booking_inquiry == retained and side["booking_changes"] == []

@@ -305,15 +305,15 @@ def test_explicit_reality_question_remains_truthful(client, language, truth):
     [
         (
             "et",
-            "Ma ei saanud kinnitust, kas broneering salvestus. Palun kontrollige broneeringu olekut enne uuesti proovimist.",
+            "Ma ei saanud toimingu tulemust kinnitada. Palun ärge korrake seda; kontrollige broneeringu olekut.",
         ),
         (
             "en",
-            "I couldn't check whether the reservation was saved. Please check its status before trying again.",
+            "I couldn't confirm the result. Please don't repeat the action; check the reservation's status.",
         ),
         (
             "ru",
-            "Не получилось проверить, сохранилась ли бронь. Сначала проверьте её статус, чтобы не сделать её дважды.",
+            "Не удалось подтвердить результат действия. Не повторяйте его; проверьте статус брони.",
         ),
     ],
 )

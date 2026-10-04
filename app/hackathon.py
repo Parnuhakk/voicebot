@@ -45,6 +45,7 @@ class DemoSession:
     turn_count: int = 0
     expiry: object = None
     recap_delivery: dict[str, Any] | None = None
+    booking_recap_delivery: dict[str, Any] | None = None
     voice_id: str = "azure"
 
     def _recap_is_current(self, pending, text):
@@ -521,6 +522,7 @@ class _TrustedLlm:
             and getattr(state, "reasoning_allowed", False)
         ):
             from .restaurant_reasoning import reasoned_reply
+
             started = time.perf_counter()
             try:
                 reply = reasoned_reply(state, messages, self.client)
@@ -688,6 +690,7 @@ async def run_demo_turn(
     recap_delivery_id=None,
     tts_override=None,
     emit=None,
+    receipt_transport=None,
 ) -> dict[str, Any]:
     from .turn import MAX_HISTORY_TURNS, recognize_audio_result, run_turn
 
@@ -699,7 +702,8 @@ async def run_demo_turn(
     detected_language = None
     if audio:
         recognition = await recognize_audio_result(
-            stack["stt"], audio,
+            stack["stt"],
+            audio,
             session.tools.language if session.tools.language_locked else "auto",
         )
         text, recognition_status = recognition.text, recognition.status
@@ -707,7 +711,9 @@ async def run_demo_turn(
     stt_failed = recognition_status == "stt_unavailable"
     stt_ms = (time.perf_counter() - stt_started) * 1000 if audio else 0.0
     if not isinstance(text, str) or len(text) > 500:
-        session.tools.observe_user_text("", is_final=True, recognition_status="input_invalid")
+        session.tools.observe_user_text(
+            "", is_final=True, recognition_status="input_invalid"
+        )
         raise HTTPException(413, "transcript_too_large")
     # The server observes the final transcript before any LLM-generated tool call.
     session.tools.observe_user_text(
@@ -770,6 +776,7 @@ async def run_demo_turn(
             "pending": speaker.recap_pending,
             "text": result["reply"],
             "language": session.tools.language,
+            "transport": receipt_transport,
         }
     elif speaker.invalid_audio or result["tts_failed"] or result["fallback_used"]:
         session.tools.pending = None

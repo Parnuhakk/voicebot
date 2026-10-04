@@ -12,13 +12,14 @@ from typing import Any, Protocol
 from zoneinfo import ZoneInfo
 
 from .languages import LANGUAGE_POLICY
+from .turn import MAX_REPLY_CHARS
 from .restaurant_answers import (
     INFORMATION_TOPICS,
     MEDICAL_FOOD_CONCERN,
     format_schedule,
 )
 
-MAX_REPLY = 650
+MAX_REPLY = MAX_REPLY_CHARS
 REQUEST_TIMEOUT = 8.0
 STRICT_MODELS = {"openai/gpt-oss-20b", "openai/gpt-oss-120b"}
 
@@ -31,8 +32,7 @@ class ReasoningClient(Protocol):
         *,
         response_format=None,
         timeout=None,
-    ) -> dict[str, Any]:
-        ...
+    ) -> dict[str, Any]: ...
 
 
 class RestaurantState(Protocol):
@@ -42,18 +42,14 @@ class RestaurantState(Protocol):
     _reasoned_reply: tuple[int, str, str, str] | None
 
     @property
-    def _restaurant_question(self) -> object | None:
-        ...
+    def _restaurant_question(self) -> object | None: ...
 
     @property
-    def reasoning_allowed(self) -> bool:
-        ...
+    def reasoning_allowed(self) -> bool: ...
 
-    def information_reply(self, topic: str) -> str:
-        ...
+    def information_reply(self, topic: str) -> str: ...
 
-    def question_reply(self) -> str:
-        ...
+    def question_reply(self) -> str: ...
 
 
 def reasoning_enabled(client: object) -> bool:
@@ -177,6 +173,8 @@ def safe_wording(reply: str, language: str) -> bool:
         r"\b(?:demo\w*|testbroneering\w*|testim\w*|katset\w*|test (?:restaurant|reservation|booking|environment)|testing|fiktiiv\w*|fictional|демо\w*|тестов\w*|вымышлен\w*)\b|"
         r"\bдля проверки голосов\w* помощник\w*\b|"
         r"\b(?:booked|confirmed|cancelled|canceled|paid|charged|transferred)\b|"
+        r"\b(?:can|could)\s+(?:seat|accommodate)\b|"
+        r"\b(?:reservation|booking|table)\b.{0,65}\b(?:all set|ready|secured)\b|"
         r"\b(?:broneeritud|tühistatud|kinnitatud|salvestatud)\b|"
         r"\bbroneering\b.*\btehtud\b|"
         r"\b(?:broneerisin|kinnitasin|tühistasin|ühendasin)\b|"
@@ -194,7 +192,7 @@ def safe_wording(reply: str, language: str) -> bool:
         r"\b(?:сообщите|отправьте|назовите)\b.{0,40}\b(?:телефон|почт|адрес)\w*\b|"
         r"(?:\+\d{6,}|[\w.+-]+@[\w.-]+\.[a-z]{2,})"
     )
-    if re.search(blocked, reply, re.I):
+    if re.search(blocked, " ".join(reply.split()), re.I):
         return False
     # Capability operations belong to canonical replies, even when negated.
     # Do not infer action/negation scope from generated prose or model approval.
@@ -273,6 +271,8 @@ def reasoned_reply(
         if not candidate or set(candidate) != set(properties):
             return None
         reply, citations = candidate["reply"], candidate["fact_ids"]
+        if isinstance(reply, str):
+            reply = candidate["reply"] = reply.strip()
         if (
             not isinstance(reply, str)
             or candidate["language"] != language

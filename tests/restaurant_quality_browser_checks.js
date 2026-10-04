@@ -20,6 +20,7 @@ async page => {
     assert.equal(await page.locator('.navigation').getAttribute('aria-label'),navigation);
     assert.equal(await page.locator('html').getAttribute('lang'),language);
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    await page.screenshot({path:`output/playwright/quality-mobile-${language}-first-screen.png`});
     const startButton = await page.locator('#demo-start').boundingBox();
     assert(startButton.y + startButton.height <= 844, `voice controls are below the first mobile screen in ${language}: ${startButton.y}`);
     const micButton = await page.locator('#demo-mic').boundingBox();

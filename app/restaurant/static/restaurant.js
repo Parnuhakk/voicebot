@@ -41,11 +41,15 @@ const state = {
 const reservation = {
   sessionId: null,
   holdId: null,
+  recapDeliveryId: null,
+  recapText: null,
+  recapLanguage: null,
   bookingId: null,
   acknowledged: false,
   busy: false,
   uncertain: false,
   date: null,
+  epoch: 0,
   expiresAt: null,
   expiryTimer: null,
   countdownTimer: null,
@@ -617,7 +621,7 @@ function clearReservationClock() {
   $("reservation-recap-timer").hidden = true;
 }
 function currentReservationProposal() {
-  return !!reservation.holdId && Number.isFinite(reservation.expiresAt) &&
+  return currentReservationRecap() && Number.isFinite(reservation.expiresAt) &&
     performance.now() < reservation.expiresAt;
 }
 function expireReservationProposal() {
@@ -629,6 +633,7 @@ function expireReservationProposal() {
   clearReservationClock();
   reservation.renewalHoldId = reservation.holdId;
   reservation.holdId = null;
+  reservation.recapDeliveryId = reservation.recapText = reservation.recapLanguage = null;
   reservation.expiresAt = null;
   reservation.acknowledged = false;
   $("reservation-recap").hidden = true;
@@ -665,6 +670,8 @@ function validatePreparation(data, requested, expectedHoldId) {
     !data.guest_fixture_id.trim() ||
     typeof data.recap_text !== "string" ||
     !data.recap_text.trim() ||
+    typeof data.recap_delivery_id !== "string" ||
+    !/^[a-f0-9]{32}$/.test(data.recap_delivery_id) ||
     !Number.isFinite(data.recap_expires_in_s) ||
     data.recap_expires_in_s <= 0 ||
     recap?.date !== requested.date ||
@@ -687,26 +694,21 @@ function showReservationProposal(data, requestedAt, expectedHoldId = null) {
   try {
     validatePreparation(data, requested, expectedHoldId);
   } catch (error) {
-    // Reject an accepted-but-invalid payload, not just its displayed prose.
-    // Keep the session for a corrected request, but no proposal can be read,
-    // confirmed or renewed from this response or from its earlier consent.
+    // The current prepare/renew epoch already retired earlier reads. Keep that
+    // epoch so its catch/finally can announce failure and release controls.
     clearReservationClock();
     reservation.holdId = reservation.renewalHoldId = reservation.expiresAt = null;
+    reservation.recapDeliveryId = reservation.recapText = reservation.recapLanguage = null;
     reservation.proposalRequest = reservation.date = null;
     reservation.acknowledged = false;
     $("reservation-recap").hidden = $("reservation-renew").hidden = true;
     $("reservation-recap-text").textContent = "";
     throw error;
   }
-  clearReservationClock();
-  reservation.holdId = reservation.renewalHoldId = data.hold_id;
-  reservation.acknowledged = false;
-  reservation.date = data.recap.date;
-  reservation.expiresAt = requestedAt + data.recap_expires_in_s * 1000;
   const copy = demoCopy();
-  // Both prepare and renew display only validated structured facts. Arbitrary
-  // response prose cannot change the held date, time or actual diner count.
-  $("reservation-recap-text").textContent = [
+  // Bind the exact displayed structured facts to the current receipt/locale.
+  // Canonical read guards still compare this snapshot with the live DOM text.
+  const text = [
     data.recap.restaurant_name,
     `${copy.receiptDate}: ${formatBookingDate(data.recap.date)}`,
     `${copy.receiptTime}: ${requested.start_time} (${data.recap.duration_minutes} min)`,
@@ -714,6 +716,15 @@ function showReservationProposal(data, requestedAt, expectedHoldId = null) {
     `${copy.receiptTable}: ${data.recap.provider_name}`,
     `${copy.recapGuestName}: ${data.recap.guest_name}`,
   ].join(" · ");
+  clearReservationClock();
+  reservation.holdId = reservation.renewalHoldId = data.hold_id;
+  reservation.recapDeliveryId = data.recap_delivery_id;
+  reservation.recapText = text;
+  reservation.recapLanguage = state.demoLanguage;
+  reservation.acknowledged = false;
+  reservation.date = data.recap.date;
+  reservation.expiresAt = requestedAt + data.recap_expires_in_s * 1000;
+  $("reservation-recap-text").textContent = text;
   $("reservation-recap").hidden = false;
   $("reservation-renew").hidden = false;
   startReservationClock();
@@ -821,7 +832,11 @@ function controls() {
       !!reservation.holdId ||
       !!reservation.bookingId;
   $("reservation-read").disabled =
-    !currentReservationProposal() || reservation.busy || reservation.acknowledged;
+    !currentReservationProposal() ||
+    !reservation.recapDeliveryId ||
+    reservation.busy ||
+    reservation.uncertain ||
+    reservation.acknowledged;
   $("reservation-confirm").disabled =
     !currentReservationProposal() ||
     !reservation.acknowledged ||
@@ -1018,6 +1033,8 @@ async function api(path, options = {}) {
       response.headers.get("Content-Type")?.startsWith("application/x-ndjson")
         ? await readTurnStream(response, controller)
         : await response.json();
+    if (generation !== state.generation || controller.signal.aborted)
+      throw new DOMException("Cancelled", "AbortError");
     if (!response.ok) {
       const error = new Error(demoCopy().failed);
       error.status = response.status;
@@ -1038,8 +1055,29 @@ function post(path, body) {
     body: JSON.stringify(body),
   });
 }
-function clearReservation() {
+function currentReservationRecap() {
+  return (
+    state.connected &&
+    !!reservation.sessionId &&
+    !!reservation.holdId &&
+    !$("reservation-recap").hidden &&
+    reservation.recapLanguage === state.demoLanguage &&
+    !!reservation.recapText &&
+    $("reservation-recap-text").textContent === reservation.recapText
+  );
+}
+function clearReservationRecap() {
   clearReservationClock();
+  reservation.expiresAt = null;
+  reservation.epoch++;
+  reservation.holdId = reservation.recapDeliveryId = null;
+  reservation.recapText = reservation.recapLanguage = null;
+  reservation.acknowledged = false;
+  $("reservation-recap").hidden = true;
+  $("reservation-recap-text").textContent = "";
+}
+function clearReservation() {
+  clearReservationRecap();
   Object.assign(reservation, {
     sessionId: null,
     holdId: null,
@@ -1052,7 +1090,6 @@ function clearReservation() {
     proposalRequest: null,
     date: null,
   });
-  $("reservation-recap").hidden = true;
   $("reservation-cancel").hidden = true;
   $("reservation-renew").hidden = true;
   $("reservation-recap-text").textContent = "";
@@ -1277,16 +1314,26 @@ async function startDemo() {
     }
   }
 }
-async function sendTurn(input) {
+async function sendTurn(input, capture = null) {
   if (
     !state.connected ||
     !state.sessionId ||
-    state.turnBusy ||
-    state.micStarting ||
-    state.mic
+    state.turnBusy
+  )
+    return;
+  if (typeof input.text === "string" && input.text.trim()) stopMic();
+  else if (
+    !input.audio_b64 ||
+    !capture ||
+    capture.generation !== state.generation ||
+    capture.session !== state.sessionId ||
+    capture.micEpoch !== state.micEpoch ||
+    state.mic ||
+    state.micStarting
   )
     return;
   const generation = state.generation,
+    session = state.sessionId,
     receipt = currentRecap(state.recap) ? state.recapDeliveryId : null;
   state.turnBusy = true;
   stopAudio();
@@ -1300,13 +1347,13 @@ async function sendTurn(input) {
         Accept: "application/x-ndjson",
       },
       body: JSON.stringify({
-        session_id: state.sessionId,
+        session_id: session,
         ...input,
         language: state.demoLanguage,
         ...(receipt ? { recap_delivery_id: receipt } : {}),
       }),
     });
-    if (generation !== state.generation) return;
+    if (generation !== state.generation || session !== state.sessionId) return;
     state.replyLanguage = data.language;
     const heard = data.text_heard ? addMessage(demoCopy().you, data.text_heard) : null;
     const message =
@@ -1333,7 +1380,7 @@ async function sendTurn(input) {
     // Operator reads must not hold the next voice turn or completed playback.
     void Promise.allSettled([loadBookings(), loadHistory()]);
   } catch (error) {
-    if (generation === state.generation) {
+    if (generation === state.generation && session === state.sessionId) {
       status(
         "demo-status",
         demoCopy().failed + " " + demoCopy().noRetry,
@@ -1448,10 +1495,10 @@ async function prepareReservation() {
   if (!validateReservation()) return;
   if (reservation.renewalHoldId && sameReservationRequest())
     return renewReservation();
-  const generation = state.generation;
+  clearReservationRecap();
+  const generation = state.generation,
+    epoch = reservation.epoch;
   reservation.busy = true;
-  reservation.holdId = null;
-  reservation.acknowledged = false;
   reservation.renewalHoldId = null;
   reservation.proposalRequest = reservationRequest();
   $("reservation-recap").hidden = true;
@@ -1463,15 +1510,27 @@ async function prepareReservation() {
       const session = await post("/api/booking/session", {
         language: state.demoLanguage,
       });
-      if (generation !== state.generation) return;
+      if (
+        generation !== state.generation ||
+        epoch !== reservation.epoch ||
+        !state.connected
+      )
+        return;
       reservation.sessionId = session.session_id;
     }
+    const session = reservation.sessionId;
     const requestedAt = performance.now();
     const data = await post("/api/restaurant/reservation/prepare", {
-      session_id: reservation.sessionId,
+      session_id: session,
       ...reservation.proposalRequest,
     });
-    if (generation !== state.generation) return;
+    if (
+      generation !== state.generation ||
+      epoch !== reservation.epoch ||
+      session !== reservation.sessionId ||
+      !state.connected
+    )
+      return;
     if (data?.restaurant_unavailable === true && !data.error && data.ok !== true) {
       if (
         !Array.isArray(data.alternatives) ||
@@ -1494,44 +1553,71 @@ async function prepareReservation() {
     status("reservation-status", currentReservationProposal()
       ? demoCopy().recapTitle : demoCopy().proposalExpired);
   } catch (error) {
-    if (generation === state.generation)
-      status(
-        "reservation-status",
-        error.code === "slot_unavailable"
-          ? demoCopy().unavailable
-          : demoCopy().failed,
-        "error",
-      );
+    if (generation === state.generation && epoch === reservation.epoch)
+      status("reservation-status", error.code === "slot_unavailable"
+        ? demoCopy().unavailable : demoCopy().failed, "error");
   } finally {
-    if (generation === state.generation) {
+    if (generation === state.generation && epoch === reservation.epoch) {
       reservation.busy = false;
       controls();
     }
   }
 }
 async function readReservation() {
-  if (reservation.busy) return;
-  if (!currentReservationProposal()) return expireReservationProposal();
-  const generation = state.generation;
+  if (
+    !currentReservationProposal() ||
+    !reservation.recapDeliveryId ||
+    reservation.busy ||
+    reservation.uncertain ||
+    reservation.acknowledged
+  )
+    return;
+  const generation = state.generation,
+    epoch = reservation.epoch,
+    session = reservation.sessionId,
+    hold = reservation.holdId,
+    receipt = reservation.recapDeliveryId;
+  reservation.recapDeliveryId = null;
   reservation.busy = true;
   controls();
   try {
-    await post("/api/booking/recap", {
-      session_id: reservation.sessionId,
-      hold_id: reservation.holdId,
+    const data = await post("/api/booking/recap", {
+      session_id: session,
+      hold_id: hold,
+      recap_delivery_id: receipt,
     });
-    if (generation !== state.generation) return;
-    if (!currentReservationProposal()) return expireReservationProposal();
+    if (
+      generation !== state.generation ||
+      epoch !== reservation.epoch ||
+      session !== reservation.sessionId ||
+      hold !== reservation.holdId
+    )
+      return;
+    if (
+      !currentReservationProposal() ||
+      data.acknowledged !== true ||
+      data.hold_id !== hold
+    )
+      throw new Error("Exact recap reading was not acknowledged");
     reservation.acknowledged = true;
     status("reservation-status", demoCopy().acknowledged);
   } catch (error) {
-    if (generation === state.generation) {
-      expireReservationProposal();
-      status("reservation-status", error.code === "booking_recap_expired_or_unknown"
-        ? demoCopy().proposalExpired : demoCopy().failed, "error");
+    if (
+      generation === state.generation &&
+      epoch === reservation.epoch &&
+      session === reservation.sessionId
+    ) {
+      clearReservationRecap();
+      reservation.busy = false;
+      controls();
+      status("reservation-status", demoCopy().failed, "error");
     }
   } finally {
-    if (generation === state.generation) {
+    if (
+      generation === state.generation &&
+      epoch === reservation.epoch &&
+      session === reservation.sessionId
+    ) {
       reservation.busy = false;
       controls();
     }
@@ -1543,23 +1629,26 @@ async function renewReservation() {
     reservation.renewalHoldId = null;
     return prepareReservation();
   }
-  const generation = state.generation, holdId = reservation.renewalHoldId;
-  reservation.busy = true;
+  const generation = state.generation, session = reservation.sessionId,
+    hold = reservation.renewalHoldId;
   expireReservationProposal();
+  clearReservationRecap();
+  const epoch = reservation.epoch;
+  reservation.busy = true;
   controls();
   status("reservation-status", demoCopy().loading);
   let prepareFresh = false;
   try {
     const requestedAt = performance.now();
     const data = await post("/api/restaurant/reservation/renew", {
-      session_id: reservation.sessionId, hold_id: holdId,
+      session_id: session, hold_id: hold,
     });
-    if (generation !== state.generation) return;
-    showReservationProposal(data, requestedAt, holdId);
+    if (generation !== state.generation || session !== reservation.sessionId || epoch !== reservation.epoch) return;
+    showReservationProposal(data, requestedAt, hold);
     status("reservation-status", currentReservationProposal()
       ? demoCopy().proposalRenewed : demoCopy().proposalExpired);
   } catch (error) {
-    if (generation !== state.generation) return;
+    if (generation !== state.generation || session !== reservation.sessionId || epoch !== reservation.epoch) return;
     if (error.code === "hold_expired_or_unknown") {
       clearReservationClock();
       reservation.holdId = reservation.renewalHoldId = null;
@@ -1568,12 +1657,12 @@ async function renewReservation() {
       prepareFresh = true;
     } else status("reservation-status", demoCopy().failed, "error");
   } finally {
-    if (generation === state.generation) {
+    if (generation === state.generation && session === reservation.sessionId && epoch === reservation.epoch) {
       reservation.busy = false;
       controls();
     }
   }
-  if (prepareFresh && generation === state.generation) await prepareReservation();
+  if (prepareFresh && generation === state.generation && session === reservation.sessionId && epoch === reservation.epoch) await prepareReservation();
 }
 async function mutateReservation(cancel = false) {
   if (
@@ -1584,7 +1673,9 @@ async function mutateReservation(cancel = false) {
   )
     return;
   if (!cancel && !currentReservationProposal()) return expireReservationProposal();
-  const generation = state.generation;
+  const generation = state.generation,
+    session = reservation.sessionId;
+  let epoch = reservation.epoch;
   reservation.busy = true;
   controls();
   status("reservation-status", demoCopy().loading);
@@ -1592,14 +1683,19 @@ async function mutateReservation(cancel = false) {
     const data = await post(
       cancel ? "/api/booking/cancel" : "/api/booking/confirm",
       {
-        session_id: reservation.sessionId,
+        session_id: session,
         ...(cancel
           ? { booking_id: reservation.bookingId }
           : { hold_id: reservation.holdId }),
         consent: true,
       },
     );
-    if (generation !== state.generation) return;
+    if (
+      generation !== state.generation ||
+      session !== reservation.sessionId ||
+      epoch !== reservation.epoch
+    )
+      return;
     if (data.ok !== true || data.error) throw new Error("closed result");
     clearReservationClock();
     reservation.renewalHoldId = null;
@@ -1609,8 +1705,8 @@ async function mutateReservation(cancel = false) {
       $("reservation-cancel").hidden = true;
     } else {
       reservation.bookingId = String(data.booking.id);
-      reservation.holdId = null;
-      $("reservation-recap").hidden = true;
+      clearReservationRecap();
+      epoch = reservation.epoch;
       $("reservation-cancel").hidden = false;
     }
     status(
@@ -1620,9 +1716,13 @@ async function mutateReservation(cancel = false) {
     );
     const change = (data.booking_changes || []).at(-1);
     if (change) appendBookingReceipt($("reservation-status"), change);
-    await Promise.allSettled([loadBookings(), loadHistory()]);
+    void Promise.allSettled([loadBookings(), loadHistory()]);
   } catch (error) {
-    if (generation === state.generation) {
+    if (
+      generation === state.generation &&
+      session === reservation.sessionId &&
+      epoch === reservation.epoch
+    ) {
       if (!cancel && ["consent_required", "hold_expired_or_unknown"].includes(error.code)) {
         expireReservationProposal();
         status("reservation-status", demoCopy().proposalExpired, "error");
@@ -1634,7 +1734,11 @@ async function mutateReservation(cancel = false) {
       status("reservation-status", demoCopy().unknown, "error");
     }
   } finally {
-    if (generation === state.generation) {
+    if (
+      generation === state.generation &&
+      session === reservation.sessionId &&
+      epoch === reservation.epoch
+    ) {
       reservation.busy = false;
       controls();
     }
@@ -1702,7 +1806,12 @@ async function loadHistory() {
     view = ++state.historyView;
   try {
     const data = await api("/api/call-history?page=1&length=10");
-    if (generation !== state.generation || view !== state.historyView) return;
+    if (
+      generation !== state.generation ||
+      view !== state.historyView ||
+      !state.connected
+    )
+      return;
     $("call-history").replaceChildren();
     for (const call of data.items) {
       const element = document.createElement("div");
@@ -1793,7 +1902,7 @@ function renderTelephoneStatus() {
 }
 async function refreshTelephoneStatus() {
   try {
-    const response = await fetch("/api/status", { cache: "no-store" });
+    const response = await fetch("/api/status", { cache: "no-store", signal: AbortSignal.timeout(10000) });
     if (!response.ok) throw new Error("unavailable");
     state.telephoneRelease = (await response.json()).telephone?.release ?? null;
   } catch (_) {
@@ -1826,6 +1935,11 @@ async function loadPublic() {
 setInterval(() => {
   if (!document.hidden) refreshTelephoneStatus();
 }, 60000);
+setInterval(renderTelephoneStatus, 1000);
+document.addEventListener("visibilitychange", () => {
+  renderTelephoneStatus();
+  if (!document.hidden) refreshTelephoneStatus();
+});
 $("auth-form").addEventListener("submit", (event) => {
   event.preventDefault();
   connect();
@@ -1859,6 +1973,8 @@ $("demo-language").addEventListener("change", (event) => {
     controls();
     return;
   }
+  stopMic();
+  clearReservationRecap();
   stopAudio();
   state.demoLanguage = selected.value;
   $("demo-voice-result").textContent = "";
@@ -1934,24 +2050,44 @@ $("reservation-cancel").addEventListener("click", () =>
 $("reservation-end").addEventListener("click", async () => {
   if (!reservation.sessionId || reservation.busy || reservation.uncertain)
     return;
-  const generation = state.generation;
+  clearReservationRecap();
+  const generation = state.generation,
+    session = reservation.sessionId,
+    epoch = reservation.epoch;
   reservation.busy = true;
   controls();
   try {
     await api(
-      "/api/demo/session/" + encodeURIComponent(reservation.sessionId),
+      "/api/demo/session/" + encodeURIComponent(session),
       { method: "DELETE" },
     );
-    if (generation !== state.generation) return;
+    if (
+      generation !== state.generation ||
+      session !== reservation.sessionId ||
+      epoch !== reservation.epoch
+    )
+      return;
     clearReservation();
+    controls();
     status("reservation-status", demoCopy().ended);
   } catch (error) {
-    if (generation === state.generation) {
-      if ([404, 410].includes(error.status)) clearReservation();
+    if (
+      generation === state.generation &&
+      session === reservation.sessionId &&
+      epoch === reservation.epoch
+    ) {
+      if ([404, 410].includes(error.status)) {
+        clearReservation();
+        controls();
+      }
       status("reservation-status", demoCopy().failed, "error");
     }
   } finally {
-    if (generation === state.generation) {
+    if (
+      generation === state.generation &&
+      session === reservation.sessionId &&
+      epoch === reservation.epoch
+    ) {
       reservation.busy = false;
       controls();
     }

@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 from .booking_faq import FAQ_PATH, load_faq, normalize
 from .restaurant_data import DAYS
 from .restaurant_dates import resolve_restaurant_date
+from .restaurant_times import DIGITAL, PREFIX, SUFFIX
 from .restaurant_family import family_topic
 
 
@@ -22,6 +23,7 @@ class RestaurantQuestion:
     date: str | None = None
     date_issue: str | None = None
     recommendation: bool = False
+    family_allergens: bool = False
 
 
 INFORMATION_TOPICS = (
@@ -49,6 +51,12 @@ INFORMATION_TOPICS = (
     "food_orders",
     "family",
     "family_details",
+)
+
+ALLERGY_SAFETY = (
+    r"allerg|allergeen|аллерг|глютен|glut(?:ee|e)n|peanut|pähkl|орех|laktoos|lactose|лактоз|"
+    r"co?eliac|tsöliaak|целиак|cross[- ](?:contact|contaminat)|ristsaast|ristkontakt|"
+    r"перекр[её]стн\w*\s+(?:контакт|загрязн)"
 )
 
 # Medical suitability and food-safety outcomes are canonical, not diet preferences.
@@ -94,8 +102,12 @@ def capability_booking_clause(text: str) -> str | None:
         return None
     for pattern in CAPABILITY_PATTERNS.values():
         text = pattern.sub(" ", text)
-    for clause in re.split(r"[!?;]+|(?<!\d)\.(?!\d)", text):
-        clause = clause.strip()
+    clauses = [
+        clause.strip()
+        for clause in re.split(r"[!?;]+|(?<!\d)\.(?!\d)", text)
+        if clause.strip()
+    ]
+    for index, clause in enumerate(clauses):
         if re.match(
             r"^(?:(?:and|ja|и)\s+)?(?:(?:please|palun|пожалуйста)[,\s]+)?"
             r"(?:(?:can|could|would)\s+(?:you|i)\s+(?:please\s+)?)?"
@@ -105,14 +117,15 @@ def capability_booking_clause(text: str) -> str | None:
             r"(?:(?:я|мы)\s+)?(?:хочу|хотим)\s+заброниро\w*)\b",
             clause,
         ):
-            return clause
+            # Never discard a later correction/cancellation or other detail.
+            return clause if index == len(clauses) - 1 else None
     return None
 
 
 PATTERNS = {
     "allergens": MEDICAL_FOOD_CONCERN
     + r"|allerg|allergeen|аллерг|глютен|glut(?:ee|e)n|peanut|pähkl|орех|laktoos|lactose|лактоз|sisald|contain|koostis|ingredients|содерж|состав",
-    "price": r"\b(?:price|cost|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maks(?:ab|avad|ma)|цен\w*|стоим\w*|сколько(?:\s+\w+){0,2}\s+сто(?:ит|ят|ить))\b",
+    "price": r"\b(?:prices?|costs?|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maks(?:ab|avad|ma)|цен\w*|стоим\w*|сколько(?:\s+\w+){0,2}\s+сто(?:ит|ят|ить))\b",
     "menu": r"menüü?|menu|меню|vegan|веган|vegetarian|taimetoit|вегетар|\b(?:dishes|serve|roogi|блюд\w*)\b|mis.*süüa|mida.*(?:süüa|pakute)",
     "kitchen": r"kitchen|köök|köögi|кухн|(?:kell|kellaajani|millal).*süüa|when.*(?:food|eat)|(?:до скольки|когда).*еда",
     "hours": r"\b(?:hours|open\w*|close\w*|shut|lahtiole\w*|avatud|avate|avane\w*|lahti|kinni|sulg\w*|tööa\w*|откры\w*|закры\w*|работа\w*|часы\s+работы)\b",
@@ -175,6 +188,18 @@ def match_question(
         return None
     matches = []
     information_text = text
+    # Clock units are not opening-hours questions. Keep any independent hours,
+    # opening/closing, safety or capability wording intact.
+    for pattern in (DIGITAL, PREFIX, SUFFIX):
+        for clock in pattern.finditer(text):
+            start, end = clock.span()
+            if unit := re.match(r"\s+hours\b", text[end:]):
+                end += unit.end()
+            information_text = (
+                information_text[:start]
+                + re.sub(r"\bhours\b", "     ", information_text[start:end])
+                + information_text[end:]
+            )
     for topic, pattern in CAPABILITY_PATTERNS.items():
         if match := pattern.search(text):
             matches.append((match.start(), topic))
@@ -215,17 +240,22 @@ def match_question(
         topics = list(previous.topics)
     # An English question about an unlisted dish or a non-food "contain"
     # must not receive an unrelated menu/allergen answer.
-    if "allergens" in topics and not (
-        re.search(MEDICAL_FOOD_CONCERN, text)
-        or has_dish
-        or has_diet
-        or previous
-        and re.search(r"\b(?:it|this|that)\b", text)
-        and any(topic in {"menu", "allergens"} for topic in previous.topics)
-        or re.search(
-            r"allerg|allergeen|аллерг|глютен|glut|peanut|pähkl|орех|laktoos|lactose|лактоз|"
-            r"food|dish|ingredient|milk|fish|celery|sisald|koostis|содерж|состав",
-            text,
+    if (
+        "allergens" in topics
+        and not detail_followup
+        and not (
+            has_dish
+            or has_diet
+            or re.search(ALLERGY_SAFETY, text)
+            or re.search(MEDICAL_FOOD_CONCERN, text)
+            or previous
+            and re.search(r"\b(?:it|this|that)\b", text)
+            and any(topic in {"menu", "allergens"} for topic in previous.topics)
+            or re.search(
+                r"allerg|allergeen|аллерг|глютен|glut|peanut|pähkl|орех|laktoos|lactose|лактоз|"
+                r"food|dish|ingredient|milk|fish|celery|sisald|koostis|содерж|состав",
+                text,
+            )
         )
     ):
         topics.remove("allergens")
@@ -276,8 +306,9 @@ def match_question(
             text,
         )
     )
-    if not policy_question or re.search(
-        r"\b(?:book|reserve|broneeri\w*|заброниру\w*)\b", text
+    if not detail_followup and (
+        not policy_question
+        or re.search(r"\b(?:book|reserve|broneeri\w*|заброниру\w*)\b", text)
     ):
         topics = [topic for topic in topics if topic not in {"children", "groups"}]
     if "kitchen" in topics:
@@ -289,8 +320,10 @@ def match_question(
     if "allergens" in topics:
         # Safety guidance must survive the three-topic response limit.
         topics = ["allergens"] + [
-            topic for topic in topics if topic not in {"menu", "allergens"}
+            topic for topic in topics if topic not in {"menu", "price", "allergens"}
         ]
+    elif "price" in topics:
+        topics = [topic for topic in topics if topic != "menu"]
     if not topics and (has_dish or has_diet):
         topics = ["menu"]
     days = tuple(
@@ -335,8 +368,21 @@ def match_question(
             requested_date, days = resolved.value, (target.weekday(),)
         elif resolved.issue:
             date_issue = resolved.issue
+    # Canonical safety/capability disclosures precede optional information.
+    priority = [
+        topic for topic in topics if topic == "allergens" or topic in CAPABILITIES
+    ]
+    topics = priority + [topic for topic in topics if topic not in priority]
     return RestaurantQuestion(
-        tuple(topics[:3]), days or None, requested_date, date_issue, recommendation
+        tuple(topics[:3]),
+        days or None,
+        requested_date,
+        date_issue,
+        recommendation,
+        family_allergens=bool(
+            "allergens" in topics
+            and (family or detail_followup and previous and previous.family_allergens)
+        ),
     )
 
 
