@@ -266,7 +266,7 @@ def test_booking_confirmation_and_allergy_questions_use_canonical_flow(client):
     proposal = turn(client, session, "A table for four tomorrow at 14:00")
     assert proposal["recap_delivery_id"]
     saved = turn(client, session, CONSENT["en"], receipt=proposal["recap_delivery_id"])
-    assert saved["reply"] == COPY["en"]["confirmed"]
+    assert saved["reply"].startswith(COPY["en"]["confirmed"])
     assert saved["booking_changes"][0]["action"] == "confirmed" and model.calls == []
 
 

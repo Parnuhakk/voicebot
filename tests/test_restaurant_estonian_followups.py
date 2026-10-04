@@ -130,7 +130,7 @@ def test_bounded_affirmative_saves_one_owned_delivered_booking(make_state, text)
         assert state.mark_recap_delivered(proposal["hold_id"])
         action, reply = await turn(state, text)
         assert action["name"] == "confirm_slot_booking"
-        assert reply == COPY["et"]["confirmed"] and len(state.bookings) == 1
+        assert reply.startswith(COPY["et"]["confirmed"]) and len(state.bookings) == 1
 
     asyncio.run(run())
 

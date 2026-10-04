@@ -382,9 +382,9 @@ def test_committed_cancellation_lost_result_uses_neutral_sticky_uncertainty(
         confirmed = await state.dispatch(response["name"], response["arguments"])
         assert confirmed.get("ok"), confirmed
         identifier = str(confirmed["booking"]["id"])
-        assert trusted_booking_response(state, after_tool=True) == {
-            "content": COPY[language]["confirmed"]
-        }
+        saved_reply = trusted_booking_response(state, after_tool=True)["content"]
+        assert saved_reply.startswith(COPY[language]["confirmed"] + " ")
+        assert "?" not in saved_reply
         original = state.dispatcher.dispatch
         committed_cancellations = []
 

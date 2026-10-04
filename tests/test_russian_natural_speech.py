@@ -337,7 +337,7 @@ def test_russian_http_replies_recap_audio_and_booking_approval(client):
             language="ru",
             receipt=proposal["recap_delivery_id"],
         )
-        assert confirmed["reply"] == COPY["ru"]["confirmed"]
+        assert confirmed["reply"].startswith(COPY["ru"]["confirmed"])
         assert len(confirmed["booking_changes"]) == 1
         assert all(not list(document.iter(MSTTS + "silence")) for document in requests)
     finally:

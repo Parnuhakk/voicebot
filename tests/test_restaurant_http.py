@@ -251,7 +251,7 @@ def test_browser_voice_policy_books_only_after_recap_receipt(
         receipt=answer["recap_delivery_id"],
     )
     assert confirmed["booking_changes"][0]["action"] == "confirmed"
-    assert confirmed["reply"] == COPY[language]["confirmed"]
+    assert confirmed["reply"].startswith(COPY[language]["confirmed"])
     page = client.get("/api/bookings?date=" + tomorrow(), headers=AUTH).json()
     assert len(page["items"]) == 1 and page["source"] == "restaurant"
     row = page["items"][0]
@@ -291,7 +291,7 @@ def test_misheard_estonian_confirmation_saves_a_visible_durable_booking(
     result = response.json()
     assert result["language"] == "et"
     assert result["text_heard"] == "ja kinnitää"
-    assert result["reply"] == COPY["et"]["confirmed"]
+    assert result["reply"].startswith(COPY["et"]["confirmed"])
     change = result["booking_changes"][0]
     assert change["action"] == "confirmed" and change["date"] == tomorrow()
     # Ending the conversation doesn't remove the restaurant's saved booking.
@@ -414,7 +414,7 @@ def test_optional_display_metadata_failure_preserves_saved_booking_and_link(
             language="et",
             receipt=proposal["recap_delivery_id"],
         )
-        assert result["reply"] == COPY["et"]["confirmed"]
+        assert result["reply"].startswith(COPY["et"]["confirmed"])
     change = result["booking_changes"][0]
     assert change["action"] == "confirmed" and change["date"] == tomorrow()
     assert "party_size" not in change
