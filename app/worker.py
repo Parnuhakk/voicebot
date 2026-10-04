@@ -40,6 +40,7 @@ from .telephone import (
     validate_environment,
 )
 from .call_factory import make_call_tools
+from .restaurant_call import RestaurantCallTools
 
 REJECTED_TRANSCRIPT = {
     "et": "[Toetamata kõnekeel]",
@@ -351,6 +352,24 @@ class TelephoneAgent(Agent):
             async def checked():
                 yield normalize_estonian_speech(reply, language)
 
+            async def synthesis():
+                if isinstance(self.state, RestaurantCallTools) and isinstance(
+                    self.speech_provider, TelephoneTTS
+                ):
+                    # The reply is already bounded and fully validated. Keep its
+                    # acoustic context instead of resynthesizing each sentence.
+                    async with self.speech_provider.synthesize(
+                        normalize_estonian_speech(reply, language),
+                        conn_options=self.session.conn_options.tts_conn_options,
+                    ) as stream:
+                        async for event in stream:
+                            yield event.frame
+                else:
+                    async for frame in Agent.default.tts_node(
+                        self, checked(), model_settings
+                    ):
+                        yield frame
+
             frames = voiced = False
             # Azure snapshots options per sentence. Keep every sentence in an
             # interrupted stream on its voice until cancellation completes.
@@ -362,9 +381,7 @@ class TelephoneAgent(Agent):
                 if self.speech_provider is not None:
                     voice, locale = self.speech_config.voice_for(language)
                     self.speech_provider.update_options(voice=voice, language=locale)
-                async for frame in Agent.default.tts_node(
-                    self, checked(), model_settings
-                ):
+                async for frame in synthesis():
                     if not frames:
                         frame.userdata[USERDATA_TIMED_TRANSCRIPT] = [_SpokenText(reply)]
                     frames = True

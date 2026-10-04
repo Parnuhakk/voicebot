@@ -10,11 +10,16 @@ async (page) => {
     const landing = await tab.goto(origin + '/', {waitUntil:'networkidle',timeout:30000});
     check(landing?.status() === 200 && tab.url() === origin + '/', 'Restobot landing did not load directly');
     check(await tab.locator('a[href="/dashboard#demo-section"]').count() > 0, 'Landing has no voice-demo action');
-    check(await tab.locator('a[href="/booking-calendar.html"]').count() > 0, 'Landing has no calendar action');
+    check(await tab.locator('a[href="/dashboard#calendar-section"]').count() > 0, 'Landing has no calendar action');
     const oldRoot = await tab.request.get('https://robot.arleserver.cfd/?source=public-check', {maxRedirects:0});
     check(oldRoot.status() === 308 && oldRoot.headers().location === origin + '/?source=public-check', 'Old root redirect failed');
     const response = await tab.goto(origin + '/dashboard', {waitUntil:'networkidle',timeout:30000});
     check(response?.status() === 200 && tab.url() === origin + '/dashboard', 'Restobot workspace did not load directly');
+    check(await tab.locator('#calendar-section').count() === 1, 'Workspace has no native calendar');
+    for (const path of ['/booking-calendar','/booking-calendar/','/booking-calendar.html']) {
+      const legacy = await tab.request.get(origin + path + '?source=public-check', {maxRedirects:0});
+      check(legacy.status() === 308 && legacy.headers().location === '/dashboard?source=public-check#calendar-section', 'Legacy calendar redirect failed');
+    }
     const links = await tab.locator('a[href]').evaluateAll(elements => elements.map(el => el.href));
     check(links.every(url => new URL(url).hostname !== retiredHost), 'Robot advertises the removed website');
     for (const id of ['operator-token','demo-start','demo-mic','reservation-prepare']) {
