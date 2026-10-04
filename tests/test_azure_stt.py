@@ -119,7 +119,7 @@ def test_recognition_uses_unconstrained_source_metadata(text, locale):
     assert provider._http.is_closed
 
 
-@pytest.mark.parametrize("source", ["fi", "de", "es", "id", "unknown"])
+@pytest.mark.parametrize("source", ["fi", "de", "es", "id", "und"])
 def test_foreign_metadata_cannot_authorize_estonian_consent(source):
     from app.providers.azure_stt import AzureSttClient
 
@@ -189,6 +189,47 @@ def test_silence_stays_no_speech():
         {"durationMilliseconds": 2000, "combinedPhrases": [], "phrases": []}
     )
     assert result.text == ""
+
+
+@pytest.mark.parametrize(
+    "locale",
+    ["et-!", "en-", "ru--RU", "et-EE-extra!", "et_!", "et-EE trailing", "unknown"],
+)
+def test_malformed_locale_cannot_be_recognized_as_supported_consent(locale):
+    from app.providers.azure_stt import AzureSttClient
+
+    provider = AzureSttClient(
+        "fixture",
+        "northeurope",
+        transport=httpx.MockTransport(
+            lambda _: httpx.Response(
+                200, json=response_payload("Jah, kinnitan.", locale)
+            )
+        ),
+    )
+    try:
+        result = asyncio.run(recognize_audio_result(provider, b"authored-audio", "et"))
+        assert result.status == "stt_unavailable" and result.text == ""
+        assert result.detected_language is None
+    finally:
+        provider.close()
+
+
+@pytest.mark.parametrize(
+    "locale,language",
+    [
+        ("et", "et"),
+        ("et-EE", "et"),
+        ("en-GB", "en"),
+        ("en-Latn-US", "en"),
+        ("ru-RU", "ru"),
+    ],
+)
+def test_well_formed_azure_locale_keeps_supported_source_language(locale, language):
+    from app.providers.azure_stt import parse_azure_transcription
+
+    result = parse_azure_transcription(response_payload("authored fixture", locale))
+    assert result.language == language and not result.unsupported
 
 
 @pytest.mark.parametrize("status", [401, 429, 503])

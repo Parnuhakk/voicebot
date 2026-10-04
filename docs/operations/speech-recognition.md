@@ -34,6 +34,10 @@ Use `VOICEBOT_STT_PROVIDER=azure` to require MAI explicitly, or
 selection requires the existing protected `AZURE_SPEECH_KEY` and `AZURE_REGION`
 environment variables. No key belongs in repository configuration or commands.
 The media deployment forwards the same provider selection as the web process.
+Release identity includes the effective recognizer, actual model and API version;
+changing Azure/Groq selection invalidates an earlier synchronization receipt.
+Credential values are never included. Malformed phrase locale codes fail closed
+rather than being normalized into supported-language confirmation.
 
 After changing it, publish/deploy the web revision and allow the normal telephone
 release synchronization to finish. Verify `/api/status` → `models.stt.provider`,
@@ -57,3 +61,11 @@ microphones, browser pauses/background noise and public carrier calls need
 separate qualification. A complete WAV bypasses browser endpointing and native
 VAD segmentation. Successful provider recognition also does not establish that
 every natural restaurant follow-up preserves its dialogue state.
+
+The final integration comparison used the actual native Azure TTS SDK and an
+8 kHz mu-law round trip. MAI passed 11 of 13 authored ET/EN/RU/foreign-control
+cases versus 8 of 13 for Groq Turbo. Both missed the same very short agreement;
+both also failed to preserve one other short affirmative as an accepted whole
+turn. Neither failure is reinterpreted as consent. On this sample, median STT
+was 377 ms for MAI and 298 ms for Turbo: the selected recognizer improved these
+cases, not every latency metric. See [final speech evidence](../evidence/2026-10-04-final-estonian-speech.md).

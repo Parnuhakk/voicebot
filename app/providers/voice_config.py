@@ -1,8 +1,8 @@
 """Shared speech/model settings for HTTP turns and the native telephone worker.
 
-Defaults are supported Groq models, checked against current documentation and
-bounded ET/EN/RU telephone-band probes. Turbo reduces transcription latency;
-operators can retain large-v3 for accuracy comparisons without changing APIs.
+These are the Groq conversation and rollback-recognition models. Restaurants
+with Azure configured default to MAI-Transcribe-2 (preview); explicit Groq
+recognition uses Turbo, with large-v3 available for accuracy comparisons.
 """
 
 from __future__ import annotations
