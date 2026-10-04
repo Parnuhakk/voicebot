@@ -76,6 +76,7 @@ POSITIVE = {
         "Just, teeme",
         "Võtame selle laua",
         "See on sobilik",
+        "Mulle meeldib see variant",
     ),
     "en": (
         "yes",
@@ -190,6 +191,15 @@ POSITIVE = {
         "Just perfect",
         "Exactly right",
         "Perfectly fine for us",
+        "Thats cool",
+        "That's nice",
+        "That sounds super",
+        "I love that",
+        "We like the reservation",
+        "Love it",
+        "I'm satisfied with that",
+        "We're delighted with the booking",
+        "I approve the reservation",
     ),
     "ru": (
         "да",
@@ -242,6 +252,8 @@ POSITIVE = {
         "Хорошо, делайте",
         "Да, можно",
         "Это было бы идеально",
+        "Мне это нравится",
+        "Нам нравится этот вариант",
     ),
 }
 NEGATIVE = {

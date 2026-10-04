@@ -22,7 +22,8 @@ _EN_EMPHASIS = (
 )
 _EN_POSITIVE = (
     r"(?:good\s+to\s+go|good|great|perfect|fine|wonderful|excellent|fantastic|lovely|correct|right|"
-    r"okay|ok|all\s+right|awesome|amazing|brilliant|terrific|ideal|acceptable|spot\s+on)"
+    r"okay|ok|all\s+right|awesome|amazing|brilliant|terrific|ideal|acceptable|"
+    r"nice|cool|super|superb|splendid|spot\s+on)"
 )
 _EN_SUBJECT = r"(?:that|this|it|everything|the\s+(?:time|date|table|reservation|booking))"
 _EN_TARGET = r"(?:that|this|it|the\s+(?:table|reservation|booking))"
@@ -62,6 +63,7 @@ EXPRESSIONS = {
         r"hästi|hea|kena|tore|vahva|vägev|sobiv|sobilik|just|võib\s+küll|kõik\s+on\s+korras|"
         r"(?:(?:see|pakutud)\s+)?(?:aeg|kellaaeg|kuupäev|laud|broneering)\s+(?:sobib|klapib)|"
         r"(?:mulle|meile)\s+sobib\s+(?:see\s+)?(?:aeg|kellaaeg|kuupäev|laud|broneering)|"
+        r"(?:mulle|meile)\s+meeldib(?:\s+(?:see|pakutud)\s+variant)?|"
         r"(?:tee|tehke|teeme)\s+(?:laua)?broneering(?:u)?|"
         r"(?:teeme|tehke|tee)(?:\s+selle)?\s+(?:ära|nii)|las\s+käia|peab\s+paika|"
         r"(?:pane|pange|paneme)(?:\s+(?:see|meid|broneering))?\s+(?:kirja|lukku)|"
@@ -77,7 +79,8 @@ EXPRESSIONS = {
         rf"{_EN_SUBJECT}\s+(?:would|will)\s+work(?:\s+(?:really\s+)?(?:well|nicely|perfectly))?{_EN_PERSON_TAIL}|"
         rf"{_EN_SUBJECT}(?:'s|\s+is)\s+{_EN_EMPHASIS}what\s+(?:i|we)\s+(?:want(?:ed)?|need(?:ed)?)|"
         rf"(?:i|we)\s+{_EN_EMPHASIS}(?:agree|consent)(?:\s+(?:with|to)\s+{_EN_TARGET})?|"
-        rf"(?:i(?:'m|\s+am)|we(?:'re|\s+are))\s+{_EN_EMPHASIS}(?:happy|fine|okay|ok|good|pleased)\s+with\s+{_EN_TARGET}|"
+        rf"(?:i|we)\s+(?:love|like)\s+{_EN_TARGET}|love\s+it|"
+        rf"(?:i(?:'m|\s+am)|we(?:'re|\s+are))\s+{_EN_EMPHASIS}(?:happy|fine|okay|ok|good|pleased|satisfied|delighted)\s+with\s+{_EN_TARGET}|"
         rf"(?:i|we)\s+(?:want|would\s+like)\s+to\s+(?:{_EN_ACTION}\s+{_EN_TARGET}|go\s+ahead|proceed)|"
         rf"(?:i|we)(?:'d|\s+would)\s+(?:like|love)\s+(?:{_EN_TARGET}|to\s+(?:{_EN_ACTION}\s+{_EN_TARGET}|go\s+ahead|proceed))|"
         rf"(?:i(?:'m|\s+am)|we(?:'re|\s+are))\s+happy\s+to\s+(?:{_EN_ACTION}\s+{_EN_TARGET}|go\s+ahead|proceed)|"
@@ -91,7 +94,7 @@ EXPRESSIONS = {
         r"it(?:'s|\s+is)\s+a\s+deal|deal|affirmative|no\s+objections|"
         r"that\s+will\s+do|that\s+makes\s+sense|no\s+worries|all\s+(?:good|correct)|"
         r"yes+|yeah+|yep+|yup|aye|sure|absolutely|certainly|definitely|of\s+course|"
-        r"ok|okay|alrighty?|all\s+right|agreed|agree|confirm(?:ed)?|"
+        r"ok|okay|alrighty?|all\s+right|agreed|agree|approve(?:d)?|confirm(?:ed)?|"
         r"cool|go\s+ahead|"
         r"(?:that\s+|this\s+|it\s+)?suits\s+(?:me|us)|"
         r"no\s+problem"
@@ -99,6 +102,7 @@ EXPRESSIONS = {
     "ru": (
         r"да\s+можно|да|ага|угу|конечно|разумеется|безусловно|точно|верно|правильно|"
         r"соглас(?:ен|на|ны)|соглашаюсь|подходит|устраивает|"
+        r"(?:мне|нам)\s+нравится(?:\s+этот\s+вариант)?|нравится|"
         r"подтвержда(?:ю|ем|йте)|подтверди(?:те)?|"
         r"звучит(?:\s+(?:очень|просто))?\s+(?:хорошо|отлично|замечательно|прекрасно|идеально)|"
         r"хорошая\s+идея|отличная\s+идея|в\s+самый\s+раз|принимаю|делайте|"
