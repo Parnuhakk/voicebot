@@ -35,9 +35,9 @@ async page => {
     await chooseLanguage(code);
     assert.equal(await page.locator('html').getAttribute('lang'), code);
     const guidance = {
-      et: ['Lehe ja tervituse keel', 'esimese sõnumi keeles', 'palu seda abiliselt'],
-      en: ['Page and greeting language', 'language of your first message', 'Ask the assistant to switch'],
-      ru: ['Язык страницы и приветствия', 'языке вашего первого сообщения', 'попросите об этом помощника'],
+      et: ['Lehe ja tervituse keel', 'Esimene sõnum määrab keele', 'palu abilist'],
+      en: ['Page and greeting language', 'Your first message sets the language', 'Ask to switch'],
+      ru: ['Язык страницы и приветствия', 'первое сообщение', 'Для смены попросите'],
     }[code];
     assert.equal(await page.locator('#demo-language legend').textContent(), guidance[0]);
     for (const phrase of guidance.slice(1)) assert((await page.locator('#language-help').textContent()).includes(phrase));

@@ -191,9 +191,9 @@ const TEXT = {
     "Язык страницы и приветствия",
   ],
   languageHelp: [
-    "Abiline jätkab sinu esimese sõnumi keeles. Keele vahetamiseks palu seda abiliselt.",
-    "The assistant continues in the language of your first message. Ask the assistant to switch languages if needed.",
-    "Помощник продолжит на языке вашего первого сообщения. Чтобы сменить язык разговора, попросите об этом помощника.",
+    "Esimene sõnum määrab keele. Vahetamiseks palu abilist.",
+    "Your first message sets the language. Ask to switch it.",
+    "Язык задаёт первое сообщение. Для смены попросите.",
   ],
   languageLocked: [
     "Lehe keele muutmiseks lõpeta pooleliolev vestlus.",
