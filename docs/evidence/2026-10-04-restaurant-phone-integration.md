@@ -2,28 +2,101 @@
 
 ## Current verified disposition
 
-Robot-only restaurant release `4ba789b917318de74bdffd9d63505812714188a8` is
-published and synchronized through PR37. It retains the published clock/FAQ and
-whole-question retention repairs and clarifies only the shared Russian staff-
-verification notice. Both master CI jobs passed. Combined checks passed
-12,649 tests/36 subtests and all eleven Chromium journeys. All94
+The pinned base for the emergency repair is `956ea785be975f2b15bb8cd492b70bdabdff7c9f`,
+whose application, data, tests and deployment source is identical to PR39's
+`0bbffde9d84b52272270adb4439a12b35253acc6`; only research documents changed.
+The existing number's account ownership, voice capability and POST routing to
+the robot webhook were verified through a read-only Twilio request at06:37:11Z.
+No number/credentials were printed or saved and no paid call was made.
+
+Published MAI-Transcribe-2 preview input recognition is retained, explicitly not
+called unchanged ASR. Published voice profiles, delivery settings, canonical
+safety copy and the shared booking pipeline are preserved rather than rolled back.
+Only published peers were merged;
+no other owner's dirty work was copied or reset. Current0bb combined checks pass
+12,861 tests/36 subtests and all eleven browser journeys, with green masterCI.
+
+A narrow Codex review found a P1 in PR39's emergency-interruption routing. The
+bounded repair preserves an already recognized emergency while discarding
+unreviewed booking details, and prevents a waitlist override. Its eighteen
+ET/EN/RU fresh/partial/held regressions first produced15FAIL/3PASS for missing
+112 guidance. The final repair passes 12,879 tests/36 subtests, all eleven browser
+journeys and the focused Codex re-review. Only the two routing conditions and
+guarded owned-proposal restoration change runtime behavior. The telephone goal
+stays active pending final publication and synchronized native verification.
+The completed a7be witness/audit below remains dated base evidence.
+
+A parallel published speech repair advanced master and all three healthy roles to
+`20b474994c3f883794f8f056faf3a9a27bd5420e` before publication. It is not rolled
+back. The reviewed emergency repair is being integrated through normal merges,
+with fresh combined checks for that newer source. The combined source passes
+**13,143 tests/36 subtests**, all eleven browser journeys and the narrow Codex
+integration review (788 scoped tests, twelve exact canonical replies and twelve
+owned-proposal controls). Its only runtime difference from published20b is the
+reviewed emergency repair. A 956 idle-baseline attempt
+failed `release_locked` after its bounded wait; it is not preservation proof.
+The peer introduces a Nova Turbo Estonian conversational profile, a zero default
+sentence pause and effective recognizer identity in release fingerprints. These
+are independently published changes, not described as unchanged voice settings.
+The private checker remains unmodified, with 173 offline guards passing and no
+expected-text or language hints supplied to independent recognition.
+
+The fresh locked20b baseline at06:58:33Z has zero active rooms, the original data
+volume and four successful integrity checks. It records88restaurant reservations,
+173actions/0holds,42Easy writes,5Stay bookings and37call-booking associations.
+The original/a7be/prepublish20b prefixes and whole current booking state pass a
+separate exact read-only preservation check. Peer native activity added three
+fictional reservations/six actions after the earlier85/167checkpoint; those older
+records were not replaced. Effective native voices are Nova Turbo ET, Jenny EN and
+Svetlana RU, with automatic language selection, natural1.12rate, recap1.0 and
+zero fixed sentence pause. Publication/new exact-release acceptance follows.
+
+Another published peer, `0b0e3c0f689d36b4f39429ad349e3136dcafb424`, overlaps one
+emergency condition and supplies a fuller authored Russian cancellation fixture
+for the separate reservation RTC probe. Its published changes are retained by a
+normal merge. All97application/demo hashes remain exactly the already reviewed
+and full-tested emergency combination. Both sets of emergency regressions are
+kept, including the peer's shared/native and incomplete/ambiguous/pending cases.
+Six peer held-case expectations first failed because they assumed a discarded
+proposal; those are adapted to require the reviewed stronger contract: same owned
+hold/expiry, a new proposal identity, revoked approval/delivery and rejected
+confirmation. Literal112/no-resume/no-booking assertions remain intact.
+The combined customer/probe/cancellation scope passes309tests in37.51s. The
+narrow Codex review passes19new cases and three actual synthetic cancellation
+ownership controls, independently confirming97hashes and both semantic deltas;
+no concrete P0/P1 remains. Full current PR CI is a separate remaining publication
+gate; no redundant browser rerun is substituted
+for new source checks, and no recognition hints or private guard changes occur.
+
+### Auditeda7be checkpoint
+
+Robot-only restaurant release `a7be09c992a7ce0a42e0750d7535ef726af0be4d` is
+published and synchronized through PR38. It retains the published clock/FAQ,
+whole-question retention and Russian staff-verification repairs, and clarifies
+only the Russian refusal to notify kitchen staff. Both master CI jobs passed.
+Combined checks passed 12,652 tests/36 subtests and all eleven Chromium journeys. All94
 app/demo files match each healthy web/worker/bridge role; nine authorization and
 no-store cases pass. Original volume/infrastructure and all original/earlier fresh-
 premerge row prefixes remain intact. Fresh HTTPS/assets/menu/ET-EN-RU mobile and
-robot-only retired-host checks pass. The870/94 receipts below remain dated checkpoints.
+robot-only retired-host checks pass. Restaurant/Easy/Stay booking state is unchanged;
+new call-history rows do not invalidate exact preservation of every prior row.
+The870/94/4ba receipts below remain dated checkpoints.
 
-Strict complete multilingual native acceptance is **not complete**. Both4ba serial
-batches passed all four English and Estonian cases with unchanged restaurant state.
-The first batch failed Russian allergy audio; the second passed allergy but failed
-Russian note audio. An unchanged-checker Russian diagnostic repeat passed all four
-cases between them. These different outcomes remain recorded, not treated as a
-complete successful aggregate.
-Current and historical failures remain recorded; metadata-only diagnosis continues
-without weakening required refusals/referrals or changing production voices/ASR.
+The bounded native acceptance batch on exacta7be passes **all twelve cases** at
+2026-10-04T06:01:18Z: four each in ET/EN/RU, with exact fresh captions, independent
+automatic recognition and unchanged restaurant state throughout the serial batch.
+Both earlier4ba aggregate failures remain FAIL, alongside the intervening RU-only
+diagnostic success. No failed or partial run is relabeled as full acceptance.
+The new batch calls the original strict checker, with a rejection-only metadata
+observer that never ran because no case failed. Required refusals/referrals and
+production voices/ASR are unchanged.
 The private ET whole-canonical compound-spacing correction and tightened Russian
 staff/refusal/contradiction guards remain reviewed and unchanged. The first failed
 batch is retained; a successful repeat does not establish deterministic recognition.
 No physical-microphone, carrier/PSTN or real restaurant acceptance is claimed.
+The once-only Codex telephone completion audit is **PASS**, with the raw-log
+availability qualification below. The dashboard's completed audit is separate
+and was not repeated.
 
 The sections below retain the chronological repair and verification history;
 their earlier “current”/“final” checkpoints are not the latest acceptance result.
@@ -970,4 +1043,175 @@ review passes176tests (three production-path/173private),12canonical positives,
 legacy refusals and eight new rejection cases. Removing only the new guards in
 memory makes all eight accept above0.78, proving the regressions are nonvacuous.
 No concrete P0/P1 is found in this delta. This remains offline approval;
-new-release publication and strict multilingual native acceptance are pending.
+the publication below supersedes the candidate checkpoint, not native acceptance.
+
+## Publisheda7be preservation and fresh native gate
+
+PR38 merged normally as `a7be09c992a7ce0a42e0750d7535ef726af0be4d` at
+2026-10-04T05:44:41Z under the shared release lock with zero rooms. Reviewed
+`5a6520975e4e54a6055fa928614bb633ca1605c6` and published complete trees are equal;
+the owned recovery branch was fast-forwarded and pushed. Head CI37180561281 and
+master CI37180765398 passed both `linux-release` and `shared-images`. The existing
+Node20 action annotation remains a warning, not a job failure.
+
+The new web became healthy at05:45:55Z. The existing reconciler safely deferred
+twice on `release_busy`, then returned `PASS: release_synced` at05:47:52Z. All94
+app/demo files match each healthy web/worker/bridge role; original volume,
+LiveKit/SIP/Redis IDs, media configuration and production voice/delivery/model
+profiles remain unchanged. Initial language stays automatic. All nine authorization
+and `no-store` cases pass. Fresh HTTPS/assets/menu/retired-host/ET-EN-RU mobile
+checks pass, and all four production screenshots were read. Fresh signed-webhook-
+only proof at05:54:07Z passes403/200, `no-store` and bound stream contract without
+agent dispatch or carrier invocation. Fresh Twilio values are used only from the
+environment; number/account ownership is not verified.
+
+The initial verification receipt at05:53:29Z fails an additional whole-call-history
+equality assertion, not a preservation check: one call, one session and36events
+were appended since the fresh premerge snapshot. All original, earlier972,4ba and
+fresh-premerge row prefixes match exactly; all four integrity checks pass. The
+failed receipt remains retained. A fresh locked zero-room read at05:55:44Z verifies
+those same prefixes and whole unchanged booking state:85restaurant reservations,
+167actions,0holds;42Easy writes;5Stay bookings;34call-booking associations. Whole
+history equality is explicitly not claimed. No cross-database atomic snapshot or
+identity/source claim for the appended call is made.
+
+A complete strict serial ET/EN/RU batch ran on the exact detached `a7be09c`.
+The shared lock spans all languages; the synthetic caller's private `azure-calm`
+remap changes no production settings. The reviewed on-disk helper is pinned to
+`4a8d490c1cf3cd8a93d57fc683dd2ba7fd20afcaf87371a73a425d160e08bcdc`.
+Its original audio guard is called first, unchanged; a failure-only observer emits
+metadata and rethrows rather than repairing or accepting rejected content. No
+expected answer, caller language or phrase hints reach independent recognition.
+Fresh final input, exact captions, audible PCM, language, required propositions,
+contradictions, raw0.78floor and unchanged restaurant state remain mandatory.
+The batch exits0 at06:01:18Z with all twelve cases passing:
+
+| Language | Menu | Allergy | Note | Takeaway | Result |
+| --- | --- | --- | --- | --- | --- |
+| ET | .980 | .998 | .994 | .990 | 4/4 PASS |
+| EN | 1.000 | 1.000 | 1.000 | .994 | 4/4 PASS |
+| RU | .973 | .991 | 1.000 | .994 | 4/4 PASS |
+
+Every case has fresh final input, exact approved captions and voiced PCM. All
+mandatory safety propositions and the appropriate output language survive
+independent automatic recognition; no contradiction is accepted. Restaurant
+state is unchanged for each language and the entire serial batch. Exact runtime
+and source-lineage checks pass at its end; content hashes were matched before the
+batch. There were no failure-observer records.
+The result establishes this bounded native RTC witness, not deterministic ASR,
+physical listening, carrier/PSTN reachability, number continuity/ownership or
+real-restaurant acceptance. Earlier failures and all diagnostic qualifications
+remain retained. The once-only telephone completion audit passes as qualified below.
+
+Receipts in `/tmp/opencode/`:
+`restaurant-recovery-ru-staff-note-{publication,head-ci,master-ci,sync,verification,verification-final,incoming,live-summary,rtc-summary}.json`.
+
+## Final independent telephone completion audit
+
+The explicitly selected OpenAI/Codex-account reviewer returns **PASS** for all
+four substantive goal criteria, with no concrete unmet criterion or remaining
+P0/P1. The audit independently checked the native raw output, the scoped-review
+176-test raw output, published source, strict checker, catalogue/FAQ consumers,
+consent/ownership tests and preservation/publication receipts. It did not repeat
+provider calls, the completed dashboard audit or another owner's pipeline work.
+
+The full-suite and browser raw-log paths were unavailable to the auditor; a
+subsequent parent availability check confirms those two files absent while native
+and scoped-review raw logs remain present. Full-suite results were assessed from
+the retained tested-source manifest and green head/masterCI; browser results from
+the retained manifest, not independently reread raw browser logs. This explicit
+qualification is not an additional rerun or a claim that CI ran browser journeys.
+The reviewer found no unmet criterion from it. Historical failed runs and scope
+limits remain unchanged.
+
+The full native evidence report was already committed/pushed as `447755a5…` and
+GitHub content-verified. This audit disposition is a documentation-only addendum;
+application/test/deployment source remains the verifieda7be release and is not
+redeployed merely to update the report.
+
+## Publishedff recognition integration — new native result pending
+
+During close-out, the dateda7be runtime guard correctly rejected the separately
+published/deployed `ff11d69279d1b0e7f9fe59b4c1ce77b262dd1aa3`. This is a substantive
+input-recognition delta, not document-only source drift. Its published changes
+were normally merged into the owned branch without rollback or dirty-worktree
+copying. The current application/test/deployment tree equals publishedff; only
+this report differs.
+
+The complete new combined suite passes **12,696 tests/36 subtests**, exit0,
+214.19s, with six explicit opt-in skips and two existing warnings. All eleven
+Chromium journeys pass without JavaScript errors/external requests. Published
+master CI37182061857 passes both release/image jobs. Unlike the missing older
+audit log paths, the new full/browser raw logs are copied to bounded private
+`restaurant-recovery-ff-{full,browser}.log` artifacts with hashes in
+`restaurant-recovery-ff-tests.json`; this does not retroactively change the
+older audit's raw-log availability qualification.
+
+Locked06:22:20Z proof matches95app/demo files per healthy web/worker/bridge role,
+original volume/infrastructure/media, original voices/delivery/chat and all nine
+authorization/no-store cases. Four database integrity checks and every original,
+972,4ba anda7be premerge row prefix pass. Production input ASR now uses unrestricted
+Azure `MAI-Transcribe-2` preview through the published peer repair; independent
+output recognition remains automatic Azure standard with no answer/language hints.
+An initial verification incorrectly required the transport-only bridge to select
+the recognition provider too and failed at `source_profiles`; that failed receipt
+is retained. Actual recognition roles are web/worker, both Azure; the bridge has
+no recognizer. No production setting or source was changed to correct the
+verification-role assumption.
+
+The narrow Codex recognition integration review passes769tests/43.73s, no P0/P1.
+All twelve fresh exactff cases pass individually, but the aggregate at06:28:01Z
+remains **FAIL**: the final runtime check observed PR39's web release rather than
+the pinnedff lineage, so the entire-batch end state check was not executed. The
+individual checks prove each language's unchanged restaurant state, not a full
+successful aggregate. The failed receipt is retained; no freshness guard was
+changed to accept it. Later observation found all three roles synchronized to0bb.
+The completed once-onlya7be audit stays dated base approval.
+
+## Latest published peers and urgent phone delivery
+
+PR39 adds grounded uncertainty/service-question handling through the shared
+restaurant pipeline. Current0bb checks pass12,861tests/36subtests in236.86s,
+six opt-in skips/two existing warnings and all eleven Chromium journeys. Master
+CI37182869738 passes both jobs. Raw full/browser logs are retained and hashed in
+`/tmp/opencode/restaurant-recovery-0bb-tests.json`. Subsequent956 changes only three
+research documents;97app/demo hashes and app/data/tests/deploy match0bb exactly.
+
+The initial0bb preservation assertion fails because its newerff call-session
+prefix changed, not because original records or bookings disappeared. Diagnostics
+verify all original/972/4ba/a7be prefixes, four integrity checks and unchanged
+whole booking state85reservations/167actions/0holds,42Easy writes,5Stay bookings
+and34call-booking associations. Three browser sessions subsequently expired,
+each with only one appended `ended/expired` event. Read-only in-memory replay of
+the four fields written by `call_history.end` restores the **exact originalff
+prefix hash**; no identities/counters/other fields are ignored and no database
+was modified. The failed first receipt and the lifecycle qualification remain
+retained. No cross-database atomicity or identity of newly appended calls is claimed.
+
+The Codex PR39 review passes665scoped tests,12canonical answers,12owned-hold seams
+and9mixed-action negatives, but reproduces emergency guidance lost during booking
+or a waitlist clause. The minimal pending repair changes only those two routing
+conditions: unreviewed booking fields are still discarded, held ownership/expiry
+stays intact, and delivery/approval must be revoked. No new emergency classifier,
+booking route, voice setting, ASR hint or private-checker relaxation is introduced.
+
+The existing configured number is already account-owned, voice-capable and routed
+directly to the robot webhook with POST (no trunk/application override). This is
+provider configuration proof, not a carrier/PSTN test call. Final repair publication,
+service synchronization and exact new-release native proof remain pending.
+
+The first emergency repair preserved 112 routing but still lost six held proposals
+because the generic observer cleared `pending` before an early safety return.
+The focused re-review and the initial full suite both retain that failure (full:
+6failed/12,873passed/36subtests). The final bounded addition restores only an
+unexpired, owned, unconfirmed prior hold into a new proposal object, with delivery
+and approval both false; discarded booking preferences are not resurrected.
+The current focused urgency suite passes27cases in5.66s, including all eighteen
+new regressions. Final focused Codex re-review passes44tests plus twelve isolated
+ET/EN/RU valid/expired/unowned/already-confirmed controls, resolving both P1s with
+no remaining concrete P0/P1. Invalid proposals are not restored. All eleven final
+browser journeys pass. The final full suite passes **12,879 tests/36 subtests**
+in239.78s, with six opt-in skips and the same two existing warnings. Raw output
+is retained and SHA256-verified in
+`/tmp/opencode/restaurant-recovery-emergency-tests.json`; source hashes still
+match the reviewed candidate. Publication and newer-peer integration follow.

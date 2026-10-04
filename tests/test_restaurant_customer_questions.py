@@ -246,6 +246,58 @@ def test_urgent_question_precedes_recap_and_cannot_approve_booking(
     asyncio.run(run())
 
 
+@pytest.mark.parametrize("context", ["fresh", "partial", "held"])
+@pytest.mark.parametrize(
+    "language,question",
+    [
+        ("et", "Lapsel on raske hingata!"),
+        ("en", "I can't breathe!"),
+        ("ru", "Мне трудно дышать!"),
+        ("et", "Lapsel on raske hingata! Kas teil on ootenimekiri?"),
+        ("en", "I can't breathe! Is there a waitlist?"),
+        ("ru", "Мне трудно дышать! Есть лист ожидания?"),
+    ],
+)
+def test_unlisted_emergency_cannot_be_erased_by_booking_or_waitlist(
+    make_state, language, question, context
+):
+    from app.languages import CONSENT
+    from tests.test_restaurant_conversation import tomorrow
+
+    async def run():
+        state = make_state(language)
+        previous = None
+        if context == "partial":
+            state.observe_user_text(f"Book a table on {tomorrow()}", language=language)
+            assert state.booking_inquiry
+        elif context == "held":
+            proposal = await prepare(state)
+            assert state.mark_recap_delivered(proposal["hold_id"])
+            state.observe_user_text(CONSENT[language], language=language)
+            assert state.pending["approved"] and state.pending["delivery"]
+            previous = dict(state.pending)
+
+        state.observe_user_text(question, language=language)
+        response = trusted_booking_response(state)
+        assert response is not None and "112" in response["content"]
+        assert COPY[language]["confirmation_question"] not in response["content"]
+        assert COPY[language]["resume_booking"] not in response["content"]
+        assert not state.booking_inquiry and not state.bookings
+        if previous:
+            assert state.pending["hold_id"] == previous["hold_id"]
+            assert state.pending["expires_at"] == previous["expires_at"]
+            assert not state.pending["approved"] and not state.pending["delivery"]
+            assert (
+                await state.dispatch(
+                    "confirm_slot_booking", {"hold_id": previous["hold_id"]}
+                )
+            )["error"] == "consent_required"
+        else:
+            assert not state.pending
+
+    asyncio.run(run())
+
+
 @pytest.mark.parametrize(
     "language,question",
     [
@@ -347,10 +399,12 @@ def test_noncorpus_emergency_survives_booking_interlude_rejection(
     async def run():
         state = make_state(language)
         hold = None
+        previous = None
         if stage == "pending":
             proposal = await prepare(state)
             hold = proposal["hold_id"]
             assert state.mark_recap_delivered(hold)
+            previous = state.pending
         else:
             first = (
                 "Book a table tomorrow"
@@ -373,11 +427,17 @@ def test_noncorpus_emergency_survives_booking_interlude_rejection(
         assert response and "112" in response.get("content", "")
         assert COPY[language]["confirmation_question"] not in response["content"]
         assert COPY[language]["resume_booking"] not in response["content"]
-        assert not state.booking_inquiry and not state.pending and not state.bookings
+        assert not state.booking_inquiry and not state.bookings
         if hold:
+            assert state.pending is not previous
+            assert state.pending["hold_id"] == hold
+            assert state.pending["expires_at"] == previous["expires_at"]
+            assert not state.pending["approved"] and not state.pending["delivery"]
             result = await state.dispatch("confirm_slot_booking", {"hold_id": hold})
             assert result["error"] == "consent_required"
             assert not state.bookings
+        else:
+            assert not state.pending
 
     asyncio.run(run())
 

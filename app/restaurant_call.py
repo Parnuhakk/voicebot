@@ -1050,7 +1050,7 @@ class RestaurantCallTools(CallTools):
         ) and not (
             self._restaurant_question
             and any(
-                topic == "allergens" or topic in CAPABILITIES
+                topic in {"allergens", "emergency_help"} or topic in CAPABILITIES
                 for topic in self._restaurant_question.topics
             )
         ):
@@ -1156,8 +1156,22 @@ class RestaurantCallTools(CallTools):
                     for topic in self._restaurant_question.topics
                 )
             ):
-                # Clearing preferences must not erase emergency, allergy or
+                # Clearing preferences must not erase an emergency, allergy or
                 # capability safety classification, even for an unknown clause.
+                if (
+                    self._restaurant_focus == "emergency_help"
+                    and previous_pending
+                    and time.monotonic() < previous_pending["expires_at"]
+                    and previous_pending["hold_id"] in self.holds
+                    and previous_pending["hold_id"] not in self.confirmed_holds
+                ):
+                    # Preserve only the owned proposal, not discarded preferences
+                    # or authorization from its earlier delivered recap.
+                    self.pending = {
+                        **previous_pending,
+                        "delivery": False,
+                        "approved": False,
+                    }
                 return
             self._restaurant_focus = None
             self._restaurant_question = None
