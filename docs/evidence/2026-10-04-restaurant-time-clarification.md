@@ -128,3 +128,41 @@ Whole restaurant state, runtime and checker integrity remained unchanged.
 
 The telephone goal remains active. No fresh passing 12-case batch, genuine human
 microphone, carrier path, number ownership or real-restaurant acceptance is claimed.
+
+## Whole validated reply synthesis — candidate
+
+The failed note was reproduced **before RTC** through the installed
+`TelephoneTTS` provider, with the same voice and approved text. Sentence-split
+synthesis at the unchanged **1.12** rate failed the original independent gate at
+**0.970760**; the changed approved-word positions were 6 and 8. Complete-reply
+synthesis at **1.12** passed at **0.994152**, with only the existing whole-answer
+compound-spacing equivalence. Diagnostic complete/split samples at **1.0** also
+passed. No production voice, rate, recognizer, safety wording or checker changed.
+This locates the reproducible mismatch upstream of RTC; it does not establish
+which provider's pronunciation or recognition interpretation is linguistically
+correct, nor explain short caller-word recognition.
+
+The bounded candidate routes fully validated restaurant replies through the
+existing native provider's public `synthesize` method as one request. HTTP audio
+still streams in frames; it is not buffered until the full audio completes.
+Voice locking, configured connection options, recap speed, guarded captions,
+fallback, cancellation and completed-item consent callbacks remain in the shared
+worker path. Other businesses and non-native test providers retain the SDK path.
+
+Three installed AgentSession regressions failed first because each approved
+ET/EN/RU refusal became two provider requests. They pass with the candidate.
+Additional real-provider-transport fixtures cover configured connection options,
+metrics, owned recap/question/later-consent flow, failed synthesis and interrupted
+stream cleanup. Retained review probes also cover partial-audio transport failure,
+expiry at playback completion and replacement of the pending proposal.
+**319 scoped tests passed**, with one existing warning. Independent OpenAI review
+found no P0/P1; its P2 coverage suggestion is now retained in those tests.
+The local real-AgentSession candidate, using provider-backed synthesis and
+unhinted independent recognition, passed the original note gate at **0.994152**
+with exact captions, no model call and no booking writes. Live state and runtime
+were unchanged. This is not a deployed RTC check. Final full checks and exact
+publication remain separate gates. Final `python -m pytest tests -q` passed
+**15,339 tests + 36 subtests**, with 6 skips and 2 existing warnings (256.41s).
+All **12 browser journeys** passed; native optional-dependency collection also
+skips correctly in the core-only environment. Exact publication and a fresh
+strict multilingual batch are still pending at this candidate check.
