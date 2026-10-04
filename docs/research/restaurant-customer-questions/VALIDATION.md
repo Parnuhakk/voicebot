@@ -22,7 +22,7 @@ Kõik allpool nimetatud kohalikud kontrollid kasutavad sünteetilist restorani j
 - Töölaua ja mobiili vaated ning 320 px horisontaalse ülevoolu kontroll läbisid.
 - **0 JavaScripti leheviga, 0 välist päringut**, Chrome 154.0.8037.97.
 
-Uurimuse HTML kontrolliti eraldi kohaliku HTTP-serveri kaudu: kõik 270 kirjet, filtrid, omaniku kinnitatud kuus mõistet, kolme keele kuvamine, tühi otsingutulemus, täpitähtede suhtes paindlik otsing, töölaua ja 390 × 844 mobiilivaade. `file:` navigeerimine oli Playwright CLI poolt keelatud, seetõttu otse faili avamine ei ole eraldi kontrollitud.
+Uurimuse HTML kontrolliti eraldi kohaliku HTTP-serveri kaudu: kõik 270 kirjet, filtrid, omaniku kinnitatud kuus mõistet, kolme keele kuvamine, tühi otsingutulemus, täpitähtede suhtes paindlik otsing, töölaua ja 390 × 844 mobiilivaade. Teadlikult vigase JSON-iga brauserikatse näitas veateadet, null kirjet ja peidetud tulemuste laiendamise nuppu; pärast katset taastati korrektne leht. `file:` navigeerimine oli Playwright CLI poolt keelatud, seetõttu otse faili avamine ei ole eraldi kontrollitud.
 
 ## Avalik sait ja telefon
 
@@ -30,7 +30,7 @@ PR32 järel loeti avalikult saidilt nelja perevõimaluse `true` väärtused ja k
 
 Native regressioon kasutab paigaldatud LiveKit SDK-d ning kutsub tegelikku `TelephoneAgent.on_user_turn_completed` meetodit jagatud kõneolekuga. Ei tehtud päris STT-, TTS-, mudeli- ega operaatorivõrgu kõnet.
 
-Telefoniboti avalik väljalaske staatus oli uurimise ajal `unverified`; native sõrmejälg puudus, avalik ingress ja operaatorikõne polnud kinnitatud. Veebiversiooni CI ja tagasilugemine ei asenda telefoniprotsessi identiteedi ja päriskõne kontrolli.
+Telefoniboti avalik väljalaske staatus oli uurimise alguses `unverified`; native sõrmejälg puudus. 4. oktoobril kell 06:17 UTC näitas avalik staatus `in_sync` ja veebiga sama sõrmejälge ning telefoniversiooni `ff11d69279d1b0e7f9fe59b4c1ce77b262dd1aa3`. See on avaliku sünkroonimisraporti tagasilugemine. Avalik ingress ja operaatorikõne olid jätkuvalt `false`; sünkroonimisraport ei kinnita päriskõne kvaliteeti.
 
 ## Lõppversioon
 
@@ -42,4 +42,8 @@ Lisaks ühendati uusim põhiaru kõnetuvastuse muudatus `ff11d69`. Lõpliku täi
 
 Põhiaru ühendamise eelne viimane täiskomplekt: **11 741 läbis, 10 jäeti vahele, 36 subtesti läbis**, kestus 252,58 sekundit. Testikäigus esines üks Starlette'i `httpx` kasutamise aegumise hoiatus. Kuus lisatud HTTP teksti ja sünteetilise kõne stsenaariumi kontrollivad uusi teenindusküsimusi kõigi kolme puuduva broneerimisvälja juures.
 
-Põhiaru ühendamise järgne kogu hoidla kontroll, CI ja avaliku saidi lõppversiooni tagasilugemine lisatakse siia pärast nende tegelikku lõpetamist. Eelnev täiskomplekti kontroll enne viimaste regressioonide lisamist andis 11 684 läbimist, kolm vana kassiküsimuse ootuse lahknevust ja kümme vahele jäetud kontrolli. Kasside ootused on parandatud eraldi kinnitamata tingimuste vastusele; see tulemus ei ole esitatud puhta lõppkontrollina.
+Täielik kohalik ühendatud komplekt: **12 756 läbis, 17 jäeti vahele, 36 subtesti läbis**, kestus 397,46 sekundit. Selle käivitamise järel piirati veel toidukonteksti sõnapiiri, et „support” ei muudaks raseda külalise laua valimise küsimust toiduküsimuseks. Viimane parandus ja fixture'ite importide lintimise korrastus läbisid **165 sihitud kontrolli**, Flake8 valitud reeglid ja BasedPyrighti 0 vea ning 0 hoiatusega. Kõik muudetud Python-moodulid, testid ja genereerimisskriptid läbisid valitud Flake8 reeglid.
+
+GitHubi ühendatud versiooni kontroll enne viimast sõnapiiri parandust: **12 439 läbis, 86 jäeti vahele, 36 subtesti läbis**; lisaks Linuxi hosti/Compose'i kontrollis 216 läbimist ja 5 vahelejätmist. Mõlemad tegelikud konteinerid ehitati; ühised identiteedid kattusid ning native töötaja ja Twilio silla import läbis võrgu ja päris volitusteta konteineris. Windowsis paigaldatud meedia-SDK-ga testitakse rohkem native juhtumeid kui Linuxi põhipakettidega CI-s, seetõttu on arvud erinevad.
+
+Lõpliku PR39 commit'i CI ja avaldamise tagasilugemine kontrollitakse enne töö lõpetamist. Eelnev ebaõnnestunud CI leiti ja parandati; seda ei esitata edukana. Varasem 11 684 läbimise ja kolme kassiküsimuse vana ootuse lahknevusega kontroll oli vahetulemus, mille lahknevused parandati enne ülaltoodud edukat kontrolli.

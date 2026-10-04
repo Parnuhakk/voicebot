@@ -132,6 +132,7 @@ def test_dish_aliases_preserve_normal_inflections(make_state, language, question
 
 @pytest.mark.parametrize("question", [
     "I am pregnant. Can I choose a particular table?",
+    "I am pregnant and need support choosing a particular table.",
     "Olen rase, kas saan aknaaluse laua?",
     "Я беременна. Можно выбрать конкретный столик?",
 ])

@@ -11,9 +11,11 @@ from app.booking_response import trusted_booking_response
 from app.languages import CONSENT, requested_language, spoken_date
 from app.restaurant_call import COPY, parse_restaurant_request
 from app.restaurant_data import load_restaurant_data, restaurant_demo_profile
-from tests.test_restaurant_conversation import make_state, prepare, tomorrow
-from tests.test_restaurant_http import AUTH, client, start, turn
+from tests.test_restaurant_conversation import make_state as state_factory, prepare, tomorrow
+from tests.test_restaurant_http import AUTH, client as http_client, start, turn
 
+make_state = state_factory
+client = http_client
 
 APPROVED_RESTAURANT = load_restaurant_data()
 REQUESTS = {

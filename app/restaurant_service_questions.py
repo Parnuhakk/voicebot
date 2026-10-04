@@ -93,7 +93,7 @@ CONFLICTS = {
 }
 CHILD = re.compile(r"laste\w*|lapse\w*|\b(?:child(?:ren)?|kids?)\b|детск\w*|реб[её]н\w*")
 DIET = re.compile(r"allerg|allergeen|glut|laktoos|vegan|аллерг|глют|лактоз|веган|milk allergy|piimaallerg")
-FOOD = re.compile(r"\b(?:food|foods|dish|meal|eat|salmon|soup|risotto)\b|toit|toidu|roog|roa\b|lõhe|supp|risot|блюд|ед[ауы]\b|питани|лосос|суп")
+FOOD = re.compile(r"\b(?:foods?|dish|meal|eat|salmon|soups?|risotto|toit\w*|toidu\w*|roog\w*|roa|lõhe\w*|supp|suppi|suppe|supi\w*|risot\w*|блюд\w*|ед(?:а|ы|у|ой|е)|питани\w*|лосос\w*|суп(?:а|е|у|ом|ы|ов)?)\b")
 
 
 def _read_key(text: str) -> str:

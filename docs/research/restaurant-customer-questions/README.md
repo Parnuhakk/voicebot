@@ -132,6 +132,6 @@ Privaatsuse küsimuste koostamisel kasutati [Andmekaitse Inspektsiooni kõnesalv
 
 Veebi ja LiveKiti telefoniboti kood kasutab samu kontrollitud vastuseid. Kohalikud testid kontrollivad native vooru jagatud olekus. See **ei kinnita töötava telefoniprotsessi uut versiooni ega päris operaatorivõrgu kõnet**. Veebisaidi avaldamine ja telefoniprotsessi avaldamine on eri kontrollid.
 
-Uurimuse ajal näitas avalik staatuse liides telefoniväljalaske olekuks `unverified`; töötava telefoniprotsessi sõrmejälg puudus ning avalik ingress ja operaatorikõne polnud kinnitatud. Kinnituseks tuleb avaldada sama versioon telefoniprotsessi, kontrollida selle identiteeti ning teha päris kõne kõigis kolmes keeles.
+Uurimuse alguses näitas avalik staatuse liides telefoniväljalaske olekuks `unverified`. Hilisem tagasilugemine näitas `in_sync`, sama veebi ja telefoni sõrmejälge ning versiooni `ff11d69`. Avalik ingress ja operaatorikõne olid endiselt kinnitamata. Täpne tagasilugemise aeg on [protokollis](VALIDATION.md). Sünkroonimise kõrval tuleb endiselt teha päris kõne kõigis kolmes keeles; olekuraport ei mõõda kõnetuvastuse kvaliteeti.
 
 Ka toidutellimuse, makse, tagasikõne, kaebuse edastamise või inimesega ühendamise võimalus vajab tegelikku integratsiooni. Selle demo vastus ei tohi öelda, et neid tegevusi tehti. Omaniku järgmine sisuline töö on [puuduvate faktide kinnitamine](OWNER.md), alustades lastemenüü koostisest ja hindadest, perevõimaluste kasutustingimustest, kontaktidest ning köögi allergeeniprotsessist.
