@@ -1,6 +1,7 @@
 """Requested clock facts and clarification across ET/EN/RU; no live providers."""
 
 import asyncio
+import base64
 import unicodedata
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -10,7 +11,7 @@ import pytest
 from app.booking_response import trusted_booking_response
 from app.restaurant_call import COPY, parse_restaurant_request
 from app.restaurant_times import TIME_INPUT_EXAMPLES, parse_spoken_time
-from tests.test_restaurant_http import start, turn
+from tests.test_restaurant_http import AUTH, start, turn
 
 pytest_plugins = ["tests.test_restaurant_conversation", "tests.test_restaurant_http"]
 
@@ -574,3 +575,51 @@ def test_real_hours_and_duration_questions_survive_clock_unit_filter(text, topic
 
     question = match_question(text)
     assert question is not None and topic in question.topics
+
+
+UNRESOLVED_CLOCK_UNIT_CHOICES = [
+    "six PM; or 1900 hours",
+    "1800 hours and 19 hours",
+    "18 hours thirty hours",
+]
+
+
+@pytest.mark.parametrize("clock", UNRESOLVED_CLOCK_UNIT_CHOICES)
+def test_unresolved_clock_unit_choices_require_explicit_native_clarification(
+    make_state, clock
+):
+    state = make_state("en")
+    state.observe_user_text(
+        f"Reserve a table tomorrow at {clock} for two guests.",
+        is_final=True,
+        detected_language="en",
+    )
+    assert state.clarification == "invalid_time"
+    assert trusted_booking_response(state) == {"content": COPY["en"]["invalid_time"]}
+    assert state.booking_inquiry is not None
+    assert "start_time" not in state.booking_inquiry
+    assert state.pending is None and not state.holds and not state.bookings
+
+
+@pytest.mark.parametrize("clock", UNRESOLVED_CLOCK_UNIT_CHOICES)
+def test_unresolved_clock_unit_audio_cannot_plan_the_first_choice(client, clock):
+    session = start(client, "auto")["session_id"]
+    client.provider.transcript = f"Reserve a table tomorrow at {clock} for two guests."
+    response = client.post(
+        "/api/turn",
+        headers=AUTH,
+        json={
+            "session_id": session,
+            "audio_b64": base64.b64encode(b"RIFF-synthetic-fixture").decode(),
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()
+    assert result["language"] == "en"
+    assert result["reply"] == client.provider.spoken[-1] == COPY["en"]["invalid_time"]
+    assert result["booking_changes"] == [] and not result["recap_delivery_id"]
+    assert client.provider.recognized_languages == ["auto"]
+    state = client.app.state.demo_sessions.sessions[session].tools
+    assert state.booking_inquiry is not None
+    assert "start_time" not in state.booking_inquiry
+    assert state.pending is None and not state.holds and not state.bookings
