@@ -38,7 +38,7 @@ Non-negotiable invariants:
 
 | Component | Actual state | Operational gate |
 | --- | --- | --- |
-| Operator web/API | `robot.arleserver.cfd`; authenticated provider booking/catalogue reads and a fictional text/microphone demo | Browser/deployment evidence is recorded in the dated hackathon report |
+| Operator web/API | `restobot.arleserver.cfd/dashboard`; authenticated provider booking/catalogue reads and a fictional text/microphone demo, with public landing and integrated calendar | Browser/deployment evidence is recorded in the dated hackathon report |
 | HTTP voice turn | `POST /api/demo/session`, `/api/turn` and session deletion use bounded server-owned history and shared call tools | HTTP audio/text, not a telephone media loop |
 | LLM | Groq `openai/gpt-oss-20b` works, including tool calls | Primary only; no configured secondary |
 | Speech | Telephone Groq Whisper detects English/Estonian; Azure Jenny/Anu follows the call language | New English behavior is locally verified; live English carrier verification remains pending |
@@ -348,7 +348,7 @@ missed-call opportunity are in
 ## 8. State ownership and persistence
 ### Website control plane and booking visibility
 
-`https://robot.arleserver.cfd` serves the static operator dashboard and FastAPI
+`https://restobot.arleserver.cfd` serves the public landing, operator dashboard at `/dashboard`, integrated calendar and FastAPI
 API in the same Coolify deployment. Two paths must not be conflated:
 
 1. **Implemented booking path:** authenticated HTTP session/turn or native voice

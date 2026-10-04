@@ -258,11 +258,34 @@ def create_app():
 
     @app.middleware("http")
     async def private_responses(request, call_next):
+        hostname = (request.url.hostname or "").lower().rstrip(".")
         # Do not republish the retired website through wildcard ingress.
-        if (request.url.hostname or "").lower().rstrip(
-            "."
-        ) == "meretuule.arleserver.cfd":
+        if hostname == "meretuule.arleserver.cfd":
             return Response(status_code=410, headers={"Cache-Control": "no-store"})
+        # Browser pages move; carrier POSTs, private APIs and socket upgrades do not.
+        if (
+            hostname == "robot.arleserver.cfd"
+            and request.method in ("GET", "HEAD")
+            and request.url.path
+            in (
+                "/",
+                "/index.html",
+                "/landing.html",
+                "/dashboard",
+                "/dashboard/",
+                "/booking-calendar",
+                "/booking-calendar/",
+                "/booking-calendar.html",
+            )
+        ):
+            from fastapi.responses import RedirectResponse
+
+            destination = "https://restobot.arleserver.cfd" + request.url.path
+            if request.url.query:
+                destination += "?" + request.url.query
+            return RedirectResponse(
+                destination, status_code=308, headers={"Cache-Control": "no-store"}
+            )
         private = request.url.path in (
             "/api/calls",
             "/api/turn",
@@ -763,7 +786,10 @@ def create_app():
     def hotel_page(request: Request):
         if stack.get("business_type") == "restaurant":
             return Response(status_code=410, headers={"Cache-Control": "no-store"})
-        if (request.url.hostname or "").lower().rstrip(".") == "robot.arleserver.cfd":
+        if (request.url.hostname or "").lower().rstrip(".") in (
+            "robot.arleserver.cfd",
+            "restobot.arleserver.cfd",
+        ):
             return Response(
                 status_code=410,
                 headers={"Cache-Control": "no-store", "X-Robots-Tag": "noindex"},
@@ -797,6 +823,38 @@ def create_app():
             name="fonts",
         )
         static_dir = os.path.join(os.path.dirname(__file__), "restaurant", "static")
+
+        @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
+        @app.api_route("/index.html", methods=["GET", "HEAD"], include_in_schema=False)
+        def restaurant_landing():
+            return FileResponse(
+                os.path.join(static_dir, "landing.html"),
+                media_type="text/html",
+                headers={"Cache-Control": "no-store"},
+            )
+
+        @app.api_route("/dashboard", methods=["GET", "HEAD"], include_in_schema=False)
+        @app.api_route("/dashboard/", methods=["GET", "HEAD"], include_in_schema=False)
+        def restaurant_dashboard():
+            return FileResponse(
+                os.path.join(static_dir, "index.html"),
+                media_type="text/html",
+                headers={"Cache-Control": "no-store"},
+            )
+
+        @app.api_route(
+            "/booking-calendar", methods=["GET", "HEAD"], include_in_schema=False
+        )
+        @app.api_route(
+            "/booking-calendar/", methods=["GET", "HEAD"], include_in_schema=False
+        )
+        def restaurant_calendar():
+            return FileResponse(
+                os.path.join(static_dir, "booking-calendar.html"),
+                media_type="text/html",
+                headers={"Cache-Control": "no-store"},
+            )
+
     app.mount("/", StaticFiles(directory=static_dir, html=True), name="dashboard")
     return app
 

@@ -33,11 +33,10 @@ from .twilio_security import (
     MAX_PENDING,
     MEDIA_URL,
     NATIVE_AUDIO_MARK,
-    VOICE_URL,
     authorize_start,
     authorized_call,
     valid_media_signature,
-    valid_signature,
+    valid_voice_signature,
 )
 
 CALL_TIMEOUT = 600
@@ -533,9 +532,7 @@ class LiveKitCall:
         publication, room = self.publication, self.room
         if publication is not None and room is not None:
             await bounded_close(
-                lambda: room.local_participant.unpublish_track(
-                    publication.sid
-                )
+                lambda: room.local_participant.unpublish_track(publication.sid)
             )
         if self.source is not None:
             await bounded_close(self.source.aclose)
@@ -755,7 +752,7 @@ def create_app():
             if request.query_string:
                 raise BridgeError()
             fields = await asyncio.wait_for(form_fields(request), HANDSHAKE_TIMEOUT)
-            if not valid_signature(config, VOICE_URL, fields, signature):
+            if not valid_voice_signature(config, fields, signature):
                 raise BridgeError()
             call = authorized_call(config, fields)
             if state.draining:

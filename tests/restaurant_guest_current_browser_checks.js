@@ -25,7 +25,7 @@ async page => {
   const writes = () => requests.filter(request => ['/api/booking/session','/api/restaurant/reservation/prepare'].includes(request.path));
   const open = async (language, width=1440) => {
     await page.setViewportSize({width,height:width === 1440 ? 1000 : 844});
-    await page.goto(origin+'/', {waitUntil:'networkidle'});
+    await page.goto(origin+'/dashboard', {waitUntil:'networkidle'});
     await page.locator('.language-option').filter({has:page.locator('input[value="'+language.code+'"]')}).click();
     await page.locator('#operator-token').fill('restaurant-fixture-operator');
     await page.locator('#connect').click();

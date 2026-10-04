@@ -30,7 +30,10 @@ REQUIRED = (
 def edge_declared(host):
     # DNS/public address declaration is NOT reachability. Refuse our HTTP-only
     # dashboard and private/Tailscale destinations before provisioning anything.
-    if not host or host.lower().rstrip(".") == "robot.arleserver.cfd":
+    if not host or host.lower().rstrip(".") in (
+        "robot.arleserver.cfd",
+        "restobot.arleserver.cfd",
+    ):
         return False
     try:
         addresses = [ipaddress.ip_address(host)]

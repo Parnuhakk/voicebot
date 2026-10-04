@@ -14,10 +14,12 @@ import time
 from dataclasses import dataclass
 from urllib.parse import urlsplit
 
-VOICE_URL = "https://robot.arleserver.cfd/api/twilio/voice"
-MEDIA_URL = "wss://robot.arleserver.cfd/api/twilio/media"
+VOICE_URL = "https://restobot.arleserver.cfd/api/twilio/voice"
+MEDIA_URL = "wss://restobot.arleserver.cfd/api/twilio/media"
+LEGACY_VOICE_URL = "https://robot.arleserver.cfd/api/twilio/voice"
+LEGACY_MEDIA_URL = "wss://robot.arleserver.cfd/api/twilio/media"
 NATIVE_AUDIO_MARK = "voicebot-native-audio"
-FALLBACK_URL = "https://robot.arleserver.cfd/api/twilio/unavailable-et.wav"
+FALLBACK_URL = "https://restobot.arleserver.cfd/api/twilio/unavailable-et.wav"
 MAX_PENDING = 16
 MAX_ACTIVE = 2
 BINDING_TTL = 30
@@ -127,11 +129,20 @@ def valid_signature(config, url, params, signature):
     return hmac.compare_digest(base64.b64encode(digest).decode(), signature)
 
 
+def valid_voice_signature(config, params, signature):
+    # A finite migration allowlist, never caller-controlled Host/forwarded headers.
+    return any(
+        valid_signature(config, url, params, signature)
+        for url in (VOICE_URL, LEGACY_VOICE_URL)
+    )
+
+
 def valid_media_signature(config, signature):
-    # Exact supplied WSS origin plus Twilio's documented slash quirk only.
+    # Exact new/legacy WSS origins plus Twilio's documented slash quirk only.
     return any(
         valid_signature(config, url, {}, signature)
-        for url in (MEDIA_URL, MEDIA_URL + "/")
+        for origin in (MEDIA_URL, LEGACY_MEDIA_URL)
+        for url in (origin, origin + "/")
     )
 
 

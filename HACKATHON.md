@@ -96,7 +96,7 @@ python3 deploy/telephony/manage.py up --twilio --source-container "$VOICEBOT_WEB
 ```
 
 The assigned number's incoming voice webhook is exactly
-`https://robot.arleserver.cfd/api/twilio/voice`, method **POST**. The service derives
+`https://restobot.arleserver.cfd/api/twilio/voice`, method **POST**. The service derives
 the bidirectional stream itself; do not configure SIP, expose UDP, or put keys in
 URLs. Bridge health can be alive while `configured=false`; public call routes
 then return **503 before admission**, not a ready telephone claim.

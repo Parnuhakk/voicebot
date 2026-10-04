@@ -27,7 +27,10 @@ def test_hotel_assets_are_local_and_content_versioned() -> None:
             elif tag == "link" and values.get("rel") == "stylesheet":
                 assets.append(values["href"])
 
-    with patch.dict("os.environ", {"VOICEBOT_BUSINESS_TYPE": "hotel_spa"}, clear=True), TestClient(create_app()) as client:
+    with (
+        patch.dict("os.environ", {"VOICEBOT_BUSINESS_TYPE": "hotel_spa"}, clear=True),
+        TestClient(create_app()) as client,
+    ):
         response = client.get("/hotel")
         assert response.status_code == 200
         Parser().feed(response.text)
@@ -73,7 +76,10 @@ def test_hotel_operator_links_keep_the_management_domain() -> None:
                 if href:
                     links.append(href)
 
-    with patch.dict("os.environ", {"VOICEBOT_BUSINESS_TYPE": "hotel_spa"}, clear=True), TestClient(create_app()) as client:
+    with (
+        patch.dict("os.environ", {"VOICEBOT_BUSINESS_TYPE": "hotel_spa"}, clear=True),
+        TestClient(create_app()) as client,
+    ):
         response = client.get("/hotel", headers={"Host": "localhost:8000"})
         assert response.status_code == 200
         Parser().feed(response.text)
@@ -106,7 +112,10 @@ def test_hotel_operator_links_keep_the_management_domain() -> None:
     "path", ["/hotel", "/hotel/", "/hotel?source=old", "/hotel/?source=old"]
 )
 def test_old_robot_hotel_page_is_gone_without_a_redirect(host, path) -> None:
-    with patch.dict("os.environ", {"VOICEBOT_BUSINESS_TYPE": "hotel_spa"}, clear=True), TestClient(create_app()) as client:
+    with (
+        patch.dict("os.environ", {"VOICEBOT_BUSINESS_TYPE": "hotel_spa"}, clear=True),
+        TestClient(create_app()) as client,
+    ):
         response = client.get(path, headers={"Host": host}, follow_redirects=False)
     assert response.status_code == 410
     assert response.headers["Cache-Control"] == "no-store"
@@ -127,7 +136,10 @@ def test_old_robot_hotel_page_is_gone_without_a_redirect(host, path) -> None:
     ],
 )
 def test_forwarded_headers_cannot_restore_the_old_hotel_page(forwarded) -> None:
-    with patch.dict("os.environ", {"VOICEBOT_BUSINESS_TYPE": "hotel_spa"}, clear=True), TestClient(create_app()) as client:
+    with (
+        patch.dict("os.environ", {"VOICEBOT_BUSINESS_TYPE": "hotel_spa"}, clear=True),
+        TestClient(create_app()) as client,
+    ):
         response = client.get(
             "/hotel", headers={"Host": "robot.arleserver.cfd", **forwarded}
         )
@@ -135,7 +147,10 @@ def test_forwarded_headers_cannot_restore_the_old_hotel_page(forwarded) -> None:
 
 
 def test_local_rollback_keeps_the_hotel_page_without_republishing_meretuule() -> None:
-    with patch.dict("os.environ", {"VOICEBOT_BUSINESS_TYPE": "hotel_spa"}, clear=True), TestClient(create_app()) as client:
+    with (
+        patch.dict("os.environ", {"VOICEBOT_BUSINESS_TYPE": "hotel_spa"}, clear=True),
+        TestClient(create_app()) as client,
+    ):
         for host in ("localhost:8000", "testserver"):
             for path in ("/hotel", "/hotel/"):
                 response = client.get(path, headers={"Host": host})
@@ -180,7 +195,7 @@ def test_retiring_the_old_hotel_page_preserves_operator_root_health_and_auth() -
         ),
         TestClient(create_app()) as client,
     ):
-        headers = {"Host": "robot.arleserver.cfd"}
+        headers = {"Host": "restobot.arleserver.cfd"}
         dashboard = client.get("/", headers=headers)
         assert dashboard.status_code == 200
         assert "<title>Vastuvõtulaud" in dashboard.text
@@ -211,7 +226,10 @@ def test_local_rollback_navigation_never_advertises_the_removed_domain() -> None
             if tag == "a" and dict(attrs).get("href"):
                 hrefs.append(dict(attrs)["href"])
 
-    with patch.dict("os.environ", {"VOICEBOT_BUSINESS_TYPE": "hotel_spa"}, clear=True), TestClient(create_app()) as client:
+    with (
+        patch.dict("os.environ", {"VOICEBOT_BUSINESS_TYPE": "hotel_spa"}, clear=True),
+        TestClient(create_app()) as client,
+    ):
         for path in ("/", "/hotel"):
             hrefs.clear()
             response = client.get(path)

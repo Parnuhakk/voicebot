@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import uuid
 import time
+import sqlite3
 
 from fastapi import Header, HTTPException, Request
 
@@ -21,6 +22,24 @@ CANCEL = {"et": "Jah, tühista.", "en": "Yes, cancel.", "ru": "Да, отмен�
 
 
 def add_restaurant_routes(app, sessions):
+    @app.get("/api/restaurant/calendar")
+    async def calendar(
+        request: Request, authorization: str | None = Header(default=None)
+    ):
+        _require_operator(authorization)
+        query = list(request.query_params.multi_items())
+        if len(query) != 1 or query[0][0] != "date":
+            raise HTTPException(400, "restaurant_calendar_date_required")
+        adapter = app.state.stack["slot"]
+        if adapter is None:
+            raise HTTPException(503, "restaurant_calendar_unavailable")
+        try:
+            return await adapter.get_operator_calendar(query[0][1])
+        except (ValueError, OverflowError):
+            raise HTTPException(400, "restaurant_date_invalid") from None
+        except (RuntimeError, sqlite3.Error, OSError):
+            raise HTTPException(503, "restaurant_calendar_unavailable") from None
+
     def proposal_result(session, result):
         if not isinstance(result, dict) or result.get("ok") is not True:
             return _result(result)

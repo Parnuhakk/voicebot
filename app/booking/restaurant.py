@@ -88,8 +88,11 @@ class RestaurantAdapter(SlotAdapter):
             self.operational = True
 
     @contextmanager
-    def _connection(self, *, write=False):
-        connection = sqlite3.connect(self.state_db, timeout=5)
+    def _connection(self, *, write=False, read_only=False):
+        database = (
+            Path(self.state_db).as_uri() + "?mode=ro" if read_only else self.state_db
+        )
+        connection = sqlite3.connect(database, timeout=5, uri=read_only)
         connection.row_factory = sqlite3.Row
         try:
             connection.execute("PRAGMA busy_timeout=5000")
@@ -493,6 +496,77 @@ class RestaurantAdapter(SlotAdapter):
 
     async def get_operator_bookings(self, date, *, page=1, length=50):
         return await asyncio.to_thread(self._operator_bookings, date, page, length)
+
+    async def get_operator_calendar(self, day):
+        return await asyncio.to_thread(self._operator_calendar, day)
+
+    def _operator_calendar(self, day):
+        # Calendar dates are independent of the booking advance-window policy.
+        if not isinstance(day, str) or not re.fullmatch(
+            r"[0-9]{4}-[0-9]{2}-[0-9]{2}", day
+        ):
+            raise ValueError("restaurant_date_invalid")
+        zone = ZoneInfo(self.data["timezone"])
+        start = datetime.strptime(day, "%Y-%m-%d").replace(tzinfo=zone)
+        end = start + timedelta(days=1)
+        if not self.operational:
+            raise RuntimeError("restaurant_calendar_unavailable")
+        now = self._now()
+        with self._connection(read_only=True) as connection:
+            # One read transaction keeps holds and confirmations consistent.
+            connection.execute("BEGIN")
+            parameters = (self.restaurant_id, end.timestamp(), start.timestamp())
+            reserved = connection.execute(
+                "SELECT table_id,party_size,start_epoch,end_epoch FROM restaurant_reservations "
+                "WHERE restaurant_id=? AND start_epoch < ? AND end_epoch > ? AND status='confirmed'",
+                parameters,
+            ).fetchall()
+            held = connection.execute(
+                "SELECT table_id,slot_json,start_epoch,end_epoch,expires_epoch FROM restaurant_holds "
+                "WHERE restaurant_id=? AND start_epoch < ? AND end_epoch > ? AND expires_epoch > ?",
+                (*parameters, now.timestamp()),
+            ).fetchall()
+        items = []
+        for rows, status in ((reserved, "confirmed"), (held, "held")):
+            for row in rows:
+                item = {
+                    "table_id": row["table_id"],
+                    "party_size": row["party_size"]
+                    if status == "confirmed"
+                    else json.loads(row["slot_json"])["party_size"],
+                    "start": datetime.fromtimestamp(
+                        row["start_epoch"], zone
+                    ).isoformat(),
+                    "end": datetime.fromtimestamp(row["end_epoch"], zone).isoformat(),
+                    "status": status,
+                }
+                if status == "held":
+                    item["expires_at"] = datetime.fromtimestamp(
+                        row["expires_epoch"], zone
+                    ).isoformat()
+                items.append(item)
+        return {
+            "date": day,
+            "synthetic": True,
+            "fetched_at": now.isoformat(),
+            "restaurant": {
+                key: copy.deepcopy(self.data[key])
+                for key in (
+                    "name",
+                    "timezone",
+                    "tables",
+                    "opening_hours",
+                    "closures",
+                    "reservation_duration_minutes",
+                    "slot_interval_minutes",
+                    "maximum_party_size",
+                )
+            },
+            "items": sorted(
+                items,
+                key=lambda item: (item["start"], item["table_id"], item["status"]),
+            ),
+        }
 
     def _operator_bookings(self, day, page, length):
         rows = []

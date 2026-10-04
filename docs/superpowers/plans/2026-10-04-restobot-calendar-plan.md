@@ -1,0 +1,7 @@
+# Implementation plan
+
+1. Calendar lane: RED tests for protected calendar reads and imported page; minimally project current reservations/holds; import/enhance authored assets with separate live/preview modes and reciprocal navigation; run focused HTTP/browser checks. Files owned by calendar lane: restaurant adapter/web/static and calendar/browser tests.
+2. Landing lane: implement new same-style landing.html/landing.css/landing.js assets only, with local demo/calendar links and no private state. Domain lane (owner): RED tests for landing/dashboard routes, canonical browser redirect and finite old/new carrier signature URL compatibility; minimally update server hostname behavior, telephony configuration/defaults and deployment regressions. Preserve old POST/websocket routes. Owner handles this lane and operations.
+3. Fan in: re-read both diffs, freeze tests, run focused and full repository checks plus all existing browser journeys. Run one independent adversarial review of the intended combined diff and fix serious findings.
+4. Capture current deployment/data baseline; reconcile master; commit/push intended files. Publish new host through the existing Coolify/Traefik route and keep old endpoint compatibility without broad stack restarts.
+5. Verify public old/new page behavior, readiness, deployed revision, API protection, carrier route/signature compatibility and preserved data. Fill goal evidence and complete only after all criteria hold.

@@ -61,7 +61,7 @@ async page => {
       summary.includes('Meretuule') && summary.includes('Esimene Külaline') && !summary.includes('?'), summary);
     assert.equal(await page.locator('.booking-receipt[data-action="confirmed"]').count(), 1);
   };
-  await page.goto('http://127.0.0.1:8777/', {waitUntil: 'networkidle'});
+  await page.goto('http://127.0.0.1:8777/dashboard', {waitUntil: 'networkidle'});
   await page.locator('#operator-token').fill('restaurant-fixture-operator');
   await page.locator('#connect').click();
   await page.waitForFunction(() => state.connected && state.voiceCatalog);

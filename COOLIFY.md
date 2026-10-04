@@ -1,4 +1,4 @@
-# Deploy to Coolify → robot.arleserver.cfd
+# Deploy to Coolify → restobot.arleserver.cfd
 
 ## Restaurant release — current default
 
@@ -10,8 +10,11 @@ web and native worker containers. EasyAppointments credentials are optional in
 restaurant mode. An absent restaurant write flag inherits the prior authorized
 `EASY_DEMO_WRITES` setting; an explicit `0` disables table writes.
 
-The root page at `https://robot.arleserver.cfd/` serves restaurant voice and
-table controls. It is the only published Voicebot domain. `/hotel` returns 410
+The root page at `https://restobot.arleserver.cfd/` serves the public landing;
+`/dashboard` preserves restaurant voice and table controls, and
+`/booking-calendar.html` integrates the authored calendar. Restobot is canonical;
+old robot browser pages redirect while old API/carrier paths remain compatible.
+`/hotel` returns 410
 without a redirect in restaurant mode. Remove the earlier guest website's
 dedicated ingress file as described in the [robot-only domain runbook](deploy/robot-domain/README.md).
 See [restaurant configuration, deployment and
@@ -26,7 +29,9 @@ port 8000. No secrets are baked into the image (see `.dockerignore`).
 
 - Canonical repository: `Parnuhakk/voicebot`, branch `master`.
   Coolify's repository source must use the organization, not the former personal repo.
-- DNS `robot.arleserver.cfd` → your Coolify server IP (A record).
+- Route `restobot.arleserver.cfd` to the existing application ingress. On the Arle
+  host, wildcard DNS and the application Cloudflare Tunnel already cover it;
+  change the Coolify application domains rather than the shared tunnel.
 - Coolify server with a configured wildcard or per-domain TLS (Let's Encrypt).
 
 ## 1. Create the service
@@ -35,10 +40,12 @@ port 8000. No secrets are baked into the image (see `.dockerignore`).
 2. Build context / Dockerfile location: repo root if you push `voicebot/`
    as the repo root; otherwise set base directory to `voicebot/`.
 3. Port: **8000**. Health check path: **/health**.
-4. Domains → add `https://robot.arleserver.cfd` (TLS on, force HTTPS on).
+4. Domains → `https://restobot.arleserver.cfd,https://robot.arleserver.cfd`
+   (TLS on, force HTTPS on). Keep robot as the compatibility route; the app
+   redirects browser pages, never signed carrier callbacks or private API POSTs.
 
 Do not add the retired Meretuule hostname or install a separate guest-website
-router. The robot root serves the restaurant application directly. Its old
+router. The Restobot root is the landing, with restaurant controls at `/dashboard`. The old
 `/hotel` and `/hotel/` paths return HTTP 410 without `Location`; there is no
 public guest-site redirect or root-to-hotel rewrite.
 
@@ -143,11 +150,14 @@ valid receipt is available; it does not confirm the host timer is active.
 
 ## 4. Verify
 
-- `https://robot.arleserver.cfd/health` → `{"ok": true}`
-- `https://robot.arleserver.cfd/` → disclosed fictional operator dashboard
+- `https://restobot.arleserver.cfd/health` → `{"ok": true}`
+- `https://restobot.arleserver.cfd/` → public landing page.
+- `https://restobot.arleserver.cfd/dashboard` → disclosed fictional operator dashboard
   (provider-backed bookings, catalogue, text/microphone demo, technical calls).
 - The retired Meretuule hostname does not serve the website, assets or APIs.
-- Public robot `/hotel` and `/hotel/` → HTTP 410 with no `Location` header.
+- Old robot browser pages → HTTP 308 to the corresponding Restobot path/query.
+- Both hostnames' `/api/twilio/` routes reach the dedicated bridge, not the web app.
+- Public `/hotel` and `/hotel/` → HTTP 410 with no `Location` header.
 - Confirm/cancel without or with a wrong client token → 403. 503 means
   the server itself has no `OPERATOR_TOKEN` configured — check Coolify env.
 

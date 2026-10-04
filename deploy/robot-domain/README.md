@@ -1,13 +1,30 @@
-# Robot-only website
+# Restobot website and robot compatibility
 
-`https://robot.arleserver.cfd/` is the only published Voicebot website. Its
-restaurant reception includes table reservations, restaurant information and
-the text/microphone demo behind the existing operator authorization.
+`https://restobot.arleserver.cfd/` is the canonical Voicebot website. The public
+landing shares the authored calendar's style. The preserved operator restaurant
+workspace is at `/dashboard`, and `/booking-calendar.html` integrates the table
+calendar. Stored bookings and the text/microphone demo retain operator authorization.
 
-Use the existing Coolify application's `https://robot.arleserver.cfd` domain.
+Use the existing Coolify application domains
+`https://restobot.arleserver.cfd,https://robot.arleserver.cfd`.
 No additional website, custom router, container or DNS record is required.
 Preserve the original `/data` volume, restaurant identity, bookings/history,
 voice configuration and automatic GitHub deployment.
+
+## Hostname migration
+
+On the Arle host, wildcard DNS and the Cloudflare application tunnel already
+route both names to Traefik; no tunnel/DNS change is necessary. Update Coolify's
+application domain setting (not only its generated Compose file), then deploy
+the verified release. Do not restart shared proxy/tunnel services.
+
+Old robot browser pages return HTTP 308 to the same Restobot path/query. Health,
+private APIs and carrier callbacks remain on the old host for compatibility;
+POSTs and WebSockets are never cross-domain redirects. The separate Twilio
+bridge publishes both exact hosts at priority 10000, emits the canonical
+Restobot media URL and accepts signatures only for the finite old/new origin
+allowlist. Switch the existing carrier webhook to the canonical URL after
+Restobot's bridge route is reachable. This is not proof of a real carrier call.
 
 ## Retire the former Meretuule publication
 
@@ -30,10 +47,12 @@ including its assets and APIs, if a fallback route forwards it.
 
 ## Verify
 
-- Robot `/`, `/health`, versioned assets and `/api/public/restaurant`: HTTP 200.
-- Robot navigation has no links to the retired hostname. Existing restaurant,
+- Restobot `/`, `/dashboard`, `/booking-calendar.html`, `/health`, versioned
+  assets and `/api/public/restaurant`: HTTP 200.
+- Old robot browser pages: HTTP 308 preserving path/query; old `/health`: HTTP 200.
+- Restobot navigation has no links to the retired hostname. Existing restaurant,
   demo and microphone controls remain present.
-- Robot private `/api/bookings`, `/api/calls` and `/api/call-history` without
+- Both hosts' private `/api/bookings`, `/api/calls` and `/api/call-history` without
   authorization: HTTP 403 with `Cache-Control: no-store`.
 - Robot `/hotel` and `/hotel/`: HTTP 410, no redirect.
 - Meretuule root, assets and APIs: unavailable; neither website content nor a

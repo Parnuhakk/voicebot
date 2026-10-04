@@ -28,7 +28,7 @@ native worker, avoiding a public SIP/RTP edge. The exposed authentication
 credential is never used and must be rotated before account activation.
 
 **Not verified:** real Twilio/PSTN call, public SIP/RTP edge, human transfer or
-real-property release. `robot.arleserver.cfd` can route Twilio HTTPS streams but
+real-property release. `restobot.arleserver.cfd` can route Twilio HTTPS streams but
 is not a SIP/RTP endpoint. DIDWW remains an optional later SIP path.
 
 ## Runtime

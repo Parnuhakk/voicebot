@@ -1,14 +1,20 @@
 async (page) => {
-  // Read-only public acceptance: robot is the only published Voicebot website.
+  // Read-only public acceptance: Restobot landing/workspace and old-host compatibility.
   const tab = await page.context().newPage();
   const check = (ok, message) => { if (!ok) throw new Error(message); };
-  const origin = 'https://robot.arleserver.cfd';
+  const origin = 'https://restobot.arleserver.cfd';
   const retiredHost = 'meretuule.arleserver.cfd';
   const errors = [];
   tab.on('pageerror', error => errors.push(error.message));
   try {
-    const response = await tab.goto(origin + '/', {waitUntil:'networkidle',timeout:30000});
-    check(response?.status() === 200 && tab.url() === origin + '/', 'Robot root did not load directly');
+    const landing = await tab.goto(origin + '/', {waitUntil:'networkidle',timeout:30000});
+    check(landing?.status() === 200 && tab.url() === origin + '/', 'Restobot landing did not load directly');
+    check(await tab.locator('a[href="/dashboard#demo-section"]').count() > 0, 'Landing has no voice-demo action');
+    check(await tab.locator('a[href="/booking-calendar.html"]').count() > 0, 'Landing has no calendar action');
+    const oldRoot = await tab.request.get('https://robot.arleserver.cfd/?source=public-check', {maxRedirects:0});
+    check(oldRoot.status() === 308 && oldRoot.headers().location === origin + '/?source=public-check', 'Old root redirect failed');
+    const response = await tab.goto(origin + '/dashboard', {waitUntil:'networkidle',timeout:30000});
+    check(response?.status() === 200 && tab.url() === origin + '/dashboard', 'Restobot workspace did not load directly');
     const links = await tab.locator('a[href]').evaluateAll(elements => elements.map(el => el.href));
     check(links.every(url => new URL(url).hostname !== retiredHost), 'Robot advertises the removed website');
     for (const id of ['operator-token','demo-start','demo-mic','reservation-prepare']) {

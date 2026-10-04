@@ -7,7 +7,7 @@ async page => {
     if (request.method() === 'POST' && request.url().includes('/api/')) requests.push({path:new URL(request.url()).pathname,body:request.postDataJSON()});
   });
   await page.setViewportSize({width:1440,height:1000});
-  await page.goto('http://127.0.0.1:8766/', {waitUntil:'networkidle'});
+  await page.goto('http://127.0.0.1:8766/dashboard', {waitUntil:'networkidle'});
   const familyInformation = await (await page.request.get('http://127.0.0.1:8766/api/public/restaurant')).json();
   assert.deepEqual(familyInformation.restaurant.family_facilities, {drawing:true,toys:true,play_corner:true,children_menu:true});
   assert.equal(familyInformation.customer_questions_version, 'reviewed-service-v1');
@@ -55,8 +55,10 @@ async page => {
   await chooseLanguage('et');
   assert.equal(requests.length, 0, 'choosing a language called a provider before sign-in');
   assert.equal(await page.locator('aside.sidebar').count(),1,'restaurant adaptation removed the dashboard sidebar');
-  assert.equal(await page.locator('.sidebar nav a').count(),4,'dashboard navigation is missing');
+  assert.equal(await page.locator('.sidebar nav a').count(),5,'dashboard navigation is missing');
+  assert(await page.locator('.sidebar nav a[href="/booking-calendar.html"]').isVisible(),'calendar navigation is missing');
   for (const href of await page.locator('.sidebar nav a').evaluateAll(links=>links.map(link=>link.getAttribute('href')))) {
+    if (!href.startsWith('#')) continue;
     assert(await page.locator(href).isVisible(),`navigation target ${href} is missing`);
   }
   const sidebarBox=await page.locator('.sidebar').boundingBox();
