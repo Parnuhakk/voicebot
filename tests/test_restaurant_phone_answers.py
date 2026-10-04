@@ -27,7 +27,7 @@ CASES = [
     (
         "ru",
         "Можете записать мою аллергию в бронирование?",
-        "Я не сохраняю особые пожелания и не уведомляю кухню. Я не могу подтвердить безопасность при аллергии.",
+        "Я не сохраняю особые пожелания и не уведомляю сотрудников кухни. Я не могу подтвердить безопасность при аллергии.",
     ),
     (
         "et",
@@ -59,6 +59,71 @@ RUSSIAN_ALLERGY_NOTICE = (
     "возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. "
     "При серьёзной аллергии поговорите с рестораном до заказа."
 )
+
+RUSSIAN_NOTE_REFUSAL = (
+    "Я не сохраняю особые пожелания и не уведомляю сотрудников кухни. "
+    "Я не могу подтвердить безопасность при аллергии."
+)
+
+
+def test_russian_note_refuses_kitchen_staff_notification_without_a_booking(make_state):
+    state = make_state("ru")
+    state.observe_user_text(
+        "Можете записать мою аллергию в бронирование?", detected_language="ru"
+    )
+    assert trusted_booking_response(state) == {"content": RUSSIAN_NOTE_REFUSAL}
+    assert (
+        state.guard_reply("Я уведомляю сотрудников кухни.", []) == RUSSIAN_NOTE_REFUSAL
+    )
+    assert not state.holds and not state.bookings and not state.pending
+
+
+def test_russian_note_audio_http_delivers_the_kitchen_staff_refusal(client):
+    session = start(client, "auto")["session_id"]
+    client.provider.transcript = "Можете записать мою аллергию в бронирование?"
+    response = client.post(
+        "/api/turn",
+        headers=AUTH,
+        json={
+            "session_id": session,
+            "audio_b64": base64.b64encode(b"RIFF-synthetic-fixture").decode(),
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()
+    assert result["language"] == "ru" and result["reply"] == RUSSIAN_NOTE_REFUSAL
+    assert client.provider.spoken[-1] == result["reply"]
+    assert client.provider.recognized_languages == ["auto"]
+    assert result["booking_changes"] == [] and not result["recap_delivery_id"]
+
+
+def test_russian_note_staff_refusal_keeps_hold_but_revokes_delivered_consent(
+    make_state,
+):
+    async def run():
+        state = make_state("ru")
+        proposal = await prepare(state)
+        previous = state.pending
+        recap = state.render_recap()
+        assert state.mark_recap_delivered(proposal["hold_id"])
+        state.observe_user_text(
+            "Можете записать мою аллергию в бронирование?", detected_language="ru"
+        )
+        assert state.guard_reply("Я уведомляю сотрудников кухни.", []) == (
+            RUSSIAN_NOTE_REFUSAL + " " + COPY["ru"]["resume_booking"] + " " + recap
+        )
+        assert state.pending is not previous
+        assert state.pending["hold_id"] == previous["hold_id"]
+        assert state.pending["expires_at"] == previous["expires_at"]
+        assert not state.pending["delivery"] and not state.pending["approved"]
+        assert not state.bookings
+        assert (
+            await state.dispatch(
+                "confirm_slot_booking", {"hold_id": proposal["hold_id"]}
+            )
+        )["error"] == "consent_required"
+
+    asyncio.run(run())
 
 
 def test_russian_allergy_answer_requires_staff_to_verify_before_ordering(make_state):

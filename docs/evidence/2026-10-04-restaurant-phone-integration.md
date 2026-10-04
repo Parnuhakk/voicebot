@@ -2,23 +2,27 @@
 
 ## Current verified disposition
 
-Robot-only restaurant release `94baecee81577e9e1f0ba1ff5a350874bb3e94a3` is
-published and synchronized. It retains PR36's clock/FAQ repairs and adds a peer's
-bounded whole-question retention repair. Both master CI jobs passed. Fresh combined
-checks passed 12,646 tests/36 subtests and all eleven Chromium journeys. All94
+Robot-only restaurant release `4ba789b917318de74bdffd9d63505812714188a8` is
+published and synchronized through PR37. It retains the published clock/FAQ and
+whole-question retention repairs and clarifies only the shared Russian staff-
+verification notice. Both master CI jobs passed. Combined checks passed
+12,649 tests/36 subtests and all eleven Chromium journeys. All94
 app/demo files match each healthy web/worker/bridge role; nine authorization and
 no-store cases pass. Original volume/infrastructure and all original/earlier fresh-
 premerge row prefixes remain intact. Fresh HTTPS/assets/menu/ET-EN-RU mobile and
-robot-only retired-host checks pass. The870 receipts below remain dated checkpoints.
+robot-only retired-host checks pass. The870/94 receipts below remain dated checkpoints.
 
-Strict complete multilingual native acceptance is **not complete**. On94, English
-and Estonian passed all four cases with unchanged restaurant state. Russian menu
-passed before its allergy-audio rejection.
+Strict complete multilingual native acceptance is **not complete**. Both4ba serial
+batches passed all four English and Estonian cases with unchanged restaurant state.
+The first batch failed Russian allergy audio; the second passed allergy but failed
+Russian note audio. An unchanged-checker Russian diagnostic repeat passed all four
+cases between them. These different outcomes remain recorded, not treated as a
+complete successful aggregate.
 Current and historical failures remain recorded; metadata-only diagnosis continues
 without weakening required refusals/referrals or changing production voices/ASR.
-The reviewed private ET whole-canonical compound-spacing correction passed the
-actual94note and takeaway. A minimal shared Russian notice revision is being
-verified; no new-release or complete Russian wire acceptance is claimed yet.
+The private ET whole-canonical compound-spacing correction and tightened Russian
+staff/refusal/contradiction guards remain reviewed and unchanged. The first failed
+batch is retained; a successful repeat does not establish deterministic recognition.
 No physical-microphone, carrier/PSTN or real restaurant acceptance is claimed.
 
 The sections below retain the chronological repair and verification history;
@@ -858,5 +862,112 @@ reject above0.78, while removing only the new regex in memory makes them accept.
 All12canonical positives and legacy staff/refusal/allergen negatives pass. One
 initial supplemental harness incorrectly assumed every legacy mutation exceeded
 0.78; correcting that test assumption required no repository edit. No concrete
-P0/P1 remains in the reviewed finite repair. Publication and fresh exact-release
-multilingual wire proof remain pending; direct synthesis does not close the goal.
+P0/P1 remains in the reviewed finite repair. The publication and native receipts
+below supersede this candidate checkpoint; direct synthesis does not close the goal.
+
+## Published4ba preservation and native continuation
+
+PR37 merged normally as `4ba789b917318de74bdffd9d63505812714188a8` at
+2026-10-04T05:00:55Z under the shared release lock with zero rooms. Reviewed
+`b62fcbddb9025fd6ed32e99e0666fbc193ca57eb` and published complete trees are equal.
+The owned recovery branch fast-forwarded and was pushed. The first isolated
+GitHub CLI attempt failed authentication at exit4 before invoking merge; the
+correct existing private environment succeeded. Both outcomes are retained.
+Head CI37178339618 and master CI37178656208 passed `linux-release`/`shared-images`.
+The existing Node20 action annotation remains, not a job failure.
+
+Existing `release_sync.py` on the exact detached4ba snapshot returned
+`PASS: release_current`. Locked05:05:59Z verification matched94app/demo files in
+each healthy web/worker/bridge role, original volume and LiveKit/SIP/Redis IDs,
+matching media/source configuration and unchanged production voice/delivery/model
+profiles. Nine missing/wrong/valid authorization cases return403/403/200 and
+`no-store`. Four database integrity checks pass; every original, earlier972 and
+fresh idle-premerge row prefix survives. Whole tables also equal this fresh
+premerge checkpoint:85restaurant reservations/167actions/0holds,42Easy writes,
+5Stay bookings. No cross-database atomicity claim is made.
+
+Fresh HTTPS/assets/menu/retired-host/mobile checks pass; all four production
+screenshots were read. ET/EN/RU controls stay on the first screen with no overflow.
+Fresh webhook-only proof passes unsigned403/signed200, `no-store` and bound stream
+contract, without native-agent dispatch or carrier invocation. This does not prove
+PSTN access, number continuity or account ownership.
+
+The first complete serial4ba batch, shared lock held throughout, exits1:
+
+| Language | Menu | Allergy | Note | Takeaway | Complete |
+| --- | --- | --- | --- | --- | --- |
+| ET | .980 | .998 | .994 | .990 | PASS, state unchanged |
+| EN | 1.000 | 1.000 | 1.000 | .994 | PASS, state unchanged |
+| RU | .973 | independent-audio content FAIL | not reached | not reached | FAIL |
+
+At05:15:08Z the metadata-only RU diagnostic repeat passed all four cases through
+the original checker at .973/.991/1.000/.994, with fresh exact captions and unchanged
+restaurant state. The allergy answer retained every required proposition and was
+equal aside from existing `ё`/`е` orthography. Its observer only emitted metadata
+before calling the original guard; it changed no on-disk helper, synthesis, ASR,
+score, caption or predicate. The first batch lacks proposition-level metadata;
+its cause is not invented or inferred from the successful repeat. The prior failure
+and recognition variability remain explicit. The subsequent uninstrumented full
+serial batch also exits1: ET4PASS at .980/.998/.994/.990, EN4PASS at
+1.000/1.000/1.000/.994, RU menu/allergy PASS at .982/.991, then note FAIL
+`independent_audio_content_mismatch`; takeaway is not reached. This receipt is
+`restaurant-recovery-4ba-rtc-final-summary.json`, not a passing final acceptance.
+Complete-batch retries stop after these two failures. No final telephone
+completion audit has been launched.
+
+A selected-note same-PCM diagnostic was deferred at `rooms_busy` with unchanged
+restaurant state and no recognition metadata. It provides no content/identity
+evidence and does not justify disrupting another caller. A room-free bounded
+comparison instead uses the unchanged production `TelephoneTTS` and installed
+SDK's per-sentence tokenizer, then runs independent automatic recognition three
+times on one in-memory PCM. This separates synthesis/recognition evidence from
+RTC transport. It reproduced the old-note rejection three times at0.989899 with
+16expected/16recognized words, no matched contradiction and only the kitchen-
+notification proposition missing. The metadata localizes the difference to the
+canonical word `кухню`; it does not preserve or invent the replacement word. This
+does not establish the exact cause of an earlier uninstrumented batch failure.
+
+Private receipts in `/tmp/opencode/`:
+`restaurant-recovery-ru-notice-{publication,head-ci,master-ci,sync,verification,incoming,live-summary,rtc-summary}.json`
+and `restaurant-recovery-4ba-{ru-native-diagnostic,rtc-final-summary,ru-note-same-pcm-diagnostic}.json`.
+
+## Explicit kitchen-staff refusal candidate
+
+The room-free per-sentence SDK experiment compares the existing refusal with:
+
+> Я не сохраняю особые пожелания и не уведомляю сотрудников кухни. Я не могу подтвердить безопасность при аллергии.
+
+Only the kitchen object becomes explicit kitchen staff; inability to save special
+requests, notify the kitchen and confirm allergy safety remains unchanged. Two
+separately synthesized candidate answers are independently recognized exactly,
+score1.000, retaining all three refusals. A later old-answer control also scored
+1.000, so variability remains; no deterministic-recognition claim is made. The
+last prototype emitted an SDK FFI finalizer assertion after all result metadata
+and exit0. That cleanup qualification is retained, not called a pristine run.
+Receipts: `restaurant-recovery-4ba-ru-note-{sdk-same-pcm,wording}-diagnostic.json`.
+The prototype is not production code or native RTC acceptance.
+
+The retained implementation changes only `booking-101.answer_ru` in the existing
+shared `data/demo/restaurant-phone-faq.json`; no alias/parser, app, menu, voice,
+ASR or delivery change. Three new native/automatic-audio HTTP/owned-held-proposal
+tests fail first, then pass through actual canonical consumers after the line edit.
+Phone answers:134PASS9.83s. A held side question keeps the same hold/expiry, replaces
+proposal identity, revokes delivery/approval and rejects confirmation without fresh
+consent. The private checker requires the exact kitchen-staff refusal, retains
+legacy kitchen wording and extends its existing contradictory-notification guard.
+Seven missing/reversed/wrong-actor/altered-kitchen/double-negation fixtures fail
+before the new mandatory clause. An initial added-promise fixture passed because
+its spelling mutation already broke another refusal; correcting only the connective
+exposes the intended false accept before the negative guard repair. All173private
+offline checks now pass with zero provider calls. No new Russian normalization,
+missing-notification exception, caption relaxation or expected-answer hint exists.
+The full isolated suite passes **12,652 tests/36 subtests**, exit0,211.64s, with
+the same six explicit opt-in skips and two existing warnings. All eleven Chromium
+journeys pass, no JavaScript errors/external requests. The source manifest confirms
+only the FAQ's one Russian answer value changes among94app/demo files; all questions,
+aliases, other data and production code/settings stay unchanged. Narrow Codex
+review passes176tests (three production-path/173private),12canonical positives,
+legacy refusals and eight new rejection cases. Removing only the new guards in
+memory makes all eight accept above0.78, proving the regressions are nonvacuous.
+No concrete P0/P1 is found in this delta. This remains offline approval;
+new-release publication and strict multilingual native acceptance are pending.
