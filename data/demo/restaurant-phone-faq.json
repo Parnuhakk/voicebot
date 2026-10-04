@@ -12,7 +12,7 @@
       "variants_en": ["Can you record an allergy note?", "Can you add a special request to my booking?", "Tell the kitchen about my peanut allergy.", "Make a note of my allergy."],
       "answer_en": "I can't save special requests or notify the kitchen. I can't confirm allergy safety.",
       "question_ru": "Можете сообщить кухне о моей аллергии?",
-      "variants_ru": ["Можете записать мою аллергию в бронирование?", "Можете добавить особое пожелание к бронированию?", "Сообщите кухне о моей аллергии на арахис.", "Запишите мою аллергию."],
+      "variants_ru": ["Можете записать мою аллергию в бронирование?", "Можете записать мою аллергию в бронировании?", "Можете добавить особое пожелание к бронированию?", "Сообщите кухне о моей аллергии на арахис.", "Запишите мою аллергию."],
       "answer_ru": "Я не сохраняю особые пожелания и не уведомляю сотрудников кухни. Я не могу подтвердить безопасность при аллергии."
     },
     {
