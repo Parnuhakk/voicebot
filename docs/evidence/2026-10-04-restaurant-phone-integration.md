@@ -51,6 +51,23 @@ records were not replaced. Effective native voices are Nova Turbo ET, Jenny EN a
 Svetlana RU, with automatic language selection, natural1.12rate, recap1.0 and
 zero fixed sentence pause. Publication/new exact-release acceptance follows.
 
+Another published peer, `0b0e3c0f689d36b4f39429ad349e3136dcafb424`, overlaps one
+emergency condition and supplies a fuller authored Russian cancellation fixture
+for the separate reservation RTC probe. Its published changes are retained by a
+normal merge. All97application/demo hashes remain exactly the already reviewed
+and full-tested emergency combination. Both sets of emergency regressions are
+kept, including the peer's shared/native and incomplete/ambiguous/pending cases.
+Six peer held-case expectations first failed because they assumed a discarded
+proposal; those are adapted to require the reviewed stronger contract: same owned
+hold/expiry, a new proposal identity, revoked approval/delivery and rejected
+confirmation. Literal112/no-resume/no-booking assertions remain intact.
+The combined customer/probe/cancellation scope passes309tests in37.51s. The
+narrow Codex review passes19new cases and three actual synthetic cancellation
+ownership controls, independently confirming97hashes and both semantic deltas;
+no concrete P0/P1 remains. Full current PR CI is a separate remaining publication
+gate; no redundant browser rerun is substituted
+for new source checks, and no recognition hints or private guard changes occur.
+
 ### Auditeda7be checkpoint
 
 Robot-only restaurant release `a7be09c992a7ce0a42e0750d7535ef726af0be4d` is

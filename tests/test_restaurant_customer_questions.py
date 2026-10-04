@@ -383,6 +383,65 @@ def test_urgent_question_precedes_missing_or_ambiguous_booking_prompt(
     assert not state.pending and not state.bookings
 
 
+@pytest.mark.parametrize(
+    "language,question",
+    [
+        ("et", "Palun aidake, lapsel on raske hingata!"),
+        ("en", "Please help, I can't breathe!"),
+        ("ru", "Помогите, ребёнку трудно дышать!"),
+    ],
+)
+@pytest.mark.parametrize("stage", ["incomplete", "ambiguous", "pending"])
+@pytest.mark.parametrize("channel", ["shared", "native"])
+def test_noncorpus_emergency_survives_booking_interlude_rejection(
+    make_state, language, question, stage, channel
+):
+    async def run():
+        state = make_state(language)
+        hold = None
+        previous = None
+        if stage == "pending":
+            proposal = await prepare(state)
+            hold = proposal["hold_id"]
+            assert state.mark_recap_delivered(hold)
+            previous = state.pending
+        else:
+            first = (
+                "Book a table tomorrow"
+                if stage == "incomplete"
+                else "Book a table tomorrow at 6 o clock"
+            )
+            state.observe_user_text(first, language=language)
+        assert state.booking_inquiry is not None
+        if channel == "native":
+            agents = pytest.importorskip("livekit.agents")
+            from app.worker import TelephoneAgent
+
+            agent = TelephoneAgent(state)
+            agent._detected_language = language
+            message = agents.llm.ChatMessage(role="user", content=[question])
+            await agent.on_user_turn_completed(agents.llm.ChatContext(), message)
+        else:
+            state.observe_user_text(question, language=language)
+        response = trusted_booking_response(state)
+        assert response and "112" in response.get("content", "")
+        assert COPY[language]["confirmation_question"] not in response["content"]
+        assert COPY[language]["resume_booking"] not in response["content"]
+        assert not state.booking_inquiry and not state.bookings
+        if hold:
+            assert state.pending is not previous
+            assert state.pending["hold_id"] == hold
+            assert state.pending["expires_at"] == previous["expires_at"]
+            assert not state.pending["approved"] and not state.pending["delivery"]
+            result = await state.dispatch("confirm_slot_booking", {"hold_id": hold})
+            assert result["error"] == "consent_required"
+            assert not state.bookings
+        else:
+            assert not state.pending
+
+    asyncio.run(run())
+
+
 @pytest.mark.parametrize("language,index", [("et", 0), ("en", 1), ("ru", 2)])
 @pytest.mark.parametrize("channel", ["text", "audio"])
 def test_http_service_answers_resume_each_booking_step_with_synthetic_speech(
