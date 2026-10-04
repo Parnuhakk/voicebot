@@ -87,6 +87,88 @@ MIXED = [
     ("ru", "Для пятерых или шестерых."),
 ]
 
+KNOWN_INTERLUDES = [
+    ("Does the salmon cost ten euros?", "I don't have the menu prices right now."),
+    ("How much is the soup?", "I don't have the menu prices right now."),
+    (
+        "Where are you located?",
+        restaurant_demo_profile(APPROVED_RESTAURANT)["faq"][1]["answer_en"],
+    ),
+    (
+        "Do you have highchairs?",
+        "Please ask the restaurant team whether a high chair is available.",
+    ),
+    ("How long can we keep the table?", "The table reservation lasts 90 minutes."),
+    ("Do you serve vegan food?", "Vegetable soup"),
+    ("What are the café opening hours?", "12–21"),
+]
+
+
+@pytest.mark.parametrize("question,fact", KNOWN_INTERLUDES)
+def test_known_whole_question_preserves_inquiry_until_fresh_unapproved_recap(
+    make_state, question, fact
+):
+    async def run():
+        state = make_state("en")
+        day = tomorrow()
+        state.observe_user_text(REQUESTS["en"].format(day=day), language="en")
+        state.observe_user_text(question, language="en")
+        assert fact in trusted_booking_response(state)["content"]
+        assert state.booking_inquiry == {"date": day, "party_size": 4}
+        assert state.pending is None and not state.holds and not state.bookings
+        state.observe_user_text("14:00", language="en")
+        action = trusted_booking_response(state)
+        assert action == {
+            "name": "plan_restaurant_reservation",
+            "arguments": {"date": day, "party_size": 4, "start_time": "14:00"},
+        }
+        proposal = await state.dispatch(action["name"], action["arguments"])
+        assert proposal["ok"] and state.pending["recap"]["date"] == day
+        assert state.pending["recap"]["party_size"] == 4
+        assert state.pending["recap"]["start"].endswith("14:00:00")
+        assert not state.pending["delivery"] and not state.pending["approved"]
+        denied = await state.dispatch(
+            "confirm_slot_booking", {"hold_id": proposal["hold_id"]}
+        )
+        assert denied["error"] == "consent_required" and not state.bookings
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("question,fact", KNOWN_INTERLUDES)
+def test_http_known_whole_question_retains_details_without_prior_receipt_authority(
+    client, question, fact
+):
+    session = start(client, "en")["session_id"]
+    day = tomorrow()
+    turn(client, session, REQUESTS["en"].format(day=day), language="en")
+    answer = turn(client, session, question, language="en")
+    assert fact in answer["reply"]
+    assert answer["recap_delivery_id"] is None and not answer["booking_changes"]
+    state = client.app.state.demo_sessions.sessions[session].tools
+    assert state.booking_inquiry == {"date": day, "party_size": 4}
+    proposal = turn(client, session, "14:00", language="en")
+    assert proposal["recap_delivery_id"] and not proposal["booking_changes"]
+    assert state.pending["recap"]["date"] == day
+    assert state.pending["recap"]["party_size"] == 4
+    assert state.pending["recap"]["start"].endswith("14:00:00")
+    assert not state.pending["delivery"] and not state.pending["approved"]
+    assert not client.get("/api/bookings?date=" + day, headers=AUTH).json()["items"]
+
+
+@pytest.mark.parametrize("question,fact", KNOWN_INTERLUDES)
+def test_known_question_with_unknown_count_correction_cannot_retain_stale_four(
+    make_state, question, fact
+):
+    state = make_state("en")
+    state.observe_user_text(REQUESTS["en"].format(day=tomorrow()), language="en")
+    state.observe_user_text(question + " Actually we might be fewer.", language="en")
+    assert (state.booking_inquiry or {}).get("party_size") != 4
+    state.observe_user_text("14:00", language="en")
+    assert (state.booking_inquiry or {}).get("party_size") != 4
+    assert "name" not in (trusted_booking_response(state) or {})
+    assert state.pending is None and not state.holds and not state.bookings
+
 
 @pytest.mark.parametrize("language,question,fact", READS)
 def test_pure_information_interlude_keeps_true_count_and_date(

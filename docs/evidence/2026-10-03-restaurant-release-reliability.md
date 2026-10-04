@@ -695,6 +695,223 @@ seconds, exit 0. The normal merge is now verified for publication; new live
 acceptance and final preservation remain required. Earlier own-source or
 contributor counts are not substituted for these combined-source results.
 
+### Verified merge publication and running web
+
+Normal reviewed merge `8494f8a7c6a5917f2811bb3178e11e6164fcdebf` is atomically
+pushed to recovery branch and `master`, retaining `7a1bf07`, `2b65eee`, `598a1a1`
+and all prior contributor history. Web proof at **01:45:49 UTC** verifies that
+exact running image/source, health, restaurant-only ET/EN/RU DTO, exact index and
+six assets, retired hotel HTTP 410/no redirect and unauthenticated confirmation
+HTTP 403. Its newly loaded fingerprint is
+`17397da1f0d7ea37095b38469f42bb786d050f9bd581a06db1ca1fd8da71a29a`.
+Explicit installed-controller reconciliation returns `PASS: release_current`;
+the separate native identity/dependency verification is still required before
+the new fictional acceptance batch.
+
+Retired-host read-only proof at **01:46:35 UTC** verifies root, health, restaurant
+DTO and JavaScript paths all return the actual generic proxy HTTP 503, without
+redirect or application content. No DNS-removal, account/ingress change or retired
+hostname republication is claimed.
+
+### Meaningful-language runtime acceptance and preservation qualification
+
+Native verification at **01:47:31 UTC** establishes worker/bridge health, same
+media image, bound running web container, successful dependency check and the
+same loaded fingerprint as web on `8494f8a`. The unchanged installed controller
+matches reviewed repository bytes.
+
+The bounded canonical RTC batch retains bare premature agreement, conditional
+agreement and decline checks, then requests a fresh recap before consent:
+
+| Language | Result | Final inputs / replies / recaps | Voiced frames |
+| --- | --- | --- | --- |
+| ET | FAIL `probe_confirm_unproven` | 6 / 8 / 2 | not accepted |
+| EN | PASS, exact owned confirmation and cancellation | 7 / 9 / 3 | 4,202 |
+| RU | PASS, exact owned confirmation and cancellation | 7 / 9 / 3 | 4,113 |
+
+ET now reaches recaps but still does not prove the intended owned confirmation.
+EN/RU independently verify exact intended date/time/party, zero premature,
+conditional and declined writes, later consent and same-booking cancellation.
+Aggregate acceptance **fails**; whole-WAV preflight is not substituted for ET RTC.
+The batch ends at **01:56:58 UTC** with zero rooms, healthy services and unchanged
+native container identities. A single instrumented canonical ET diagnostic is
+scoped to finalized-input consent/rejection flags, closed reply categories and
+owned-ledger counts; it changes neither dialogue protocol nor runtime guards.
+
+Read-only preservation at **01:57:00 UTC** retains all stable historical rows
+against both first and immediate pre-publication baselines, immutable call-session
+identity hashes, four database integrity checks, effective configuration, original
+volumes, current incoming route, all original 23 unrelated service identities and
+the protected checkout's HEAD, tracked diff and 19 status entries. One additional
+unrelated service is preserved too. No raw records or credentials are saved.
+
+The original composite comparison exits nonzero on ET acceptance and on an
+incorrect revision predicate: the private snapshot helper reads only web-specific
+`SOURCE_COMMIT`, which is absent on native services. A separate retained
+qualification uses the captured native `voicebot.release` labels, correctly
+matching `8494f8a`, and the independently verified loaded identity. The failed
+original proof is not rewritten; **preservation and source alignment pass, ET
+acceptance does not**. Mutable hold/session lifecycle bytes are not asserted
+unchanged, and original-number continuity is still not claimed.
+
+### Supported negative-path and caller-only qualification
+
+The instrumented unchanged canonical ET dialogue at **02:10:23 UTC** reproduces
+the confirmation failure. Its decline and consent finalized captions both carry
+the worker's explicit unsupported-source marker; both actual replies are ET
+repeat-input recovery. All six owned-ledger reads remain empty, two exact ET
+recaps are received, cleanup leaves zero rooms and native identities remain
+unchanged. Original provider language cannot be inferred from the substituted
+caption. This establishes rejection before approval; it does **not** rule out
+an additional delivery-callback problem or prove semantic decline handling.
+
+An independent Codex-account static review confirms those limits. A default
+reviewer route initially hit its Go usage limit and produced no review; the
+requested supported reviewer path completed. A complete recap caption alone is
+never accepted as evidence of the internal delivery callback. Fresh owned
+confirmation must still prove the whole guarded path. Negative RTC acceptance
+will also require recognized conditional/decline cues without rejection markers,
+not merely empty ledger reads after unsupported input.
+
+Same-provider PCM to installed real Silero VAD/native STT proves isolated old
+consent can be accepted, but does not reproduce RTC transport. Controlled longer
+caller variants are qualified before retention: one is rejected as unsupported;
+others retain ET metadata but corrupt an expected confirmation word. None is
+accepted by broadening the runtime grammar. A simple declarative affirmative
+passes existing composition, and the clearer decline passes supported ET and
+isolated no-approval/no-write checks. Short cancellation and a Kert full-context
+control fail the existing exact cancellation predicate; an Anu full-context
+control passes it. No alias is added to authorization lists.
+
+The selected test caller now uses approved **Anu** with natural affirmative,
+explicit decline and the existing full-context same-call cancellation request.
+Whole seven-turn Anu PCM → real native VAD/STT → temporary canonical policy
+passes: supported input, exact intended date/18:00/party-four planning, no
+premature/conditional/declined write, fresh second recap, later confirmation and
+same-booking cancellation. The isolated delivery acknowledgement is explicitly
+simulated; this is **preflight, not RTC**. Its first scratch helper used a
+nonexistent connection method, failed without acceptance, and was corrected only
+after reading the actual read-only connection context manager.
+
+Four reply-fixture expectation REDs and one voice/cancellation qualification RED
+precede the retained four-literal caller change. The existing short affirmative
+control is preserved. Latest scope **432 passed**, 29.61 seconds; own-source core
+**11,952 passed / 81 skipped / 36 subtests**, 133.62 seconds. Operator voices,
+language rejection, consent/cancellation grammar, recap rate, exact ownership,
+history, conversation limits and independent cleanup remain unchanged.
+
+Fresh preservation at **02:38:59 UTC** retains configuration, volumes, stable
+first/last historical rows, four database integrity checks, current incoming
+route, zero rooms, protected checkout and all 23 original unrelated services.
+Another normally published contributor release `9721803` is now running; its
+15-file intake is frozen in a read-only worktree for disjoint business/UI review
+and normal integration. These own-source counts do not verify that combined
+source. Fresh combined checks, publication and actual supported-input RTC
+acceptance remain required.
+
+Final caller-only source gate: media **12,363 passed / 6 skipped / 36 subtests**,
+192.88 seconds, exit 0, following the own-source core gate above. The application,
+demo data and operator voice settings are byte-unchanged from tested `8494f8a`;
+the retained probe AST differs only in its four qualified ET fixture literals.
+Syntax, intended three-file scope, credential/conflict/whitespace checks pass.
+This checkpoint is safe to commit before the normal contributor merge; it is not
+an acceptance or combined-source completion claim.
+
+### Guest-current contributor intake and whole-question retention repair
+
+Caller qualification is retained in `8182f7a`, then contributor `9721803` is
+normally merged into `ea92957`. Both histories remain ancestors; there is no
+force-push, reset or protected-checkout mutation. The new UI/browser static review
+finds no P0/P1, but its layout matrix asserts guest-workspace overflow only, not
+whole-page overflow freedom. Both static reviewers are independent Codex-account
+lanes; neither substitutes for the owner's executed checks.
+
+The business reviewer identifies a new P1: the whole-read whitelist clears a
+valid incomplete inquiry and replaces recognized location/highchair answers with
+unknown-information recovery. Owner's isolated canonical reproduction extends
+the same defect to seven already-supported direct question forms. Exact FAQ-demo
+and parking controls retain preferences. Fourteen state/HTTP regressions fail
+with the missing canonical answer; seven unknown-count mixed-question controls
+pass before the repair.
+
+The minimal fix adds those seven exact alternatives inside the existing whole
+`fullmatch`; it does not authorize arbitrary topic substrings or relax correction,
+allergy, ownership or consent rules. New checks require canonical answers,
+retained date/four-person count, a subsequent independently expected 14:00 plan,
+a fresh unapproved/undelivered recap and denial of a write without delivery.
+Mixed unknown-count clauses still cannot inherit the old four-person plan.
+
+Scoped core verification: **704 passed / 8 skipped**, 53.49 seconds. An initial
+command referenced a nonexistent test filename, ran no tests and is not counted
+as a pass; the corrected path is `tests/test_restaurant_phone_answers.py`.
+Independent static follow-up closes the concrete P1 and finds no new P1 in the
+repair. It does not claim exhaustive information-phrasing support. Fresh isolated
+restrictive-source Docker packaging: **5 passed**, 11.19 seconds, network disabled
+with the existing local image and read-only non-root runtime. Final combined
+core/media, all eleven Chromium journeys, delivery checks, publication, real RTC
+and final preservation gates are still pending.
+
+Final combined gate after the retention repair:
+
+- Core `python -m pytest tests -q -p no:cacheprovider --tb=short`:
+  **12,222 passed / 83 skipped / 36 subtests**, 168.52 seconds.
+- Pinned media same command: **12,635 passed / 6 skipped / 36 subtests**,
+  200.46 seconds. Counts overlap and are not summed; warnings are the existing
+  Starlette/httpx and Python `audioop` deprecations.
+- All **eleven** Chromium journeys pass with zero external requests. The new
+  guest-current journey covers nine native-validation combinations, 45 failure
+  paths, three structured recaps, receipt/renewal rejection and multilingual
+  interludes; no independent provider or microphone proof is implied.
+- All **24** delivery cases pass; isolated packaging remains **5 passed**.
+- **199 Python AST / 23 JS syntax / 10 JSON parses / 6 asset digests** pass;
+  cumulative **216 text-file** credential/conflict/whitespace checks are clean.
+- Thirteen contributor files are byte-identical to frozen `9721803`; its existing
+  guest-current test AST remains unchanged. Its policy differs only in the three
+  reviewed exact-whole alias lines. Prior source, contributor and caller commits
+  remain ancestors. Fresh publication/deployment/RTC acceptance is not claimed
+  from these local gates.
+
+Fresh pre-publication preservation at **03:04:46 UTC** confirms unchanged
+configuration/volumes/current route, all four database integrity checks, stable
+first/later history, prior immutable call identities, zero rooms, all 23 original
+unrelated service IDs and the protected checkout. The first comparison attempt
+also required a later additional container `relaxed_lehmann`, now absent before
+publication. Its disappearance is independently isolated; cause is unproven and
+no recreation/removal is performed. The original 23 services all match. This
+qualification is retained in the private snapshot, not hidden as a green all-ID
+comparison. A further concurrent master/native revision `870aa41` is observed;
+the tested repair will be checkpointed before bounded normal intake of that delta.
+
+### Final published-phone safeguard intake
+
+Verified retention repair `3ab502d` is checkpointed before normally merging
+contributor `870aa41` into candidate `527505c`, without conflicts. The bounded
+six-file delta retains repeated-clock-unit and semicolon-alternative clarification,
+adds one exact ET FAQ recognition variant and includes corresponding no-write
+regressions. Its independent static review is clear and explicitly does not
+validate historical provider claims. Because application/data changed, both full
+suites and browser/delivery gates are refreshed once for this candidate.
+
+Latest candidate core: **12,233 passed / 83 skipped / 36 subtests**, 165.63 seconds.
+All eleven Chromium journeys and 24 delivery cases pass again, no external
+requests. Syntax/JSON/six assets/216-file hygiene pass. Eighteen of twenty incoming
+files are byte-identical to frozen `870aa41`; existing contributor guest-current
+test AST remains unchanged and its policy differs only in the reviewed three
+whole-question alias lines. Both Dockerfiles and installed/repository controller
+remain byte-identical to the already executed five-case packaging gate. Latest
+media and actual publication/deployment/RTC gates are not inferred from core.
+
+Read-only retired-host verification at **03:13:47 UTC** returns generic HTTP 503
+without redirects on root, hotel, public-restaurant and status paths. No DNS,
+account or ingress setting is changed and that hostname is not republished.
+
+Latest **`527505c` combined media**: **12,646 passed / 6 skipped / 36 subtests**,
+245.74 seconds, exit 0. This is the final code gate paired with the 12,233 core
+gate above, not a sum of overlapping suites. The gate-record commit changes this
+evidence file only; application, fixtures, tests, assets and deployment source
+remain the exact verified candidate. Publication and acceptance still require
+fresh live evidence.
+
 ## Pre-rollout preservation qualification
 
 Read-only hash-only snapshot at 2026-10-03 20:34:39 UTC records healthy web,

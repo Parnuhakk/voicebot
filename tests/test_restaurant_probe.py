@@ -29,7 +29,7 @@ SCOPE, FOREIGN = "a" * 32, "b" * 32
 NOW = datetime(2026, 10, 3, 10, tzinfo=ZoneInfo("Europe/Tallinn"))
 DAY = (NOW + timedelta(days=14)).date()
 NATURAL_CONSENT = {
-    "et": "Jah, olen nõus.",
+    "et": "Jah, loomulikult, see sobib, aitäh.",
     "en": "Yes, that works for me.",
     "ru": "Да, подходит.",
 }
@@ -868,8 +868,33 @@ def test_estonian_caller_speaks_calendar_day_words(probe, day_number, ordinal):
 def test_estonian_caller_uses_the_recognizable_natural_affirmative(probe):
     from app.restaurant_consent import is_restaurant_confirmation
 
-    assert probe.scenario("et", DAY)["consent"] == "Jah, olen nõus."
+    assert probe.scenario("et", DAY)["consent"] == "Jah, loomulikult, see sobib, aitäh."
+    assert is_restaurant_confirmation(probe.scenario("et", DAY)["consent"], "et")
     assert is_restaurant_confirmation("Jah, olen nõus.", "et")
+
+
+def test_estonian_caller_declines_with_distinct_supported_language_words(probe):
+    from app.languages import select_language
+    from app.restaurant_consent import is_restaurant_confirmation
+
+    text = probe.scenario("et", DAY)["decline"]
+    assert text == "Ei, mulle see ei sobi. Palun ära kinnita."
+    assert select_language(text, None, "") == "et"
+    assert not is_restaurant_confirmation(text, "et")
+
+
+def test_estonian_caller_cancellation_matches_the_qualified_owned_context(probe):
+    from app.telephone import CANCELLATIONS
+
+    phrases = probe.scenario("et", DAY)
+    assert phrases["voice"] == "et-EE-AnuNeural"
+    assert phrases["cancel"] == (
+        "Palun tühista broneering, mille just selles kõnes tegime."
+    )
+    assert (
+        " ".join(phrases["cancel"].casefold().replace(",", "").replace(".", "").split())
+        in CANCELLATIONS
+    )
 
 
 @pytest.mark.parametrize(

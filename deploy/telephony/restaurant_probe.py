@@ -347,14 +347,14 @@ def scenario(language, day):
         date = date.replace(f"{day.day}.", ESTONIAN_CALLER_DAYS[day.day - 1], 1)
     phrases = {
         "et": {
-            "voice": "et-EE-KertNeural",
+            "voice": "et-EE-AnuNeural",
             "locale": "et-EE",
             "request": f"Soovin lauda neljale inimesele {date} kell kuus õhtul.",
             "premature_yes": "Jah.",
             "conditional": "Jah, kui saame istuda akna ääres.",
-            "consent": "Jah, olen nõus.",
-            "decline": "Ei, ära kinnita broneeringut.",
-            "cancel": "Jah, tühista.",
+            "consent": "Jah, loomulikult, see sobib, aitäh.",
+            "decline": "Ei, mulle see ei sobi. Palun ära kinnita.",
+            "cancel": "Palun tühista broneering, mille just selles kõnes tegime.",
             "details": {
                 "date": date,
                 "time": "Kell 18:00.",
