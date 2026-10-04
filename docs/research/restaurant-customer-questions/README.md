@@ -2,6 +2,8 @@
 
 Uurimus koostatud 4. oktoobril 2026 saidi `robot.arleserver.cfd` kõneabilise jaoks. Materjalis on **270 küsimuse mõistet, 810 küsimuse-vastuse paari ja 17 teemat**. Uurimus seob kliendiküsimused restorani kinnitatud faktide, puuduva info ja vestluse tegelike tegevustega.
 
+Parandused avaldati [PR39 kaudu](https://github.com/Parnuhakk/voicebot/pull/39). Avaliku saidi tagasilugemine kinnitas uue küsimustetoe ja kõik neli laste võimalust. Veebi ning telefoniprotsessi väljalaskeraport näitas sama koodiversiooni; tegelik operaatorikõne on kontrollimata. Täpsed versioonid, kontrollide tulemused ja tagasilugemise aeg on [protokollis](VALIDATION.md).
+
 Kõigi tulevaste küsimuste või sõnastuste täielikku nimekirja ei saa teha. Kogumik katab levinud külastusolukorrad, olulised erivajadused ja testimisel leitud vead. Kirjaliku küsimuse õige vastus ei tõesta selle mõistmist mürarikkas telefonikõnes.
 
 ## Materjalide avamine
@@ -132,6 +134,6 @@ Privaatsuse küsimuste koostamisel kasutati [Andmekaitse Inspektsiooni kõnesalv
 
 Veebi ja LiveKiti telefoniboti kood kasutab samu kontrollitud vastuseid. Kohalikud testid kontrollivad native vooru jagatud olekus. See **ei kinnita töötava telefoniprotsessi uut versiooni ega päris operaatorivõrgu kõnet**. Veebisaidi avaldamine ja telefoniprotsessi avaldamine on eri kontrollid.
 
-Uurimuse alguses näitas avalik staatuse liides telefoniväljalaske olekuks `unverified`. Hilisem tagasilugemine näitas `in_sync`, sama veebi ja telefoni sõrmejälge ning versiooni `ff11d69`. Avalik ingress ja operaatorikõne olid endiselt kinnitamata. Täpne tagasilugemise aeg on [protokollis](VALIDATION.md). Sünkroonimise kõrval tuleb endiselt teha päris kõne kõigis kolmes keeles; olekuraport ei mõõda kõnetuvastuse kvaliteeti.
+Uurimuse alguses näitas avalik staatuse liides telefoniväljalaske olekuks `unverified`. Avaldamise järel näitas tagasilugemine `in_sync`, sama veebi ja telefoni sõrmejälge ning avaldatud versiooni `0bbffde`. Avalik ingress ja operaatorikõne olid endiselt kinnitamata. Täpne tagasilugemise aeg on [protokollis](VALIDATION.md). Sünkroonimise kõrval tuleb endiselt teha päris kõne kõigis kolmes keeles; olekuraport ei mõõda kõnetuvastuse kvaliteeti.
 
 Ka toidutellimuse, makse, tagasikõne, kaebuse edastamise või inimesega ühendamise võimalus vajab tegelikku integratsiooni. Selle demo vastus ei tohi öelda, et neid tegevusi tehti. Omaniku järgmine sisuline töö on [puuduvate faktide kinnitamine](OWNER.md), alustades lastemenüü koostisest ja hindadest, perevõimaluste kasutustingimustest, kontaktidest ning köögi allergeeniprotsessist.
