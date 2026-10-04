@@ -17,6 +17,7 @@ Kõigi tulevaste küsimuste või sõnastuste täielikku nimekirja ei saa teha. K
 | [Meetod](METHOD.md) ja [allikad](sources.json) | Faktide päritolu, teiste restoranide kasutamise piirid ja kontrollide ulatus |
 | [Kohaliku boti vastused](observations.json) | 810 küsimuse tegelik vastus jagatud vestluskoodiga, ilma tegevuse käivitamiseta |
 | [Algseisu vastused](observations-before.json) | Enne selle uurimuse teenindusküsimuste parandusi salvestatud 771 vastust |
+| [Uurimuse vaheversioon](observations-pre-integration.json) | 810 vastust enne sama öö põhiaru uuemate paranduste ühendamist |
 | [Kontrollide protokoll](VALIDATION.md) | Täpsed kontrollid ja nende piirid |
 
 Kogumik on iseseisev HTML-fail, sisaldab oma andmeid ega vaja fontide või skriptide allalaadimist. Brauseri automatiseerimise vahend ei lubanud `file:` aadressi, seetõttu kontrolliti kogumikku kohaliku HTTP-serveri kaudu. Otse failina avamist ei käsitleta eraldi kontrollitud tulemusena.
@@ -69,7 +70,7 @@ Allergeenide teema sisaldab ka toidu kohandamise ja toitumise küsimusi. Kategoo
 
 Kõik andmestiku vastused on märgitud `research_proposal`. Kogumikus olev hea sõnastus ja töötava boti vastus on eraldi vaadatavad. Puuduva fakti puhul on mõlemad piiratud kinnitamata infoga, kuid sõnastus ja detailsus võivad erineda. Uurimuse JSON ega omaniku täitmisfail ei muuda töötava restorani profiili automaatselt.
 
-Praegune Meretuule Demo Restaurant on **fiktiivne demo**. Profiilis puudub aadress. Tavamenüüs on köögiviljasupp, küpsetatud lõhe ja seenerisoto, hinnad pole kinnitatud. Tavabroneering on 90 minutit, kuni kuuele inimesele, saadavuse otsing kuni 90 päeva ette. Need on demo seaded, mida päris restorani avamisel peab omanik uuendama.
+Praegune Meretuule profiil on **fiktiivne demo**. Profiilis puudub aadress. Tavamenüüs on köögiviljasupp, küpsetatud lõhe ja seenerisoto, hinnad pole kinnitatud. Tavabroneering on 90 minutit, kuni kuuele inimesele, saadavuse otsing kuni 90 päeva ette. Need on demo seaded, mida päris restorani avamisel peab omanik uuendama.
 
 ## Uurimuses leitud ja parandatud käitumine
 
@@ -83,7 +84,7 @@ Praegune Meretuule Demo Restaurant on **fiktiivne demo**. Profiilis puudub aadre
 8. **Raseduse mainimine ei tähenda alati toiduküsimust.** Toidusobivuse vastus eeldab toidukonteksti. Raseda külalise küsimus laua asukoha kohta jääb istumiskoha küsimuseks.
 9. **Täpsed teenindusküsimused said liiga üldise vastuse.** Lisatud on läbivaadatud kolmekeelsed vastused näiteks maksmise, kõne salvestamise, menüü vormide, toidumuudatuste, kontaktide ja pere eritingimuste kohta.
 
-Uus moodul sisaldab 30 teenindusteemat. Need vastused kasutavad kontrollitud sõnastusi ja jagatud olekut; nende puhul ei lubata generatiivsel mudelil puuduvat restoraniinfot juurde mõelda. See ei anna garantiid kõigi tulevaste sõnastuste tuvastamisele. Selge tundmatu küsimuse puhul peab üldine teadmata info vastus säilima.
+Uus moodul sisaldab 31 teenindusteemat. Need vastused kasutavad kontrollitud sõnastusi ja jagatud olekut; nende puhul ei lubata generatiivsel mudelil puuduvat restoraniinfot juurde mõelda. Terviklike läbivaadatud kõrvalküsimuste sõnastused säilitavad broneerimisväljad. Lõdva teemavastega segatud muudatus ei anna seda õigust. See ei anna garantiid kõigi tulevaste sõnastuste tuvastamisele. Selge tundmatu küsimuse puhul peab üldine teadmata info vastus säilima.
 
 ## Kohalike vastuste võrdlus
 
@@ -95,9 +96,11 @@ Algseisu 771 ja lõppseisu 810 küsimuse seas võrreldakse samu 771 küsimuse-ke
 | Teiste loomade küsimus sai koerte loa | 3 | 0 |
 | Laste allergeeniküsimus sai täiskasvanute menüü | 9 | 0 |
 | Infoküsimus tekitas ootamatuid broneerimise välju | 1 | 0 |
-| Üldine teadmata info vastus | 390 | 224 |
+| Üldine teadmata info vastus | 390 | 214 |
 
-Lõppseisu kõigis 810 paaris ei tuvastatud neid nelja konkreetset märget ega uut broneeringu ettepanekut. **224 üldist teadmata info vastust jääb alles.** Osa küsimusi vajab omaniku fakte, osa uusi sõnastusreegleid. Need vastused on kogumikus nähtavad; nende puudumist ei peideta protsendilise „täpsuse” taha.
+Lõppseisu kõigis 810 paaris ei tuvastatud neid nelja konkreetset märget ega uut broneeringu ettepanekut. **214 üldist teadmata info vastust jääb alles.** Osa küsimusi vajab omaniku fakte, osa uusi sõnastusreegleid. Need vastused on kogumikus nähtavad; nende puudumist ei peideta protsendilise „täpsuse” taha.
+
+Algseis pärineb versioonist `6dbf78f`. Uurimuse paranduste vaheversioonis oli 224 üldist teadmata info vastust. Lõppversioon ühendab uurimuse ja sama öö põhiaru muudatused kuni versioonini `a7be09c`; kogu muutust ei omistata ainult selle uurimuse koodile. Ühendamise kontroll leidis ka käibemaksuküsimuse, mis sobitus sõnaga „sisaldavad” allergeenidesse. See saab nüüd maksude ja lisatasude kinnitamata info vastuse.
 
 Märked on automaatse läbivaatuse abivahend, mitte tõend semantilisest või kõnetuvastuse täpsusest. Teemade sobivuse abikaarti laiendati töö käigus, seetõttu selle märke kadumist ei käsitleta sõltumatu kvaliteedimõõduna. Eraldi regressioonitestid kontrollivad oluliste paranduste vastuseid ja vestluse olekut.
 

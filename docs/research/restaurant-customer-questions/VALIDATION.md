@@ -34,6 +34,8 @@ Telefoniboti avalik väljalaske staatus oli uurimise ajal `unverified`; native s
 
 ## Lõppversioon
 
+Põhiaru `a7be09c` muudatused ühendati vestluse, meditsiinilise konteksti, erisoovide ja toidutellimuse tegevuspiire säilitades. Ühendamise järel läbisid **343 sihitud testi** ja restorani Chrome'i brauserikontroll. Täpne lõppseisu taasesitus sisaldab 810 paari, mille ainus läbivaatuse märge on **214 üldist teadmata info vastust**. Mõlemad uued tüübitud moodulid läbisid kontrolli 0 vea ja 0 hoiatusega.
+
 Põhiaru ühendamise eelne viimane täiskomplekt: **11 741 läbis, 10 jäeti vahele, 36 subtesti läbis**, kestus 252,58 sekundit. Testikäigus esines üks Starlette'i `httpx` kasutamise aegumise hoiatus. Kuus lisatud HTTP teksti ja sünteetilise kõne stsenaariumi kontrollivad uusi teenindusküsimusi kõigi kolme puuduva broneerimisvälja juures.
 
 Põhiaru ühendamise järgne kogu hoidla kontroll, CI ja avaliku saidi lõppversiooni tagasilugemine lisatakse siia pärast nende tegelikku lõpetamist. Eelnev täiskomplekti kontroll enne viimaste regressioonide lisamist andis 11 684 läbimist, kolm vana kassiküsimuse ootuse lahknevust ja kümme vahele jäetud kontrolli. Kasside ootused on parandatud eraldi kinnitamata tingimuste vastusele; see tulemus ei ole esitatud puhta lõppkontrollina.
