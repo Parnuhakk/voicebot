@@ -643,7 +643,8 @@ async def publish_interruption(room, interrupted):
         task = asyncio.current_task()
         if (
             isinstance(error, asyncio.CancelledError)
-            and task is not None and task.cancelling()
+            and task is not None
+            and task.cancelling()
         ):
             raise
         try:
@@ -786,10 +787,9 @@ async def entrypoint(ctx: JobContext):
         # delta.content/tool calls; reasoning never reaches its speech output.
         chat_options.pop("include_reasoning", None)
         voice, language = speech_config.voice_for(state.language)
-        recognizer = TelephoneSTT(
+        recognizer = TelephoneSTT.from_env(
             model=config.stt_model,
             mode=speech_config.mode,
-            api_key=os.environ["GROQ_API_KEY"],
         )
         speech_provider = TelephoneTTS(
             voice=voice,

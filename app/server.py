@@ -33,6 +33,7 @@ def build_stack() -> dict[str, Any]:
     from .booking.cloudbeds import CloudbedsAdapter
     from .booking.easyappointments import EasyAppointmentsAdapter
     from .booking.mews import MewsAdapter
+    from .providers.azure_stt import AzureSttClient, stt_provider_from_env
     from .providers.azure_tts import AzureTtsClient
     from .providers.demo_voices import DemoVoices
     from .providers.gemini import GeminiClient
@@ -55,6 +56,10 @@ def build_stack() -> dict[str, Any]:
     if os.environ.get("GROQ_API_KEY"):
         stack["stt"] = GroqClient(os.environ["GROQ_API_KEY"])
         stack["llm_primary"] = stack["stt"]
+    if stt_provider_from_env() == "azure":
+        stack["stt"] = AzureSttClient(
+            os.environ["AZURE_SPEECH_KEY"], os.environ["AZURE_REGION"]
+        )
     if os.environ.get("GEMINI_API_KEY"):
         # Text-only secondary: failover answers, never function-calls.
         stack["llm_secondary"] = GeminiClient(os.environ["GEMINI_API_KEY"])
@@ -362,8 +367,9 @@ def create_app():
             "demo": stack["demo"],
             "models": {
                 "stt": {
-                    "provider": "groq",
-                    "model": config.stt_model,
+                    "provider": getattr(stack.get("stt"), "provider", "groq"),
+                    "model": getattr(stack.get("stt"), "model", config.stt_model),
+                    "preview": getattr(stack.get("stt"), "preview", False),
                     "language": "auto",
                     "languages": ["et", "en", "ru"],
                     "reject_unsupported_languages": True,

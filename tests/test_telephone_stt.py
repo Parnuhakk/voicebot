@@ -25,6 +25,70 @@ def audio_frame():
 
 
 @pytest.mark.parametrize(
+    "text,locale,expected,unsupported",
+    [
+        ("Meid on neli.", "et", "et", False),
+        ("Jah, sobib.", "et", "et", False),
+        ("Yes, I confirm.", "en", "en", False),
+        ("Да, подтверждаю.", "ru", "ru", False),
+        ("Jah, kinnitan.", "fi", "und", True),
+    ],
+)
+def test_native_restaurant_uses_same_unconstrained_azure_recognition(
+    text, locale, expected, unsupported
+):
+    async def run():
+        def respond(request):
+            assert request.url.host == "northeurope.api.cognitive.microsoft.com"
+            assert b"MAI-Transcribe-2" in request.content
+            assert b"RIFF" in request.content and b'name="audio"' in request.content
+            assert (
+                b"locales" not in request.content and b"prompt" not in request.content
+            )
+            return httpx.Response(
+                200,
+                json={
+                    "durationMilliseconds": 2000,
+                    "combinedPhrases": [{"text": text}],
+                    "phrases": [
+                        {
+                            "text": text,
+                            "locale": locale,
+                            "confidence": 0,
+                            "offsetMilliseconds": 0,
+                            "durationMilliseconds": 2000,
+                        }
+                    ],
+                },
+            )
+
+        provider = TelephoneSTT.from_env(
+            model="whisper-large-v3",
+            mode="et",
+            env={
+                "AZURE_SPEECH_KEY": "fixture",
+                "AZURE_REGION": "northeurope",
+                "GROQ_API_KEY": "fixture",
+            },
+            transport=httpx.MockTransport(respond),
+        )
+        try:
+            event = await provider.recognize(
+                audio_frame(), conn_options=APIConnectOptions(max_retry=0)
+            )
+            alternative = event.alternatives[0]
+            assert str(alternative.language) == expected
+            assert alternative.text == text
+            assert alternative.metadata["unsupported_language"] is unsupported
+            assert provider.provider == "Azure" and provider.model == "MAI-Transcribe-2"
+        finally:
+            await provider.aclose()
+        assert provider._http.is_closed
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
     "reported,expected",
     [("english", "en"), ("estonian", "et"), ("en-US", "en"), ("et", "et")],
 )

@@ -29,6 +29,8 @@ and [deployment guide](COOLIFY.md). GitHub web deployment and telephone worker
 rollout are separate; configuration alone does not verify a carrier call.
 The [modern voice guide](docs/operations/modern-voices.md) documents optional
 provider configuration, fallback and streaming limits.
+The [speech recognition guide](docs/operations/speech-recognition.md) explains
+the shared restaurant MAI recognizer, strict source-language gate and Groq rollback.
 
 `VOICEBOT_BUSINESS_TYPE=restaurant` is the default. The former hotel/spa mode
 is retained as an explicit rollback with `VOICEBOT_BUSINESS_TYPE=hotel_spa`.
