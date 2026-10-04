@@ -718,8 +718,10 @@ The new application's only delta to870 is three lines adding seven complete
 known questions inside the existing `fullmatch`; mixed unknown-count corrections
 still cannot retain stale four-person plans. The peer's four ET synthetic booking-
 caller literals are qualified separately, not production voice/language/consent
-changes and not a change to our private FAQ caller. Our tracked difference to94
-is now only this evidence document; no production redeployment for documentation.
+changes and not a change to our private FAQ caller. Our own tracked difference
+to published master is only this evidence document; no production redeployment
+for documentation. Later report-only master013bce1 (`[skip cd]`) is normally
+retained too; its application/data/tests/deployment source equals deployed94.
 
 Fresh isolated combinede46 verification:
 
@@ -734,7 +736,7 @@ env -i PATH=/usr/bin:/bin HOME=/tmp/opencode LANG=C.UTF-8 \
 **12,646 tests, 36 subtests PASS**, exit0,210.21s; six explicit opt-in skips and
 two existing warnings. All eleven Chromium journeys pass, including the current
 guest failure/renewal/receipt matrix, with no JavaScript errors/external requests.
-Current masterCI37173731889 passed both Linux/shared-image jobs.
+Release94 masterCI37173731889 passed both Linux/shared-image jobs.
 
 Independent Codex review qualified only the new94 delta:24targeted tests and
 63 supplemental state assertions passed (42 appended-clause negatives,7current
@@ -786,5 +788,13 @@ caption, audio, language, safety and unchanged-restaurant-state requirement.
 Only English satisfied all4cases/exactrelease/unchangedstate. ET menu/allergy/note
 passed at0.980/0.998/0.994 before takeaway audio failed; RU menu passed at0.982
 before allergy audio failed. Both incomplete runs remain FAIL, exit1 aggregate.
-Current receipts: `restaurant-recovery-94-rtc-{et,en,ru,summary}.json`. Further
-ET takeaway diagnosis is pending; no new audio/caption equivalence is assumed.
+Current receipts: `restaurant-recovery-94-rtc-{et,en,ru,summary}.json`.
+
+Direct unchanged production-voice ET takeaway synthesis reproduced the rejection
+at0.989583 with only proposition8 missing. The entire normalized recognized reply
+equals canonical except **both** `kaasa müügi` and `laua broneeringuga` spacing;
+no contradiction or unrelated word mutation. Metadata-only receipt:
+`restaurant-recovery-94-direct-takeaway-diagnostic.json` (public full candidate5,
+12expected/14recognized words). This is not RTC acceptance. A further bounded
+private whole-canonical correction requires failing-first tests and independent
+review; no fuzzy medical/referral matching or caption relaxation is permitted.
