@@ -9,12 +9,12 @@
     />
     <title>Voicebot · Restaurant reception</title>
     <script src="/operator-dashboard.js?v=e2bebda58021"></script>
-    <link rel="stylesheet" href="/restaurant.css?v=697d634f4c9c" />
-    <link rel="stylesheet" href="/operator-dashboard.css?v=5a05f2f0a2b3" />
+    <link rel="stylesheet" href="/restaurant.css?v=1be2bdb3e744" />
+    <link rel="stylesheet" href="/operator-dashboard.css?v=0063de3a89f6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <script src="/speech-playback.js?v=27698f675462" defer></script>
-    <script src="/restaurant.js?v=9ef2f51c3f5d" defer></script>
-    <script src="/speech-capture.js?v=09feffb8cdd4" defer></script>
+    <script src="/speech-playback.js?v=279720c050cc" defer></script>
+    <script src="/restaurant.js?v=d1181cf61932" defer></script>
+    <script src="/speech-capture.js?v=fb9adf1eaf2e" defer></script>
   </head>
   <body>
     <a class="skip" href="#main" data-copy="skip">Hüppa sisu juurde</a>
@@ -26,7 +26,7 @@
       <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M20 4C9 2 2 9 5 16s15 5 15-12Z" /><path d="M4 21 16 9m-6 6v-5m0 5h5" /></symbol>
       <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2" /><rect x="14" y="3" width="7" height="7" rx="2" /><rect x="3" y="14" width="7" height="7" rx="2" /><rect x="14" y="14" width="7" height="7" rx="2" /></symbol>
     </svg>
-    <aside class="sidebar" aria-label="Töölaua külgriba">
+    <aside class="sidebar" aria-label="Töölaua külgriba" data-aria="sidebarLabel">
       <a class="brand" href="#main">
         <svg class="brand-mark icon" aria-hidden="true"><use href="#i-wave" /></svg>
         <span>voicebot<span class="brand-caption" data-copy="brand">Restorani vastuvõtt</span></span>
@@ -35,7 +35,7 @@
         <svg class="icon" aria-hidden="true"><use href="#i-leaf" /></svg>
         <div><strong>Meretuule</strong><span data-copy="demo">Fiktiivne restoranidemo.</span></div>
       </div>
-      <nav class="navigation" aria-label="Töölaua jaotised">
+      <nav class="navigation" aria-label="Töölaua jaotised" data-aria="navigationLabel">
         <a href="#bookings-section"><svg class="icon" aria-hidden="true"><use href="#i-calendar" /></svg><span data-copy="bookingsTitle">Lauabroneeringud</span></a>
         <a href="#calls-section"><svg class="icon" aria-hidden="true"><use href="#i-journal" /></svg><span data-copy="historyTitle">Kõneajalugu</span></a>
         <a href="#demo-section"><svg class="icon" aria-hidden="true"><use href="#i-chat" /></svg><span data-copy="voiceTitle">Proovi kõneabilist</span></a>
@@ -104,6 +104,7 @@
             id="operator-token"
             type="password"
             autocomplete="off"
+            data-placeholder="token"
             required
             maxlength="512"
           /><button id="connect" type="submit" data-copy="connect">
@@ -141,6 +142,13 @@
             <button id="demo-start" type="button" data-copy="start">
               Alusta vestlust</button
             ><button
+              id="demo-mic"
+              type="button"
+              class="secondary"
+              data-copy="micStart"
+            >
+              Räägi abilisele
+            </button><button
               id="demo-end"
               type="button"
               class="secondary"
@@ -159,6 +167,12 @@
           >
             Ühenda esmalt operaatori tunnusega.
           </p>
+          <div id="mic-feedback" hidden>
+            <label for="mic-level" data-copy="micLevel"
+              >Mikrofoni helitase</label
+            ><meter id="mic-level" min="0" max="1" value="0"></meter
+            ><span id="mic-feedback-text"></span>
+          </div>
           <div
             id="demo-messages"
             class="messages"
@@ -190,6 +204,7 @@
           >
             Olen kokkuvõtte läbi lugenud
           </button>
+          <p id="demo-recap-timer" class="proposal-timer" role="timer" aria-live="off" data-aria="proposalTimerLabel" hidden></p>
           <div class="examples">
             <button
               type="button"
@@ -198,6 +213,13 @@
               data-copy="exampleTable"
             >
               Lauabroneering</button
+            ><button
+              type="button"
+              class="example-button secondary"
+              data-example="incomplete"
+              data-copy="exampleIncomplete"
+            >
+              Puuduva ajaga soov</button
             ><button
               type="button"
               class="example-button secondary"
@@ -235,20 +257,6 @@
               </button>
             </div>
           </form>
-          <button
-            id="demo-mic"
-            type="button"
-            class="secondary"
-            data-copy="micStart"
-          >
-            Alusta häälvestlust
-          </button>
-          <div id="mic-feedback" hidden>
-            <label for="mic-level" data-copy="micLevel"
-              >Mikrofoni helitase</label
-            ><meter id="mic-level" min="0" max="1" value="0"></meter
-            ><span id="mic-feedback-text"></span>
-          </div>
           <p class="helper" data-copy="micHelp">
             Räägi loomulikult. Kõnepaus saadab heli; teine vajutus saadab kohe.
             Üks salvestis kestab kuni 15 sekundit.
@@ -274,7 +282,14 @@
           </div>
           <form id="reservation-form" class="reservation-form">
             <label for="reservation-date" data-copy="date">Kuupäev</label
-            ><input id="reservation-date" name="date" type="date" required />
+            ><input
+              id="reservation-date"
+              name="date"
+              type="date"
+              required
+              aria-describedby="reservation-time-help reservation-date-error"
+            />
+            <p id="reservation-date-error" class="helper reservation-error" hidden></p>
             <label for="reservation-time" data-copy="time">Saabumisaeg</label
             ><input
               id="reservation-time"
@@ -282,7 +297,10 @@
               type="time"
               required
               step="900"
+              aria-describedby="reservation-time-help reservation-time-error"
             />
+            <small id="reservation-time-help" data-copy="timeHelp">Kuupäev ja saabumisaeg on Tallinna ajas. Vali aeg 15-minutilise sammuga.</small>
+            <p id="reservation-time-error" class="helper reservation-error" hidden></p>
             <label for="reservation-party" data-copy="party"
               >Külalisi koos lastega</label
             ><input
@@ -293,7 +311,10 @@
               max="6"
               required
               inputmode="numeric"
+              aria-describedby="reservation-party-help reservation-party-error"
             />
+            <p id="reservation-party-error" class="helper reservation-error" hidden></p>
+            <p id="reservation-party-help" class="helper" data-copy="capacityHelp">Demo: 1–6 külalist koos lastega. Suurema grupi ja erisoovid kinnitab personal.</p>
             <button id="reservation-prepare" type="submit" data-copy="prepare">
               Kontrolli lauda
             </button>
@@ -310,6 +331,7 @@
           <div id="reservation-recap" hidden>
             <h3 data-copy="recapTitle">Kontrolli kokkuvõtet</h3>
             <p id="reservation-recap-text"></p>
+            <p id="reservation-recap-timer" class="proposal-timer" role="timer" aria-live="off" data-aria="proposalTimerLabel" hidden></p>
             <button
               id="reservation-read"
               type="button"
@@ -326,6 +348,7 @@
               Kinnita lauabroneering
             </button>
           </div>
+          <button id="reservation-renew" type="button" class="secondary" data-copy="renewProposal" hidden>Uuenda pakkumist</button>
           <button
             id="reservation-cancel"
             type="button"
@@ -344,9 +367,6 @@
           >
             End reservation session
           </button>
-          <p class="helper" data-copy="capacityHelp">
-            Suure grupi ja erisoovid peab kinnitama personal.
-          </p>
         </section>
       </div>
       <section id="bookings-section" class="panel" aria-labelledby="bookings-title">

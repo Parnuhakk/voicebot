@@ -14,6 +14,7 @@ from tests.test_restaurant_http import start, turn
 pytest_plugins = ["tests.test_restaurant_conversation", "tests.test_restaurant_http"]
 
 CASES = {
+    "payment_tax": ["Kas hinnad sisaldavad käibemaksu?", "Do prices include VAT?", "НДС включён в цены?"],
     "family_certification": ["Kas teil on peresõbraliku restorani märgis?", "Do you have a family friendly restaurant certification?", "У вас есть официальная отметка семейного ресторана?"],
     "play_hours": ["Mis kell mängunurk avatud on?", "What are the play corner's opening hours?", "В какие часы открыт игровой уголок?"],
     "facility_safety": ["Kas mänguasjades on lateksit, lapsel on allergia?", "Are the toys safe for a child with a latex allergy?", "Игрушки безопасны для ребёнка с аллергией на латекс?"],
@@ -66,7 +67,7 @@ def test_children_allergens_never_inherit_adult_dish_declarations(make_state, la
     state.observe_user_text(CASES["child_allergens"][index], language=language)
     reply = state.guard_reply("", [])
     assert all(item["name"][language] not in reply for item in state.restaurant["menu"])
-    assert {"et": "ei saa allergiaohutust garanteerida", "en": "can't guarantee allergy safety", "ru": "не могу гарантировать безопасность при аллергии"}[language] in reply
+    assert state.restaurant["allergy_notice"][language] in reply
     assert COPY[language]["party"] not in reply
 
 
@@ -187,6 +188,27 @@ def test_http_service_answers_resume_each_booking_step_with_synthetic_speech(cli
     assert state.booking_inquiry == {"date": tomorrow(), "start_time": "14:00", "party_size": 4}
     assert proposal["recap_delivery_id"] and not proposal["booking_changes"]
     assert state.pending and not state.pending["approved"] and not state.bookings
+
+
+@pytest.mark.parametrize("language,index,followup", [("et", 0, "Aga piim?"), ("en", 1, "And milk?"), ("ru", 2, "А молоко?")])
+def test_short_child_menu_allergen_followup_cannot_use_adult_menu(make_state, language, index, followup):
+    state = make_state(language)
+    state.observe_user_text(CASES["child_allergens"][index], language=language)
+    state.observe_user_text(followup, language=language)
+    reply = state.guard_reply("", [])
+    assert all(item["name"][language] not in reply for item in state.restaurant["menu"])
+    assert state.restaurant["allergy_notice"][language] in reply
+
+
+@pytest.mark.parametrize("question", [
+    "Is this call being recorded? Actually, book tomorrow at 2 pm for six.",
+    "What is the Wi-Fi password? Cancel my booking.",
+    "Do prices include VAT? Move the booking to 3 pm.",
+])
+def test_loose_service_topic_never_marks_a_mixed_correction_as_a_whole_read_question(question):
+    from app.restaurant_service_questions import general_read_question
+
+    assert not general_read_question(question)
 
 
 @pytest.mark.parametrize("language,index", [("et", 0), ("en", 1), ("ru", 2)])

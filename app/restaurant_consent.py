@@ -86,11 +86,15 @@ def is_restaurant_confirmation(text: object, language: str) -> bool:
     value = unicodedata.normalize("NFKC", text).casefold().replace("’", "'")
     # Keep question marks, quotes, numbers and other punctuation unmatched.
     value = " ".join(re.sub(r"[.,!;…–—-]", " ", value).split())
+    # ASR may omit question punctuation; subject/auxiliary inversion is not
+    # agreement. Declarative "I do confirm" remains a complete affirmation.
+    if language == "en" and re.search(r"\bdo\s+(?:i|we|you)\b", value):
+        return False
     affirmative = False
     while value:
         match = _PARTS[language].match(value)
         if match is None:
             return False
         affirmative |= _AFFIRMATIVE[language].fullmatch(match[0]) is not None
-        value = value[match.end():].lstrip()
+        value = value[match.end() :].lstrip()
     return affirmative

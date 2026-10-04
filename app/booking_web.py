@@ -5,8 +5,11 @@ from __future__ import annotations
 import json
 import os
 import re
+from collections.abc import Callable
 from datetime import date, datetime
+from inspect import isawaitable
 from zoneinfo import ZoneInfo
+from typing import Any
 
 from fastapi import Header, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -15,6 +18,13 @@ from .dashboard.api import _require_operator
 from .demo import load_demo_data
 from .hackathon import operator_scope
 from .restaurant_data import restaurant_booking_details
+
+
+async def _read_adapter(reader: Callable[..., object], *args) -> Any:
+    result = reader(*args)
+    if not isawaitable(result):
+        raise TypeError("booking adapter read must be asynchronous")
+    return await result
 
 
 async def _body(request):
@@ -134,7 +144,7 @@ def add_booking_routes(app, sessions):
         catalogue_read = getattr(reader, "get_slot_catalogue", None)
         if callable(catalogue_read):
             try:
-                catalogue = await catalogue_read()
+                catalogue = await _read_adapter(catalogue_read)
                 providers = catalogue.get("providers", [])
                 hours = [
                     provider["working_hours"]
@@ -175,7 +185,7 @@ def add_booking_routes(app, sessions):
         if not callable(reader):
             raise HTTPException(503, "stay_booking_not_configured")
         try:
-            return await reader()
+            return await _read_adapter(reader)
         except Exception:
             raise HTTPException(502, "room_catalogue_unavailable") from None
 
@@ -223,7 +233,7 @@ def add_booking_routes(app, sessions):
         if not callable(reader):
             raise HTTPException(503, "stay_booking_not_configured")
         try:
-            return await reader(date)
+            return await _read_adapter(reader, date)
         except Exception:
             raise HTTPException(502, "stay_bookings_unavailable") from None
 

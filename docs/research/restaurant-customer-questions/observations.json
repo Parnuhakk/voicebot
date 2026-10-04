@@ -3,9 +3,9 @@
   "interpretation": "Text equality and related-topic flags are descriptive triage. They do not establish semantic correctness or acoustic recognition accuracy.",
   "counts": {
     "turns": 810,
-    "exact_reviewed_text": 41,
+    "exact_reviewed_text": 35,
     "flags": {
-      "generic_unknown": 224
+      "generic_unknown": 214
     }
   },
   "observations": [
@@ -96,9 +96,10 @@
       "id": "accessibility.allergy-card",
       "language": "et",
       "question": "Kas töötajale saab näidata kirjalikku allergiakaarti?",
-      "reply": "Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral räägi enne tellimist otse restoraniga.",
+      "reply": "Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga. Seda palun küsige restorani töötajalt. Ma ei saa kõnet edasi suunata.",
       "topics": [
-        "allergens"
+        "allergens",
+        "staff"
       ],
       "flags": [],
       "proposed_action": null,
@@ -122,10 +123,10 @@
       "id": "accessibility.allergy-card",
       "language": "ru",
       "question": "Можно показать сотруднику карточку с информацией об аллергии?",
-      "reply": "Это лучше уточнить у сотрудника ресторана. В демоверсии перевести звонок не получится. Овощной суп: сельдерей; Запечённый лосось: рыба, молоко; Ризотто с грибами: молоко. В меню указаны аллергены, но состав и возможный контакт с аллергенами на кухне нужно проверить с сотрудником. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
+      "reply": "Овощной суп: сельдерей; Запечённый лосось: рыба, молоко; Ризотто с грибами: молоко. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа. Это лучше уточнить у сотрудника ресторана. Перевести звонок не получится.",
       "topics": [
-        "staff",
-        "allergens"
+        "allergens",
+        "staff"
       ],
       "flags": [],
       "proposed_action": null,
@@ -370,11 +371,11 @@
       "id": "accessibility.mobility-help",
       "language": "et",
       "question": "Kas töötaja saab sissepääsu juures aidata?",
-      "reply": "Seda ma praegu täpselt ei tea. Palun täpsustage küsimust või küsige restorani töötajalt.",
-      "topics": [],
-      "flags": [
-        "generic_unknown"
+      "reply": "Seda palun küsige restorani töötajalt. Ma ei saa kõnet edasi suunata.",
+      "topics": [
+        "staff"
       ],
+      "flags": [],
       "proposed_action": null,
       "inquiry_fields": [],
       "matches_reviewed_text": false
@@ -396,7 +397,7 @@
       "id": "accessibility.mobility-help",
       "language": "ru",
       "question": "Сотрудник может помочь мне у входа?",
-      "reply": "Это лучше уточнить у сотрудника ресторана. В демоверсии перевести звонок не получится.",
+      "reply": "Это лучше уточнить у сотрудника ресторана. Перевести звонок не получится.",
       "topics": [
         "staff"
       ],
@@ -637,7 +638,7 @@
       "id": "allergens.child-allergens",
       "language": "et",
       "question": "Millised allergeenid on lastemenüüs?",
-      "reply": "Mul ei ole kinnitatud infot lastemenüü koostise ja eridieetide kohta. Palun täpsustage seda restorani töötajaga. Koostis ja võimalik ristsaastumine tuleb köögiga kinnitada. Ma ei saa allergiaohutust garanteerida.",
+      "reply": "Mul ei ole kinnitatud infot lastemenüü koostise ja eridieetide kohta. Palun täpsustage seda restorani töötajaga. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
       "topics": [
         "child_allergens"
       ],
@@ -650,7 +651,7 @@
       "id": "allergens.child-allergens",
       "language": "en",
       "question": "What allergens are in the children's menu?",
-      "reply": "I don't have confirmed information about children's menu ingredients and dietary requirements. Please check with the restaurant team. Check ingredients and possible cross-contact with the kitchen. I can't guarantee allergy safety.",
+      "reply": "I don't have confirmed information about children's menu ingredients and dietary requirements. Please check with the restaurant team. The menu lists known allergens, but staff must verify ingredients and possible cross-contact. I cannot guarantee allergen-free food. For a serious allergy, speak directly with the restaurant before ordering.",
       "topics": [
         "child_allergens"
       ],
@@ -663,7 +664,7 @@
       "id": "allergens.child-allergens",
       "language": "ru",
       "question": "Какие аллергены есть в детском меню?",
-      "reply": "У меня нет подтверждённой информации о составе детского меню и особых требованиях к питанию. Уточните это у сотрудника ресторана. Уточните состав и возможность перекрёстного контакта у кухни. Я не могу гарантировать безопасность при аллергии.",
+      "reply": "У меня нет подтверждённой информации о составе детского меню и особых требованиях к питанию. Уточните это у сотрудника ресторана. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "child_allergens"
       ],
@@ -676,7 +677,7 @@
       "id": "allergens.child-gluten",
       "language": "et",
       "question": "Kas lastemenüüs on gluteenivaba toit?",
-      "reply": "Mul ei ole kinnitatud infot lastemenüü koostise ja eridieetide kohta. Palun täpsustage seda restorani töötajaga. Koostis ja võimalik ristsaastumine tuleb köögiga kinnitada. Ma ei saa allergiaohutust garanteerida.",
+      "reply": "Mul ei ole kinnitatud infot lastemenüü koostise ja eridieetide kohta. Palun täpsustage seda restorani töötajaga. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
       "topics": [
         "child_allergens"
       ],
@@ -689,7 +690,7 @@
       "id": "allergens.child-gluten",
       "language": "en",
       "question": "Are there gluten free children's meals?",
-      "reply": "I don't have confirmed information about children's menu ingredients and dietary requirements. Please check with the restaurant team. Check ingredients and possible cross-contact with the kitchen. I can't guarantee allergy safety.",
+      "reply": "I don't have confirmed information about children's menu ingredients and dietary requirements. Please check with the restaurant team. The menu lists known allergens, but staff must verify ingredients and possible cross-contact. I cannot guarantee allergen-free food. For a serious allergy, speak directly with the restaurant before ordering.",
       "topics": [
         "child_allergens"
       ],
@@ -702,7 +703,7 @@
       "id": "allergens.child-gluten",
       "language": "ru",
       "question": "В детском меню есть блюда без глютена?",
-      "reply": "У меня нет подтверждённой информации о составе детского меню и особых требованиях к питанию. Уточните это у сотрудника ресторана. Уточните состав и возможность перекрёстного контакта у кухни. Я не могу гарантировать безопасность при аллергии.",
+      "reply": "У меня нет подтверждённой информации о составе детского меню и особых требованиях к питанию. Уточните это у сотрудника ресторана. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "child_allergens"
       ],
@@ -715,7 +716,7 @@
       "id": "allergens.child-milk",
       "language": "et",
       "question": "Kas piimaallergiaga lapsele on sobiv toit?",
-      "reply": "Mul ei ole kinnitatud infot lastemenüü koostise ja eridieetide kohta. Palun täpsustage seda restorani töötajaga. Koostis ja võimalik ristsaastumine tuleb köögiga kinnitada. Ma ei saa allergiaohutust garanteerida.",
+      "reply": "Mul ei ole kinnitatud infot lastemenüü koostise ja eridieetide kohta. Palun täpsustage seda restorani töötajaga. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
       "topics": [
         "child_allergens"
       ],
@@ -728,7 +729,7 @@
       "id": "allergens.child-milk",
       "language": "en",
       "question": "Can you cater for a child with a milk allergy?",
-      "reply": "I don't have confirmed information about children's menu ingredients and dietary requirements. Please check with the restaurant team. Check ingredients and possible cross-contact with the kitchen. I can't guarantee allergy safety.",
+      "reply": "I don't have confirmed information about children's menu ingredients and dietary requirements. Please check with the restaurant team. The menu lists known allergens, but staff must verify ingredients and possible cross-contact. I cannot guarantee allergen-free food. For a serious allergy, speak directly with the restaurant before ordering.",
       "topics": [
         "child_allergens"
       ],
@@ -741,7 +742,7 @@
       "id": "allergens.child-milk",
       "language": "ru",
       "question": "Есть еда для ребёнка с аллергией на молоко?",
-      "reply": "У меня нет подтверждённой информации о составе детского меню и особых требованиях к питанию. Уточните это у сотрудника ресторана. Уточните состав и возможность перекрёстного контакта у кухни. Я не могу гарантировать безопасность при аллергии.",
+      "reply": "У меня нет подтверждённой информации о составе детского меню и особых требованиях к питанию. Уточните это у сотрудника ресторана. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "child_allergens"
       ],
@@ -754,11 +755,11 @@
       "id": "allergens.coeliac",
       "language": "et",
       "question": "Kas tsöliaakiaga inimene saab siin ohutult süüa?",
-      "reply": "Seda ma praegu täpselt ei tea. Palun täpsustage küsimust või küsige restorani töötajalt.",
-      "topics": [],
-      "flags": [
-        "generic_unknown"
+      "reply": "Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
+      "topics": [
+        "allergens"
       ],
+      "flags": [],
       "proposed_action": null,
       "inquiry_fields": [],
       "matches_reviewed_text": false
@@ -767,11 +768,11 @@
       "id": "allergens.coeliac",
       "language": "en",
       "question": "Can someone with coeliac disease eat here safely?",
-      "reply": "I don't have verified information about that. Could you clarify your question, or check with the restaurant team?",
-      "topics": [],
-      "flags": [
-        "generic_unknown"
+      "reply": "Vegetable soup: celery; Baked salmon: fish, milk; Mushroom risotto: milk. The menu lists known allergens, but staff must verify ingredients and possible cross-contact. I cannot guarantee allergen-free food. For a serious allergy, speak directly with the restaurant before ordering.",
+      "topics": [
+        "allergens"
       ],
+      "flags": [],
       "proposed_action": null,
       "inquiry_fields": [],
       "matches_reviewed_text": false
@@ -780,11 +781,11 @@
       "id": "allergens.coeliac",
       "language": "ru",
       "question": "Можно ли безопасно поесть при целиакии?",
-      "reply": "Пока не знаю. Можете уточнить вопрос или спросить сотрудника ресторана.",
-      "topics": [],
-      "flags": [
-        "generic_unknown"
+      "reply": "Овощной суп: сельдерей; Запечённый лосось: рыба, молоко; Ризотто с грибами: молоко. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
+      "topics": [
+        "allergens"
       ],
+      "flags": [],
       "proposed_action": null,
       "inquiry_fields": [],
       "matches_reviewed_text": false
@@ -832,7 +833,7 @@
       "id": "allergens.egg",
       "language": "et",
       "question": "Kas toidus on muna?",
-      "reply": "Mul ei ole kinnitatud infot küsitud koostisosa ja eraldi valmistamise tingimuste kohta. Palun täpsustage seda restorani töötajaga. Koostis ja võimalik ristsaastumine tuleb köögiga kinnitada. Ma ei saa allergiaohutust garanteerida.",
+      "reply": "Mul ei ole kinnitatud infot küsitud koostisosa ja eraldi valmistamise tingimuste kohta. Palun täpsustage seda restorani töötajaga. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
       "topics": [
         "ingredient_details"
       ],
@@ -845,7 +846,7 @@
       "id": "allergens.egg",
       "language": "en",
       "question": "Does the food contain egg?",
-      "reply": "I don't have confirmed information about the requested ingredient and separate preparation conditions. Please check with the restaurant team. Check ingredients and possible cross-contact with the kitchen. I can't guarantee allergy safety.",
+      "reply": "I don't have confirmed information about the requested ingredient and separate preparation conditions. Please check with the restaurant team. The menu lists known allergens, but staff must verify ingredients and possible cross-contact. I cannot guarantee allergen-free food. For a serious allergy, speak directly with the restaurant before ordering.",
       "topics": [
         "ingredient_details"
       ],
@@ -858,7 +859,7 @@
       "id": "allergens.egg",
       "language": "ru",
       "question": "В еде есть яйца?",
-      "reply": "У меня нет подтверждённой информации о запрошенном ингредиенте и условиях отдельного приготовления. Уточните это у сотрудника ресторана. Уточните состав и возможность перекрёстного контакта у кухни. Я не могу гарантировать безопасность при аллергии.",
+      "reply": "У меня нет подтверждённой информации о запрошенном ингредиенте и условиях отдельного приготовления. Уточните это у сотрудника ресторана. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "ingredient_details"
       ],
@@ -871,7 +872,7 @@
       "id": "allergens.gluten",
       "language": "et",
       "question": "Kas saate valmistada gluteenivaba rooga?",
-      "reply": "Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral räägi enne tellimist otse restoraniga.",
+      "reply": "Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
       "topics": [
         "allergens"
       ],
@@ -897,7 +898,7 @@
       "id": "allergens.gluten",
       "language": "ru",
       "question": "Можете приготовить блюдо без глютена?",
-      "reply": "Овощной суп: сельдерей; Запечённый лосось: рыба, молоко; Ризотто с грибами: молоко. В меню указаны аллергены, но состав и возможный контакт с аллергенами на кухне нужно проверить с сотрудником. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
+      "reply": "Овощной суп: сельдерей; Запечённый лосось: рыба, молоко; Ризотто с грибами: молоко. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "allergens"
       ],
@@ -910,7 +911,7 @@
       "id": "allergens.guarantee",
       "language": "et",
       "question": "Kas garanteerite, et toit on allergikule ohutu?",
-      "reply": "Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral räägi enne tellimist otse restoraniga.",
+      "reply": "Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
       "topics": [
         "allergens"
       ],
@@ -936,7 +937,7 @@
       "id": "allergens.guarantee",
       "language": "ru",
       "question": "Вы гарантируете безопасность еды при аллергии?",
-      "reply": "Овощной суп: сельдерей; Запечённый лосось: рыба, молоко; Ризотто с грибами: молоко. В меню указаны аллергены, но состав и возможный контакт с аллергенами на кухне нужно проверить с сотрудником. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
+      "reply": "Овощной суп: сельдерей; Запечённый лосось: рыба, молоко; Ризотто с грибами: молоко. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "allergens"
       ],
@@ -1027,7 +1028,7 @@
       "id": "allergens.lactose",
       "language": "et",
       "question": "Kas pakute laktoosivaba toitu?",
-      "reply": "Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral räägi enne tellimist otse restoraniga.",
+      "reply": "Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
       "topics": [
         "allergens"
       ],
@@ -1053,7 +1054,7 @@
       "id": "allergens.lactose",
       "language": "ru",
       "question": "У вас есть еда без лактозы?",
-      "reply": "Овощной суп: сельдерей; Запечённый лосось: рыба, молоко; Ризотто с грибами: молоко. В меню указаны аллергены, но состав и возможный контакт с аллергенами на кухне нужно проверить с сотрудником. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
+      "reply": "Овощной суп: сельдерей; Запечённый лосось: рыба, молоко; Ризотто с грибами: молоко. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "allergens"
       ],
@@ -1066,7 +1067,7 @@
       "id": "allergens.lupin",
       "language": "et",
       "question": "Kas küpsetistes on lupiini?",
-      "reply": "Mul ei ole kinnitatud infot küsitud koostisosa ja eraldi valmistamise tingimuste kohta. Palun täpsustage seda restorani töötajaga. Koostis ja võimalik ristsaastumine tuleb köögiga kinnitada. Ma ei saa allergiaohutust garanteerida.",
+      "reply": "Mul ei ole kinnitatud infot küsitud koostisosa ja eraldi valmistamise tingimuste kohta. Palun täpsustage seda restorani töötajaga. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
       "topics": [
         "ingredient_details"
       ],
@@ -1079,7 +1080,7 @@
       "id": "allergens.lupin",
       "language": "en",
       "question": "Do the baked goods contain lupin?",
-      "reply": "I don't have confirmed information about the requested ingredient and separate preparation conditions. Please check with the restaurant team. Check ingredients and possible cross-contact with the kitchen. I can't guarantee allergy safety.",
+      "reply": "I don't have confirmed information about the requested ingredient and separate preparation conditions. Please check with the restaurant team. The menu lists known allergens, but staff must verify ingredients and possible cross-contact. I cannot guarantee allergen-free food. For a serious allergy, speak directly with the restaurant before ordering.",
       "topics": [
         "ingredient_details"
       ],
@@ -1092,7 +1093,7 @@
       "id": "allergens.lupin",
       "language": "ru",
       "question": "В выпечке есть люпин?",
-      "reply": "У меня нет подтверждённой информации о запрошенном ингредиенте и условиях отдельного приготовления. Уточните это у сотрудника ресторана. Уточните состав и возможность перекрёстного контакта у кухни. Я не могу гарантировать безопасность при аллергии.",
+      "reply": "У меня нет подтверждённой информации о запрошенном ингредиенте и условиях отдельного приготовления. Уточните это у сотрудника ресторана. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "ingredient_details"
       ],
@@ -1144,7 +1145,7 @@
       "id": "allergens.mustard",
       "language": "et",
       "question": "Kas kastmes on sinepit?",
-      "reply": "Mul ei ole kinnitatud infot küsitud koostisosa ja eraldi valmistamise tingimuste kohta. Palun täpsustage seda restorani töötajaga. Koostis ja võimalik ristsaastumine tuleb köögiga kinnitada. Ma ei saa allergiaohutust garanteerida.",
+      "reply": "Mul ei ole kinnitatud infot küsitud koostisosa ja eraldi valmistamise tingimuste kohta. Palun täpsustage seda restorani töötajaga. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
       "topics": [
         "ingredient_details"
       ],
@@ -1157,7 +1158,7 @@
       "id": "allergens.mustard",
       "language": "en",
       "question": "Does the sauce contain mustard?",
-      "reply": "I don't have confirmed information about the requested ingredient and separate preparation conditions. Please check with the restaurant team. Check ingredients and possible cross-contact with the kitchen. I can't guarantee allergy safety.",
+      "reply": "I don't have confirmed information about the requested ingredient and separate preparation conditions. Please check with the restaurant team. The menu lists known allergens, but staff must verify ingredients and possible cross-contact. I cannot guarantee allergen-free food. For a serious allergy, speak directly with the restaurant before ordering.",
       "topics": [
         "ingredient_details"
       ],
@@ -1170,7 +1171,7 @@
       "id": "allergens.mustard",
       "language": "ru",
       "question": "В соусе есть горчица?",
-      "reply": "У меня нет подтверждённой информации о запрошенном ингредиенте и условиях отдельного приготовления. Уточните это у сотрудника ресторана. Уточните состав и возможность перекрёстного контакта у кухни. Я не могу гарантировать безопасность при аллергии.",
+      "reply": "У меня нет подтверждённой информации о запрошенном ингредиенте и условиях отдельного приготовления. Уточните это у сотрудника ресторана. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "ingredient_details"
       ],
@@ -1183,7 +1184,7 @@
       "id": "allergens.nuts",
       "language": "et",
       "question": "Kas saaksin pähklivaba toidu?",
-      "reply": "Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral räägi enne tellimist otse restoraniga.",
+      "reply": "Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
       "topics": [
         "allergens"
       ],
@@ -1209,7 +1210,7 @@
       "id": "allergens.nuts",
       "language": "ru",
       "question": "Можно еду без орехов?",
-      "reply": "Овощной суп: сельдерей; Запечённый лосось: рыба, молоко; Ризотто с грибами: молоко. В меню указаны аллергены, но состав и возможный контакт с аллергенами на кухне нужно проверить с сотрудником. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
+      "reply": "Овощной суп: сельдерей; Запечённый лосось: рыба, молоко; Ризотто с грибами: молоко. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "allergens"
       ],
@@ -1222,7 +1223,7 @@
       "id": "allergens.peanuts",
       "language": "et",
       "question": "Kas maapähkleid kasutatakse samas köögis?",
-      "reply": "Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral räägi enne tellimist otse restoraniga. Köök: Esmaspäevast neljapäevani kell 12–20:30, reedel ja laupäeval kell 12–22:30 ning pühapäeval kell 12–19:30.",
+      "reply": "Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga. Köök: Esmaspäevast neljapäevani kell 12–20:30, reedel ja laupäeval kell 12–22:30 ning pühapäeval kell 12–19:30.",
       "topics": [
         "allergens",
         "kitchen"
@@ -1250,7 +1251,7 @@
       "id": "allergens.peanuts",
       "language": "ru",
       "question": "В этой кухне используют арахис?",
-      "reply": "У меня нет подтверждённой информации о запрошенном ингредиенте и условиях отдельного приготовления. Уточните это у сотрудника ресторана. Уточните состав и возможность перекрёстного контакта у кухни. Я не могу гарантировать безопасность при аллергии.",
+      "reply": "У меня нет подтверждённой информации о запрошенном ингредиенте и условиях отдельного приготовления. Уточните это у сотрудника ресторана. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "ingredient_details"
       ],
@@ -1302,7 +1303,7 @@
       "id": "allergens.remove",
       "language": "et",
       "question": "Kas allergeeni saab lihtsalt roa pealt ära võtta?",
-      "reply": "Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral räägi enne tellimist otse restoraniga.",
+      "reply": "Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
       "topics": [
         "allergens"
       ],
@@ -1328,7 +1329,7 @@
       "id": "allergens.remove",
       "language": "ru",
       "question": "Можно просто убрать аллерген из блюда?",
-      "reply": "Овощной суп: сельдерей; Запечённый лосось: рыба, молоко; Ризотто с грибами: молоко. В меню указаны аллергены, но состав и возможный контакт с аллергенами на кухне нужно проверить с сотрудником. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
+      "reply": "Овощной суп: сельдерей; Запечённый лосось: рыба, молоко; Ризотто с грибами: молоко. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "allergens"
       ],
@@ -1380,7 +1381,7 @@
       "id": "allergens.salmon",
       "language": "et",
       "question": "Mis allergeenid on küpsetatud lõhes?",
-      "reply": "Ahjulõhe: kala, piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral räägi enne tellimist otse restoraniga.",
+      "reply": "Ahjulõhe: kala, piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
       "topics": [
         "allergens"
       ],
@@ -1406,7 +1407,7 @@
       "id": "allergens.salmon",
       "language": "ru",
       "question": "Какие аллергены в запечённом лососе?",
-      "reply": "Запечённый лосось: рыба, молоко. В меню указаны аллергены, но состав и возможный контакт с аллергенами на кухне нужно проверить с сотрудником. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
+      "reply": "Запечённый лосось: рыба, молоко. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "allergens"
       ],
@@ -1419,7 +1420,7 @@
       "id": "allergens.separate-fryer",
       "language": "et",
       "question": "Kas gluteenivaba toit valmib eraldi fritüüris?",
-      "reply": "Mul ei ole kinnitatud infot küsitud koostisosa ja eraldi valmistamise tingimuste kohta. Palun täpsustage seda restorani töötajaga. Koostis ja võimalik ristsaastumine tuleb köögiga kinnitada. Ma ei saa allergiaohutust garanteerida.",
+      "reply": "Mul ei ole kinnitatud infot küsitud koostisosa ja eraldi valmistamise tingimuste kohta. Palun täpsustage seda restorani töötajaga. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
       "topics": [
         "ingredient_details"
       ],
@@ -1432,7 +1433,7 @@
       "id": "allergens.separate-fryer",
       "language": "en",
       "question": "Is gluten free food cooked in a separate fryer?",
-      "reply": "I don't have confirmed information about the requested ingredient and separate preparation conditions. Please check with the restaurant team. Check ingredients and possible cross-contact with the kitchen. I can't guarantee allergy safety.",
+      "reply": "I don't have confirmed information about the requested ingredient and separate preparation conditions. Please check with the restaurant team. The menu lists known allergens, but staff must verify ingredients and possible cross-contact. I cannot guarantee allergen-free food. For a serious allergy, speak directly with the restaurant before ordering.",
       "topics": [
         "ingredient_details"
       ],
@@ -1445,7 +1446,7 @@
       "id": "allergens.separate-fryer",
       "language": "ru",
       "question": "Еду без глютена готовят в отдельной фритюрнице?",
-      "reply": "У меня нет подтверждённой информации о запрошенном ингредиенте и условиях отдельного приготовления. Уточните это у сотрудника ресторана. Уточните состав и возможность перекрёстного контакта у кухни. Я не могу гарантировать безопасность при аллергии.",
+      "reply": "У меня нет подтверждённой информации о запрошенном ингредиенте и условиях отдельного приготовления. Уточните это у сотрудника ресторана. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "ingredient_details"
       ],
@@ -1458,7 +1459,7 @@
       "id": "allergens.separate-tools",
       "language": "et",
       "question": "Kas allergiku toit tehakse eraldi vahenditega?",
-      "reply": "Mul ei ole kinnitatud infot küsitud koostisosa ja eraldi valmistamise tingimuste kohta. Palun täpsustage seda restorani töötajaga. Koostis ja võimalik ristsaastumine tuleb köögiga kinnitada. Ma ei saa allergiaohutust garanteerida.",
+      "reply": "Mul ei ole kinnitatud infot küsitud koostisosa ja eraldi valmistamise tingimuste kohta. Palun täpsustage seda restorani töötajaga. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
       "topics": [
         "ingredient_details"
       ],
@@ -1471,7 +1472,7 @@
       "id": "allergens.separate-tools",
       "language": "en",
       "question": "Are separate utensils used for allergy requests?",
-      "reply": "I don't have confirmed information about the requested ingredient and separate preparation conditions. Please check with the restaurant team. Check ingredients and possible cross-contact with the kitchen. I can't guarantee allergy safety.",
+      "reply": "I don't have confirmed information about the requested ingredient and separate preparation conditions. Please check with the restaurant team. The menu lists known allergens, but staff must verify ingredients and possible cross-contact. I cannot guarantee allergen-free food. For a serious allergy, speak directly with the restaurant before ordering.",
       "topics": [
         "ingredient_details"
       ],
@@ -1484,7 +1485,7 @@
       "id": "allergens.separate-tools",
       "language": "ru",
       "question": "Для еды при аллергии используют отдельные приборы?",
-      "reply": "У меня нет подтверждённой информации о запрошенном ингредиенте и условиях отдельного приготовления. Уточните это у сотрудника ресторана. Уточните состав и возможность перекрёстного контакта у кухни. Я не могу гарантировать безопасность при аллергии.",
+      "reply": "У меня нет подтверждённой информации о запрошенном ингредиенте и условиях отдельного приготовления. Уточните это у сотрудника ресторана. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "ingredient_details"
       ],
@@ -1497,7 +1498,7 @@
       "id": "allergens.sesame",
       "language": "et",
       "question": "Kas kastmes on seesamit?",
-      "reply": "Mul ei ole kinnitatud infot küsitud koostisosa ja eraldi valmistamise tingimuste kohta. Palun täpsustage seda restorani töötajaga. Koostis ja võimalik ristsaastumine tuleb köögiga kinnitada. Ma ei saa allergiaohutust garanteerida.",
+      "reply": "Mul ei ole kinnitatud infot küsitud koostisosa ja eraldi valmistamise tingimuste kohta. Palun täpsustage seda restorani töötajaga. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
       "topics": [
         "ingredient_details"
       ],
@@ -1510,7 +1511,7 @@
       "id": "allergens.sesame",
       "language": "en",
       "question": "Does the sauce contain sesame?",
-      "reply": "I don't have confirmed information about the requested ingredient and separate preparation conditions. Please check with the restaurant team. Check ingredients and possible cross-contact with the kitchen. I can't guarantee allergy safety.",
+      "reply": "I don't have confirmed information about the requested ingredient and separate preparation conditions. Please check with the restaurant team. The menu lists known allergens, but staff must verify ingredients and possible cross-contact. I cannot guarantee allergen-free food. For a serious allergy, speak directly with the restaurant before ordering.",
       "topics": [
         "ingredient_details"
       ],
@@ -1523,7 +1524,7 @@
       "id": "allergens.sesame",
       "language": "ru",
       "question": "В соусе есть кунжут?",
-      "reply": "У меня нет подтверждённой информации о запрошенном ингредиенте и условиях отдельного приготовления. Уточните это у сотрудника ресторана. Уточните состав и возможность перекрёстного контакта у кухни. Я не могу гарантировать безопасность при аллергии.",
+      "reply": "У меня нет подтверждённой информации о запрошенном ингредиенте и условиях отдельного приготовления. Уточните это у сотрудника ресторана. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "ingredient_details"
       ],
@@ -1575,10 +1576,10 @@
       "id": "allergens.soup",
       "language": "et",
       "question": "Kas köögiviljasupil on allergeene?",
-      "reply": "Köök: Esmaspäevast neljapäevani kell 12–20:30, reedel ja laupäeval kell 12–22:30 ning pühapäeval kell 12–19:30. Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral räägi enne tellimist otse restoraniga.",
+      "reply": "Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga. Köök: Esmaspäevast neljapäevani kell 12–20:30, reedel ja laupäeval kell 12–22:30 ning pühapäeval kell 12–19:30.",
       "topics": [
-        "kitchen",
-        "allergens"
+        "allergens",
+        "kitchen"
       ],
       "flags": [],
       "proposed_action": null,
@@ -1602,7 +1603,7 @@
       "id": "allergens.soup",
       "language": "ru",
       "question": "В овощном супе есть аллергены?",
-      "reply": "Овощной суп: сельдерей. В меню указаны аллергены, но состав и возможный контакт с аллергенами на кухне нужно проверить с сотрудником. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
+      "reply": "Овощной суп: сельдерей. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "allergens"
       ],
@@ -1615,7 +1616,7 @@
       "id": "allergens.soy",
       "language": "et",
       "question": "Kas kasutate sojat?",
-      "reply": "Mul ei ole kinnitatud infot küsitud koostisosa ja eraldi valmistamise tingimuste kohta. Palun täpsustage seda restorani töötajaga. Koostis ja võimalik ristsaastumine tuleb köögiga kinnitada. Ma ei saa allergiaohutust garanteerida.",
+      "reply": "Mul ei ole kinnitatud infot küsitud koostisosa ja eraldi valmistamise tingimuste kohta. Palun täpsustage seda restorani töötajaga. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
       "topics": [
         "ingredient_details"
       ],
@@ -1628,7 +1629,7 @@
       "id": "allergens.soy",
       "language": "en",
       "question": "Do you use soy in the food?",
-      "reply": "I don't have confirmed information about the requested ingredient and separate preparation conditions. Please check with the restaurant team. Check ingredients and possible cross-contact with the kitchen. I can't guarantee allergy safety.",
+      "reply": "I don't have confirmed information about the requested ingredient and separate preparation conditions. Please check with the restaurant team. The menu lists known allergens, but staff must verify ingredients and possible cross-contact. I cannot guarantee allergen-free food. For a serious allergy, speak directly with the restaurant before ordering.",
       "topics": [
         "ingredient_details"
       ],
@@ -1641,7 +1642,7 @@
       "id": "allergens.soy",
       "language": "ru",
       "question": "Вы используете сою в еде?",
-      "reply": "У меня нет подтверждённой информации о запрошенном ингредиенте и условиях отдельного приготовления. Уточните это у сотрудника ресторана. Уточните состав и возможность перекрёстного контакта у кухни. Я не могу гарантировать безопасность при аллергии.",
+      "reply": "У меня нет подтверждённой информации о запрошенном ингредиенте и условиях отдельного приготовления. Уточните это у сотрудника ресторана. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "ingredient_details"
       ],
@@ -1654,7 +1655,7 @@
       "id": "allergens.sulphites",
       "language": "et",
       "question": "Kas roog sisaldab sulfiteid?",
-      "reply": "Mul ei ole kinnitatud infot küsitud koostisosa ja eraldi valmistamise tingimuste kohta. Palun täpsustage seda restorani töötajaga. Koostis ja võimalik ristsaastumine tuleb köögiga kinnitada. Ma ei saa allergiaohutust garanteerida.",
+      "reply": "Mul ei ole kinnitatud infot küsitud koostisosa ja eraldi valmistamise tingimuste kohta. Palun täpsustage seda restorani töötajaga. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
       "topics": [
         "ingredient_details"
       ],
@@ -1667,7 +1668,7 @@
       "id": "allergens.sulphites",
       "language": "en",
       "question": "Does the dish contain sulphites?",
-      "reply": "I don't have confirmed information about the requested ingredient and separate preparation conditions. Please check with the restaurant team. Check ingredients and possible cross-contact with the kitchen. I can't guarantee allergy safety.",
+      "reply": "I don't have confirmed information about the requested ingredient and separate preparation conditions. Please check with the restaurant team. The menu lists known allergens, but staff must verify ingredients and possible cross-contact. I cannot guarantee allergen-free food. For a serious allergy, speak directly with the restaurant before ordering.",
       "topics": [
         "ingredient_details"
       ],
@@ -1680,7 +1681,7 @@
       "id": "allergens.sulphites",
       "language": "ru",
       "question": "В блюде есть сульфиты?",
-      "reply": "У меня нет подтверждённой информации о запрошенном ингредиенте и условиях отдельного приготовления. Уточните это у сотрудника ресторана. Уточните состав и возможность перекрёстного контакта у кухни. Я не могу гарантировать безопасность при аллергии.",
+      "reply": "У меня нет подтверждённой информации о запрошенном ингредиенте и условиях отдельного приготовления. Уточните это у сотрудника ресторана. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "ingredient_details"
       ],
@@ -1693,7 +1694,7 @@
       "id": "allergens.vegan-child",
       "language": "et",
       "question": "Kas lastemenüüs on veganroog?",
-      "reply": "Mul ei ole kinnitatud infot lastemenüü koostise ja eridieetide kohta. Palun täpsustage seda restorani töötajaga. Koostis ja võimalik ristsaastumine tuleb köögiga kinnitada. Ma ei saa allergiaohutust garanteerida.",
+      "reply": "Mul ei ole kinnitatud infot lastemenüü koostise ja eridieetide kohta. Palun täpsustage seda restorani töötajaga. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
       "topics": [
         "child_allergens"
       ],
@@ -1706,7 +1707,7 @@
       "id": "allergens.vegan-child",
       "language": "en",
       "question": "Is there a vegan children's dish?",
-      "reply": "I don't have confirmed information about children's menu ingredients and dietary requirements. Please check with the restaurant team. Check ingredients and possible cross-contact with the kitchen. I can't guarantee allergy safety.",
+      "reply": "I don't have confirmed information about children's menu ingredients and dietary requirements. Please check with the restaurant team. The menu lists known allergens, but staff must verify ingredients and possible cross-contact. I cannot guarantee allergen-free food. For a serious allergy, speak directly with the restaurant before ordering.",
       "topics": [
         "child_allergens"
       ],
@@ -1719,7 +1720,7 @@
       "id": "allergens.vegan-child",
       "language": "ru",
       "question": "В детском меню есть веганское блюдо?",
-      "reply": "У меня нет подтверждённой информации о составе детского меню и особых требованиях к питанию. Уточните это у сотрудника ресторана. Уточните состав и возможность перекрёстного контакта у кухни. Я не могу гарантировать безопасность при аллергии.",
+      "reply": "У меня нет подтверждённой информации о составе детского меню и особых требованиях к питанию. Уточните это у сотрудника ресторана. В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.",
       "topics": [
         "child_allergens"
       ],
@@ -1891,7 +1892,7 @@
       "id": "amenities.dogs",
       "language": "et",
       "question": "Kas koeraga võib tulla?",
-      "reply": "Jah, koeraga võib tulla.",
+      "reply": "Koeraga võib tulla. Teiste lemmikloomade kohta palun küsige restorani töötajalt.",
       "topics": [
         "pets"
       ],
@@ -1904,7 +1905,7 @@
       "id": "amenities.dogs",
       "language": "en",
       "question": "Can I bring a dog?",
-      "reply": "Yes, dogs are welcome.",
+      "reply": "Dogs are welcome. Please ask the restaurant team about other pets.",
       "topics": [
         "pets"
       ],
@@ -1917,7 +1918,7 @@
       "id": "amenities.dogs",
       "language": "ru",
       "question": "Можно прийти с собакой?",
-      "reply": "Да, можно прийти с собакой.",
+      "reply": "Можно прийти с собакой. О других питомцах спросите сотрудника ресторана.",
       "topics": [
         "pets"
       ],
@@ -2412,7 +2413,7 @@
       "id": "amenities.water-bowl",
       "language": "en",
       "question": "Can I get a water bowl for my dog?",
-      "reply": "Yes, dogs are welcome.",
+      "reply": "Dogs are welcome. Please ask the restaurant team about other pets.",
       "topics": [
         "pets"
       ],
@@ -2425,7 +2426,7 @@
       "id": "amenities.water-bowl",
       "language": "ru",
       "question": "Можно миску воды для собаки?",
-      "reply": "Да, можно прийти с собакой.",
+      "reply": "Можно прийти с собакой. О других питомцах спросите сотрудника ресторана.",
       "topics": [
         "pets"
       ],
@@ -2670,7 +2671,7 @@
       "id": "booking.child-count",
       "language": "et",
       "question": "Kas lapsed lähevad inimeste arvu sisse?",
-      "reply": "Palun arvestage lapsed külaliste koguarvu sisse.",
+      "reply": "Palun arvestage ka lapsed külaliste koguarvu hulka.",
       "topics": [
         "children"
       ],
@@ -2742,8 +2743,10 @@
       "id": "booking.duration",
       "language": "et",
       "question": "Kui kaua saab lauda kasutada?",
-      "reply": "Mis päevaks soovite lauda?",
-      "topics": [],
+      "reply": "Lauabroneering kestab 90 minutit.",
+      "topics": [
+        "duration"
+      ],
       "flags": [],
       "proposed_action": null,
       "inquiry_fields": [],
@@ -2812,7 +2815,7 @@
       "id": "booking.future-window",
       "language": "et",
       "question": "Kui kaugele ette saab broneerida?",
-      "reply": "Selles demos saab saadavust kontrollida kuni 90 päeva ette. Laud tuleb valitud aja jaoks eraldi kontrollida.",
+      "reply": "Saadavust saab kontrollida kuni 90 päeva ette. Laud tuleb valitud aja jaoks eraldi kontrollida.",
       "topics": [
         "booking_window"
       ],
@@ -2825,7 +2828,7 @@
       "id": "booking.future-window",
       "language": "en",
       "question": "How far ahead can I book?",
-      "reply": "This demo can check dates up to 90 days ahead. A table still needs to be checked for your chosen time.",
+      "reply": "I can check dates up to 90 days ahead. A table still needs to be checked for your chosen time.",
       "topics": [
         "booking_window"
       ],
@@ -2838,7 +2841,7 @@
       "id": "booking.future-window",
       "language": "ru",
       "question": "Насколько заранее можно бронировать?",
-      "reply": "В демоверсии можно проверять даты на 90 дней вперёд. Наличие столика на выбранное время нужно проверить отдельно.",
+      "reply": "Можно проверять даты на 90 дней вперёд. Наличие столика на выбранное время нужно проверить отдельно.",
       "topics": [
         "booking_window"
       ],
@@ -4610,7 +4613,7 @@
       "id": "family.child-menu-age",
       "language": "en",
       "question": "Can an adult order from the children's menu?",
-      "reply": "For children, we have drawing activities, toys, a play corner and a children's menu. Please ask a member of the restaurant team about that. I can't transfer calls in this demo. The menu includes Vegetable soup, Baked salmon and Mushroom risotto.",
+      "reply": "For children, we have drawing activities, toys, a play corner and a children's menu. Please ask a member of the restaurant team about that. I can't transfer calls. The menu includes Vegetable soup, Baked salmon and Mushroom risotto.",
       "topics": [
         "family",
         "staff",
@@ -4625,7 +4628,7 @@
       "id": "family.child-menu-age",
       "language": "ru",
       "question": "Взрослый может заказать из детского меню?",
-      "reply": "Для детей есть возможность порисовать, игрушки, игровой уголок и детское меню. Это лучше уточнить у сотрудника ресторана. В демоверсии перевести звонок не получится. В меню Овощной суп, Запечённый лосось и Ризотто с грибами.",
+      "reply": "Для детей есть возможность порисовать, игрушки, игровой уголок и детское меню. Это лучше уточнить у сотрудника ресторана. Перевести звонок не получится. В меню Овощной суп, Запечённый лосось и Ризотто с грибами.",
       "topics": [
         "family",
         "staff",
@@ -4746,7 +4749,7 @@
       "id": "family.child-portion",
       "language": "ru",
       "question": "Можно ребёнку заказать порцию поменьше?",
-      "reply": "У меня нет подтверждённой информации о способе приготовления и возможности изменить блюдо. Уточните это у сотрудника ресторана. Это лучше уточнить у сотрудника ресторана. В демоверсии перевести звонок не получится.",
+      "reply": "У меня нет подтверждённой информации о способе приготовления и возможности изменить блюдо. Уточните это у сотрудника ресторана. Это лучше уточнить у сотрудника ресторана. Перевести звонок не получится.",
       "topics": [
         "food_modifications",
         "staff"
@@ -6164,7 +6167,7 @@
       "id": "location.address",
       "language": "et",
       "question": "Mis on teie aadress?",
-      "reply": "Restoranidemol ei ole päris aadressi ega külastuskohta.",
+      "reply": "Mul ei ole restorani aadressi kohta kinnitatud infot.",
       "topics": [
         "location"
       ],
@@ -6177,7 +6180,7 @@
       "id": "location.address",
       "language": "en",
       "question": "What is your address?",
-      "reply": "The restaurant demo has no real address or visitor location.",
+      "reply": "I don't have verified information about the restaurant's address.",
       "topics": [
         "location"
       ],
@@ -6190,7 +6193,7 @@
       "id": "location.address",
       "language": "ru",
       "question": "Какой у вас адрес?",
-      "reply": "Это деморесторан, поэтому настоящего адреса у него нет.",
+      "reply": "Адреса ресторана у меня пока нет.",
       "topics": [
         "location"
       ],
@@ -6229,7 +6232,7 @@
       "id": "location.bike",
       "language": "ru",
       "question": "Есть стойка, где можно пристегнуть велосипед?",
-      "reply": "Это деморесторан, поэтому настоящего адреса у него нет.",
+      "reply": "Адреса ресторана у меня пока нет.",
       "topics": [
         "location"
       ],
@@ -6635,7 +6638,7 @@
       "id": "location.taxi",
       "language": "et",
       "question": "Kus takso saab peatuda?",
-      "reply": "Restoranidemol ei ole päris aadressi ega külastuskohta.",
+      "reply": "Mul ei ole restorani aadressi kohta kinnitatud infot.",
       "topics": [
         "location"
       ],
@@ -6661,7 +6664,7 @@
       "id": "location.taxi",
       "language": "ru",
       "question": "Где такси может нас высадить?",
-      "reply": "Это деморесторан, поэтому настоящего адреса у него нет.",
+      "reply": "Адреса ресторана у меня пока нет.",
       "topics": [
         "location"
       ],
@@ -7103,7 +7106,7 @@
       "id": "menu.organic",
       "language": "et",
       "question": "Kas koostisosad on mahedad?",
-      "reply": "Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral räägi enne tellimist otse restoraniga.",
+      "reply": "Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
       "topics": [
         "allergens"
       ],
@@ -7311,7 +7314,7 @@
       "id": "menu.preorder",
       "language": "en",
       "question": "Can we pre-order food?",
-      "reply": "This demo can help with a table booking, but I can't place a food order. Please contact the restaurant team.",
+      "reply": "I can help with a table booking, but I can't place a food order. Please contact the restaurant team.",
       "topics": [
         "food_order_help"
       ],
@@ -7324,9 +7327,9 @@
       "id": "menu.preorder",
       "language": "ru",
       "question": "Можно заказать еду заранее?",
-      "reply": "Это лучше уточнить у сотрудника ресторана. В демоверсии перевести звонок не получится.",
+      "reply": "Я не принимаю заказы еды, навынос или с доставкой. Могу помочь с бронированием столика.",
       "topics": [
-        "staff"
+        "food_orders"
       ],
       "flags": [],
       "proposed_action": null,
@@ -7454,10 +7457,9 @@
       "id": "menu.set",
       "language": "et",
       "question": "Kas saab kindla hinnaga mitmekäigulise menüü?",
-      "reply": "Mul pole praegu menüühindu. Täpse hinna ütleb restorani töötaja. Menüüs on Köögiviljasupp, Ahjulõhe ning Seenerisoto.",
+      "reply": "Mul pole praegu menüühindu. Täpse hinna ütleb restorani töötaja.",
       "topics": [
-        "price",
-        "menu"
+        "price"
       ],
       "flags": [],
       "proposed_action": null,
@@ -7468,9 +7470,8 @@
       "id": "menu.set",
       "language": "en",
       "question": "Do you offer a set menu at a fixed price?",
-      "reply": "The menu includes Vegetable soup, Baked salmon and Mushroom risotto. I don't have the menu prices right now. The restaurant team can help with those.",
+      "reply": "I don't have the menu prices right now. The restaurant team can help with those.",
       "topics": [
-        "menu",
         "price"
       ],
       "flags": [],
@@ -7482,9 +7483,8 @@
       "id": "menu.set",
       "language": "ru",
       "question": "Есть меню из нескольких блюд по фиксированной цене?",
-      "reply": "В меню Овощной суп, Запечённый лосось и Ризотто с грибами. Цен у меня пока нет. Их подскажет сотрудник ресторана.",
+      "reply": "Цен у меня пока нет. Их подскажет сотрудник ресторана.",
       "topics": [
-        "menu",
         "price"
       ],
       "flags": [],
@@ -7886,40 +7886,40 @@
       "id": "payment.card-data",
       "language": "et",
       "question": "Kas annan sulle pangakaardi numbri?",
-      "reply": "Palun ärge öelge pangakaardi numbrit ega turvakoodi. Selles demos ma makseid vastu ei võta.",
+      "reply": "Palun ärge öelge pangakaardi numbrit ega turvakoodi. Ma ei võta makseid vastu.",
       "topics": [
         "payment_secret"
       ],
       "flags": [],
       "proposed_action": null,
       "inquiry_fields": [],
-      "matches_reviewed_text": true
+      "matches_reviewed_text": false
     },
     {
       "id": "payment.card-data",
       "language": "en",
       "question": "Should I give you my card number?",
-      "reply": "Please don't share your card number or security code. I don't take payments in this demo.",
+      "reply": "Please don't share your card number or security code. I don't take payments.",
       "topics": [
         "payment_secret"
       ],
       "flags": [],
       "proposed_action": null,
       "inquiry_fields": [],
-      "matches_reviewed_text": true
+      "matches_reviewed_text": false
     },
     {
       "id": "payment.card-data",
       "language": "ru",
       "question": "Мне назвать номер банковской карты?",
-      "reply": "Не называйте номер карты или защитный код. В демоверсии я не принимаю платежи.",
+      "reply": "Не называйте номер карты или защитный код. Я не принимаю платежи.",
       "topics": [
         "payment_secret"
       ],
       "flags": [],
       "proposed_action": null,
       "inquiry_fields": [],
-      "matches_reviewed_text": true
+      "matches_reviewed_text": false
     },
     {
       "id": "payment.cash",
@@ -8153,9 +8153,8 @@
       "id": "payment.menu-prices",
       "language": "et",
       "question": "Kui palju teie menüü road maksavad?",
-      "reply": "Menüüs on Köögiviljasupp, Ahjulõhe ning Seenerisoto. Mul pole praegu menüühindu. Täpse hinna ütleb restorani töötaja.",
+      "reply": "Mul pole praegu menüühindu. Täpse hinna ütleb restorani töötaja.",
       "topics": [
-        "menu",
         "price"
       ],
       "flags": [],
@@ -8167,10 +8166,9 @@
       "id": "payment.menu-prices",
       "language": "en",
       "question": "How much do your dishes cost?",
-      "reply": "I don't have the menu prices right now. The restaurant team can help with those. The menu includes Vegetable soup, Baked salmon and Mushroom risotto.",
+      "reply": "I don't have the menu prices right now. The restaurant team can help with those.",
       "topics": [
-        "price",
-        "menu"
+        "price"
       ],
       "flags": [],
       "proposed_action": null,
@@ -8216,7 +8214,7 @@
       "id": "payment.minimum",
       "language": "ru",
       "question": "Есть минимальная сумма заказа на стол?",
-      "reply": "Это лучше уточнить у сотрудника ресторана. В демоверсии перевести звонок не получится.",
+      "reply": "Это лучше уточнить у сотрудника ресторана. Перевести звонок не получится.",
       "topics": [
         "staff"
       ],
@@ -8385,11 +8383,11 @@
       "id": "payment.service-charge",
       "language": "et",
       "question": "Kas lisandub teenindustasu?",
-      "reply": "Seda ma praegu täpselt ei tea. Palun täpsustage küsimust või küsige restorani töötajalt.",
-      "topics": [],
-      "flags": [
-        "generic_unknown"
+      "reply": "Mul ei ole kinnitatud infot hindade maksude ja lisatasude kohta. Palun täpsustage seda restorani töötajaga.",
+      "topics": [
+        "payment_tax"
       ],
+      "flags": [],
       "proposed_action": null,
       "inquiry_fields": [],
       "matches_reviewed_text": false
@@ -8398,11 +8396,11 @@
       "id": "payment.service-charge",
       "language": "en",
       "question": "Is there a service charge?",
-      "reply": "I don't have verified information about that. Could you clarify your question, or check with the restaurant team?",
-      "topics": [],
-      "flags": [
-        "generic_unknown"
+      "reply": "I don't have confirmed information about taxes and additional fees in prices. Please check with the restaurant team.",
+      "topics": [
+        "payment_tax"
       ],
+      "flags": [],
       "proposed_action": null,
       "inquiry_fields": [],
       "matches_reviewed_text": false
@@ -8502,10 +8500,9 @@
       "id": "payment.vat",
       "language": "et",
       "question": "Kas hinnad sisaldavad käibemaksu?",
-      "reply": "Mul pole praegu menüühindu. Täpse hinna ütleb restorani töötaja. Köögiviljasupp: seller; Ahjulõhe: kala, piim; Seenerisoto: piim. Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral räägi enne tellimist otse restoraniga.",
+      "reply": "Mul ei ole kinnitatud infot hindade maksude ja lisatasude kohta. Palun täpsustage seda restorani töötajaga.",
       "topics": [
-        "price",
-        "allergens"
+        "payment_tax"
       ],
       "flags": [],
       "proposed_action": null,
@@ -8516,11 +8513,11 @@
       "id": "payment.vat",
       "language": "en",
       "question": "Do your prices include VAT?",
-      "reply": "I don't have verified information about that. Could you clarify your question, or check with the restaurant team?",
-      "topics": [],
-      "flags": [
-        "generic_unknown"
+      "reply": "I don't have confirmed information about taxes and additional fees in prices. Please check with the restaurant team.",
+      "topics": [
+        "payment_tax"
       ],
+      "flags": [],
       "proposed_action": null,
       "inquiry_fields": [],
       "matches_reviewed_text": false
@@ -8529,9 +8526,9 @@
       "id": "payment.vat",
       "language": "ru",
       "question": "Цены включают НДС?",
-      "reply": "Цен у меня пока нет. Их подскажет сотрудник ресторана.",
+      "reply": "У меня нет подтверждённой информации о налогах и дополнительных сборах в ценах. Уточните это у сотрудника ресторана.",
       "topics": [
-        "price"
+        "payment_tax"
       ],
       "flags": [],
       "proposed_action": null,
@@ -9468,11 +9465,11 @@
       "id": "seating.waitlist",
       "language": "et",
       "question": "Kas saate meid ootenimekirja panna?",
-      "reply": "Seda ma praegu täpselt ei tea. Palun täpsustage küsimust või küsige restorani töötajalt.",
-      "topics": [],
-      "flags": [
-        "generic_unknown"
+      "reply": "Ma ei paku ootenimekirja ega tagasihelistamist. Võite valida teise kuupäeva või kellaaja tegeliku inimeste arvuga; saadavust tuleb eraldi kontrollida.",
+      "topics": [
+        "waitlist"
       ],
+      "flags": [],
       "proposed_action": null,
       "inquiry_fields": [],
       "matches_reviewed_text": false
@@ -9481,11 +9478,11 @@
       "id": "seating.waitlist",
       "language": "en",
       "question": "Can you put us on a waiting list?",
-      "reply": "I don't have verified information about that. Could you clarify your question, or check with the restaurant team?",
-      "topics": [],
-      "flags": [
-        "generic_unknown"
+      "reply": "There is no waitlist or callback. You can choose another date or time with your actual diner count; availability needs a separate check.",
+      "topics": [
+        "waitlist"
       ],
+      "flags": [],
       "proposed_action": null,
       "inquiry_fields": [],
       "matches_reviewed_text": false
@@ -9494,11 +9491,11 @@
       "id": "seating.waitlist",
       "language": "ru",
       "question": "Можете добавить нас в лист ожидания?",
-      "reply": "Пока не знаю. Можете уточнить вопрос или спросить сотрудника ресторана.",
-      "topics": [],
-      "flags": [
-        "generic_unknown"
+      "reply": "Здесь нет листа ожидания и обратного звонка. Вы можете выбрать другую дату или время с фактическим числом гостей; наличие мест нужно проверить отдельно.",
+      "topics": [
+        "waitlist"
       ],
+      "flags": [],
       "proposed_action": null,
       "inquiry_fields": [],
       "matches_reviewed_text": false
@@ -9631,7 +9628,7 @@
       "id": "service.callback",
       "language": "en",
       "question": "Can you arrange a callback?",
-      "reply": "Please ask a member of the restaurant team about that. I can't transfer calls in this demo.",
+      "reply": "Please ask a member of the restaurant team about that. I can't transfer calls.",
       "topics": [
         "staff"
       ],
@@ -9670,7 +9667,7 @@
       "id": "service.collection",
       "language": "en",
       "question": "Where do I collect a pre-order?",
-      "reply": "Please ask a member of the restaurant team about that. I can't transfer calls in this demo.",
+      "reply": "Please ask a member of the restaurant team about that. I can't transfer calls.",
       "topics": [
         "staff"
       ],
@@ -9683,7 +9680,7 @@
       "id": "service.collection",
       "language": "ru",
       "question": "Где забрать предварительный заказ?",
-      "reply": "Это деморесторан, поэтому настоящего адреса у него нет. Это лучше уточнить у сотрудника ресторана. В демоверсии перевести звонок не получится.",
+      "reply": "Адреса ресторана у меня пока нет. Это лучше уточнить у сотрудника ресторана. Перевести звонок не получится.",
       "topics": [
         "location",
         "staff"
@@ -9801,7 +9798,7 @@
       "id": "service.delivery",
       "language": "ru",
       "question": "Вы доставляете еду?",
-      "reply": "Это лучше уточнить у сотрудника ресторана. В демоверсии перевести звонок не получится.",
+      "reply": "Это лучше уточнить у сотрудника ресторана. Перевести звонок не получится.",
       "topics": [
         "staff"
       ],
@@ -9892,7 +9889,7 @@
       "id": "service.delivery-time",
       "language": "et",
       "question": "Kui kaua kulleriga tellimus võtab?",
-      "reply": "Seda tuleks küsida restorani töötajalt. Selles demos ei saa ma kõnet edasi suunata.",
+      "reply": "Seda palun küsige restorani töötajalt. Ma ei saa kõnet edasi suunata.",
       "topics": [
         "staff"
       ],
@@ -9931,40 +9928,40 @@
       "id": "service.food-order",
       "language": "et",
       "question": "Tellin ühe supi ja ühe mahla.",
-      "reply": "Selles demos saan aidata lauabroneeringuga, kuid toidutellimust ma vastu ei võta. Palun pöörduge restorani töötaja poole.",
+      "reply": "Saan aidata lauabroneeringuga, kuid toidutellimust ma vastu ei võta. Palun pöörduge restorani töötaja poole.",
       "topics": [
         "food_order_help"
       ],
       "flags": [],
       "proposed_action": null,
       "inquiry_fields": [],
-      "matches_reviewed_text": true
+      "matches_reviewed_text": false
     },
     {
       "id": "service.food-order",
       "language": "en",
       "question": "I'd like to order a soup and a juice.",
-      "reply": "This demo can help with a table booking, but I can't place a food order. Please contact the restaurant team.",
+      "reply": "I can help with a table booking, but I can't place a food order. Please contact the restaurant team.",
       "topics": [
         "food_order_help"
       ],
       "flags": [],
       "proposed_action": null,
       "inquiry_fields": [],
-      "matches_reviewed_text": true
+      "matches_reviewed_text": false
     },
     {
       "id": "service.food-order",
       "language": "ru",
       "question": "Хочу заказать суп и сок.",
-      "reply": "В демоверсии я могу помочь с бронью столика, но не принимаю заказы еды. Обратитесь к сотруднику ресторана.",
+      "reply": "Я могу помочь с бронью столика, но не принимаю заказы еды. Обратитесь к сотруднику ресторана.",
       "topics": [
         "food_order_help"
       ],
       "flags": [],
       "proposed_action": null,
       "inquiry_fields": [],
-      "matches_reviewed_text": true
+      "matches_reviewed_text": false
     },
     {
       "id": "service.food-wait",
@@ -10009,7 +10006,7 @@
       "id": "service.human",
       "language": "et",
       "question": "Kas saate mind inimesega ühendada?",
-      "reply": "Seda tuleks küsida restorani töötajalt. Selles demos ei saa ma kõnet edasi suunata.",
+      "reply": "Seda palun küsige restorani töötajalt. Ma ei saa kõnet edasi suunata.",
       "topics": [
         "staff"
       ],
@@ -10165,7 +10162,7 @@
       "id": "service.table-service",
       "language": "et",
       "question": "Kas tellimuse võetakse lauas või letis?",
-      "reply": "Seda tuleks küsida restorani töötajalt. Selles demos ei saa ma kõnet edasi suunata.",
+      "reply": "Seda palun küsige restorani töötajalt. Ma ei saa kõnet edasi suunata.",
       "topics": [
         "staff"
       ],
@@ -10178,7 +10175,7 @@
       "id": "service.table-service",
       "language": "en",
       "question": "Do we order at the table or at the counter?",
-      "reply": "Please ask a member of the restaurant team about that. I can't transfer calls in this demo.",
+      "reply": "Please ask a member of the restaurant team about that. I can't transfer calls.",
       "topics": [
         "staff"
       ],
@@ -10191,7 +10188,7 @@
       "id": "service.table-service",
       "language": "ru",
       "question": "Заказ принимают за столом или у стойки?",
-      "reply": "Это лучше уточнить у сотрудника ресторана. В демоверсии перевести звонок не получится.",
+      "reply": "Это лучше уточнить у сотрудника ресторана. Перевести звонок не получится.",
       "topics": [
         "staff"
       ],
@@ -10217,9 +10214,9 @@
       "id": "service.takeaway",
       "language": "en",
       "question": "Can I order food to take away?",
-      "reply": "This demo can help with a table booking, but I can't place a food order. Please contact the restaurant team.",
+      "reply": "I don't take food, takeaway or delivery orders. I can help with a table reservation.",
       "topics": [
-        "food_order_help"
+        "food_orders"
       ],
       "flags": [],
       "proposed_action": null,
@@ -10230,9 +10227,9 @@
       "id": "service.takeaway",
       "language": "ru",
       "question": "Можно заказать еду с собой?",
-      "reply": "Это лучше уточнить у сотрудника ресторана. В демоверсии перевести звонок не получится.",
+      "reply": "Я не принимаю заказы еды, навынос или с доставкой. Могу помочь с бронированием столика.",
       "topics": [
-        "staff"
+        "food_orders"
       ],
       "flags": [],
       "proposed_action": null,

@@ -172,8 +172,9 @@ operator deployment. A documentation-only `[skip cd]` push leaves the existing
 web release eligible for synchronization; unmerged branches never deploy.
 
 After health, image, configuration and volume checks pass, the controller asks
-the web process for a fingerprint of its common source files and effective
-speech/model/restaurant settings. The worker compares its own fingerprint and
+the running web process for a fingerprint of its common source files, effective
+speech/model settings and validated restaurant data loaded at startup. The worker
+compares its current validated restaurant data and its own fingerprint, then
 atomically records `/data/telephone-release.json` in the existing shared volume.
 The public `/api/status` reports this under `telephone.release`, and the site's
 footer shows the result in Estonian, English or Russian:
@@ -187,7 +188,9 @@ The receipt contains only a revision, fingerprint and verification time. It
 contains no credentials, phone numbers, recordings, transcripts or bookings.
 It describes the last private controller check, not continuous health or a
 verified carrier call. The timer refreshes it on every successful check; the
-browser refreshes the display once a minute while visible. Missing server
+browser polls once a minute while visible, independently expires stale claims
+every second and rechecks freshness immediately on visibility restoration. Public
+polls have a ten-second abort deadline. Missing server
 activation therefore remains visible instead of silently implying deployment.
 
 Shared conversation, languages, dates, confirmation logic, restaurant data and
@@ -227,6 +230,27 @@ source/behavior fingerprints and imports the native worker/bridge without
 network access or live credentials.
 
 ## Synthetic proofs
+
+For the current restaurant mode, use the canonical restaurant runner only after
+verifying the worker's deployed source and an idle room count, while holding the
+shared `/home/arle/.local/share/voicebot-release-sync/sync.lock` deployment lock:
+
+```bash
+python deploy/telephony/restaurant_probe.py --source-container livekit-worker-1 --language et
+python deploy/telephony/restaurant_probe.py --source-container livekit-worker-1 --language en
+python deploy/telephony/restaurant_probe.py --source-container livekit-worker-1 --language ru
+```
+
+This runner uses fictional, call-owned restaurant reservations. It independently
+checks zero writes before later explicit consent, exact date/time/party, one
+canonical reservation and its cancellation. Cleanup cancels only strongly proven
+owned reservations, never deletes ledger history, and deletes only its UUID room.
+Caller audio and credentials stay in memory. The conversation has a 240-second
+budget, caller synthesis a 40-second process deadline, cleanup steps independent
+4-second deadlines, and the CLI an overall 300-second budget. Cleanup failure
+prevents a PASS. These RTC proofs do not establish physical microphone, human
+hearing, carrier/PSTN operation or production readiness. Older booking probes
+below are historical hotel/spa context, not restaurant acceptance.
 
 Install pinned media requirements in isolated Python 3.12. These tests use real
 providers/private demo writes and may incur provider usage. Output is metrics

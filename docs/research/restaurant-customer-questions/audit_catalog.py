@@ -29,10 +29,10 @@ RELATED = {
     "events": {"groups", "staff", "price"},
     "hours-special": {"hours", "kitchen", "price", "event_details", "last_order_help"},
     "location": {"location", "parking", "staff", "price", "contact_help"},
-    "menu": {"menu", "allergens", "kitchen", "price", "staff", "food_modifications", "food_order_help", "food_stock"},
-    "payment": {"price", "staff", "cancellation_help", "payment_help", "payment_secret", "event_details"},
-    "privacy": {"privacy_help"}, "seating": {"terrace", "duration", "groups", "late", "accessibility", "family_details", "seating_help"},
-    "service": {"staff", "extras", "allergens", "complaints_help", "emergency_help", "delivery_help", "food_order_help"}, "emergency": {"emergency_help"},
+    "menu": {"menu", "allergens", "kitchen", "price", "staff", "food_modifications", "food_order_help", "food_orders", "food_stock"},
+    "payment": {"price", "staff", "cancellation_help", "payment_help", "payment_secret", "payment_tax", "event_details"},
+    "privacy": {"privacy_help"}, "seating": {"terrace", "duration", "groups", "late", "accessibility", "family_details", "seating_help", "waitlist"},
+    "service": {"staff", "extras", "allergens", "complaints_help", "emergency_help", "delivery_help", "food_order_help", "food_orders", "special_requests"}, "emergency": {"emergency_help"},
 }
 
 

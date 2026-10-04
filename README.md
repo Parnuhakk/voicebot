@@ -34,6 +34,12 @@ provider configuration, fallback and streaming limits.
 is retained as an explicit rollback with `VOICEBOT_BUSINESS_TYPE=hotel_spa`.
 Historical hotel/spa research and evidence describe that earlier product scope.
 
+Recognized read-only questions keep the reservation date and actual diner count,
+but mixed corrections and unparsed details cannot silently reuse old preferences.
+The demo has no waitlist or callback; try another date or time without reducing
+your party size. Menu allergen declarations remain fictional information, not
+allergy-safety guarantees.
+
 ## Layout
 
 ```

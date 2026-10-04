@@ -38,6 +38,7 @@ import time
 from contextlib import contextmanager
 from datetime import date as calendar_date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from typing import Any
 
 import httpx
 
@@ -249,7 +250,7 @@ class _Journal:
         finally:
             conn.close()
 
-    def get(self, key: str) -> dict | None:
+    def get(self, key: str) -> dict[str, Any] | None:
         with self._connect() as conn:
             row = conn.execute(
                 "SELECT status, marker, booking_id, result, updated_at"
@@ -292,7 +293,7 @@ class _Journal:
         marker: str,
         status: str,
         booking_id: str | None,
-        result: dict | None,
+        result: dict[str, Any] | None,
     ) -> None:
         now = time.time()
         blob = json.dumps(result) if result is not None else None
@@ -327,24 +328,24 @@ def _acquire_lock(lock_path: str, timeout: float):
     os.makedirs(parent, exist_ok=True)
     handle = open(lock_path, "a+b")
     if os.name == "nt":
-        import msvcrt
-
         # Windows locks a byte range rather than the entire file. Every writer
         # uses byte zero; closing the returned handle releases that lock.
         handle.seek(0, os.SEEK_END)
         if handle.tell() == 0:
             handle.write(b"\0")
             handle.flush()
-    else:
-        import fcntl
     deadline = time.monotonic() + timeout
     try:
         while True:
             try:
                 if os.name == "nt":
+                    import msvcrt
+
                     handle.seek(0)
                     msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
                 else:
+                    import fcntl
+
                     fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 return handle
             except OSError as exc:
@@ -367,7 +368,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
         api_key: str,
         auth_scheme: str = "Bearer ",
         api_prefix: str = "/index.php/api/v1",
-        transport: httpx.BaseTransport | None = None,
+        transport: httpx.AsyncBaseTransport | None = None,
         state_db: str | None = None,
         allow_writes: bool = False,
         lock_timeout: float = 10.0,
@@ -375,7 +376,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
         self._base = base_url.rstrip("/") + api_prefix
         self._key = api_key
         self._holds = HoldLedger()
-        self._slots: dict[str, dict] = {}  # slot_id -> slot snapshot
+        self._slots: dict[str, dict[str, Any]] = {}  # slot_id -> slot snapshot
         self._http = httpx.AsyncClient(
             headers={"Authorization": f"{auth_scheme}{api_key}"},
             timeout=30.0,
@@ -390,7 +391,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
         self._lock_path = self._journal._path + ".lock" if self._journal else None
         self._lock_timeout = lock_timeout
         self._write_lock = asyncio.Lock()  # in-process sibling of the file lock
-        self._catalog_cache: dict | None = None
+        self._catalog_cache: dict[str, Any] | None = None
         self._catalog_at = 0.0
         # Instance-gated: credentials alone never advertise booking tools.
         self.operational = bool(allow_writes)
@@ -425,7 +426,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
             raise BookingReadError()
         return rows
 
-    async def get_operator_catalogue(self):
+    async def get_operator_catalogue(self) -> dict[str, Any]:
         """Fixed, bounded read fields; omit prices and all customer metadata."""
         services_raw = await self._operator_records(
             "/services",
@@ -581,7 +582,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
         }
 
     # -- catalogue ----------------------------------------------------
-    async def _get(self, suffix: str, params: dict | None = None):
+    async def _get(self, suffix: str, params: dict[str, Any] | None = None):
         try:
             return await self._http.get(f"{self._base}{suffix}", params=params)
         except (httpx.HTTPError, OSError, asyncio.TimeoutError) as exc:
@@ -595,7 +596,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
         ]
         return f"vb-{digest}"
 
-    async def _catalogue(self) -> dict:
+    async def _catalogue(self) -> dict[str, Any]:
         now = time.monotonic()
         if self._catalog_cache is not None and now - self._catalog_at < 300:
             return self._catalog_cache
@@ -619,7 +620,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
         self._catalog_at = now
         return catalog
 
-    async def get_slot_catalogue(self) -> dict:
+    async def get_slot_catalogue(self) -> dict[str, Any]:
         """Read-only service/provider catalogue (model never invents IDs)."""
         catalog = await self._catalogue()
         services = []
@@ -661,7 +662,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
             providers.append(provider)
         return {"services": services, "providers": providers}
 
-    def _match_name(self, records: list, value: str, keys: tuple) -> str | None:
+    def _match_name(self, records: list[Any], value: str, keys: tuple[Any, ...]) -> str | None:
         wanted = str(value).strip().lower()
         for record in records:
             if not isinstance(record, dict):
@@ -733,7 +734,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
         return service_id, provider_id
 
     @staticmethod
-    def _provider_compatible(catalog: dict, provider_id: str, service_id: str) -> bool:
+    def _provider_compatible(catalog: dict[str, Any], provider_id: str, service_id: str) -> bool:
         for record in catalog["providers"]:
             if not isinstance(record, dict):
                 continue
@@ -754,7 +755,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
     # -- slots --------------------------------------------------------
     async def search_slots(
         self, service: str, date: str, provider: str | None = None
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         from datetime import datetime
 
         if not isinstance(service, str) or not service.strip():
@@ -764,7 +765,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
         except (ValueError, TypeError) as exc:
             raise ProviderError(f"easy.search_slots: bad date: {exc}") from exc
         service_id, provider_id = await self._resolve_ids(service, provider)
-        params: dict = {"serviceId": service_id, "date": date}
+        params: dict[str, Any] = {"serviceId": service_id, "date": date}
         if provider_id is not None:
             params["providerId"] = provider_id
         response = await self._get("/availabilities", params=params)
@@ -796,7 +797,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
         except (ValueError, TypeError, AttributeError) as exc:
             raise ProviderError(f"easy.search_slots: bad payload: {exc}") from exc
 
-    async def _ensure_customer(self, guest: dict) -> int:
+    async def _ensure_customer(self, guest: dict[str, Any]) -> int:
         """Use explicit ID or this adapter's verified exact-guest creation."""
         if guest.get("customerId") is not None:
             return _required_int(guest.get("customerId"), "customerId")
@@ -854,7 +855,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
     async def _availability_times(
         self, service_id: str, provider_id: str | None, date: str
     ) -> list[str]:
-        params: dict = {"serviceId": service_id, "date": date}
+        params: dict[str, Any] = {"serviceId": service_id, "date": date}
         if provider_id is not None:
             params["providerId"] = provider_id
         response = await self._get("/availabilities", params=params)
@@ -869,7 +870,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
         except (ValueError, TypeError, AttributeError) as exc:
             raise ProviderError(f"easy.confirm.recheck: bad payload: {exc}") from exc
 
-    async def _reconcile(self, marker: str) -> dict | None:
+    async def _reconcile(self, marker: str) -> dict[str, Any] | None:
         """Match exactly one remote record by bounded marker token.
 
         Returns None (stay unknown) on read errors, malformed payloads,
@@ -903,7 +904,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
         return matches[0]
 
     @staticmethod
-    def _filter_guest(guest: dict) -> dict:
+    def _filter_guest(guest: dict[str, Any]) -> dict[str, Any]:
         """Strict slot guest: customerId, or first+last+email+phone.
 
         A display `name` maps into first/last on a whitespace split. Only
@@ -940,7 +941,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
         return clean
 
     @staticmethod
-    def _snapshot_slot(hold) -> dict:
+    def _snapshot_slot(hold) -> dict[str, Any]:
         """Validate the held slot snapshot; corrupt keys fail closed."""
         slot = hold.payload.get("slot") if isinstance(hold.payload, dict) else None
         if not isinstance(slot, dict):
@@ -972,7 +973,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
             "start": start,
         }
 
-    def _success_result(self, record: dict) -> dict:
+    def _success_result(self, record: dict[str, Any]) -> dict[str, Any]:
         """Commit a booking only on a positive integer id."""
         booking_id = record.get("id")
         if not _is_int_like(booking_id):
@@ -996,12 +997,18 @@ class EasyAppointmentsAdapter(SlotAdapter):
             payload={"slot": dict(slot)},
         )
 
-    async def confirm(self, hold_id: str, guest: dict, idempotency_key: str) -> dict:
+    async def confirm(
+        self, hold_id: str, guest: dict[str, Any], idempotency_key: str
+    ) -> dict[str, Any]:
         _require_key(idempotency_key, "easy.confirm")
         if not self.operational:
             raise ProviderError("easy.confirm: writes not enabled")
+        journal_store = self._write_journal()
+        lock_path = self._lock_path
+        if lock_path is None:
+            raise ProviderError("easy.confirm: writes not enabled")
         marker = self._marker(idempotency_key)
-        journal = self._journal.get(idempotency_key)
+        journal = journal_store.get(idempotency_key)
         if journal is not None and journal["status"] == "success":
             return journal["result"] or {"ok": True}
         if journal is not None and journal["status"] == "failed":
@@ -1019,7 +1026,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
         async with self._write_lock:
             try:
                 lock = await asyncio.to_thread(
-                    _acquire_lock, self._lock_path, self._lock_timeout
+                    _acquire_lock, lock_path, self._lock_timeout
                 )
             except (TimeoutError, OSError):
                 return {"ok": False, "error": "confirm_in_progress"}
@@ -1033,7 +1040,15 @@ class EasyAppointmentsAdapter(SlotAdapter):
                 except Exception:
                     pass
 
-    async def _settle_pending(self, key: str, row: dict, hold_id: str) -> dict:
+    def _write_journal(self) -> _Journal:
+        journal = self._journal
+        if journal is None:
+            raise ProviderError("easy: writes not enabled")
+        return journal
+
+    async def _settle_pending(
+        self, key: str, row: dict[str, Any], hold_id: str
+    ) -> dict[str, Any]:
         # Crash/timeout window: NEVER blindly POST again. Only a uniquely
         # matched remote record may resolve the write.
         if row["status"] == "pending_customer":
@@ -1044,7 +1059,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
         if matched is None:
             return {"ok": False, "error": "write_outcome_unknown"}
         result = self._success_result(matched)
-        self._journal.put_result(
+        self._write_journal().put_result(
             key, row["marker"], "success", result["booking"]["id"], result
         )
         self._holds.record(key, result)
@@ -1052,13 +1067,13 @@ class EasyAppointmentsAdapter(SlotAdapter):
             self._holds.release(hold_id)
         return result
 
-    def _fail(self, key: str, marker: str, error: str) -> dict:
+    def _fail(self, key: str, marker: str, error: str) -> dict[str, Any]:
         result = {"ok": False, "error": _clean_error(error)}
-        self._journal.put_result(key, marker, "failed", None, result)
+        self._write_journal().put_result(key, marker, "failed", None, result)
         return self._holds.record(key, result)
 
     @staticmethod
-    def _failed_confirmation(row: dict) -> dict:
+    def _failed_confirmation(row: dict[str, Any]) -> dict[str, Any]:
         # Older journals contain private provider details, not public codes.
         result = row.get("result")
         error = result.get("error") if isinstance(result, dict) else None
@@ -1072,12 +1087,13 @@ class EasyAppointmentsAdapter(SlotAdapter):
         key: str,
         marker: str,
         hold_id: str,
-        snapshot: dict,
-        clean_guest: dict,
-    ) -> dict:
+        snapshot: dict[str, Any],
+        clean_guest: dict[str, Any],
+    ) -> dict[str, Any]:
         # Re-read the journal UNDER the lock: a same-key concurrent waiter
         # must return replay/reconcile — never overwrite success with stale.
-        journal = self._journal.get(key)
+        journal_store = self._write_journal()
+        journal = journal_store.get(key)
         if journal is not None and journal["status"] == "success":
             return journal["result"] or {"ok": True}
         if journal is not None and journal["status"] == "failed":
@@ -1093,14 +1109,15 @@ class EasyAppointmentsAdapter(SlotAdapter):
         # Global appointment block: while ANY appointment write is unresolved,
         # a new key must not POST (timeout-while-processing would overlap).
         # Other pendings reconcile read-only here; unresolved blocks closed.
-        for other_key, other_marker in self._journal.pending_appointments(key):
-            if self._journal.get(other_key)["status"] == "pending_customer":
+        for other_key, other_marker in journal_store.pending_appointments(key):
+            other = journal_store.get(other_key)
+            if other is None or other["status"] == "pending_customer":
                 return {"ok": False, "error": "write_outcome_unknown"}
             matched = await self._reconcile(other_marker)
             if matched is None:
                 return {"ok": False, "error": "write_outcome_unknown"}
             result = self._success_result(matched)
-            self._journal.put_result(
+            journal_store.put_result(
                 other_key, other_marker, "success", result["booking"]["id"], result
             )
             self._holds.record(other_key, result)
@@ -1136,7 +1153,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
                 if clean_guest.get("customerId") is None:
                     # Persist BEFORE creating a customer: task cancellation,
                     # process death and fresh-key retries must not duplicate it.
-                    self._journal.put_result(
+                    journal_store.put_result(
                         key, marker, "pending_customer", None, None
                     )
                 try:
@@ -1146,7 +1163,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
                 except ProviderError:
                     return self._fail(key, marker, "confirm_failed")
                 self._holds.memo(key, "customerId", customer_id)
-                self._journal.put_result(
+                journal_store.put_result(
                     key, marker, "customer_ready", None, {"customerId": customer_id}
                 )
             notes = f"[voicebot {marker}]"
@@ -1164,7 +1181,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
             }
             body = {k: v for k, v in body.items() if v is not None}
             # Durable appointment pending sits ADJACENT to the single POST.
-            self._journal.put_pending(key, marker)
+            journal_store.put_pending(key, marker)
             try:
                 response = await self._http.post(
                     f"{self._base}/appointments", json=body
@@ -1189,7 +1206,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
             except (ValueError, ProviderError):
                 # Malformed 201: commit ambiguous — stay pending.
                 return {"ok": False, "error": "write_outcome_unknown"}
-            self._journal.put_result(
+            journal_store.put_result(
                 key, marker, "success", result["booking"]["id"], result
             )
             self._holds.release(hold_id)  # consumed: no reconfirm with new key
@@ -1200,15 +1217,19 @@ class EasyAppointmentsAdapter(SlotAdapter):
             if not recorded:
                 self._holds.release_pending(key)
 
-    async def cancel(self, booking_id: str, idempotency_key: str) -> dict:
+    async def cancel(self, booking_id: str, idempotency_key: str) -> dict[str, Any]:
         _require_key(idempotency_key, "easy.cancel")
         if not self.operational:
+            raise ProviderError("easy.cancel: writes not enabled")
+        journal_store = self._write_journal()
+        lock_path = self._lock_path
+        if lock_path is None:
             raise ProviderError("easy.cancel: writes not enabled")
         namespaced = f"cancel:{idempotency_key}"
         replayed = self._holds.check_replay(namespaced)
         if replayed is not None:
             return replayed
-        journal = self._journal.get(namespaced)
+        journal = journal_store.get(namespaced)
         if journal is not None and journal["status"] in {"success", "cancel_uncertain"}:
             return journal["result"] or {"ok": True}
         if journal is not None and journal["status"] == "failed":
@@ -1219,7 +1240,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
         async with self._write_lock:
             try:
                 lock = await asyncio.to_thread(
-                    _acquire_lock, self._lock_path, self._lock_timeout
+                    _acquire_lock, lock_path, self._lock_timeout
                 )
             except (TimeoutError, OSError):
                 return {"ok": False, "error": "cancel_in_progress"}
@@ -1228,7 +1249,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
                 replayed = self._holds.check_replay(namespaced)
                 if replayed is not None:
                     return replayed
-                journal = self._journal.get(namespaced)
+                journal = journal_store.get(namespaced)
                 if journal is not None and journal["status"] in {
                     "success",
                     "cancel_uncertain",
@@ -1261,7 +1282,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
                         raise_for_provider(response, "easy.cancel")
                         if response.status_code != 204:
                             result = {"ok": False, "error": "write_outcome_unknown"}
-                            self._journal.put_result(
+                            journal_store.put_result(
                                 namespaced,
                                 "cancel",
                                 "cancel_uncertain",
@@ -1270,7 +1291,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
                             )
                             return self._holds.record(namespaced, result)
                         result = {"ok": True, "booking_id": booking_id}
-                    self._journal.put_result(
+                    journal_store.put_result(
                         namespaced, "cancel", "success", booking_id, result
                     )
                     result = self._holds.record(namespaced, result)
@@ -1278,7 +1299,7 @@ class EasyAppointmentsAdapter(SlotAdapter):
                     return result
                 except ProviderError as exc:
                     if not isinstance(exc, RetryableProviderError):
-                        self._journal.put_result(
+                        journal_store.put_result(
                             namespaced,
                             "cancel",
                             "failed",

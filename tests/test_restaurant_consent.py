@@ -212,6 +212,41 @@ def test_questions_conditions_changes_and_unrelated_words_are_not_agreement(
 
 
 @pytest.mark.parametrize(
+    "question",
+    [
+        "Do I confirm the reservation",
+        "Do I confirm the reservation?",
+        "Do we book the table",
+        "Do we book the table?",
+        "Please do I confirm the reservation",
+    ],
+)
+def test_interrogative_word_order_cannot_approve_a_delivered_recap(
+    make_state, question
+):
+    async def run():
+        state = make_state("en")
+        proposal = await prepare(state)
+        assert state.mark_recap_delivered(proposal["hold_id"])
+        state.observe_user_text(question)
+        assert not state.pending or not state.pending["approved"]
+        result = await state.dispatch(
+            "confirm_slot_booking", {"hold_id": proposal["hold_id"]}
+        )
+        assert result.get("error") == "consent_required"
+        assert not state.bookings
+        assert not (await state.dispatcher._slot.get_operator_bookings(tomorrow()))[
+            "items"
+        ]
+
+    asyncio.run(run())
+
+
+def test_emphatic_declarative_confirmation_remains_agreement():
+    assert is_restaurant_confirmation("I do confirm the reservation", "en")
+
+
+@pytest.mark.parametrize(
     "prefix,agreement,ending",
     tuple(
         product(

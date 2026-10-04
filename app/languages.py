@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Any
 from .russian import detect_language
 from .input_recovery import WRITE_LANGUAGE_PROMPT
+from .restaurant_times import NUMBERS
 
 LANGUAGES = ("et", "en", "ru")
 SUPPORTED_LANGUAGE_PROMPT = WRITE_LANGUAGE_PROMPT
@@ -227,6 +228,8 @@ def select_language(text: str, detected: object, current: str) -> str:
         return "et"
     if not re.search(r"[^\W\d_]", text) or normalized in {
         "yes",
+        "yeah",
+        "yep",
         "no",
         "ok",
         "okay",
@@ -236,12 +239,10 @@ def select_language(text: str, detected: object, current: str) -> str:
         "нет",
     }:
         return current
-    if normalized in {
-        "one", "two", "three", "four", "five", "six", "seven", "eight",
-        "nine", "ten", "eleven", "twelve",
-    } or re.fullmatch(
+    if normalized.replace("-", " ") in NUMBERS or re.fullmatch(
         r"(?:\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)"
-        r"\s+(?:a\s*m|p\s*m|am|pm)", normalized,
+        r"\s+(?:a\s*m|p\s*m|am|pm)",
+        normalized,
     ):
         return current
     # Clear caller wording outweighs noisy STT metadata. Weak turns above keep
@@ -249,13 +250,16 @@ def select_language(text: str, detected: object, current: str) -> str:
     inferred = detect_language(text, "en")
     if inferred == "ru":
         return "ru"
-    if inferred == "et" and detect_language(re.sub(r"[õäöü]", "", text, flags=re.I), "en") == "et":
+    if (
+        inferred == "et"
+        and detect_language(re.sub(r"[õäöü]", "", text, flags=re.I), "en") == "et"
+    ):
         return "et"
     if re.search(
         r"\b(?:hello|hi|hey|please|where|when|what|how|book|booking|want|need|reserve|thank|"
         r"tomorrow|today|tonight|thanks|goodbye|bye|repeat|understand|confusing)\b|"
         r"\b(?:i|we|you|there|it|that)\s+(?:would|will|have|are|is|can|like)\b|"
-        r"\b(?:i['’]d|we['’]d|i['’]m|we['’]re|can i|can you|can we|do you|does the|"
+        r"\b(?:i['’]d|we['’]d|i['’]m|we['’]re|can i|can you|can we|do you|do the|does the|"
         r"is there|is the|is this|is that|is it|are you|are there|does it|does your|could i|could you|"
         r"a table|a reservation|a booking|good morning|good afternoon|good evening|"
         r"for (?:two|three|four|five|six))\b",

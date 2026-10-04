@@ -47,7 +47,11 @@ class SimpleLlm:
 def client(monkeypatch):
     from app import callslog
 
-    with patch.dict("os.environ", {"OPERATOR_TOKEN": "fixture-operator", "VOICEBOT_BUSINESS_TYPE": "hotel_spa"}, clear=True):
+    with patch.dict(
+        "os.environ",
+        {"OPERATOR_TOKEN": "fixture-operator", "VOICEBOT_BUSINESS_TYPE": "hotel_spa"},
+        clear=True,
+    ):
         callslog.reset_default()
         app = create_app()
     monkeypatch.setenv("OPERATOR_TOKEN", "fixture-operator")
@@ -181,7 +185,9 @@ def test_session_busy_denies_overlapping_paid_turns(client):
     session = start(client)
     replies = []
     thread = threading.Thread(
-        target=lambda: replies.append(send(client, session, "Millised spaateenused on saadaval?"))
+        target=lambda: replies.append(
+            send(client, session, "Millised spaateenused on saadaval?")
+        )
     )
     thread.start()
     try:
@@ -208,7 +214,9 @@ def test_safe_speech_normalized_before_tts_and_response_matches_audio(client, re
     result = response.json()
     from app.booking_faq import load_faq
 
-    assert result["reply"] == next(entry["answer_et"] for entry in load_faq() if entry["id"] == "booking-033")
+    assert result["reply"] == next(
+        entry["answer_et"] for entry in load_faq() if entry["id"] == "booking-033"
+    )
     assert not client.app.state.stack["llm_primary"].messages
     assert client.app.state.stack["tts"].spoken[-1] == result["reply"]
     assert base64.b64decode(result["audio_b64"]).decode() == result["reply"]
@@ -508,7 +516,9 @@ def test_generic_http_uses_call_ownership_and_no_unapproved_hotel_faq(client):
     client.app.state.stack["llm_primary"] = Attack()
     with patch("app.callslog.log_call") as log:
         response = client.post(
-            "/api/turn", json={"text": "Millised spaateenused on saadaval?"}, headers=AUTH
+            "/api/turn",
+            json={"text": "Millised spaateenused on saadaval?"},
+            headers=AUTH,
         )
     assert response.status_code == 200
     assert response.json()["outcome"] == "tools_failed"
@@ -554,7 +564,7 @@ def test_unknown_write_logged_closed_and_not_automatically_retried(client, tmp_p
 
 def test_root_image_copies_fictional_demo_fixture():
     assert (
-        "COPY data/demo/ ./data/demo/"
+        "COPY --chown=voicebot:voicebot data/demo/ ./data/demo/"
         in (Path(__file__).resolve().parents[1] / "Dockerfile").read_text()
     )
 
@@ -702,7 +712,10 @@ def test_http_advertises_compact_native_conversation_tools(client, tmp_path):
             return {"content": "Tere!"}
 
     client.app.state.stack["llm_primary"] = Probe()
-    assert send(client, start(client), "Millised spaateenused on saadaval?").status_code == 200
+    assert (
+        send(client, start(client), "Millised spaateenused on saadaval?").status_code
+        == 200
+    )
     assert "plan_demo_booking" in observed["names"]
     assert "search_slots" in observed["names"]
     assert "get_slot_catalogue" in observed["names"]

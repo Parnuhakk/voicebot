@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import re
+import json
 from collections.abc import Mapping
+from pathlib import Path
+from typing import cast
 
 LANGUAGES = ("et", "en", "ru")
 SCOPES: dict[str, tuple[str, str, str]] = {
+    "payment_tax": ("hindade maksude ja lisatasude kohta", "taxes and additional fees in prices", "о налогах и дополнительных сборах в ценах"),
     "family_certification": ("ametliku peresõbralikkuse märgise kohta", "an official family friendly certification", "об официальной отметке семейного ресторана"),
     "play_hours": ("mängunurga eraldi lahtiolekuaegade kohta", "separate opening hours for the play corner", "об отдельных часах работы игрового уголка"),
     "facility_safety": ("mänguasjade ja joonistamisvahendite materjalide ning allergiaohutuse kohta", "toy and drawing materials and their allergy safety", "о материалах игрушек и принадлежностей для рисования и их безопасности при аллергии"),
@@ -34,6 +38,7 @@ SCOPES: dict[str, tuple[str, str, str]] = {
     "complaints_help": ("restorani kaebuste kanali, leitud esemete ja hüvitiste korra kohta", "the restaurant's complaint channel, lost property and compensation process", "о канале жалоб, найденных вещах и порядке компенсаций в ресторане"),
 }
 PATTERNS = {
+    "payment_tax": r"käibemaks|\bvat\b|\bндс\b|налог|service charge|teenindustasu|сбор.*обслуживан",
     "family_certification": r"peresõbralik\w*.*(?:märgis|sertifika)|family.?friendly.*(?:certif|label)|официальн\w*.*(?:отметка|сертификат).*семейн|семейн\w*.*(?:сертификат|отметка)",
     "play_hours": r"mängunur\w*.*(?:avatud|lahtiolek|kell)|(?:kell|lahtioleku).*mängunur|play corner.*(?:opening hours|open|close)|(?:open|close).*play corner|(?:часы|когда).*игров\w*\s+угол|игров\w*\s+угол\w*.*(?:открыт|закрыт|час)",
     "facility_safety": r"(?:mänguas|joonist|toy|crayon|drawing|игруш|рисован).*(?:lateks|latex|allerg|аллерг|латекс)|(?:lateks|latex|allerg|аллерг|латекс).*(?:mänguas|joonist|toy|crayon|drawing|игруш|рисован)",
@@ -66,6 +71,7 @@ PATTERNS = {
 }
 GENERAL_TOPICS = tuple(PATTERNS) + ("child_allergens",)
 CONFLICTS = {
+    "payment_tax": {"allergens", "price", "menu"},
     "family_certification": {"family", "family_details", "menu"},
     "play_hours": {"family", "family_details", "hours", "children"},
     "facility_safety": {"family", "family_details", "allergens", "children", "menu"},
@@ -88,6 +94,34 @@ CONFLICTS = {
 CHILD = re.compile(r"laste\w*|lapse\w*|\b(?:child(?:ren)?|kids?)\b|детск\w*|реб[её]н\w*")
 DIET = re.compile(r"allerg|allergeen|glut|laktoos|vegan|аллерг|глют|лактоз|веган|milk allergy|piimaallerg")
 FOOD = re.compile(r"\b(?:food|foods|dish|meal|eat|salmon|soup|risotto)\b|toit|toidu|roog|roa\b|lõhe|supp|risot|блюд|ед[ауы]\b|питани|лосос|суп")
+
+
+def _read_key(text: str) -> str:
+    return " ".join(text.casefold().replace("’", "'").split()).strip(" .!?;")
+
+
+# Whole reviewed interludes preserve booking fields. A loose topic match alone
+# never authorizes retaining fields across a mixed correction or action clause.
+def _load_read_forms() -> frozenset[str]:
+    path = Path(__file__).resolve().parents[1] / "data/demo/restaurant-service-questions.json"
+    raw = cast(object, json.loads(path.read_text(encoding="utf-8")))
+    if not isinstance(raw, dict):
+        raise ValueError("Invalid reviewed restaurant service questions")
+    data = cast(dict[str, object], raw)
+    raw_questions = data.get("questions")
+    if data.get("schema_version") != 1 or not isinstance(raw_questions, list):
+        raise ValueError("Invalid reviewed restaurant service questions")
+    questions = cast(list[object], raw_questions)
+    if not questions or not all(isinstance(question, str) and question.strip() for question in questions):
+        raise ValueError("Invalid reviewed restaurant service questions")
+    return frozenset(_read_key(question) for question in questions if isinstance(question, str))
+
+
+READ_FORMS = _load_read_forms()
+
+
+def general_read_question(text: str) -> bool:
+    return _read_key(text) in READ_FORMS
 
 
 def general_topic(text: str) -> str | None:
@@ -118,9 +152,9 @@ def general_reply(data: Mapping[str, object], topic: str, language: str) -> str:
         )[index]
     if topic == "payment_secret":
         return (
-            "Palun ärge öelge pangakaardi numbrit ega turvakoodi. Selles demos ma makseid vastu ei võta.",
-            "Please don't share your card number or security code. I don't take payments in this demo.",
-            "Не называйте номер карты или защитный код. В демоверсии я не принимаю платежи.",
+            "Palun ärge öelge pangakaardi numbrit ega turvakoodi. Ma ei võta makseid vastu.",
+            "Please don't share your card number or security code. I don't take payments.",
+            "Не называйте номер карты или защитный код. Я не принимаю платежи.",
         )[index]
     if topic == "language_help":
         return (
@@ -130,16 +164,16 @@ def general_reply(data: Mapping[str, object], topic: str, language: str) -> str:
         )[index]
     if topic == "food_order_help":
         return (
-            "Selles demos saan aidata lauabroneeringuga, kuid toidutellimust ma vastu ei võta. Palun pöörduge restorani töötaja poole.",
-            "This demo can help with a table booking, but I can't place a food order. Please contact the restaurant team.",
-            "В демоверсии я могу помочь с бронью столика, но не принимаю заказы еды. Обратитесь к сотруднику ресторана.",
+            "Saan aidata lauabroneeringuga, kuid toidutellimust ma vastu ei võta. Palun pöörduge restorani töötaja poole.",
+            "I can help with a table booking, but I can't place a food order. Please contact the restaurant team.",
+            "Я могу помочь с бронью столика, но не принимаю заказы еды. Обратитесь к сотруднику ресторана.",
         )[index]
     if topic == "booking_window":
         days = data["advance_days"]
         return (
-            f"Selles demos saab saadavust kontrollida kuni {days} päeva ette. Laud tuleb valitud aja jaoks eraldi kontrollida.",
-            f"This demo can check dates up to {days} days ahead. A table still needs to be checked for your chosen time.",
-            f"В демоверсии можно проверять даты на {days} дней вперёд. Наличие столика на выбранное время нужно проверить отдельно.",
+            f"Saadavust saab kontrollida kuni {days} päeva ette. Laud tuleb valitud aja jaoks eraldi kontrollida.",
+            f"I can check dates up to {days} days ahead. A table still needs to be checked for your chosen time.",
+            f"Можно проверять даты на {days} дней вперёд. Наличие столика на выбранное время нужно проверить отдельно.",
         )[index]
     scope = SCOPES[topic][index]
     reply = (
@@ -148,11 +182,13 @@ def general_reply(data: Mapping[str, object], topic: str, language: str) -> str:
         f"У меня нет подтверждённой информации {scope}. Уточните это у сотрудника ресторана.",
     )[index]
     if topic in {"child_allergens", "ingredient_details"}:
-        reply += " " + (
+        notice = data.get("allergy_notice")
+        configured = cast(Mapping[str, object], notice).get(language) if isinstance(notice, Mapping) else None
+        reply += " " + (configured if isinstance(configured, str) and configured else (
             "Koostis ja võimalik ristsaastumine tuleb köögiga kinnitada. Ma ei saa allergiaohutust garanteerida.",
             "Check ingredients and possible cross-contact with the kitchen. I can't guarantee allergy safety.",
             "Уточните состав и возможность перекрёстного контакта у кухни. Я не могу гарантировать безопасность при аллергии.",
-        )[index]
+        )[index])
     if topic == "medical_food":
         reply += " " + (
             "Toidu individuaalse sobivuse kohta palun küsige oma tervishoiutöötajalt.",

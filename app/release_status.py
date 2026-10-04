@@ -42,7 +42,7 @@ def source_digest() -> str:
     return digest.hexdigest()
 
 
-def identity() -> str:
+def identity(*, restaurant_data: dict | None = None) -> str:
     """Only common behavior settings; credentials never enter the receipt."""
     env = os.environ
     business = business_type()
@@ -56,19 +56,23 @@ def identity() -> str:
         "calls_db": env.get("CALLS_DB", "/data/calls.db"),
     }
     if business == "restaurant":
+        from .restaurant_data import load_restaurant_data
+
         settings["restaurant"] = {
             "database": restaurant_database(),
             "writes": restaurant_writes_enabled(),
             "config": env.get("RESTAURANT_CONFIG_PATH", ""),
+            "data": restaurant_data
+            if restaurant_data is not None
+            else load_restaurant_data(),
         }
     else:
         settings["hotel"] = {
             "easy_db": env.get("EASY_STATE_DB", "/data/easy-booking.db"),
             "stay_db": env.get("STAY_STATE_DB") or "/data/stay-booking.db",
             "writes": env.get("EASY_DEMO_WRITES", "0") == "1",
-            "stay_writes": env.get(
-                "STAY_DEMO_WRITES", env.get("EASY_DEMO_WRITES", "0")
-            ) == "1",
+            "stay_writes": env.get("STAY_DEMO_WRITES", env.get("EASY_DEMO_WRITES", "0"))
+            == "1",
         }
     return hashlib.sha256(
         json.dumps(settings, sort_keys=True, separators=(",", ":")).encode()
@@ -88,7 +92,9 @@ def record(revision: str, web_identity: str, *, path: Path = REPORT) -> None:
         "verified_at": time.time(),
     }
     # Atomic replacement prevents a concurrent public read seeing half a report.
-    descriptor, temporary = tempfile.mkstemp(prefix=".telephone-release-", dir=path.parent)
+    descriptor, temporary = tempfile.mkstemp(
+        prefix=".telephone-release-", dir=path.parent
+    )
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
             json.dump(receipt, stream)
@@ -101,9 +107,12 @@ def record(revision: str, web_identity: str, *, path: Path = REPORT) -> None:
 
 
 def status(
-    *, path: Path = REPORT, now: float | None = None
+    *,
+    path: Path = REPORT,
+    now: float | None = None,
+    restaurant_data: dict | None = None,
 ) -> dict[str, str | float | None]:
-    current = identity()
+    current = identity(restaurant_data=restaurant_data)
     result: dict[str, str | float | None] = {
         "status": "unverified",
         "web_fingerprint": current,
@@ -119,11 +128,15 @@ def status(
             return result
         receipt = json.loads(payload)
         if not isinstance(receipt, dict) or set(receipt) != {
-            "revision", "fingerprint", "verified_at"
+            "revision",
+            "fingerprint",
+            "verified_at",
         }:
             return result
         revision, fingerprint, checked = (
-            receipt["revision"], receipt["fingerprint"], receipt["verified_at"]
+            receipt["revision"],
+            receipt["fingerprint"],
+            receipt["verified_at"],
         )
         if (
             not isinstance(revision, str)
@@ -146,8 +159,10 @@ def status(
         telephone_revision=revision,
         verified_at=checked,
         status=(
-            "out_of_sync" if fingerprint != current
-            else "stale" if age > MAX_AGE
+            "out_of_sync"
+            if fingerprint != current
+            else "stale"
+            if age > MAX_AGE
             else "in_sync"
         ),
     )

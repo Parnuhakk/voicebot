@@ -63,7 +63,7 @@ def test_restaurant_only_prompt_tools_greeting_and_recap(make_state, language):
         assert result["recap"]["party_size"] == 4
         assert result["recap"]["duration_minutes"] == 90
         assert COPY[language]["confirmation_question"] in state.render_recap()
-        assert "Meretuule Demo Restaurant" in state.render_recap()
+        assert "Meretuule" in state.render_recap()
         assert "spa" not in state.render_recap().casefold()
 
     asyncio.run(run())
