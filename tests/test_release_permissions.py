@@ -43,6 +43,7 @@ def copies(path):
     ]
 
 
+@pytest.mark.skipif(os.name == "nt", reason="POSIX permission bits are verified on Linux CI")
 def test_private_archive_keeps_parent_directories_private(tmp_path):
     source = private_archive(tmp_path)
     assert (source / "app/booking").stat().st_mode & 0o777 == 0o700
