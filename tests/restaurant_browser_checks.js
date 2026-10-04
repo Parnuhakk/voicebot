@@ -34,6 +34,13 @@ async page => {
     assert(await page.getByRole('radio', {name, exact:true}).isEnabled());
     await chooseLanguage(code);
     assert.equal(await page.locator('html').getAttribute('lang'), code);
+    const guidance = {
+      et: ['Lehe ja tervituse keel', 'esimese sõnumi keeles', 'palu seda abiliselt'],
+      en: ['Page and greeting language', 'language of your first message', 'Ask the assistant to switch'],
+      ru: ['Язык страницы и приветствия', 'языке вашего первого сообщения', 'попросите об этом помощника'],
+    }[code];
+    assert.equal(await page.locator('#demo-language legend').textContent(), guidance[0]);
+    for (const phrase of guidance.slice(1)) assert((await page.locator('#language-help').textContent()).includes(phrase));
     assert.equal(await page.evaluate(()=>state.demoLanguage), code);
     assert.equal(await page.evaluate(()=>state.connected), false);
   }
@@ -218,6 +225,8 @@ async page => {
     assert.equal(await page.locator('html').getAttribute('lang'),language.code);
     await page.locator('#demo-start').click();
     await page.waitForFunction(()=>state.sessionId && !state.turnBusy);
+    const pageLanguageHelp = {et: 'Lehe keele', en: 'page language', ru: 'язык страницы'}[language.code];
+    assert((await page.locator('#language-help').textContent()).includes(pageLanguageHelp));
     assert((await page.locator('#demo-messages').textContent()).includes(language.greeting));
     assert(!/demo|testbroneering|test reservation|тестов|демо/i.test(await page.locator('#demo-messages .message').last().locator('span').textContent()), 'greeting narrated internal test status');
     assert.equal(requests.at(-1).body.language,language.code);

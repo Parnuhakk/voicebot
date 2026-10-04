@@ -232,6 +232,32 @@ def test_http_first_english_do_the_question_overrides_initial_estonian_voice(
     assert state.language_locked and state.pending is None and not state.bookings
 
 
+@pytest.mark.parametrize("text", [
+    "family room", "Two adults", "At two in the afternoon", "at 14:00",
+    "Four people", "3 guests", "Table for 2", "Seven guests", "Do your tables seat six?",
+])
+def test_short_english_opener_selects_language_without_a_hint(make_state, text):
+    state = make_state()
+    state.observe_user_text(text)
+    assert state.language == "en" and state.language_locked
+
+
+@pytest.mark.parametrize("initial", ["et", "en", "ru"])
+@pytest.mark.parametrize("text", [
+    "Two adults", "At two in the afternoon", "at 14:00",
+    "Four people", "Table for 2", "Seven guests",
+])
+def test_short_english_booking_opener_selects_and_keeps_english(client, initial, text):
+    identifier = start(client, initial)["session_id"]
+    for utterance in [text, "4"]:
+        response = client.post("/api/turn", headers=AUTH, json={
+            "session_id": identifier, "language": initial, "text": utterance,
+        })
+        assert response.status_code == 200
+        assert response.json()["language"] == "en"
+        assert response.json()["booking_changes"] == []
+
+
 class MetadataRecognition:
     def __init__(self):
         self.text = ""

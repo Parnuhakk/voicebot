@@ -434,8 +434,15 @@ def test_incomplete_date_cannot_dispatch_a_stale_booking(
     ],
 )
 def test_http_month_and_day_followups_retain_context(
-    client, language, initial, month, day
+    client, monkeypatch, language, initial, month, day
 ):
+    class FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return NOW.astimezone(tz) if tz else NOW.replace(tzinfo=None)
+
+    monkeypatch.setattr("app.restaurant_call.datetime", FixedDateTime)
+    monkeypatch.setattr(client.app.state.stack["dispatcher"]._slot, "_now", lambda: NOW)
     session_id = start(client, language)["session_id"]
     # The first caller utterance establishes the conversation language.
     for text, key in [(initial, "date"), (month, "date_incomplete")]:
