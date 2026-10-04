@@ -912,6 +912,118 @@ evidence file only; application, fixtures, tests, assets and deployment source
 remain the exact verified candidate. Publication and acceptance still require
 fresh live evidence.
 
+### Qualified release publication and native readiness
+
+Evidence-only gate commit **`94baece`** is atomically and normally pushed to
+recovery and master; independent remote verification confirms both exact heads.
+At **03:20:48 UTC**, live web is healthy on its exact source/image, application/
+data digest matches the tested tree, index and all six assets are byte-exact,
+restaurant DTO is fictional ET/EN/RU, both hotel paths return 410 and unauthenticated
+confirmation returns 403.
+
+The installed controller returns `DEFER: release_locked` rather than overlapping
+a shared rollout. Independent native readiness at **03:22:19 UTC** verifies
+healthy worker/bridge on `94baece`, same media image, binding to the running web,
+exact common application/data digest and successful dependency check. Common
+fingerprint **`e661cc747185a04710d33e169c0252e17d05acd752b0ef52a82f92dc3f990d94`**
+matches public `in_sync`. Controller bytes remain reviewed SHA256 `11674bd0…`.
+No runtime success is inferred from the deferred command itself.
+
+One current-source canonical RTC batch is running under the shared idle lock.
+In addition to unchanged canonical owned-ledger assertions, it captures closed
+finalized-input flags requiring supported conditional, decline, consent and
+cancellation cues and independently exact first-request fields. No transcript,
+audio or credential is saved. Acceptance and final post-batch preservation are
+still pending; a long lock-held batch may legitimately age the 180-second public
+alignment receipt until an idle controller refresh.
+
+### Qualified RTC outcome and cancellation investigation
+
+The `94baece` batch ends **03:32:04 UTC**, with unchanged healthy service IDs and
+zero rooms. ET independently exact requests and supported conditional/decline/
+consent recognition pass; all pre-consent reads are empty and one exact owned
+reservation is confirmed. The supported cancellation caption does not match the
+existing ET cancellation vocabulary and the owned row remains confirmed after
+that turn: **`probe_cancel_unproven`**. Probe cleanup subsequently cancels only
+its proven owned fictional reservation; cleanup is not spoken acceptance.
+
+EN and RU each pass the unchanged canonical probe, including exact owned
+confirmation and same-booking cancellation, seven finalized inputs, nine spoken
+replies and two canonical recaps (3,176 and 3,157 voiced frames respectively).
+Their supported conditional/decline/consent and exact-request flags also pass.
+The additional cancellation qualifier incorrectly compares every language to the
+ET-only `CANCELLATIONS` set. This evidence-helper defect is separate from the real
+ET failure; the original failed qualified artifacts are retained and not relabelled.
+Future qualification must use the runtime's language-specific sets.
+
+Isolated **03:38:14 UTC** Anu PCM → actual Silero/native STT reproduces an exact,
+supported full-context cancellation. Three other existing ET cancellation forms
+do not match after native recognition. These results support retaining the
+full-context fixture and investigating its RTC boundary, not adding fuzzy runtime
+authorization or claiming isolated STT as acceptance. A single instrumented RTC
+diagnostic will compare closed expected-word flags and reply categories. The goal
+remains active; publication is verified, three-language acceptance is not.
+
+The corrected ET word-boundary trace at **03:45:35 UTC** reproduces the same
+owned-cancellation failure. Seven of eight expected words match in position and
+membership; only `broneering` differs. No question mark, quote or semicolon is
+present. Supported conditional/decline/consent and exact planning still pass,
+and the unmatched cancellation returns unknown-information recovery while the
+owned booking remains confirmed. This localizes the observed mismatch to the
+recognized noun, not its upstream acoustic cause. The first diagnostic draft
+aborted early on a nonexistent `COPY` key; one input, no booking and clean room/
+service preservation are retained as a helper failure, not application evidence.
+
+A punctuation-only no-comma candidate fails isolated native recognition at
+**03:48:41 UTC** and is not sent through RTC or retained in source. No authorization
+grammar is expanded. The existing short canonical cancellation on the already
+approved Anu caller is the next bounded preflight; any isolated success still
+requires actual owned RTC cancellation before acceptance.
+
+Live public layout diagnosis at **03:51:26 UTC** verifies translated ET/EN/RU
+headings and language selection, zero horizontal overflow in all fifteen
+320/390/800/801/1440 px combinations, zero page errors, external requests and
+mutation requests. At 390×844, voice and microphone controls are on the first
+screen in all languages. At 320×844, English and Russian need vertical scrolling;
+Russian microphone bottom is 1,005 px. The overbroad above-fold probe is stopped
+after failure and these measured limits are not relabelled green. Its first draft
+also incorrectly equated pre-session language choice with `replyLanguage`, which
+tracks the last reply; the actual handler changes `demoLanguage` and localized
+controls. Screenshots accompany the read-only diagnosis. No UI/source change is
+made to satisfy a new unrequested all-width above-fold assertion.
+
+The isolated existing short Anu cancellation also fails exact recognition at
+**03:52:48 UTC** (one supported ET final segment, two words, no cancellation
+match). It is not retained or run in RTC. Independent diagnostic review confirms
+that no ownership/guard defect is demonstrated, upstream acoustic cause is
+unproven and no further arbitrary phrase/voice retries or grammar expansion are
+justified. Unsupported premature acknowledgement coverage is described only as
+no-write rejection, never as a recognized supported ET premature-yes test.
+
+### Published-release preservation checkpoint, not goal completion
+
+Read-only **03:57:10 UTC** comparison against first, intermediate and immediate
+pre-publication baselines passes configuration hashes, shared volumes, current
+incoming POST route, all four database integrity checks, stable historical rows,
+immutable call identities, all 23 original unrelated service IDs, immediate
+unrelated IDs and protected checkout/19 status entries. Healthy web/native IDs
+and exact `94baece` labels are verified before/after the snapshot, with matching
+loaded fingerprints and zero rooms. The later nonoriginal `relaxed_lehmann`
+absence already documented before publication remains explicitly qualified.
+
+A manual receipt-refresh attempt safely defers to another Python lock holder;
+that process is not interrupted. An independent subsequent public read is
+`in_sync`, so no stale receipt is accepted and no second rollout is inferred from
+the deferred command. This snapshot is nonexclusive and validates stable healthy
+IDs across its read-only boundaries. Private proof explicitly has
+`preservation_pass: true` and **`overall_release_acceptance: false`** because
+three-language spoken cancellation acceptance is still incomplete.
+
+No additional application, probe, test, operator voice or authorization change
+is made after verified `94baece`. This evidence-only publication preserves all
+failed artifacts and limitations. Goal tasks 6/7 stay open; no completion audit
+or `goal_complete` call is justified by the partial acceptance.
+
 ## Pre-rollout preservation qualification
 
 Read-only hash-only snapshot at 2026-10-03 20:34:39 UTC records healthy web,
