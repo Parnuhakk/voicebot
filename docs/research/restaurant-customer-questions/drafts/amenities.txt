@@ -1,0 +1,20 @@
+wifi|amenities.wifi|Kas teil on WiFi?|Do you have Wi-Fi?|У вас есть Wi-Fi?|WiFi olemasolu kohta|Wi-Fi availability|о наличии Wi-Fi
+wifi-password|amenities.wifi_access|Mis on WiFi parool?|What is the Wi-Fi password?|Какой пароль от Wi-Fi?|WiFi võrgu ja ligipääsu kohta|the Wi-Fi network and access details|о сети Wi-Fi и доступе к ней
+charging|amenities.charging|Kas telefoni saab laadida?|Can I charge my phone?|Можно зарядить телефон?|telefoni laadimise võimaluse kohta|phone charging facilities|о возможности зарядить телефон
+coat|amenities.cloakroom|Kas teil on garderoob?|Do you have a cloakroom?|У вас есть гардероб?|garderoobi olemasolu kohta|a cloakroom|о наличии гардероба
+luggage|amenities.luggage|Kas kohvri saab kuskile jätta?|Can I leave a suitcase somewhere?|Можно где-нибудь оставить чемодан?|pagasi hoiustamise võimaluse kohta|luggage storage|о возможности оставить багаж
+toilet|amenities.toilets|Kus on tualett?|Where is the toilet?|Где туалет?|tualeti täpse asukoha kohta|the toilet's exact location|о точном расположении туалета
+smoking|amenities.smoking|Kas suitsetamiseks on eraldi koht?|Is there a designated smoking area?|Есть отдельное место для курения?|suitsetamisala kohta|a designated smoking area|о месте для курения
+vaping|amenities.vaping|Kas terrassil võib veipida?|Is vaping allowed on the terrace?|На террасе можно пользоваться вейпом?|veipimise reeglite kohta|the vaping policy|о правилах использования вейпа
+dress|amenities.dress_code|Kas teil on riietusreeglid?|Do you have a dress code?|У вас есть дресс-код?|riietusreeglite kohta|the dress code|о дресс-коде
+music|amenities.live_music|Kas õhtul on elav muusika?|Is there live music in the evening?|Вечером есть живая музыка?|elava muusika programmi kohta|the live music programme|о программе живой музыки
+screen|amenities.sports_screen|Kas spordiülekandeid saab vaadata?|Can we watch live sports?|Можно смотреть спортивные трансляции?|spordiülekannete näitamise kohta|sports screenings|о показе спортивных трансляций
+private-space|amenities.private_space|Kas teil on privaatne ruum?|Do you have a private room?|У вас есть отдельный зал?|privaatse ruumi olemasolu kohta|a private room|о наличии отдельного зала
+aircon|amenities.air_conditioning|Kas saalis on konditsioneer?|Is the dining room air conditioned?|В зале есть кондиционер?|saali kliimaseadme kohta|air conditioning in the dining room|о кондиционере в зале
+blanket|amenities.blankets|Kas terrassile saab pleedi?|Do you provide blankets on the terrace?|На террасе дают пледы?|terrassipleedide olemasolu kohta|blankets on the terrace|о наличии пледов на террасе
+photo|amenities.photography|Kas restoranis võib pildistada?|May I take photos in the restaurant?|Можно фотографировать в ресторане?|pildistamise reeglite kohta|the photography policy|о правилах фотографирования
+work-laptop|amenities.laptop_policy|Kas sülearvutiga võib tööd teha?|Can I work on a laptop while visiting?|Можно поработать за ноутбуком?|sülearvutiga töötamise tingimuste kohta|conditions for working on a laptop|об условиях работы за ноутбуком
+water-bowl|amenities.pet_water|Kas koerale saab veekaussi?|Can I get a water bowl for my dog?|Можно миску воды для собаки?|koera veekausi olemasolu kohta|a water bowl for dogs|о наличии миски воды для собак
+pet-size|amenities.dog_size|Kas suur koer on lubatud?|Are large dogs allowed?|Можно с большой собакой?|koerte suurusega seotud tingimuste kohta|any size restrictions for dogs|об ограничениях по размеру собак
+pet-leash|amenities.dog_leash|Kas koer peab olema rihma otsas?|Must dogs be kept on a lead?|Собака должна быть на поводке?|koera rihma kasutamise reeglite kohta|lead requirements for dogs|о требованиях к поводку для собак
+pet-other|amenities.other_pets|Kas kassiga võib tulla?|Can I bring a cat?|Можно прийти с кошкой?|teiste lemmikloomade vastuvõtmise kohta|admitting pets other than dogs|о посещении с другими домашними животными

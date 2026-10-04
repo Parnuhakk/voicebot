@@ -8,6 +8,7 @@ import pytest
 from app.restaurant_answers import GUIDANCE, match_question
 from app.restaurant_data import load_restaurant_data
 from app.restaurant_family import FACILITIES, LABELS, family_reply, family_topic
+from app.restaurant_service_questions import general_reply
 from app.restaurant_reasoning import restaurant_facts
 from tests.test_restaurant_http import start, turn
 
@@ -76,8 +77,12 @@ def test_unconfirmed_family_details_are_not_assumed(make_state, language, questi
     assert family_topic(question) == "family_details"
     state.observe_user_text(question, language=language)
     reply = state.guard_reply("", [])
-    assert reply == family_reply(state.restaurant, language, details=True)
-    assert "family_details" in state._restaurant_question.topics
+    if question == "В игровом уголке есть няня?":
+        assert state._restaurant_question.topics == ("children_services",)
+        assert reply == general_reply(state.restaurant, "children_services", language)
+    else:
+        assert reply == family_reply(state.restaurant, language, details=True)
+        assert "family_details" in state._restaurant_question.topics
     assert all(item["name"][language] not in reply for item in state.restaurant["menu"])
     assert state.pending is None and not state.bookings
 
@@ -172,7 +177,7 @@ def test_children_menu_allergens_never_inherit_ordinary_dish_declarations(
         for item in state.restaurant["menu"]
     )
     assert state.restaurant["allergy_notice"][language] in result["reply"]
-    assert family_reply(state.restaurant, language, details=True) in result["reply"]
+    assert general_reply(state.restaurant, "child_allergens", language) in result["reply"]
     assert result["reply"] == client.provider.spoken[-1]
     assert result["booking_changes"] == [] and result["recap_delivery_id"] is None
     assert not state.pending and not state.holds and not state.bookings
@@ -190,10 +195,7 @@ def test_children_allergen_scope_survives_two_prior_capability_topics(client):
         item["name"]["en"] not in result["reply"] for item in state.restaurant["menu"]
     )
     assert state.restaurant["allergy_notice"]["en"] in result["reply"]
-    assert (
-        "confirmed list of dishes or ingredients for the children's menu"
-        in result["reply"]
-    )
+    assert general_reply(state.restaurant, "child_allergens", "en") in result["reply"]
     assert state.information_reply("food_orders") in result["reply"]
     assert state.information_reply("special_requests") in result["reply"]
     assert result["reply"] == client.provider.spoken[-1]
@@ -231,6 +233,6 @@ def test_explicit_children_menu_scope_cannot_inherit_a_prior_dish(
     )
     assert state._restaurant_dish is None
     assert state.restaurant["allergy_notice"][language] in result["reply"]
-    assert family_reply(state.restaurant, language, details=True) in result["reply"]
+    assert general_reply(state.restaurant, "child_allergens", language) in result["reply"]
     assert result["reply"] == client.provider.spoken[-1]
     assert not result["booking_changes"] and not state.pending and not state.holds

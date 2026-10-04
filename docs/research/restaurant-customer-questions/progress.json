@@ -1,0 +1,47 @@
+{
+  "started_local": "2026-10-04",
+  "goal": "Comprehensive ET/EN/RU restaurant customer-question research and answer material",
+  "worktree": "C:/Users/salov.ml7b493/projects/voicebot-customer-research",
+  "branch": "research/restaurant-customer-questions-20261004",
+  "owner_confirmed_facts": {
+    "source": "User instruction on 2026-10-04",
+    "drawing": true,
+    "toys": true,
+    "play_corner": true,
+    "children_menu": true
+  },
+  "completed": [
+    "Current restaurant architecture, pinned dependencies and existing reviewed answers inspected",
+    "Isolated worktree created from master 9fd4ced",
+    "Family facilities represented as optional validated operator-owned data",
+    "Shared browser/native family selectors and ET/EN/RU reviewed responses implemented",
+    "Initial 319 focused family, conversation, natural-speech and reasoning checks passed",
+    "Family feature published in PR32, merge 6dbf78f; public website readback confirmed all four facts and all three language summaries",
+    "Primary-source ledger written; current legal-text read limitations recorded instead of citing a historical version",
+    "269 question concepts, 807 trilingual question-answer pairs and 215 owner intake fields written as JSON/CSV",
+    "Searchable standalone review HTML implemented; language/category/status/search/empty-state and mobile checks passed with zero page errors or external requests",
+    "Initial 771-turn shared-code replay identified wrong pet policy, adult menu for child allergies, missing urgent guidance and a false booking inquiry",
+    "Reviewed service question selectors implemented with 101 dedicated regressions passing; broader focused suite previously 321 passed",
+    "Latest 807-turn replay: zero urgent/pet/child-allergy/booking-inquiry flags; 226 generic unknown replies remain and need qualitative review",
+    "270 concepts, 810 language pairs, 216 unconfirmed owner fields; report and scenario material written",
+    "Final pre-integration full suite: 11741 passed, 10 skipped, 36 subtests passed",
+    "Restaurant browser flow passed including 18 new ET/EN/RU service questions; zero page errors and external requests",
+    "Catalog determinism and completeness: 7 tests passed; final HTML filters reviewed on desktop and mobile",
+    "Current master including ff11d69 integrated; complete local suite: 12756 passed, 17 skipped, 36 subtests passed",
+    "Final word-boundary and fixture-import corrections: 165 focused tests, selected Flake8 rules and BasedPyright passed",
+    "Integrated Linux CI: 12439 passed, 86 skipped; shared production image identities match",
+    "Public pre-release telephone status readback now in_sync at ff11d69; public ingress and carrier call remain unverified"
+  ],
+  "next": [
+    "Wait for CI on the final PR39 commit and merge with the exact checked head",
+    "Read back reviewed-service-v1 on the public site and current telephone release status",
+    "Record publication result and hand off research artifacts; actual carrier call remains a documented external limitation"
+  ],
+  "production_limits": [
+    "The venue is a fictional restaurant demo",
+    "No production operator credential or deployed native-worker revision access",
+    "Do not invent children's-menu dishes, prices, babysitting, age limits or free-use conditions",
+    "Research examples from other restaurants must never become this venue's facts"
+  ],
+  "status": "publication_pending"
+}

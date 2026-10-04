@@ -1,0 +1,12 @@
+tap-water|drinks.tap_water|Kas kraanivett saab tasuta?|Is tap water free?|Вода из-под крана бесплатная?|kraanivee pakkumise ja hinna kohta|tap water service and its price|о подаче и стоимости воды из-под крана
+bottled|drinks.bottled_water|Kas on gaseerimata pudelivett?|Do you have still bottled water?|Есть негазированная вода в бутылках?|pudelivee valiku kohta|the bottled water selection|о выборе воды в бутылках
+juice|drinks.juice|Milliseid mahlu pakute?|What juices do you serve?|Какие соки вы подаёте?|mahlavaliku kohta|the juice selection|о выборе соков
+coffee|drinks.coffee|Kas kohvi saab ka kaasa?|Can I get coffee to take away?|Можно кофе с собой?|kohvi kaasa tellimise võimaluse kohta|takeaway coffee|о возможности заказать кофе с собой
+plant-milk|drinks.plant_milk|Kas kohvile saab taimset piima?|Do you have plant milk for coffee?|Для кофе есть растительное молоко?|taimsete piimajookide valiku kohta|plant milk options for coffee|о растительном молоке для кофе
+decaf|drinks.decaf|Kas kofeiinivaba kohvi on?|Do you have decaf coffee?|Есть кофе без кофеина?|kofeiinivaba kohvi kohta|decaf coffee|о кофе без кофеина
+wine|drinks.wine_list|Millised veinid teil on?|What wines do you offer?|Какие вина у вас есть?|veinikaardi kohta|the wine list|о винной карте
+nonalcoholic|drinks.alcohol_free|Kas on alkoholivabu kokteile?|Do you have alcohol free cocktails?|Есть безалкогольные коктейли?|alkoholivabade kokteilide kohta|alcohol free cocktails|о безалкогольных коктейлях
+beer|drinks.beer|Kas kraanist õlut on?|Do you have draught beer?|Есть разливное пиво?|vaadiõlle valiku kohta|the draught beer selection|о выборе разливного пива
+bring-wine|drinks.corkage|Kas oma veini võib kaasa võtta?|May I bring my own wine?|Можно принести своё вино?|oma veini ja korgitasu reeglite kohta|bringing wine and corkage rules|о правилах своего вина и пробкового сбора
+wine-pair|drinks.pairing|Kas saate roa juurde veini soovitada?|Can you recommend a wine with my meal?|Можете посоветовать вино к блюду?|kinnitatud veinivaliku ja sobituste kohta|the verified wine selection and pairings|о подтверждённом выборе вин и сочетаниях с блюдами
+drink-prices|drinks.prices|Kui palju joogid maksavad?|How much do drinks cost?|Сколько стоят напитки?|joogihindade kohta|drink prices|о ценах на напитки

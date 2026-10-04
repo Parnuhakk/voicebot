@@ -1,0 +1,3035 @@
+{
+  "scope": "Owner intake draft. Null means unconfirmed, never unavailable. This file is not loaded by the running bot.",
+  "confirmed_family_facilities": {
+    "drawing": true,
+    "toys": true,
+    "play_corner": true,
+    "children_menu": true
+  },
+  "fields": [
+    {
+      "field": "access.parking",
+      "category": "accessibility",
+      "question": {
+        "et": "Kas lähedal on invaparkimiskoht?",
+        "en": "Is there an accessible parking space nearby?",
+        "ru": "Рядом есть парковка для людей с инвалидностью?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "access.accessible_toilet",
+      "category": "accessibility",
+      "question": {
+        "et": "Kas teil on ligipääsetav tualett?",
+        "en": "Do you have an accessible toilet?",
+        "ru": "У вас есть доступный туалет для людей на колясках?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "access.allergy_card",
+      "category": "accessibility",
+      "question": {
+        "et": "Kas töötajale saab näidata kirjalikku allergiakaarti?",
+        "en": "Can I show the team a written allergy card?",
+        "ru": "Можно показать сотруднику карточку с информацией об аллергии?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "access.braille_menu",
+      "category": "accessibility",
+      "question": {
+        "et": "Kas menüü on punktkirjas?",
+        "en": "Is there a Braille menu?",
+        "ru": "Есть меню шрифтом Брайля?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "access.caregiver_seating",
+      "category": "accessibility",
+      "question": {
+        "et": "Kas hooldaja saab minu kõrvale istuda?",
+        "en": "Can my carer sit beside me?",
+        "ru": "Сопровождающий может сидеть рядом со мной?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "access.door_width",
+      "category": "accessibility",
+      "question": {
+        "et": "Kui lai on sissepääsuuks?",
+        "en": "How wide is the entrance door?",
+        "ru": "Какая ширина входной двери?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "access.hearing_support",
+      "category": "accessibility",
+      "question": {
+        "et": "Kas kuulmisraskusega kliendile on abivahendeid?",
+        "en": "Do you offer support for guests with hearing difficulties?",
+        "ru": "Есть помощь для гостей с нарушением слуха?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "access.large_print_menu",
+      "category": "accessibility",
+      "question": {
+        "et": "Kas menüü on suure kirjaga?",
+        "en": "Do you have a large print menu?",
+        "ru": "Есть меню крупным шрифтом?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "access.lift",
+      "category": "accessibility",
+      "question": {
+        "et": "Kas korruste vahel on lift?",
+        "en": "Is there a lift between floors?",
+        "ru": "Между этажами есть лифт?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "access.staff_assistance",
+      "category": "accessibility",
+      "question": {
+        "et": "Kas töötaja saab sissepääsu juures aidata?",
+        "en": "Can someone help me at the entrance?",
+        "ru": "Сотрудник может помочь мне у входа?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "access.quiet_table",
+      "category": "accessibility",
+      "question": {
+        "et": "Kas saab vaiksema laua?",
+        "en": "Can I have a quieter table?",
+        "ru": "Можно столик в более тихом месте?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "access.ramp",
+      "category": "accessibility",
+      "question": {
+        "et": "Kas sissepääsu juures on kaldtee?",
+        "en": "Is there a ramp at the entrance?",
+        "ru": "У входа есть пандус?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "access.sensory_environment",
+      "category": "accessibility",
+      "question": {
+        "et": "Kas muusika ja valgustus on tugevad?",
+        "en": "Is the music loud or the lighting bright?",
+        "ru": "У вас громкая музыка или яркое освещение?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "access.step_free",
+      "category": "accessibility",
+      "question": {
+        "et": "Kas sissepääs on astmeteta?",
+        "en": "Is the entrance step free?",
+        "ru": "Вход без ступенек?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "access.table_clearance",
+      "category": "accessibility",
+      "question": {
+        "et": "Kas ratastool mahub laua alla?",
+        "en": "Is there wheelchair clearance under the table?",
+        "ru": "Под столом достаточно места для инвалидной коляски?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "access.wheelchair_route",
+      "category": "accessibility",
+      "question": {
+        "et": "Kas ratastooliga pääseb laua juurde?",
+        "en": "Can a wheelchair user reach the table?",
+        "ru": "Можно подъехать к столу на инвалидной коляске?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.children_menu",
+      "category": "allergens",
+      "question": {
+        "et": "Millised allergeenid on lastemenüüs?",
+        "en": "What allergens are in the children's menu?",
+        "ru": "Какие аллергены есть в детском меню?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.children_gluten",
+      "category": "allergens",
+      "question": {
+        "et": "Kas lastemenüüs on gluteenivaba toit?",
+        "en": "Are there gluten free children's meals?",
+        "ru": "В детском меню есть блюда без глютена?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.children_milk",
+      "category": "allergens",
+      "question": {
+        "et": "Kas piimaallergiaga lapsele on sobiv toit?",
+        "en": "Can you cater for a child with a milk allergy?",
+        "ru": "Есть еда для ребёнка с аллергией на молоко?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.coeliac",
+      "category": "allergens",
+      "question": {
+        "et": "Kas tsöliaakiaga inimene saab siin ohutult süüa?",
+        "en": "Can someone with coeliac disease eat here safely?",
+        "ru": "Можно ли безопасно поесть при целиакии?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.nutrition_medical",
+      "category": "allergens",
+      "question": {
+        "et": "Kas see toit sobib diabeedi korral?",
+        "en": "Is this food suitable for someone with diabetes?",
+        "ru": "Эта еда подходит при диабете?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.egg",
+      "category": "allergens",
+      "question": {
+        "et": "Kas toidus on muna?",
+        "en": "Does the food contain egg?",
+        "ru": "В еде есть яйца?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.gluten",
+      "category": "allergens",
+      "question": {
+        "et": "Kas saate valmistada gluteenivaba rooga?",
+        "en": "Can you prepare a gluten free dish?",
+        "ru": "Можете приготовить блюдо без глютена?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.halal",
+      "category": "allergens",
+      "question": {
+        "et": "Kas liha on halal?",
+        "en": "Is the meat halal?",
+        "ru": "Мясо халяльное?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.kosher",
+      "category": "allergens",
+      "question": {
+        "et": "Kas teil on koššertoitu?",
+        "en": "Do you serve kosher food?",
+        "ru": "У вас есть кошерная еда?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.lactose",
+      "category": "allergens",
+      "question": {
+        "et": "Kas pakute laktoosivaba toitu?",
+        "en": "Do you offer lactose free food?",
+        "ru": "У вас есть еда без лактозы?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.lupin",
+      "category": "allergens",
+      "question": {
+        "et": "Kas küpsetistes on lupiini?",
+        "en": "Do the baked goods contain lupin?",
+        "ru": "В выпечке есть люпин?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.milk_free",
+      "category": "allergens",
+      "question": {
+        "et": "Kas rooga saab teha täiesti ilma piimata?",
+        "en": "Can you make the dish without any milk ingredients?",
+        "ru": "Можно приготовить блюдо совсем без молочных ингредиентов?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.mustard",
+      "category": "allergens",
+      "question": {
+        "et": "Kas kastmes on sinepit?",
+        "en": "Does the sauce contain mustard?",
+        "ru": "В соусе есть горчица?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.nuts",
+      "category": "allergens",
+      "question": {
+        "et": "Kas saaksin pähklivaba toidu?",
+        "en": "Can I have a nut free meal?",
+        "ru": "Можно еду без орехов?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.peanuts",
+      "category": "allergens",
+      "question": {
+        "et": "Kas maapähkleid kasutatakse samas köögis?",
+        "en": "Are peanuts used in the same kitchen?",
+        "ru": "В этой кухне используют арахис?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.pregnancy_preparation",
+      "category": "allergens",
+      "question": {
+        "et": "Kas see roog sobib rasedale?",
+        "en": "Is this dish suitable during pregnancy?",
+        "ru": "Это блюдо подходит при беременности?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.removing_ingredient",
+      "category": "allergens",
+      "question": {
+        "et": "Kas allergeeni saab lihtsalt roa pealt ära võtta?",
+        "en": "Can you just remove the allergen from the dish?",
+        "ru": "Можно просто убрать аллерген из блюда?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.fryer",
+      "category": "allergens",
+      "question": {
+        "et": "Kas gluteenivaba toit valmib eraldi fritüüris?",
+        "en": "Is gluten free food cooked in a separate fryer?",
+        "ru": "Еду без глютена готовят в отдельной фритюрнице?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.tools",
+      "category": "allergens",
+      "question": {
+        "et": "Kas allergiku toit tehakse eraldi vahenditega?",
+        "en": "Are separate utensils used for allergy requests?",
+        "ru": "Для еды при аллергии используют отдельные приборы?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.sesame",
+      "category": "allergens",
+      "question": {
+        "et": "Kas kastmes on seesamit?",
+        "en": "Does the sauce contain sesame?",
+        "ru": "В соусе есть кунжут?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.shellfish",
+      "category": "allergens",
+      "question": {
+        "et": "Kas kasutate koorikloomi või molluskeid?",
+        "en": "Do you use crustaceans or molluscs?",
+        "ru": "Вы используете ракообразных или моллюсков?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.soy",
+      "category": "allergens",
+      "question": {
+        "et": "Kas kasutate sojat?",
+        "en": "Do you use soy in the food?",
+        "ru": "Вы используете сою в еде?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.sulphites",
+      "category": "allergens",
+      "question": {
+        "et": "Kas roog sisaldab sulfiteid?",
+        "en": "Does the dish contain sulphites?",
+        "ru": "В блюде есть сульфиты?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "allergens.children_vegan",
+      "category": "allergens",
+      "question": {
+        "et": "Kas lastemenüüs on veganroog?",
+        "en": "Is there a vegan children's dish?",
+        "ru": "В детском меню есть веганское блюдо?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.air_conditioning",
+      "category": "amenities",
+      "question": {
+        "et": "Kas saalis on konditsioneer?",
+        "en": "Is the dining room air conditioned?",
+        "ru": "В зале есть кондиционер?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.blankets",
+      "category": "amenities",
+      "question": {
+        "et": "Kas terrassile saab pleedi?",
+        "en": "Do you provide blankets on the terrace?",
+        "ru": "На террасе дают пледы?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.charging",
+      "category": "amenities",
+      "question": {
+        "et": "Kas telefoni saab laadida?",
+        "en": "Can I charge my phone?",
+        "ru": "Можно зарядить телефон?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.cloakroom",
+      "category": "amenities",
+      "question": {
+        "et": "Kas teil on garderoob?",
+        "en": "Do you have a cloakroom?",
+        "ru": "У вас есть гардероб?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.dress_code",
+      "category": "amenities",
+      "question": {
+        "et": "Kas teil on riietusreeglid?",
+        "en": "Do you have a dress code?",
+        "ru": "У вас есть дресс-код?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.luggage",
+      "category": "amenities",
+      "question": {
+        "et": "Kas kohvri saab kuskile jätta?",
+        "en": "Can I leave a suitcase somewhere?",
+        "ru": "Можно где-нибудь оставить чемодан?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.live_music",
+      "category": "amenities",
+      "question": {
+        "et": "Kas õhtul on elav muusika?",
+        "en": "Is there live music in the evening?",
+        "ru": "Вечером есть живая музыка?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.dog_leash",
+      "category": "amenities",
+      "question": {
+        "et": "Kas koer peab olema rihma otsas?",
+        "en": "Must dogs be kept on a lead?",
+        "ru": "Собака должна быть на поводке?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.other_pets",
+      "category": "amenities",
+      "question": {
+        "et": "Kas kassiga võib tulla?",
+        "en": "Can I bring a cat?",
+        "ru": "Можно прийти с кошкой?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.dog_size",
+      "category": "amenities",
+      "question": {
+        "et": "Kas suur koer on lubatud?",
+        "en": "Are large dogs allowed?",
+        "ru": "Можно с большой собакой?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.photography",
+      "category": "amenities",
+      "question": {
+        "et": "Kas restoranis võib pildistada?",
+        "en": "May I take photos in the restaurant?",
+        "ru": "Можно фотографировать в ресторане?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.private_space",
+      "category": "amenities",
+      "question": {
+        "et": "Kas teil on privaatne ruum?",
+        "en": "Do you have a private room?",
+        "ru": "У вас есть отдельный зал?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.sports_screen",
+      "category": "amenities",
+      "question": {
+        "et": "Kas spordiülekandeid saab vaadata?",
+        "en": "Can we watch live sports?",
+        "ru": "Можно смотреть спортивные трансляции?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.smoking",
+      "category": "amenities",
+      "question": {
+        "et": "Kas suitsetamiseks on eraldi koht?",
+        "en": "Is there a designated smoking area?",
+        "ru": "Есть отдельное место для курения?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.toilets",
+      "category": "amenities",
+      "question": {
+        "et": "Kus on tualett?",
+        "en": "Where is the toilet?",
+        "ru": "Где туалет?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.vaping",
+      "category": "amenities",
+      "question": {
+        "et": "Kas terrassil võib veipida?",
+        "en": "Is vaping allowed on the terrace?",
+        "ru": "На террасе можно пользоваться вейпом?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.pet_water",
+      "category": "amenities",
+      "question": {
+        "et": "Kas koerale saab veekaussi?",
+        "en": "Can I get a water bowl for my dog?",
+        "ru": "Можно миску воды для собаки?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.wifi",
+      "category": "amenities",
+      "question": {
+        "et": "Kas teil on WiFi?",
+        "en": "Do you have Wi-Fi?",
+        "ru": "У вас есть Wi-Fi?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.wifi_access",
+      "category": "amenities",
+      "question": {
+        "et": "Mis on WiFi parool?",
+        "en": "What is the Wi-Fi password?",
+        "ru": "Какой пароль от Wi-Fi?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "amenities.laptop_policy",
+      "category": "amenities",
+      "question": {
+        "et": "Kas sülearvutiga võib tööd teha?",
+        "en": "Can I work on a laptop while visiting?",
+        "ru": "Можно поработать за ноутбуком?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "drinks.beer",
+      "category": "drinks",
+      "question": {
+        "et": "Kas kraanist õlut on?",
+        "en": "Do you have draught beer?",
+        "ru": "Есть разливное пиво?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "drinks.bottled_water",
+      "category": "drinks",
+      "question": {
+        "et": "Kas on gaseerimata pudelivett?",
+        "en": "Do you have still bottled water?",
+        "ru": "Есть негазированная вода в бутылках?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "drinks.corkage",
+      "category": "drinks",
+      "question": {
+        "et": "Kas oma veini võib kaasa võtta?",
+        "en": "May I bring my own wine?",
+        "ru": "Можно принести своё вино?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "drinks.coffee",
+      "category": "drinks",
+      "question": {
+        "et": "Kas kohvi saab ka kaasa?",
+        "en": "Can I get coffee to take away?",
+        "ru": "Можно кофе с собой?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "drinks.decaf",
+      "category": "drinks",
+      "question": {
+        "et": "Kas kofeiinivaba kohvi on?",
+        "en": "Do you have decaf coffee?",
+        "ru": "Есть кофе без кофеина?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "drinks.prices",
+      "category": "drinks",
+      "question": {
+        "et": "Kui palju joogid maksavad?",
+        "en": "How much do drinks cost?",
+        "ru": "Сколько стоят напитки?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "drinks.juice",
+      "category": "drinks",
+      "question": {
+        "et": "Milliseid mahlu pakute?",
+        "en": "What juices do you serve?",
+        "ru": "Какие соки вы подаёте?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "drinks.alcohol_free",
+      "category": "drinks",
+      "question": {
+        "et": "Kas on alkoholivabu kokteile?",
+        "en": "Do you have alcohol free cocktails?",
+        "ru": "Есть безалкогольные коктейли?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "drinks.plant_milk",
+      "category": "drinks",
+      "question": {
+        "et": "Kas kohvile saab taimset piima?",
+        "en": "Do you have plant milk for coffee?",
+        "ru": "Для кофе есть растительное молоко?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "drinks.tap_water",
+      "category": "drinks",
+      "question": {
+        "et": "Kas kraanivett saab tasuta?",
+        "en": "Is tap water free?",
+        "ru": "Вода из-под крана бесплатная?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "drinks.wine_list",
+      "category": "drinks",
+      "question": {
+        "et": "Millised veinid teil on?",
+        "en": "What wines do you offer?",
+        "ru": "Какие вина у вас есть?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "drinks.pairing",
+      "category": "drinks",
+      "question": {
+        "et": "Kas saate roa juurde veini soovitada?",
+        "en": "Can you recommend a wine with my meal?",
+        "ru": "Можете посоветовать вино к блюду?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "events.birthdays",
+      "category": "events",
+      "question": {
+        "et": "Kas sünnipäeva saab teie juures pidada?",
+        "en": "Can I celebrate a birthday at your restaurant?",
+        "ru": "У вас можно отметить день рождения?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "events.outside_cake",
+      "category": "events",
+      "question": {
+        "et": "Kas oma tordi võib kaasa võtta?",
+        "en": "May I bring a birthday cake?",
+        "ru": "Можно принести свой торт?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "events.cake_fee",
+      "category": "events",
+      "question": {
+        "et": "Kas tordi serveerimisel on lisatasu?",
+        "en": "Is there a cake serving fee?",
+        "ru": "Есть плата за подачу своего торта?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "events.cake_storage",
+      "category": "events",
+      "question": {
+        "et": "Kas torti saab enne pidu külmikus hoida?",
+        "en": "Can you refrigerate a cake before the party?",
+        "ru": "Можно оставить торт в холодильнике до праздника?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "events.candles",
+      "category": "events",
+      "question": {
+        "et": "Kas tordiküünlaid võib kasutada?",
+        "en": "Are birthday candles allowed?",
+        "ru": "Можно зажечь свечи на торте?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "events.capacity",
+      "category": "events",
+      "question": {
+        "et": "Mitu inimest mahub erapeole?",
+        "en": "How many people can attend a private event?",
+        "ru": "Сколько человек помещается на частном мероприятии?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "events.catering",
+      "category": "events",
+      "question": {
+        "et": "Kas pakute toitlustust väljaspool restorani?",
+        "en": "Do you offer catering outside the restaurant?",
+        "ru": "Вы предлагаете выездное обслуживание?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "events.corporate",
+      "category": "events",
+      "question": {
+        "et": "Kas firmapeo jaoks saab pakkumise?",
+        "en": "Can I get a quote for a company event?",
+        "ru": "Можно предложение для корпоративного мероприятия?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "events.decorations",
+      "category": "events",
+      "question": {
+        "et": "Kas lauda võib õhupallidega kaunistada?",
+        "en": "Can we decorate the table with balloons?",
+        "ru": "Можно украсить стол воздушными шарами?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "events.end_time",
+      "category": "events",
+      "question": {
+        "et": "Mis kell pidu peab lõppema?",
+        "en": "What time must an event finish?",
+        "ru": "Во сколько мероприятие должно закончиться?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "events.flowers",
+      "category": "events",
+      "question": {
+        "et": "Kas lillede jaoks saab vaasi?",
+        "en": "Can we get a vase for flowers?",
+        "ru": "Можно вазу для цветов?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "events.group_menu",
+      "category": "events",
+      "question": {
+        "et": "Kas gruppidele on eraldi menüü?",
+        "en": "Do you have a group menu?",
+        "ru": "Есть отдельное меню для групп?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "events.music",
+      "category": "events",
+      "question": {
+        "et": "Kas peol võib oma muusikat lasta?",
+        "en": "May we play our own music at an event?",
+        "ru": "На празднике можно включить свою музыку?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "events.private_hire",
+      "category": "events",
+      "question": {
+        "et": "Kas kogu restorani saab erapeoks rentida?",
+        "en": "Can I hire the whole restaurant for a private event?",
+        "ru": "Можно арендовать весь ресторан для праздника?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "events.presentation_equipment",
+      "category": "events",
+      "question": {
+        "et": "Kas esitluse jaoks on projektor?",
+        "en": "Do you have a projector for presentations?",
+        "ru": "Есть проектор для презентации?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "events.setup_time",
+      "category": "events",
+      "question": {
+        "et": "Kas kaunistamiseks saab varem sisse?",
+        "en": "Can we arrive early to decorate?",
+        "ru": "Можно прийти раньше, чтобы украсить зал?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "events.surprise",
+      "category": "events",
+      "question": {
+        "et": "Kas saate sünnipäevalapsele üllatuse korraldada?",
+        "en": "Can you arrange a birthday surprise?",
+        "ru": "Можете организовать сюрприз имениннику?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "events.weddings",
+      "category": "events",
+      "question": {
+        "et": "Kas pulmalõunat saab korraldada?",
+        "en": "Can you host a wedding lunch?",
+        "ru": "Можно устроить свадебный обед?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.baby_food",
+      "category": "family",
+      "question": {
+        "et": "Kas teil on beebipüreed?",
+        "en": "Do you serve baby purée?",
+        "ru": "У вас есть детское пюре для малышей?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.baby_food_heating",
+      "category": "family",
+      "question": {
+        "et": "Kas saate beebitoitu soojendada?",
+        "en": "Can you warm up baby food?",
+        "ru": "Можете подогреть детское питание?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.booster_seats",
+      "category": "family",
+      "question": {
+        "et": "Kas vanemale lapsele on istmekõrgendus?",
+        "en": "Do you have booster seats for older children?",
+        "ru": "Есть ли сиденья-подушки для детей постарше?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.feeding_space",
+      "category": "family",
+      "question": {
+        "et": "Kas imetamiseks on vaikne koht?",
+        "en": "Is there a quiet place for breastfeeding?",
+        "ru": "Есть ли тихое место для кормления грудью?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.changing_table",
+      "category": "family",
+      "question": {
+        "et": "Kas tualetis on mähkimislaud?",
+        "en": "Is there a baby changing table in the toilet?",
+        "ru": "В туалете есть пеленальный столик?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.play_age_limits",
+      "category": "family",
+      "question": {
+        "et": "Mis vanuses lastele mängunurk sobib?",
+        "en": "What ages is the play corner suitable for?",
+        "ru": "Для какого возраста подходит игровой уголок?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.serve_children_first",
+      "category": "family",
+      "question": {
+        "et": "Kas lapse toit saab tulla enne meie toitu?",
+        "en": "Can my child's food come before ours?",
+        "ru": "Можно принести еду ребёнку раньше нашей?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.children_menu_age",
+      "category": "family",
+      "question": {
+        "et": "Kas lastemenüüd võib tellida ka täiskasvanu?",
+        "en": "Can an adult order from the children's menu?",
+        "ru": "Взрослый может заказать из детского меню?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.children_menu_items",
+      "category": "family",
+      "question": {
+        "et": "Mis road lastemenüüs on?",
+        "en": "What dishes are on the children's menu?",
+        "ru": "Какие блюда есть в детском меню?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.children_menu_prices",
+      "category": "family",
+      "question": {
+        "et": "Kui palju lastemenüü road maksavad?",
+        "en": "How much are the children's meals?",
+        "ru": "Сколько стоят блюда из детского меню?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.small_portions",
+      "category": "family",
+      "question": {
+        "et": "Kas laps saab väiksema portsjoni?",
+        "en": "Can my child have a smaller portion?",
+        "ru": "Можно ребёнку заказать порцию поменьше?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.child_wait_time",
+      "category": "family",
+      "question": {
+        "et": "Kui kaua lastemenüü toidu ootamine võtab?",
+        "en": "How long do meals from the children's menu take?",
+        "ru": "Сколько ждать блюда из детского меню?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.drawing_take_home",
+      "category": "family",
+      "question": {
+        "et": "Kas laps võib joonistuse koju kaasa võtta?",
+        "en": "Can my child take the drawing home?",
+        "ru": "Ребёнок может забрать рисунок домой?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.drawing_materials",
+      "category": "family",
+      "question": {
+        "et": "Kas joonistamiseks on pliiatsid või kriidid?",
+        "en": "Do you provide pencils or crayons for drawing?",
+        "ru": "Для рисования есть карандаши или мелки?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.certification",
+      "category": "family",
+      "question": {
+        "et": "Kas teil on peresõbraliku restorani märgis?",
+        "en": "Do you have a family friendly restaurant certification?",
+        "ru": "У вас есть официальная отметка семейного ресторана?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.highchairs",
+      "category": "family",
+      "question": {
+        "et": "Kas teil on lastetoole?",
+        "en": "Do you have highchairs?",
+        "ru": "У вас есть детские стульчики?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.highchair_reservation",
+      "category": "family",
+      "question": {
+        "et": "Kas lastetooli saab ette broneerida?",
+        "en": "Can I reserve a highchair?",
+        "ru": "Можно заранее забронировать детский стульчик?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.play_cleaning",
+      "category": "family",
+      "question": {
+        "et": "Kui tihti mänguasju puhastatakse?",
+        "en": "How often are the toys cleaned?",
+        "ru": "Как часто вы чистите игрушки?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.play_fee",
+      "category": "family",
+      "question": {
+        "et": "Kas mängunurga kasutamine on tasuta?",
+        "en": "Is the play corner free to use?",
+        "ru": "Игровой уголок бесплатный?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.play_hours",
+      "category": "family",
+      "question": {
+        "et": "Mis kell mängunurk avatud on?",
+        "en": "What are the play corner's opening hours?",
+        "ru": "В какие часы открыт игровой уголок?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.stroller_space",
+      "category": "family",
+      "question": {
+        "et": "Kas lapsevankri saab laua juurde panna?",
+        "en": "Can I keep a stroller beside the table?",
+        "ru": "Можно поставить коляску рядом со столом?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.stroller_storage",
+      "category": "family",
+      "question": {
+        "et": "Kas lapsevankrile on hoiukoht?",
+        "en": "Is there somewhere to leave a stroller?",
+        "ru": "Есть ли место, где оставить детскую коляску?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.play_supervision",
+      "category": "family",
+      "question": {
+        "et": "Kas mängunurgas on lapsehoidja?",
+        "en": "Is there a babysitter in the play corner?",
+        "ru": "В игровом уголке есть няня?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.toy_materials",
+      "category": "family",
+      "question": {
+        "et": "Kas mänguasjad sobivad lateksiallergiaga lapsele?",
+        "en": "Are the toys suitable for a child with a latex allergy?",
+        "ru": "Игрушки подходят ребёнку с аллергией на латекс?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "family.toy_take_home",
+      "category": "family",
+      "question": {
+        "et": "Kas laps võib mänguasja kaasa võtta?",
+        "en": "Can my child take a toy home?",
+        "ru": "Ребёнок может забрать игрушку домой?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "hours.christmas",
+      "category": "hours-special",
+      "question": {
+        "et": "Kas jõululaupäeval saab õhtust süüa?",
+        "en": "Can we dine on Christmas Eve?",
+        "ru": "Можно поужинать в сочельник?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "hours.holiday_overrides",
+      "category": "hours-special",
+      "question": {
+        "et": "Kas riigipühal olete avatud?",
+        "en": "Are you open on public holidays?",
+        "ru": "Вы открыты в государственные праздники?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "hours.last_order_policy",
+      "category": "hours-special",
+      "question": {
+        "et": "Kui hilja saab viimase tellimuse teha?",
+        "en": "What is the latest time to place an order?",
+        "ru": "До какого времени можно сделать последний заказ?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "hours.temporary_closures",
+      "category": "hours-special",
+      "question": {
+        "et": "Kas remont võib lahtiolekuaegu muuta?",
+        "en": "Could renovations affect your opening hours?",
+        "ru": "Ремонт может изменить часы работы?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "hours.new_year",
+      "category": "hours-special",
+      "question": {
+        "et": "Kas aastavahetusel on erimenüü või pilet?",
+        "en": "Is there a special menu or ticket for New Year's Eve?",
+        "ru": "В новогоднюю ночь есть специальное меню или билеты?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "location.bike_parking",
+      "category": "location",
+      "question": {
+        "et": "Kas jalgratta saab lukustada rattahoidlasse?",
+        "en": "Is there a rack where I can lock my bicycle?",
+        "ru": "Есть стойка, где можно пристегнуть велосипед?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "location.public_transport",
+      "category": "location",
+      "question": {
+        "et": "Milline buss teie juurde tuleb?",
+        "en": "Which bus takes me to the restaurant?",
+        "ru": "На каком автобусе можно к вам приехать?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "location.public_contact",
+      "category": "location",
+      "question": {
+        "et": "Mis on restorani telefoninumber?",
+        "en": "What is the restaurant's phone number?",
+        "ru": "Какой номер телефона ресторана?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "location.public_email",
+      "category": "location",
+      "question": {
+        "et": "Mis on restorani e-posti aadress?",
+        "en": "What is the restaurant's email address?",
+        "ru": "Какая электронная почта ресторана?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "location.entrance",
+      "category": "location",
+      "question": {
+        "et": "Millise ukse kaudu sisse tulla?",
+        "en": "Which entrance should we use?",
+        "ru": "Через какой вход заходить?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "location.ev_charging",
+      "category": "location",
+      "question": {
+        "et": "Kas parkla juures on elektriauto laadija?",
+        "en": "Is there an EV charger near the parking area?",
+        "ru": "У парковки есть зарядка для электромобиля?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "location.map_link",
+      "category": "location",
+      "question": {
+        "et": "Kas saate kaardilingi saata?",
+        "en": "Can you send me a map link?",
+        "ru": "Можете прислать ссылку на карту?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "location.parking",
+      "category": "location",
+      "question": {
+        "et": "Kas teil on oma parkla?",
+        "en": "Do you have your own car park?",
+        "ru": "У вас есть своя парковка?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "location.parking_reservation",
+      "category": "location",
+      "question": {
+        "et": "Kas parkimiskoha saab broneerida?",
+        "en": "Can I reserve a parking space?",
+        "ru": "Можно забронировать парковочное место?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "location.parking_prices",
+      "category": "location",
+      "question": {
+        "et": "Kui palju parkimine maksab?",
+        "en": "How much does parking cost?",
+        "ru": "Сколько стоит парковка?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "location.nearest_stop",
+      "category": "location",
+      "question": {
+        "et": "Mis on lähim peatus?",
+        "en": "What is the nearest stop?",
+        "ru": "Какая остановка ближе всего?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "location.taxi_dropoff",
+      "category": "location",
+      "question": {
+        "et": "Kus takso saab peatuda?",
+        "en": "Where can a taxi drop us off?",
+        "ru": "Где такси может нас высадить?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "location.walking_route",
+      "category": "location",
+      "question": {
+        "et": "Kui kaua kesklinnast jalgsi tulla?",
+        "en": "How long is the walk from the city centre?",
+        "ru": "Сколько идти пешком из центра?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "location.official_menu_url",
+      "category": "location",
+      "question": {
+        "et": "Kust leiab teie ametliku menüü veebis?",
+        "en": "Where can I find your official menu online?",
+        "ru": "Где найти ваше официальное меню в интернете?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.breakfast",
+      "category": "menu",
+      "question": {
+        "et": "Kas pakute hommikusööki?",
+        "en": "Do you serve breakfast?",
+        "ru": "Вы подаёте завтраки?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.outside_food",
+      "category": "menu",
+      "question": {
+        "et": "Kas oma toitu võib kaasa võtta?",
+        "en": "May we bring our own food?",
+        "ru": "Можно принести свою еду?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.brunch",
+      "category": "menu",
+      "question": {
+        "et": "Kas pühapäeval on brunch?",
+        "en": "Do you offer Sunday brunch?",
+        "ru": "По воскресеньям есть бранч?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.nutrition",
+      "category": "menu",
+      "question": {
+        "et": "Kas teil on roogade kalorite info?",
+        "en": "Do you have calorie information for dishes?",
+        "ru": "Есть информация о калорийности блюд?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.meat_doneness",
+      "category": "menu",
+      "question": {
+        "et": "Kas liha küpsusastet saab valida?",
+        "en": "Can I choose how well the meat is cooked?",
+        "ru": "Можно выбрать степень прожарки мяса?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.fish_bones",
+      "category": "menu",
+      "question": {
+        "et": "Kas kala on ilma luudeta?",
+        "en": "Is the fish boneless?",
+        "ru": "Рыба без костей?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.local_ingredients",
+      "category": "menu",
+      "question": {
+        "et": "Kas kasutate kohalikku toorainet?",
+        "en": "Do you use local ingredients?",
+        "ru": "Вы используете местные продукты?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.lunch_offer",
+      "category": "menu",
+      "question": {
+        "et": "Kas teil on lõunapakkumine?",
+        "en": "Do you have a lunch special?",
+        "ru": "У вас есть обеденное предложение?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.salt_modification",
+      "category": "menu",
+      "question": {
+        "et": "Kas saab ilma lisatud soolata?",
+        "en": "Can you prepare a dish without added salt?",
+        "ru": "Можно приготовить без добавления соли?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.organic_certification",
+      "category": "menu",
+      "question": {
+        "et": "Kas koostisosad on mahedad?",
+        "en": "Are your ingredients organic?",
+        "ru": "Ваши продукты органические?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.ingredient_origin",
+      "category": "menu",
+      "question": {
+        "et": "Kust teie tooraine pärineb?",
+        "en": "Where do your ingredients come from?",
+        "ru": "Откуда ваши продукты?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.leftovers",
+      "category": "menu",
+      "question": {
+        "et": "Kas ülejäänud toidu saab kaasa pakkida?",
+        "en": "Can you pack up leftover food?",
+        "ru": "Можно упаковать оставшуюся еду с собой?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.portion_size",
+      "category": "menu",
+      "question": {
+        "et": "Kui suur on põhiroa portsjon?",
+        "en": "How large is a main course portion?",
+        "ru": "Какой размер порции основного блюда?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.preorder",
+      "category": "menu",
+      "question": {
+        "et": "Kas toidu saab ette tellida?",
+        "en": "Can we pre-order food?",
+        "ru": "Можно заказать еду заранее?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.cooking_methods",
+      "category": "menu",
+      "question": {
+        "et": "Kas kala serveeritakse toorelt või küpsetatult?",
+        "en": "Is the fish served raw or cooked?",
+        "ru": "Рыбу подают сырой или приготовленной?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.sauce_separate",
+      "category": "menu",
+      "question": {
+        "et": "Kas kastme saab eraldi?",
+        "en": "Can the sauce be served separately?",
+        "ru": "Можно подать соус отдельно?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.seasonal",
+      "category": "menu",
+      "question": {
+        "et": "Kas menüü muutub hooajaliselt?",
+        "en": "Does your menu change with the seasons?",
+        "ru": "Меню меняется по сезонам?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.set_menu",
+      "category": "menu",
+      "question": {
+        "et": "Kas saab kindla hinnaga mitmekäigulise menüü?",
+        "en": "Do you offer a set menu at a fixed price?",
+        "ru": "Есть меню из нескольких блюд по фиксированной цене?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.sharing",
+      "category": "menu",
+      "question": {
+        "et": "Kas rooga võib jagada kahe inimese vahel?",
+        "en": "Can two people share a dish?",
+        "ru": "Можно разделить блюдо на двоих?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.live_stock",
+      "category": "menu",
+      "question": {
+        "et": "Kas lõhe on täna veel saadaval?",
+        "en": "Is the salmon still available today?",
+        "ru": "Лосось сегодня ещё есть?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.daily_special",
+      "category": "menu",
+      "question": {
+        "et": "Mis on tänane päevapraad?",
+        "en": "What is today's special?",
+        "ru": "Какое сегодня блюдо дня?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.spice_level",
+      "category": "menu",
+      "question": {
+        "et": "Kas toit on vürtsikas?",
+        "en": "Is the food spicy?",
+        "ru": "Еда острая?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.substitutions",
+      "category": "menu",
+      "question": {
+        "et": "Kas kartuli saab köögiviljade vastu vahetada?",
+        "en": "Can I swap potatoes for vegetables?",
+        "ru": "Можно заменить картофель овощами?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "menu.tasting",
+      "category": "menu",
+      "question": {
+        "et": "Kas teil on degustatsioonimenüü?",
+        "en": "Do you have a tasting menu?",
+        "ru": "У вас есть дегустационное меню?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.cancellation_fee",
+      "category": "payment",
+      "question": {
+        "et": "Kas tühistamisel tuleb tasu maksta?",
+        "en": "Is there a cancellation fee?",
+        "ru": "Есть плата за отмену брони?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.cards",
+      "category": "payment",
+      "question": {
+        "et": "Kas kaardiga saab maksta?",
+        "en": "Can I pay by card?",
+        "ru": "Можно оплатить картой?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.cash",
+      "category": "payment",
+      "question": {
+        "et": "Kas võtate sularaha?",
+        "en": "Do you accept cash?",
+        "ru": "Вы принимаете наличные?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.currency",
+      "category": "payment",
+      "question": {
+        "et": "Kas eurodest erinevat valuutat võtate?",
+        "en": "Do you accept currencies other than euros?",
+        "ru": "Вы принимаете другую валюту, кроме евро?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.deposit",
+      "category": "payment",
+      "question": {
+        "et": "Kas broneerimiseks peab ettemaksu tegema?",
+        "en": "Do I need to pay a deposit to book?",
+        "ru": "Для брони нужен депозит?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.discounts",
+      "category": "payment",
+      "question": {
+        "et": "Kas lastele või pensionäridele on soodustus?",
+        "en": "Are there discounts for children or pensioners?",
+        "ru": "Есть скидки для детей или пенсионеров?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.invoice",
+      "category": "payment",
+      "question": {
+        "et": "Kas ettevõttele saab arve?",
+        "en": "Can you issue an invoice to a company?",
+        "ru": "Можно счёт на компанию?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.loyalty",
+      "category": "payment",
+      "question": {
+        "et": "Kas teil on püsikliendiprogramm?",
+        "en": "Do you have a loyalty programme?",
+        "ru": "У вас есть программа лояльности?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.minimum_spend",
+      "category": "payment",
+      "question": {
+        "et": "Kas lauale on minimaalne arvesumma?",
+        "en": "Is there a minimum spend for a table?",
+        "ru": "Есть минимальная сумма заказа на стол?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.mobile",
+      "category": "payment",
+      "question": {
+        "et": "Kas telefoniga saab maksta?",
+        "en": "Can I pay with my phone?",
+        "ru": "Можно оплатить телефоном?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.no_show_fee",
+      "category": "payment",
+      "question": {
+        "et": "Kas kohale ilmumata jätmisel tuleb tasu?",
+        "en": "Is there a no-show fee?",
+        "ru": "Есть плата, если не прийти?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.refunds",
+      "category": "payment",
+      "question": {
+        "et": "Millal ettemaks tagasi makstakse?",
+        "en": "When is a deposit refunded?",
+        "ru": "Когда возвращают предоплату?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.remote_payment",
+      "category": "payment",
+      "question": {
+        "et": "Kas arve saab eemalt ära maksta?",
+        "en": "Can I pay the bill remotely?",
+        "ru": "Можно оплатить счёт удалённо?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.service_charge",
+      "category": "payment",
+      "question": {
+        "et": "Kas lisandub teenindustasu?",
+        "en": "Is there a service charge?",
+        "ru": "Есть сервисный сбор?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.split_bill",
+      "category": "payment",
+      "question": {
+        "et": "Kas arve saab eraldi teha?",
+        "en": "Can we split the bill?",
+        "ru": "Можно разделить счёт?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.tips",
+      "category": "payment",
+      "question": {
+        "et": "Kas jootraha saab kaardiga jätta?",
+        "en": "Can I leave a tip by card?",
+        "ru": "Можно оставить чаевые картой?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.vat_details",
+      "category": "payment",
+      "question": {
+        "et": "Kas hinnad sisaldavad käibemaksu?",
+        "en": "Do your prices include VAT?",
+        "ru": "Цены включают НДС?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.gift_vouchers",
+      "category": "payment",
+      "question": {
+        "et": "Kas kinkekaarti saab osta?",
+        "en": "Can I buy a gift voucher?",
+        "ru": "Можно купить подарочный сертификат?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.voucher_expiry",
+      "category": "payment",
+      "question": {
+        "et": "Kui kaua kinkekaart kehtib?",
+        "en": "How long is a gift voucher valid?",
+        "ru": "Сколько действует подарочный сертификат?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "payment.voucher_redemption",
+      "category": "payment",
+      "question": {
+        "et": "Kas kinkekaardiga saab maksta?",
+        "en": "Can I pay with a gift voucher?",
+        "ru": "Можно оплатить подарочным сертификатом?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "privacy.access_request",
+      "category": "privacy",
+      "question": {
+        "et": "Kas saan oma andmetest koopia?",
+        "en": "Can I get a copy of my data?",
+        "ru": "Можно получить копию моих данных?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "privacy.rights_contact",
+      "category": "privacy",
+      "question": {
+        "et": "Kuidas saan oma andmete kustutamist taotleda?",
+        "en": "How do I request deletion of my data?",
+        "ru": "Как запросить удаление моих данных?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "privacy.marketing",
+      "category": "privacy",
+      "question": {
+        "et": "Kas minu numbrit kasutatakse reklaamiks?",
+        "en": "Will my number be used for marketing?",
+        "ru": "Мой номер будут использовать для рекламы?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "privacy.alternative_channel",
+      "category": "privacy",
+      "question": {
+        "et": "Kas saan rääkida ilma salvestamiseta?",
+        "en": "Can I use the service without recording?",
+        "ru": "Можно воспользоваться сервисом без записи?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "privacy.policy_url",
+      "category": "privacy",
+      "question": {
+        "et": "Kust saan privaatsustingimusi lugeda?",
+        "en": "Where can I read the privacy policy?",
+        "ru": "Где прочитать политику конфиденциальности?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "privacy.recording_notice",
+      "category": "privacy",
+      "question": {
+        "et": "Kas seda kõnet salvestatakse?",
+        "en": "Is this call being recorded?",
+        "ru": "Этот звонок записывается?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "privacy.retention_notice",
+      "category": "privacy",
+      "question": {
+        "et": "Kui kaua minu andmeid säilitatakse?",
+        "en": "How long is my data kept?",
+        "ru": "Сколько хранят мои данные?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "privacy.processors",
+      "category": "privacy",
+      "question": {
+        "et": "Millistele teenusepakkujatele andmeid saadetakse?",
+        "en": "Which service providers receive my data?",
+        "ru": "Каким поставщикам услуг передают мои данные?"
+      },
+      "risk": "high",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "seating.early_arrival",
+      "category": "seating",
+      "question": {
+        "et": "Kas võime enne broneeritud aega tulla?",
+        "en": "Can we arrive before our booked time?",
+        "ru": "Можно прийти раньше времени брони?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "seating.late_hold",
+      "category": "seating",
+      "question": {
+        "et": "Mitu minutit lauda hilinemisel hoiate?",
+        "en": "How many minutes will you hold the table if we are late?",
+        "ru": "Сколько минут вы держите столик при опоздании?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "seating.play_view",
+      "category": "seating",
+      "question": {
+        "et": "Kas saaksime laua mängunurga kõrvale?",
+        "en": "Can we sit beside the play corner?",
+        "ru": "Можно столик рядом с игровым уголком?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "seating.separate_tables",
+      "category": "seating",
+      "question": {
+        "et": "Kas meie seltskond saab istuda eraldi laudades?",
+        "en": "Can our party sit at separate tables?",
+        "ru": "Наша компания может сидеть за отдельными столами?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "seating.solo_policy",
+      "category": "seating",
+      "question": {
+        "et": "Kas üksi saab restoranis süüa?",
+        "en": "Can I dine alone?",
+        "ru": "Можно прийти поесть одному?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "seating.specific_table",
+      "category": "seating",
+      "question": {
+        "et": "Kas saan valida kindla lauanumbri?",
+        "en": "Can I choose a particular table number?",
+        "ru": "Можно выбрать конкретный номер стола?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "seating.extended_stay",
+      "category": "seating",
+      "question": {
+        "et": "Kas lauda saab kauem kasutada?",
+        "en": "Can we keep the table longer?",
+        "ru": "Можно остаться за столом подольше?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "seating.join_tables",
+      "category": "seating",
+      "question": {
+        "et": "Kas kaks lauda saab kokku lükata?",
+        "en": "Can you join two tables?",
+        "ru": "Можно сдвинуть два стола вместе?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "seating.terrace",
+      "category": "seating",
+      "question": {
+        "et": "Kas teil on terrass?",
+        "en": "Do you have a terrace?",
+        "ru": "У вас есть терраса?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "seating.terrace_booking",
+      "category": "seating",
+      "question": {
+        "et": "Kas saab broneerida laua terrassile?",
+        "en": "Can I book a terrace table?",
+        "ru": "Можно забронировать столик на террасе?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "seating.terrace_heating",
+      "category": "seating",
+      "question": {
+        "et": "Kas terrassil on soojendid?",
+        "en": "Are there heaters on the terrace?",
+        "ru": "На террасе есть обогреватели?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "seating.terrace_rain",
+      "category": "seating",
+      "question": {
+        "et": "Mis saab terrassibroneeringust vihmaga?",
+        "en": "What happens to a terrace booking if it rains?",
+        "ru": "Что будет с бронью на террасе, если пойдёт дождь?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "seating.waiting_area",
+      "category": "seating",
+      "question": {
+        "et": "Kas teil on ooteala, kui laud pole veel valmis?",
+        "en": "Is there a waiting area if our table is not ready?",
+        "ru": "Есть где подождать, если стол ещё не готов?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "seating.waitlist",
+      "category": "seating",
+      "question": {
+        "et": "Kas saate meid ootenimekirja panna?",
+        "en": "Can you put us on a waiting list?",
+        "ru": "Можете добавить нас в лист ожидания?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "seating.walk_ins",
+      "category": "seating",
+      "question": {
+        "et": "Kas võib tulla ilma broneeringuta?",
+        "en": "Can we come without a reservation?",
+        "ru": "Можно прийти без брони?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "seating.window",
+      "category": "seating",
+      "question": {
+        "et": "Kas saab aknaaluse laua?",
+        "en": "Can I have a table by the window?",
+        "ru": "Можно столик у окна?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "service.collection",
+      "category": "service",
+      "question": {
+        "et": "Kust saab ettetellitud toidu kätte?",
+        "en": "Where do I collect a pre-order?",
+        "ru": "Где забрать предварительный заказ?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "service.compensation",
+      "category": "service",
+      "question": {
+        "et": "Kas halva teeninduse eest saab raha tagasi?",
+        "en": "Can I get a refund for poor service?",
+        "ru": "Можно вернуть деньги за плохое обслуживание?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "service.complaints",
+      "category": "service",
+      "question": {
+        "et": "Kellele saan teeninduse kohta kaebuse esitada?",
+        "en": "Who can I complain to about the service?",
+        "ru": "Кому можно пожаловаться на обслуживание?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "service.delivery",
+      "category": "service",
+      "question": {
+        "et": "Kas toitu saab koju tellida?",
+        "en": "Do you deliver food?",
+        "ru": "Вы доставляете еду?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "service.delivery_area",
+      "category": "service",
+      "question": {
+        "et": "Millisesse piirkonda te toitu viite?",
+        "en": "Which areas do you deliver to?",
+        "ru": "В какие районы вы доставляете еду?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "service.delivery_fee",
+      "category": "service",
+      "question": {
+        "et": "Kui palju kohaletoimetamine maksab?",
+        "en": "How much is delivery?",
+        "ru": "Сколько стоит доставка?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "service.delivery_wait",
+      "category": "service",
+      "question": {
+        "et": "Kui kaua kulleriga tellimus võtab?",
+        "en": "How long does delivery take?",
+        "ru": "Сколько занимает доставка?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "service.food_wait",
+      "category": "service",
+      "question": {
+        "et": "Kui kaua praegu toitu ootama peab?",
+        "en": "How long is the wait for food right now?",
+        "ru": "Сколько сейчас ждать еду?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "service.jobs",
+      "category": "service",
+      "question": {
+        "et": "Kas teil on vabu töökohti?",
+        "en": "Do you have any job vacancies?",
+        "ru": "У вас есть вакансии?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "service.lost_property",
+      "category": "service",
+      "question": {
+        "et": "Kas leidsid minu kaotatud jope?",
+        "en": "Have you found my lost jacket?",
+        "ru": "Вы нашли мою потерянную куртку?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "service.manager_availability",
+      "category": "service",
+      "question": {
+        "et": "Millal juhatajaga rääkida saab?",
+        "en": "When can I speak to the manager?",
+        "ru": "Когда можно поговорить с управляющим?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "service.table_service",
+      "category": "service",
+      "question": {
+        "et": "Kas tellimuse võetakse lauas või letis?",
+        "en": "Do we order at the table or at the counter?",
+        "ru": "Заказ принимают за столом или у стойки?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "service.takeaway",
+      "category": "service",
+      "question": {
+        "et": "Kas toitu saab kaasa tellida?",
+        "en": "Can I order food to take away?",
+        "ru": "Можно заказать еду с собой?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    },
+    {
+      "field": "service.wrong_dish",
+      "category": "service",
+      "question": {
+        "et": "Mulle toodi vale roog, mida teha?",
+        "en": "I received the wrong dish. What should I do?",
+        "ru": "Мне принесли не то блюдо. Что делать?"
+      },
+      "risk": "ordinary",
+      "value": null,
+      "confirmed_by": null,
+      "confirmed_at": null,
+      "evidence": null
+    }
+  ]
+}

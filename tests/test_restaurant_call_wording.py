@@ -179,17 +179,14 @@ def test_estonian_question_forms_select_the_requested_fact(
 
 
 def test_cat_answer_does_not_grant_dog_only_permission(make_state):
+    from app.restaurant_service_questions import general_reply
+
     state = make_state()
     state.observe_user_text("Kas kassiga tohib tulla?", language="et")
     answer = state.guard_reply("Jah, loomulikult!", [])
-    assert (
-        answer
-        == "Koeraga võib tulla. Teiste lemmikloomade kohta palun küsige restorani töötajalt."
-    )
+    assert answer == general_reply(state.restaurant, "other_pets", "et")
     state.restaurant.pop("pet_policy")
-    assert state.guard_reply("Jah", []) == (
-        "Mul pole lemmikloomade kohta kinnitatud infot. Palun küsige restorani töötajalt, kas lemmikloomaga võib tulla."
-    )
+    assert state.guard_reply("Jah", []) == general_reply(state.restaurant, "other_pets", "et")
 
 
 @pytest.mark.parametrize(

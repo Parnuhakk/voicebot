@@ -11,9 +11,11 @@ from app.booking_response import trusted_booking_response
 from app.languages import CONSENT, requested_language, spoken_date
 from app.restaurant_call import COPY, parse_restaurant_request
 from app.restaurant_data import load_restaurant_data, restaurant_demo_profile
-from tests.test_restaurant_conversation import make_state, prepare, tomorrow
-from tests.test_restaurant_http import AUTH, client, start, turn
+from tests.test_restaurant_conversation import make_state as state_factory, prepare, tomorrow
+from tests.test_restaurant_http import AUTH, client as http_client, start, turn
 
+make_state = state_factory
+client = http_client
 
 APPROVED_RESTAURANT = load_restaurant_data()
 REQUESTS = {
@@ -593,7 +595,7 @@ def test_review_r2_exact_visible_food_example_retains_date_diners_and_diet(
 
     question = QUESTIONS[language]
     ui = Path(__file__).resolve().parents[1] / "app/restaurant/static/restaurant.js"
-    assert question in ui.read_text()
+    assert question in ui.read_text(encoding="utf-8")
     state = make_state(language)
     day = tomorrow()
     state.observe_user_text(REQUESTS[language].format(day=day), language=language)
@@ -1262,7 +1264,7 @@ def test_unknown_snapshot_expires_before_pure_language_switch(
     state.observe_user_text(
         f"A table on {tomorrow()} at 16:00 for four.", language=language
     )
-    state.observe_user_text("What is the Wi-Fi password?", language=language)
+    state.observe_user_text("Do you hold poetry readings?", language=language)
     assert state.booking_inquiry and state._restaurant_unmatched
     state.observe_user_text(switch, language=language)
     assert state.language == selected and state.booking_inquiry is None
@@ -1278,7 +1280,7 @@ def test_http_unknown_snapshot_expires_before_pure_language_switch(
 ):
     session = start(client, language)["session_id"]
     turn(client, session, REQUESTS[language].format(day=tomorrow()), language=language)
-    turn(client, session, "What is the Wi-Fi password?", language=language)
+    turn(client, session, "Do you hold poetry readings?", language=language)
     answer = turn(client, session, switch, language=language)
     state = client.app.state.demo_sessions.sessions[session].tools
     assert answer["language"] == selected and state.booking_inquiry is None
@@ -1468,7 +1470,7 @@ def test_whole_combined_count_and_clock_followup_keeps_requested_date(
 def test_unknown_question_snapshot_cannot_restore_old_details_on_next_turn(make_state):
     state = make_state("en")
     state.observe_user_text(f"table on {tomorrow()} at 16:00 for four", language="en")
-    state.observe_user_text("What is the Wi-Fi password?", language="en")
+    state.observe_user_text("Do you hold poetry readings?", language="en")
     assert trusted_booking_response(state) == {
         "content": COPY["en"]["information_unknown"]
         + " "

@@ -192,6 +192,12 @@ def owned(probe, ledger, scope=SCOPE, *, cleanup=False, writes="1", fallback=Fal
         "RESTAURANT_CONFIG_PATH": str(ledger.config),
         "RESTAURANT_DEMO_WRITES": writes,
     }
+    if os.name == "nt":
+        # Windows Python needs its operating-system directory to initialize
+        # Winsock even though this subprocess has no live provider credentials.
+        for key in ("SYSTEMROOT", "WINDIR"):
+            if value := os.environ.get(key):
+                env[key] = value
     env["EASY_STATE_DB" if fallback else "RESTAURANT_STATE_DB"] = str(
         ledger.path.with_name("easy.db") if fallback else ledger.path
     )
