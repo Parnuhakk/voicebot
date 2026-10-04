@@ -22,9 +22,10 @@ does not change the reservation parser's AM/PM clarification rules.
 
 ## Candidate verification
 
-Published recap fixes and Restobot/calendar release `7d82183` were preserved by
-normal merges. Only `app/restaurant_call.py` changes runtime behavior relative
-to that published release; recognition, voices, safety copy and demo data do not.
+Published recap fixes, Restobot/calendar release `7d82183`, and PR #44's Estonian
+spoken-field repairs (`190535f`) were preserved by normal merges. Only
+`app/restaurant_call.py` changes runtime behavior relative to that published
+release; recognition, voices, safety copy and demo data do not.
 
 - Failing-first regressions reproduced the reset/incorrect answer; 25 current
   clock-question regressions are included in the passing full suite.
@@ -34,6 +35,9 @@ to that published release; recognition, voices, safety copy and demo data do not
 - Independent OpenAI/Codex review: **3,932 scoped passes**, 29 additional state
   controls and four read-only HTTP clock probes; no P0/P1. Its prefixed-noon P2
   was separately reproduced failing, repaired and verified in the full suite.
+- After preserving the subsequently published PR #44: **15,072 passed**, **36
+  subtests passed**, **6 skipped**, **2 existing warnings**, **248.63 seconds**;
+  all four restaurant browser journeys passed again.
 
 ## Recognition remains separately qualified
 
