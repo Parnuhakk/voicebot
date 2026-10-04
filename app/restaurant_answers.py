@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 from .booking_faq import FAQ_PATH, load_faq, normalize
 from .restaurant_data import DAYS
 from .restaurant_dates import resolve_restaurant_date
+from .restaurant_times import DIGITAL, PREFIX, SUFFIX
 from .restaurant_family import family_topic
 from .restaurant_times import ALTERNATIVE, DIGITAL, PREFIX
 
@@ -187,6 +188,18 @@ def match_question(
         return None
     matches = []
     information_text = text
+    # Clock units are not opening-hours questions. Keep any independent hours,
+    # opening/closing, safety or capability wording intact.
+    for pattern in (DIGITAL, PREFIX, SUFFIX):
+        for clock in pattern.finditer(text):
+            start, end = clock.span()
+            if unit := re.match(r"\s+hours\b", text[end:]):
+                end += unit.end()
+            information_text = (
+                information_text[:start]
+                + re.sub(r"\bhours\b", "     ", information_text[start:end])
+                + information_text[end:]
+            )
     for topic, pattern in CAPABILITY_PATTERNS.items():
         if match := pattern.search(text):
             matches.append((match.start(), topic))
