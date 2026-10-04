@@ -1,6 +1,119 @@
 # Restaurant telephone capability integration
 
-## Current verified disposition
+## Verified phone delivery — strict native acceptance incomplete
+
+The emergency repair is published through **PR #40**, merge
+`d7d6022a1fa2d352a2ca2ee20f2b55fb3c59dd05`, with the exact reviewed tree and
+successful PR/master CI. Its pinned native-environment suite passes **13,162
+tests/36 subtests**, six opt-in skips and two existing warnings in 214.81 seconds.
+
+Published peers subsequently advanced the healthy web, worker and Twilio bridge
+to `65464f2a1ae03529a97ba61c9a99997d72104db2`, then PR #41's
+`7f75cf903b5bbbd1b99149d4d345fd3091956c7c`, then
+`ac9bcb9a204c5ef4648ffa73ed6474f552c34bd3` and PR #42's
+`80ab7d16635b7bf511316f3e3ac90d05f35c3131`. Only published
+snapshots are incorporated by fast-forward; none of the separately owned dirty
+work or goals is modified. The emergency/owned-proposal repair remains present.
+The exact 80ab7d1 source passes **14,465 tests/36 subtests** in 272.61 seconds,
+with six opt-in skips and two existing warnings, all eleven browser journeys,
+and master CI **37187863396** (both jobs, including actual production-image
+source/behavior comparisons). Raw full/browser output is retained and hashed.
+The reduced CI environment reports 14,004 core passes and 99 skips; its count is
+not substituted for the native-SDK environment's full-suite count.
+The newer published changes preserve short-English language selection, clarify
+page versus conversation language, render a committed owned booking's spoken
+summary and repair bounded Estonian date/time followups. Focused Codex reviews
+pass 109/378/535/1,420 tests, with canonical, consent, ownership and negative controls;
+no concrete P0/P1 remains. None of these approvals substitutes for acoustic proof.
+PR42 changes only the consent recognizer among the 97 application/demo files;
+all other 96 remain byte-identical to the approved ac9 source. Its review also
+passes 32 authorization-boundary negatives, 35 refusal/question/condition/change/
+quotation negatives, eight cross-language negatives, four owned confirmations
+and all twelve exact canonical read-only replies.
+
+Two d7 receipts remain **FAIL**: the first stopped at a mutable history prefix;
+the second stopped before provider calls because the release had changed. The
+history difference is exactly one already-active browser session's subsequent
+`recognized/response/ended` events. Replaying only their seven actual changed
+fields in memory restores the exact premerge hash, including identity and all
+other counters; no database record is edited. An initial expiry-only explanation
+also remains failed rather than being relabeled as proof.
+
+The first exact 654 native batch passes ET menu/allergy but fails the ET note's
+independent audio-content guard. It is not full acceptance. A diagnostic retry
+stopped before provider calls when PR41 replaced 654. The first 7f native batch
+passes all four ET cases and two EN cases, then safely stops for another active
+room. Its retry fails ET note at the original compound guard (line 73; raw
+similarity 0.970760); neither aggregate is relabeled. The first ac9 batch passes
+all eight ET/EN cases and RU menu, then fails the RU allergy obligation guard
+at line 115 (raw similarity 0.985138). One bounded fresh ac9 retry then fails the
+first ET case's exact-caption gate (`approved_reply_mismatch`) at 08:05:32Z,
+before independent audio recognition for that case. Reruns stop after these two
+failures; no fix is guessed and no gate is relaxed. No complete current aggregate
+has passed. The intended native path calls
+the unchanged strict helper with failure-only metadata observation; recognition
+gets no caller-language, expected-text or phrase hints. No safety, language,
+fresh-caption, raw-similarity floor (0.78) or unchanged-state requirement is relaxed.
+
+Fresh 80ab7d1 routing/auth proof at **08:25:57Z** verifies nine authorization/no-store
+cases, unsigned 403/signed 200 webhook responses, the bound incoming stream contract
+and read-only Twilio HTTP 200: exactly one configured account-owned voice-capable
+number POSTs directly to the robot webhook, without trunk/application overrides.
+All 97 source/demo hashes match each healthy web/worker/bridge at that time, with the
+original data volume/media infrastructure and matching effective speech profile.
+Persistent reservations/actions and all original/a7be/20b prefixes remain exact:
+91 restaurant reservations/179 actions, 42 Easy writes, 5 Stay bookings and 40 call-booking
+associations. All persistent and observed ac9 history prefixes remain exact.
+The current hold is a later ephemeral hold: its creation is after even the ac9
+snapshot's maximum 120-second hold lifetime, and the unchanged allocator deletes
+expired holds on new creation. Whole premerge holds-table equality is **not**
+claimed. The active-browser history replay is also explicit; earlier failed
+storage assertions remain failed, including the first 80ab7d1 whole-hold-table
+comparison. Snapshots are read-only per database, not a
+cross-database atomicity certificate.
+
+Current effective native voices are Nova Turbo ET, Jenny EN and Svetlana RU;
+natural rate 1.12, recap 1.0, zero fixed sentence pause, automatic ET/EN/RU selection,
+Azure MAI-Transcribe-2 preview input recognition and the existing chat model.
+These published choices are preserved, not described as unchanged from the early
+baseline. Final strict native acceptance remains required
+before telephone-goal closure. The PR42 consent-only change does not resolve the
+retained acoustic failures, so no new blind batch is run on 80ab7d1. No real
+carrier call, physical-microphone path, original-number continuity or genuine
+restaurant booking is certified. The separate Meretuule site stays unpublished.
+The completed dashboard and once-only qualified telephone base audit are retained,
+not rerun or expanded into claims about unverified later releases.
+Fresh 80ab7d1 live HTTPS/assets/menu and desktop/ET/EN/RU mobile checks pass.
+Both voice controls are on the first mobile screen, with no overflow or
+JavaScript errors; all four retired-host paths return 503. Public checks do not
+invoke a phone call or certify physical microphone audio.
+
+Read-only failure investigation establishes three different rejection layers:
+ET compound/full-answer comparison, RU required-proposition comparison, and a
+caption gate before independent recognition. All twelve authored questions still
+route to exact canonical replies offline. Synthetic later-final-input and duplicate
+caption controls can reproduce the caption rejection without changing the reply,
+but do not prove the live cause. Existing receipts lack segment/generation ordering,
+fallback/playout completion and the failing proposition index. Input routing,
+caption timing, actual audio delivery and independent recognition cannot yet be
+distinguished causally. No speech, checker, safety-copy or ASR change is guessed.
+
+Delivery is separate from acceptance: the repair is already published and the
+configured phone number is routed to the healthy robot deployment. The telephone goal
+remains active for its strict native aggregate. This evidence update is pushed
+only to the owned recovery branch, so a documentation-only commit does not trigger
+another production release or disturb incoming calls.
+
+Current retained receipts are
+`/tmp/opencode/restaurant-recovery-80-tests.json`,
+`restaurant-recovery-80-delivery-final-verification.json`,
+`restaurant-recovery-80-source-manifest.json`,
+`restaurant-recovery-80-live-summary.json`,
+`restaurant-recovery-master-37187863396.json` and
+`restaurant-recovery-ac9-native-failures.json`. The two native failures include
+the original raw metadata logs and their hashes, not captured speech or audio.
+
+## Emergency repair development checkpoints (historical)
 
 The pinned base for the emergency repair is `956ea785be975f2b15bb8cd492b70bdabdff7c9f`,
 whose application, data, tests and deployment source is identical to PR39's
