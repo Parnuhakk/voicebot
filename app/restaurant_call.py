@@ -27,7 +27,11 @@ from .languages import (
 from .restaurant_consent import CONFIRMATION_QUESTIONS, is_restaurant_confirmation
 from .restaurant_times import NUMBERS, PERIODS, parse_spoken_time
 from .restaurant_data import restaurant_demo_profile
-from .restaurant_service_questions import GENERAL_TOPICS, general_read_question, general_reply
+from .restaurant_service_questions import (
+    GENERAL_TOPICS,
+    general_read_question,
+    general_reply,
+)
 from .restaurant_dates import ESTONIAN_COUNTS, resolve_restaurant_date
 from .restaurant_date_vocabulary import RUSSIAN_COUNTS
 from .providers.speech_delivery import spoken_estonian_date
@@ -1007,7 +1011,7 @@ class RestaurantCallTools(CallTools):
         ) and not (
             self._restaurant_question
             and any(
-                topic == "allergens" or topic in CAPABILITIES
+                topic in {"allergens", "emergency_help"} or topic in CAPABILITIES
                 for topic in self._restaurant_question.topics
             )
         ):
@@ -1097,12 +1101,26 @@ class RestaurantCallTools(CallTools):
                 changes_booking
                 or self._restaurant_question
                 and any(
-                    topic == "allergens" or topic in CAPABILITIES
+                    topic in {"allergens", "emergency_help"} or topic in CAPABILITIES
                     for topic in self._restaurant_question.topics
                 )
             ):
-                # Clearing preferences must not erase the canonical allergy or
+                # Clearing preferences must not erase an emergency, allergy or
                 # capability safety classification, even for an unknown clause.
+                if (
+                    self._restaurant_focus == "emergency_help"
+                    and previous_pending
+                    and time.monotonic() < previous_pending["expires_at"]
+                    and previous_pending["hold_id"] in self.holds
+                    and previous_pending["hold_id"] not in self.confirmed_holds
+                ):
+                    # Preserve only the owned proposal, not discarded preferences
+                    # or authorization from its earlier delivered recap.
+                    self.pending = {
+                        **previous_pending,
+                        "delivery": False,
+                        "approved": False,
+                    }
                 return
             self._restaurant_focus = None
             self._restaurant_question = None

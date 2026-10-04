@@ -2,6 +2,37 @@
 
 ## Current verified disposition
 
+The pinned base for the emergency repair is `956ea785be975f2b15bb8cd492b70bdabdff7c9f`,
+whose application, data, tests and deployment source is identical to PR39's
+`0bbffde9d84b52272270adb4439a12b35253acc6`; only research documents changed.
+The existing number's account ownership, voice capability and POST routing to
+the robot webhook were verified through a read-only Twilio request at06:37:11Z.
+No number/credentials were printed or saved and no paid call was made.
+
+Published MAI-Transcribe-2 preview input recognition is retained, explicitly not
+called unchanged ASR. Original reply voices/delivery, canonical safety copy and
+the shared booking pipeline remain intact. Only published peers were merged;
+no other owner's dirty work was copied or reset. Current0bb combined checks pass
+12,861 tests/36 subtests and all eleven browser journeys, with green masterCI.
+
+A narrow Codex review found a P1 in PR39's emergency-interruption routing. The
+bounded repair preserves an already recognized emergency while discarding
+unreviewed booking details, and prevents a waitlist override. Its eighteen
+ET/EN/RU fresh/partial/held regressions first produced15FAIL/3PASS for missing
+112 guidance. The final repair passes 12,879 tests/36 subtests, all eleven browser
+journeys and the focused Codex re-review. Only the two routing conditions and
+guarded owned-proposal restoration change runtime behavior. The telephone goal
+stays active pending final publication and synchronized native verification.
+The completed a7be witness/audit below remains dated base evidence.
+
+A parallel published speech repair advanced master and all three healthy roles to
+`20b474994c3f883794f8f056faf3a9a27bd5420e` before publication. It is not rolled
+back. The reviewed emergency repair is being integrated through normal merges,
+with fresh combined checks for that newer source. A 956 idle-baseline attempt
+failed `release_locked` after its bounded wait; it is not preservation proof.
+
+### Auditeda7be checkpoint
+
 Robot-only restaurant release `a7be09c992a7ce0a42e0750d7535ef726af0be4d` is
 published and synchronized through PR38. It retains the published clock/FAQ,
 whole-question retention and Russian staff-verification repairs, and clarifies
@@ -1060,3 +1091,90 @@ The full native evidence report was already committed/pushed as `447755a5…` an
 GitHub content-verified. This audit disposition is a documentation-only addendum;
 application/test/deployment source remains the verifieda7be release and is not
 redeployed merely to update the report.
+
+## Publishedff recognition integration — new native result pending
+
+During close-out, the dateda7be runtime guard correctly rejected the separately
+published/deployed `ff11d69279d1b0e7f9fe59b4c1ce77b262dd1aa3`. This is a substantive
+input-recognition delta, not document-only source drift. Its published changes
+were normally merged into the owned branch without rollback or dirty-worktree
+copying. The current application/test/deployment tree equals publishedff; only
+this report differs.
+
+The complete new combined suite passes **12,696 tests/36 subtests**, exit0,
+214.19s, with six explicit opt-in skips and two existing warnings. All eleven
+Chromium journeys pass without JavaScript errors/external requests. Published
+master CI37182061857 passes both release/image jobs. Unlike the missing older
+audit log paths, the new full/browser raw logs are copied to bounded private
+`restaurant-recovery-ff-{full,browser}.log` artifacts with hashes in
+`restaurant-recovery-ff-tests.json`; this does not retroactively change the
+older audit's raw-log availability qualification.
+
+Locked06:22:20Z proof matches95app/demo files per healthy web/worker/bridge role,
+original volume/infrastructure/media, original voices/delivery/chat and all nine
+authorization/no-store cases. Four database integrity checks and every original,
+972,4ba anda7be premerge row prefix pass. Production input ASR now uses unrestricted
+Azure `MAI-Transcribe-2` preview through the published peer repair; independent
+output recognition remains automatic Azure standard with no answer/language hints.
+An initial verification incorrectly required the transport-only bridge to select
+the recognition provider too and failed at `source_profiles`; that failed receipt
+is retained. Actual recognition roles are web/worker, both Azure; the bridge has
+no recognizer. No production setting or source was changed to correct the
+verification-role assumption.
+
+The narrow Codex recognition integration review passes769tests/43.73s, no P0/P1.
+All twelve fresh exactff cases pass individually, but the aggregate at06:28:01Z
+remains **FAIL**: the final runtime check observed PR39's web release rather than
+the pinnedff lineage, so the entire-batch end state check was not executed. The
+individual checks prove each language's unchanged restaurant state, not a full
+successful aggregate. The failed receipt is retained; no freshness guard was
+changed to accept it. Later observation found all three roles synchronized to0bb.
+The completed once-onlya7be audit stays dated base approval.
+
+## Latest published peers and urgent phone delivery
+
+PR39 adds grounded uncertainty/service-question handling through the shared
+restaurant pipeline. Current0bb checks pass12,861tests/36subtests in236.86s,
+six opt-in skips/two existing warnings and all eleven Chromium journeys. Master
+CI37182869738 passes both jobs. Raw full/browser logs are retained and hashed in
+`/tmp/opencode/restaurant-recovery-0bb-tests.json`. Subsequent956 changes only three
+research documents;97app/demo hashes and app/data/tests/deploy match0bb exactly.
+
+The initial0bb preservation assertion fails because its newerff call-session
+prefix changed, not because original records or bookings disappeared. Diagnostics
+verify all original/972/4ba/a7be prefixes, four integrity checks and unchanged
+whole booking state85reservations/167actions/0holds,42Easy writes,5Stay bookings
+and34call-booking associations. Three browser sessions subsequently expired,
+each with only one appended `ended/expired` event. Read-only in-memory replay of
+the four fields written by `call_history.end` restores the **exact originalff
+prefix hash**; no identities/counters/other fields are ignored and no database
+was modified. The failed first receipt and the lifecycle qualification remain
+retained. No cross-database atomicity or identity of newly appended calls is claimed.
+
+The Codex PR39 review passes665scoped tests,12canonical answers,12owned-hold seams
+and9mixed-action negatives, but reproduces emergency guidance lost during booking
+or a waitlist clause. The minimal pending repair changes only those two routing
+conditions: unreviewed booking fields are still discarded, held ownership/expiry
+stays intact, and delivery/approval must be revoked. No new emergency classifier,
+booking route, voice setting, ASR hint or private-checker relaxation is introduced.
+
+The existing configured number is already account-owned, voice-capable and routed
+directly to the robot webhook with POST (no trunk/application override). This is
+provider configuration proof, not a carrier/PSTN test call. Final repair publication,
+service synchronization and exact new-release native proof remain pending.
+
+The first emergency repair preserved 112 routing but still lost six held proposals
+because the generic observer cleared `pending` before an early safety return.
+The focused re-review and the initial full suite both retain that failure (full:
+6failed/12,873passed/36subtests). The final bounded addition restores only an
+unexpired, owned, unconfirmed prior hold into a new proposal object, with delivery
+and approval both false; discarded booking preferences are not resurrected.
+The current focused urgency suite passes27cases in5.66s, including all eighteen
+new regressions. Final focused Codex re-review passes44tests plus twelve isolated
+ET/EN/RU valid/expired/unowned/already-confirmed controls, resolving both P1s with
+no remaining concrete P0/P1. Invalid proposals are not restored. All eleven final
+browser journeys pass. The final full suite passes **12,879 tests/36 subtests**
+in239.78s, with six opt-in skips and the same two existing warnings. Raw output
+is retained and SHA256-verified in
+`/tmp/opencode/restaurant-recovery-emergency-tests.json`; source hashes still
+match the reviewed candidate. Publication and newer-peer integration follow.
