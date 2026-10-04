@@ -2,21 +2,22 @@
 
 ## Current verified disposition
 
-The robot-only restaurant release `598a1a1c498f24bac524083e83780b74ce680e52`
-and its published descendant `2b65eee73585b460bf7f6b74627b99bc635ad138` have
-verified synchronization checkpoints. All 94 app/demo files matched the healthy
-web/worker/bridge roles; original volume and LiveKit/SIP/Redis connections were
-preserved. The combined 972/clock repair/final literal-question tree passed
-12,623 tests and 36 subtests, plus eleven browser journeys. Newer published
-`97218039288dcefefa38e6e3b40598de10c50be1` was observed healthy with matching
-source links in all three roles at02:48:42Z, then retained by normal integration.
-Its source/storage acceptance and final repair publication remain separate gates;
-neither is inferred from older receipts.
+Robot-only restaurant release `870aa41b0caad388a50421740c7ea749eda64f94`
+is published and synchronized after PR36. Both jobs in head and master CI passed.
+Its tree equals reviewed8f; application/tests equal the fully tested6c98 source.
+All 94 app/demo files match each healthy
+web/worker/bridge role. Original volume and LiveKit/SIP/Redis infrastructure are
+preserved, nine authorization/no-store cases pass, and original/fresh-premerge
+stored rows remain intact. The combined source passed 12,623 tests and 36 subtests,
+eleven browser journeys and five installed-image packaging checks. Public HTTPS,
+assets, menu, ET/EN/RU mobile layout and robot-only retired-host behavior pass.
 
-Strict final native telephone acceptance is **not complete**: the first 598 suite
-passed ET menu/allergy before an unexpected note reply; EN menu/allergy/note before
-an independent takeaway-audio rejection; RU menu before an allergy-audio rejection.
-These failures remain recorded and are under metadata-only root-cause investigation.
+Strict complete multilingual native acceptance is **not complete**. On870, English
+passed all four cases with unchanged restaurant state. Estonian menu/allergy passed
+and the note had fresh input/canonical captions/voiced PCM, but independent audio
+content validation failed. Russian menu passed before its allergy-audio rejection.
+Current and historical failures remain recorded; metadata-only diagnosis continues
+without weakening required refusals/referrals or changing production voices/ASR.
 No physical-microphone, carrier/PSTN or real restaurant acceptance is claimed.
 
 The sections below retain the chronological repair and verification history;
@@ -622,3 +623,82 @@ Pure menu questions still permit separately reviewed free wording; this offline
 comparison does not prove every eligible generated menu reply will be identical.
 No supported reasoning is disabled to satisfy a witness. The live strict caption,
 audio and safety checks remain necessary for the sampled native turns.
+
+## Published `870aa41` release and preservation receipts
+
+- PR36 merged normally at2026-10-04T03:03:16Z under the shared release lock with
+  zero active rooms. Fresh premerge:65 fictional restaurant reservations,
+  127actions/0holds, Easy42writes and Stay5bookings; all original prefixes retained.
+- Current headCI37172603075 and masterCI37172928009 passed both Linux/shared-image
+  jobs. Published870 and reviewed8f complete Git trees are identical; only the
+  evidence document differs from the full-suite6c98 tree. The existing
+  reconciler deferred once on an occupied lock, then returned
+  `PASS: release_current`; all three roles already matched the new published source.
+- Locked03:07:44Z verification matched all94app/demo files in each healthy role,
+  release/source links and identical media image. Original volume and original
+  LiveKit/SIP/Redis IDs remain unchanged. Media configuration matches and initial
+  recognition remains automatic. Nine private missing/wrong/valid authorization
+  cases returned403/403/200, all `no-store`; no credentials were emitted.
+- Read-only03:10:34Z transactions: all four integrity checks `ok`; every original
+  and fresh-premerge row prefix preserved. Restaurant65reservations/127actions/
+  0holds, Easy42writes and Stay5bookings. Business tables equal fresh premerge;
+  legitimate call-history additions are preserved, not claimed as whole-table
+  equality. This proof does not claim a global cross-database snapshot or lock.
+- Fresh-environment signed webhook-only proof passed unsigned403/signed200,
+  `no-store` and the bound stream contract. No agent dispatch/carrier call and
+  no account/original-number ownership certificate are claimed.
+- Fresh public Chromium proof passed HTTPSroot200, six exact same-origin asset
+  fingerprints, three menu items, health/private denial, hotel410 and all four
+  removed-host paths503. ET/EN/RU voice and microphone controls fit the first
+  390x844 screen without overflow; all four new production screenshots were read.
+- Installed-image packaging: the first wrapper used a nonexistent opt-in name,
+  so only3passed/2skipped. After reading the actual test contract and supplying
+  `VOICEBOT_PACKAGING_BASE_IMAGE` with the installed image digest, all5passed
+  in10.71s; no image pulls or network. The initial skips are not relabeled passes.
+- The branch was normally fast-forwarded to published870 and pushed. No other
+  owner's worktree, goal, caller hold or stored booking was overwritten or cleared.
+
+Receipts under `/tmp/opencode`: `restaurant-recovery-clock-972-{head-ci,
+publication,idle-premerge}.json`, `restaurant-recovery-870-{master-ci,sync,
+verification,preservation,incoming,live-summary}.json` and the four870screenshots.
+
+## Strict870 native speech disposition
+
+The same reviewed private helper and uniform in-memory `azure-calm` synthetic
+caller ran serially on the exact detached870 release. Bot voices, production
+recognition, automatic initial language and independent Azure ET/EN/RU candidate
+recognition stayed unchanged. No expected-answer, caller-language or phrase hints
+entered independent recognition; no captured speech/audio/credentials were stored.
+
+| Language | Accepted cases | Complete acceptance |
+| --- | --- | --- |
+| ET | menu0.980, allergy0.998 | No: note independent-audio content mismatch |
+| EN | menu1.000, allergy1.000, note1.000, takeaway0.994 | Yes:4cases/exact870/restaurant state unchanged |
+| RU | menu0.973 | No: allergy independent-audio content mismatch |
+
+ET note passed the fresh-input, exact-caption and voiced-PCM boundary before its
+independent content failure. This distinguishes the repaired input selector from
+the remaining output-recognition problem; exact identity with an earlier captured
+input artifact is still not inferred. Russian mandatory staff verification remains
+required. No incomplete language run is counted as four-case acceptance.
+
+Private receipts: `restaurant-recovery-870-rtc-{et,en,ru,summary}.json`. Earlier
+failures, transient state changes, incomplete input and shared-lock/runtime
+deferrals remain preserved in the chronological sections/private receipts. Physical
+microphone, carrier/PSTN, original-number continuity and real-restaurant acceptance
+remain unverified. Final telephone completion auditing must wait for all criteria;
+the dashboard's robot/auth/storage acceptance is a separate goal.
+
+Direct production-voice/configuration synthesis, without RTC, reproduced the ET
+note rejection at0.994: the **entire** independently recognized normalized answer
+equals the approved answer except `allergia ohutust` versus `allergiaohutust`.
+Required proposition6 is the only failed pattern. No loss of refusal, extra claim
+or voice/delivery change was observed. A separate native metadata retry deferred
+four times on the shared release lock, so it adds no native input/output identity
+proof. Any proposed private-checker correction must be whole-canonical-only;
+fuzzy medical-word substitutions and caption normalization remain excluded.
+
+Russian direct output still fails proposition17 at0.983, with a noncanonical
+staff-verification phrase. This is **not** accepted as the required clause, and
+no Russian safety/referral exception is introduced. Diagnostic transcripts/audio
+stay in memory; receipts contain only indexes, counts and public-fixture matches.
