@@ -69,3 +69,40 @@ both also failed to preserve one other short affirmative as an accepted whole
 turn. Neither failure is reinterpreted as consent. On this sample, median STT
 was 377 ms for MAI and 298 ms for Turbo: the selected recognizer improved these
 cases, not every latency metric. See [final speech evidence](../evidence/2026-10-04-final-estonian-speech.md).
+
+## Estonian dates and clock extraction
+
+Recognition and booking-field extraction are separate boundaries. Correctly
+heard words previously could still produce a wrong date or drop clock minutes.
+The shared browser/native policy now accepts these bounded forms:
+
+- `pärast kahte päeva`, `nädala pärast`, and spaced `üle homme`;
+- `viiendal kuupäeval oktoobris`, `5-ndal oktoobril`, and an explicit
+  `2027. aastal` or `aastal kaks tuhat kakskümmend seitse`;
+- separate month, year and day answers without losing the earlier details;
+- a native VAD split of `…2027.` then `aastal`, while waiting for the clock,
+  without erasing the date; the trailing word alone never supplies a date or consent;
+- `kell 18. 30`, `kell 18 : 30`, and `kell kuus, kolmkümmend õhtul` → 18:30;
+- split `kolm veerand seitse õhtul` → 18:45, `poolseitse õhtul` → 18:30,
+  and `kell kuus pärast lõunat` → 18:00;
+- `jah, seitse õhtul` during an earlier six-o'clock clarification → 19:00,
+  rather than selecting the previous hour just because “evening” was heard.
+
+`kell kuus` still asks morning or evening; unsupported clock material cannot
+resolve an earlier ambiguous hour. Invalid minutes such as `kell 18. 70` clear
+the previous valid clock. A day-only correction such as `tegelikult kuuendal`
+asks for its missing month rather than silently retaining the old date.
+Short `ülejärgmisel reedel` means the Friday after the next occurrence; explicit
+`ülejärgmisel nädalal reedel` names a Monday-based calendar week. Calendar dates
+use Europe/Tallinn, and retaining an explicit year does not bypass the existing
+advance-booking window, availability, recap delivery or consent checks.
+Date alternatives/ranges still clarify, including comma-separated `või` and
+unspaced dash forms. A spaced short numeric date answered to a date question
+cannot replace a separately requested clock. Dangling clock colons remain invalid.
+
+The bounded synthetic provider/policy probe still rejects the isolated
+`kell kaheksateist kolmkümmend` when MAI misidentifies its original language.
+This is a remaining acoustic/source-detection limit, not permission to guess
+18:00, force Estonian decoding or reuse an old time. Parser and HTTP tests verify
+actual inquiry/recap fields; synthetic audio is not physical microphone or
+carrier qualification.

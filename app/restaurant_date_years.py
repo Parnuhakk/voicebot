@@ -16,6 +16,10 @@ THOUSAND = re.compile(
 )
 CENTURY = re.compile(r"(?P<count>nineteen|twenty)\b")
 MARKER = re.compile(r"\s+(?:aasta(?:l|ks)?|года?|году|year)\b")
+NUMERIC_YEAR = re.compile(
+    r"(?:\s*,\s*|\s+)(?:aasta(?:l|ks)?\s+)?(\d{2,4})"
+    r"(?:\.(?!\s*\d))?(?![\w:.])(?:\s+aasta(?:l|ks)?\b)?"
+)
 WORD = re.compile(r"\d+|[^\W\d_]+(?:-[^\W\d_]+)*", re.UNICODE)
 SEPARATOR = re.compile(
     r"(?:at|kell|в|for|для|на|please|palun|aasta\w*|года?|году|year)\b"
@@ -51,7 +55,7 @@ class SpokenYears:
                         self.numbers[prefix + " " + word] = number + value
 
     def after(self, text: str) -> SpokenYear | None:
-        gap = re.match(r"(?:\s*,\s*|\s+)", text)
+        gap = re.match(r"(?:\s*,\s*|\s+)(?:aasta(?:l|ks)?\s+)?", text)
         if not gap:
             return None
         fragment = text[gap.end() :]
