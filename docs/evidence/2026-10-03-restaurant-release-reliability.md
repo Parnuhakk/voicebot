@@ -675,6 +675,26 @@ that still-pending combined source. No stale/force push or runtime overwrite is
 attempted. Final combined gates, publication, reconciliation and RTC/preservation
 acceptance remain pending.
 
+### Normally integrated final contributor refinement
+
+Verified own weak-acknowledgement repair checkpoint `7a1bf07` is committed.
+The unchanged native tests have identical Python AST to `2aced83` after excluding
+the new regression; other native-test differences are formatting only.
+Frozen published `2b65eee` is normally merged without conflicts. Its seven
+changed files are byte-identical in the combined tree, preserving contributor
+clock-alternative/repeated-unit safeguards, grounded allergen-capability aliases,
+installed-SDK audio regressions and separately qualified evidence.
+
+Both disjoint NEW-upstream static reviews are clear. Final combined core
+**11,950 passed / 81 skipped / 36 subtests**, 160.25 seconds. All ten combined
+Chromium journeys, all 24 delivery cases and five isolated packaging cases
+(10.51 seconds) pass. 197 Python AST/22 JavaScript syntax/JSON/six assets and
+cumulative 121-file credential/conflict/whitespace checks are clean. Final
+sequential combined media **12,361 passed / 6 skipped / 36 subtests**, 173.19
+seconds, exit 0. The normal merge is now verified for publication; new live
+acceptance and final preservation remain required. Earlier own-source or
+contributor counts are not substituted for these combined-source results.
+
 ## Pre-rollout preservation qualification
 
 Read-only hash-only snapshot at 2026-10-03 20:34:39 UTC records healthy web,
