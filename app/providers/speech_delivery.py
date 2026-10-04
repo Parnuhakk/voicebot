@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import os
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from html import escape
-import os
-import re
 from xml.sax.saxutils import quoteattr
 
 from ..languages import CONSENT
@@ -83,17 +83,80 @@ def spoken_estonian_date(value: str) -> str:
         "novembril",
         "detsembril",
     )
-    return f"{days[date.weekday()]}, {date.day}. {months[date.month - 1]} {date.year}"
+    # Make the Estonian ordinal explicit for speech. This also keeps dates
+    # intact with the basic sentence tokenizer; native blingfire already does.
+    ordinals = (
+        "",
+        "esimesel",
+        "teisel",
+        "kolmandal",
+        "neljandal",
+        "viiendal",
+        "kuuendal",
+        "seitsmendal",
+        "kaheksandal",
+        "üheksandal",
+        "kümnendal",
+        "üheteistkümnendal",
+        "kaheteistkümnendal",
+        "kolmeteistkümnendal",
+        "neljateistkümnendal",
+        "viieteistkümnendal",
+        "kuueteistkümnendal",
+        "seitsmeteistkümnendal",
+        "kaheksateistkümnendal",
+        "üheksateistkümnendal",
+        "kahekümnendal",
+    )
+    day = (
+        ordinals[date.day]
+        if date.day <= 20
+        else (
+            "kolmekümnendal"
+            if date.day == 30
+            else ("kahekümne " if date.day < 30 else "kolmekümne ")
+            + ordinals[date.day % 10]
+        )
+    )
+    return f"{days[date.weekday()]}, {day} {months[date.month - 1]} {date.year}"
+
+
+_ESTONIAN_GUESTS = (
+    "",
+    "ühele",
+    "kahele",
+    "kolmele",
+    "neljale",
+    "viiele",
+    "kuuele",
+    "seitsmele",
+    "kaheksale",
+    "üheksale",
+    "kümnele",
+    "üheteistkümnele",
+    "kaheteistkümnele",
+    "kolmeteistkümnele",
+    "neljateistkümnele",
+    "viieteistkümnele",
+    "kuueteistkümnele",
+    "seitsmeteistkümnele",
+    "kaheksateistkümnele",
+    "üheksateistkümnele",
+    "kahekümnele",
+)
 
 
 _PRONUNCIATION = re.compile(
-    r"(?<!\w)(?:\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2})?)?|kell \d{1,2}(?::\d{2})?|ajavöönd Europe/Tallinn|Europe/Tallinn)(?![\w:]|\.\d)"
+    r"(?<!\w)(?:\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2})?)?"
+    r"|kell \d{1,2}(?::\d{2})?|ajavöönd Europe/Tallinn|Europe/Tallinn"
+    r"|(?<![.+-])(?P<guests>[1-9]|1\d|20)\s+inimesele)(?![\w:]|\.\d)"
 )
 
 _RUSSIAN_PRONUNCIATION = re.compile(
     r"(?<![\w:./])(?:"
     r"(?P<iso>\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2})?)"
-    r"|(?P<date>(?P<day>\d{1,2})\s+(?P<month>" + "|".join(russian_speech.MONTHS)
+    r"|(?P<date>(?P<day>\d{1,2})\s+(?P<month>"
+    + "|".join(russian_speech.MONTHS)
     + r")(?:\s+(?P<year>\d{4})(?:\s+года)?)?)"
     r"|(?P<range>с\s+(?P<start>\d{1,2}(?::\d{2})?)\s+до\s+(?P<end>\d{1,2}(?::\d{2})?))"
     r"|(?P<clock>в\s+(?P<time>\d{1,2}:\d{2}))"
@@ -114,35 +177,42 @@ def _russian_alias(match: re.Match[str], text: str) -> str:
     def clock(value: str, *, genitive: bool = False) -> str:
         fields = value.split(":")
         return russian_speech.spoken_time(
-            int(fields[0]), int(fields[1]) if len(fields) == 2 else 0,
+            int(fields[0]),
+            int(fields[1]) if len(fields) == 2 else 0,
             genitive=genitive,
         )
 
     if match["range"]:
         # Exclude numeric price, headcount, duration and measurement ranges.
-        tail = text[match.end():].lstrip()
+        tail = text[match.end() :].lstrip()
         if _RUSSIAN_RANGE_UNITS.match(tail):
             raise ValueError("not a clock range")
         return (
-            "с " + clock(match["start"], genitive=True)
-            + " до " + clock(match["end"], genitive=True)
+            "с "
+            + clock(match["start"], genitive=True)
+            + " до "
+            + clock(match["end"], genitive=True)
         )
     if match["clock"]:
         # Explicit morning/evening wording belongs to the original sentence.
-        if re.match(r"\s*(?:утра|дня|вечера|ночи)\b", text[match.end():], re.IGNORECASE):
+        if re.match(
+            r"\s*(?:утра|дня|вечера|ночи)\b", text[match.end() :], re.IGNORECASE
+        ):
             raise ValueError("clock already qualified")
         return "в " + clock(match["time"])
     if match["zone"]:
         return "по времени Таллина"
     if match["venue"]:
         return "деморесторан Меретууле"
-    accusative = bool(re.search(r"\bна\s*$", text[:match.start()], re.IGNORECASE))
+    accusative = bool(re.search(r"\bна\s*$", text[: match.start()], re.IGNORECASE))
     if match["date"]:
         year = match["year"]
         month = russian_speech.MONTHS.index(match["month"].lower()) + 1
         value = f"{int(year) if year else 2000:04d}-{month:02d}-{int(match['day']):02d}"
         return russian_speech.spoken_date(
-            value, accusative=accusative, include_year=bool(year),
+            value,
+            accusative=accusative,
+            include_year=bool(year),
         )
     value = match["iso"]
     day = datetime.fromisoformat(value)
@@ -155,7 +225,7 @@ def _russian_alias(match: re.Match[str], text: str) -> str:
 def _pronounced_russian(text: str) -> str:
     parts, end = [], 0
     for match in _RUSSIAN_PRONUNCIATION.finditer(text):
-        parts.append(escape(text[end:match.start()], quote=False))
+        parts.append(escape(text[end : match.start()], quote=False))
         try:
             alias = _russian_alias(match, text)
             parts.append(
@@ -213,7 +283,9 @@ def _pronounced_text(text: str, language: str) -> str:
         parts.append(escape(text[end : match.start()], quote=False))
         original = match[0]
         try:
-            if "Europe/Tallinn" in original:
+            if match["guests"]:
+                alias = _ESTONIAN_GUESTS[int(match["guests"])] + " inimesele"
+            elif "Europe/Tallinn" in original:
                 alias = "Tallinna aja järgi"
             elif original.startswith("kell "):
                 clock = original[5:].split(":")
@@ -250,7 +322,10 @@ def speech_markup(
     rate = delivery.effective_rate(recap=recap)
     body = f'<prosody rate="{rate:.2f}">{body}</prosody>'
     # Use only documented styles; Anu/Kert keep their native intonation.
-    if voice in {"en-US-JennyNeural", "en-US-GuyNeural", "en-US-DavisNeural"} and language == "en-US":
+    if (
+        voice in {"en-US-JennyNeural", "en-US-GuyNeural", "en-US-DavisNeural"}
+        and language == "en-US"
+    ):
         body = f'<mstts:express-as style="friendly" styledegree="0.8">{body}</mstts:express-as>'
     elif voice == "en-GB-RyanNeural" and language == "en-GB":
         body = f'<mstts:express-as style="chat" styledegree="0.8">{body}</mstts:express-as>'

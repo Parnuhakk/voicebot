@@ -440,12 +440,12 @@ def test_ssml_escapes_payload_and_pronounces_estonian_dates_without_changing_the
     assert document.find(".//" + SSML + "prosody").get("rate") == "0.94"
     aliases = [node.get("alias") for node in document.iter(SSML + "sub")]
     assert aliases == [
-        "esmaspäeval, 2. novembril 2026 kell kümme kolmkümmend",
+        "esmaspäeval, teisel novembril 2026 kell kümme kolmkümmend",
         "Tallinna aja järgi",
     ]
     assert "".join(document.itertext()) == text
     assert not list(document.iter(MSTTS + "express-as"))
-    assert spoken_estonian_date("2026-11-02") == "esmaspäeval, 2. novembril 2026"
+    assert spoken_estonian_date("2026-11-02") == "esmaspäeval, teisel novembril 2026"
 
 
 @pytest.mark.parametrize(
