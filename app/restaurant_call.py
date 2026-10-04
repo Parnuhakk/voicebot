@@ -12,9 +12,6 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from .languages import (
-    AFFIRMATIONS_EN,
-    AFFIRMATIONS_ET,
-    AFFIRMATIONS_RU,
     ENGLISH_INVITATION,
     LANGUAGE_POLICY,
     english_clarification,
@@ -1096,13 +1093,10 @@ class RestaurantCallTools(CallTools):
                     if topic in CAPABILITIES or topic == "pets"
                 )
         agreement = self._is_confirmation(text, self.language)
-        normalized = " ".join(re.sub(r"[.,!]", " ", text).split())
-        affirmations = {
-            "et": AFFIRMATIONS_ET,
-            "en": AFFIRMATIONS_EN,
-            "ru": AFFIRMATIONS_RU,
-        }[self.language]
-        recap_retry = had_pending and normalized in affirmations | {"jah", "yes", "да"}
+        # A lost delivery receipt requires another recap, not another date/time
+        # interview. Keep the requested details for every recognized agreement;
+        # only the shared delivered-recap guard can grant write approval.
+        recap_retry = had_pending and agreement
         if previously_paused and agreement and not self.pending:
             self._restaurant_focus = None
             self._restaurant_question = None

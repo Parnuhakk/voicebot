@@ -28,7 +28,7 @@ function currentRecap(recap) {
   );
 }
 function acknowledgeRecap(recap, heard = false) {
-  if (!currentRecap(recap) || state.turnBusy || recap.acknowledged) return;
+  if (!currentRecap(recap) || (!heard && state.turnBusy) || recap.acknowledged) return;
   recap.acknowledged = true;
   state.recapDeliveryId = recap.id;
   $("demo-recap-read").hidden = true;
@@ -179,7 +179,6 @@ function newPlayback(recap = null) {
     started: false,
     seeked: false,
     interrupted: false,
-    earlyEnd: false,
     failed: false,
     recap,
     resultStatus: $("demo-status").textContent,
@@ -201,6 +200,31 @@ function failPlayback(playback) {
   );
   controls();
 }
+function acknowledgeCompletedPlayback(playback) {
+  const audio = $("demo-audio");
+  if (
+    !currentPlayback(playback) ||
+    !playback.url ||
+    audio.currentSrc !== playback.url ||
+    !playback.complete ||
+    !playback.eof ||
+    !playback.appended ||
+    playback.failed ||
+    playback.seeked ||
+    playback.interrupted ||
+    !playback.started ||
+    (playback.source && playback.source.readyState !== "ended") ||
+    !fullPlayback(audio)
+  )
+    return;
+  if (playback.recap) acknowledgeRecap(playback.recap, true);
+  else
+    status(
+      "demo-status",
+      playback.resultStatus + " " + demoCopy().replyPlayed,
+      playback.resultError ? "error" : "",
+    );
+}
 function bindPlayback(playback, source) {
   const audio = $("demo-audio");
   state.audioUrl = playback.url = URL.createObjectURL(source);
@@ -216,40 +240,10 @@ function bindPlayback(playback, source) {
     if (currentPlayback(playback) && playback.started && !audio.ended)
       playback.interrupted = true;
   };
-  audio.onwaiting = audio.onstalled = () => {
-    if (currentPlayback(playback) && playback.started && audio.currentTime > 0)
-      playback.interrupted = true;
-  };
-  audio.onended = () => {
-    if (
-      !currentPlayback(playback) ||
-      !playback.url ||
-      audio.currentSrc !== playback.url ||
-      !audio.ended
-    )
-      return;
-    if (!playback.complete || !playback.eof || !playback.appended) {
-      playback.earlyEnd = true;
-      return;
-    }
-    if (
-      playback.failed ||
-      playback.seeked ||
-      playback.interrupted ||
-      playback.earlyEnd ||
-      !playback.started ||
-      (playback.source && playback.source.readyState !== "ended") ||
-      !fullPlayback(audio)
-    )
-      return;
-    if (playback.recap) acknowledgeRecap(playback.recap, true);
-    else
-      status(
-        "demo-status",
-        playback.resultStatus + " " + demoCopy().replyPlayed,
-        playback.resultError ? "error" : "",
-      );
-  };
+  // Buffering may pause advancement without skipping speech. The final played
+  // ranges prove complete delivery after the stream resumes; a user pause or
+  // seek still invalidates automatic acknowledgement.
+  audio.onended = () => acknowledgeCompletedPlayback(playback);
   audio.onerror = () => failPlayback(playback);
 }
 function startPlayback(playback) {
@@ -348,6 +342,7 @@ function pumpStreamAudio(playback) {
     } else if (playback.eof && !playback.appended) {
       playback.source.endOfStream();
       playback.appended = true;
+      acknowledgeCompletedPlayback(playback);
     }
   } catch (_) {
     failPlayback(playback);
@@ -504,4 +499,7 @@ function finishStreamPlayback(data, recap) {
     playback.chunks.length = 0;
     startPlayback(playback);
   }
+  // A short reply can finish while the terminal response is being processed.
+  // Recheck only after its exact canonical recap has been installed.
+  acknowledgeCompletedPlayback(playback);
 }

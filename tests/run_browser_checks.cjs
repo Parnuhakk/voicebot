@@ -5,7 +5,7 @@ const {spawn}=require('node:child_process');
 const {chromium}=require(process.argv[2] || 'playwright');
 const root=path.resolve(__dirname,'..');
 process.chdir(root);
-const available=['dashboard_browser_checks.js','booking_browser_checks.js','hotel_browser_checks.js','voice_browser_checks.js','microphone_race_browser_checks.js','english_demo_browser_checks.js','modern_voice_browser_checks.js','streaming_voice_browser_checks.js','restaurant_browser_checks.js','restaurant_guest_current_browser_checks.js','restaurant_quality_browser_checks.js'];
+const available=['dashboard_browser_checks.js','booking_browser_checks.js','hotel_browser_checks.js','voice_browser_checks.js','microphone_race_browser_checks.js','english_demo_browser_checks.js','modern_voice_browser_checks.js','streaming_voice_browser_checks.js','restaurant_browser_checks.js','restaurant_guest_current_browser_checks.js','restaurant_quality_browser_checks.js','restaurant_confirmation_browser_checks.js'];
 const restaurantChecks=['restaurant_browser_checks.js','restaurant_guest_current_browser_checks.js','restaurant_quality_browser_checks.js'];
 const checks=process.argv.slice(4);
 if(!checks.length)checks.push(...available);
@@ -44,16 +44,17 @@ const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     const regular=await startFixture('create_app');
     const streaming=checks.includes('streaming_voice_browser_checks.js') ? await startFixture('create_streaming_app') : regular;
     const restaurant=checks.some(name=>restaurantChecks.includes(name)) ? await startFixture('tests.restaurant_browser_fixture:create_app') : regular;
+    const confirmation=checks.includes('restaurant_confirmation_browser_checks.js') ? await startFixture('tests.restaurant_browser_fixture:create_confirmation_app') : restaurant;
     fs.mkdirSync(path.join(root,'output/playwright'),{recursive:true});
     browser=await chromium.launch({headless:true,...(channel?{channel}:{})});
     for(const name of checks){
-      const origin=restaurantChecks.includes(name) ? restaurant.origin : name==='streaming_voice_browser_checks.js' ? streaming.origin : regular.origin;
+      const origin=name==='restaurant_confirmation_browser_checks.js' ? confirmation.origin : restaurantChecks.includes(name) ? restaurant.origin : name==='streaming_voice_browser_checks.js' ? streaming.origin : regular.origin;
       const context=await browser.newContext({serviceWorkers:'block'}), external=[];
       await context.route('**/*',route=>{const url=new URL(route.request().url());if(url.origin!==origin && url.protocol!=='blob:'){external.push(url.origin);return route.abort('blockedbyclient');}return route.continue();});
       const page=await context.newPage();
       let timer;
       try {
-        const check=eval('('+fs.readFileSync(path.join(__dirname,name),'utf8').replaceAll('http://127.0.0.1:8765',regular.origin).replaceAll('http://127.0.0.1:8776',streaming.origin).replaceAll('http://127.0.0.1:8766',restaurant.origin)+')');
+        const check=eval('('+fs.readFileSync(path.join(__dirname,name),'utf8').replaceAll('http://127.0.0.1:8765',regular.origin).replaceAll('http://127.0.0.1:8776',streaming.origin).replaceAll('http://127.0.0.1:8766',restaurant.origin).replaceAll('http://127.0.0.1:8777',confirmation.origin)+')');
         const result=await Promise.race([check(page),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(`${name}: browser check timed out`)),120000);})]);
         if(external.length)throw new Error('browser tried an external request');
         console.log(JSON.stringify({check:name,...result,externalRequests:external,browser:browser.version()}));

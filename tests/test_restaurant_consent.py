@@ -574,6 +574,38 @@ def test_reported_reply_confirms_three_guests_at_seven_and_summarizes_the_call(
     assert rows[0]["service_id"] == 3 and "19:00" in rows[0]["start_local"]
 
 
+@pytest.mark.parametrize(
+    "language,utterance,agreement",
+    [
+        ("en", "A table for three tomorrow at 7 pm", "That's very good."),
+        ("et", "Soovin homme lauda kolmele kell 19.00", "See kõlab väga hästi."),
+        ("ru", "Столик на троих завтра в 19:00", "Давайте так и сделаем!"),
+    ],
+)
+@pytest.mark.parametrize("expired", [False, True])
+def test_missing_delivery_repeats_recap_without_losing_booking_details(
+    client, language, utterance, agreement, expired
+):
+    session_id = start(client, language)["session_id"]
+    proposal = turn(client, session_id, utterance, language=language)
+    session = client.app.state.demo_sessions.sessions[session_id]
+    requested = session.tools.booking_inquiry
+    if expired:
+        session.tools.pending["expires_at"] = 0
+    repeated = turn(client, session_id, agreement, language=language)
+    assert repeated["reply"] == proposal["reply"]
+    assert repeated["recap_delivery_id"] != proposal["recap_delivery_id"]
+    assert session.tools.booking_inquiry == requested
+    assert repeated["booking_changes"] == []
+    assert not session.tools.bookings
+    confirmed = turn(
+        client, session_id, agreement, language=language,
+        receipt=repeated["recap_delivery_id"],
+    )
+    assert confirmed["reply"].startswith(COPY[language]["confirmed"])
+    assert len(confirmed["booking_changes"]) == 1
+
+
 @pytest.mark.parametrize("language", ["et", "en", "ru"])
 def test_summary_uses_committed_details_and_selected_guest_fixture(
     make_state, language
