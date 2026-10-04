@@ -302,20 +302,57 @@ async def worker_credentials(container):
         raise RuntimeError("probe_credentials_failed") from None
 
 
+ESTONIAN_CALLER_DAYS = (
+    "esimesel",
+    "teisel",
+    "kolmandal",
+    "neljandal",
+    "viiendal",
+    "kuuendal",
+    "seitsmendal",
+    "kaheksandal",
+    "üheksandal",
+    "kümnendal",
+    "üheteistkümnendal",
+    "kaheteistkümnendal",
+    "kolmeteistkümnendal",
+    "neljateistkümnendal",
+    "viieteistkümnendal",
+    "kuueteistkümnendal",
+    "seitsmeteistkümnendal",
+    "kaheksateistkümnendal",
+    "üheksateistkümnendal",
+    "kahekümnendal",
+    "kahekümne esimesel",
+    "kahekümne teisel",
+    "kahekümne kolmandal",
+    "kahekümne neljandal",
+    "kahekümne viiendal",
+    "kahekümne kuuendal",
+    "kahekümne seitsmendal",
+    "kahekümne kaheksandal",
+    "kahekümne üheksandal",
+    "kolmekümnendal",
+    "kolmekümne esimesel",
+)
+
+
 def scenario(language, day):
     if language not in ("et", "en", "ru"):
         raise ValueError("probe_language_invalid")
     # Speak one named calendar date, not a machine ISO sequence or a second
     # relative weekday. Keep the expected ledger date independently in run().
     date = restaurant_spoken_date(day.isoformat(), language).rsplit(", ", 1)[-1]
+    if language == "et":
+        date = date.replace(f"{day.day}.", ESTONIAN_CALLER_DAYS[day.day - 1], 1)
     phrases = {
         "et": {
             "voice": "et-EE-KertNeural",
             "locale": "et-EE",
-            "request": f"Palun broneeri laud kokku 4 inimesele {date} kell 18:00.",
+            "request": f"Palun broneeri laud neljale inimesele {date} kell kuus õhtul.",
             "premature_yes": "Jah.",
             "conditional": "Jah, kui saame istuda akna ääres.",
-            "consent": "Jah, sobib.",
+            "consent": "Jah, olen nõus.",
             "decline": "Ei, ära kinnita broneeringut.",
             "cancel": "Jah, tühista.",
             "details": {

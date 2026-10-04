@@ -546,6 +546,52 @@ probe/evidence with `[skip cd]` deliberately avoids restarting that unchanged
 runtime. Final preservation and completion remain gated on actual ET/EN proof,
 the final cleanup results and the final evidence audit.
 
+### Live clock-unit root cause and caller-fixture repair
+
+The same finalized English input was traced through a temporary SQLite policy
+mirror: literal premature `Yes` did not lock a language; the subsequent English
+reservation request selected English correctly but acquired the `hours` topic,
+leaving no booking inquiry. A whole-WAV provider check reproduced that topic.
+The sole matched word `hours` was within the existing clock-prefix span; no
+opening/closing word or information-question prefix existed. This supersedes
+the earlier unconfirmed language-lock hypothesis, not a reason to relax it.
+
+Seven actual native/HTTP REDs preceded replacing only `hours` inside existing
+clock spans or immediately after them with equal-width spaces. Clock, safety,
+capability and independent opening-hours wording remains intact. Native requests
+now yield canonical planning with no write; HTTP audio-double turns prepare an
+owned recap but leave delivery/approval false. Three genuine hours-question
+regressions remain read-only. A first HTTP GREEN attempt used a nonexistent test
+recap key; the assertion now checks the actual canonical `start` field, without
+changing runtime receipt authorization.
+
+Estonian whole-WAV checks reproduced the wrong numeric ordinal and unsupported
+short consent before RTC. Neither another approved caller voice nor neutral
+delivery solved them. The host fixture now speaks explicit Estonian day words,
+four guests and six in the evening, with the existing accepted natural affirmative
+`Jah, olen nõus.`. Thirty-two actual REDs preceded this change, with independent
+literal expectations for all 31 calendar days. The revised request and consent
+both pass same-model real-provider preflight; no raw audio/transcript is saved.
+This does **not** establish reliable recognition of every short affirmative.
+
+Phone/time/correction scopes **369 passed**, 18.03 seconds; probe/phone/consent/
+native scopes **566 passed**, 36.86 seconds. Both disjoint independent static
+closures are clear; all ten fresh Chromium journeys pass. Final whole-source
+core **11,900 passed / 80 skipped / 36 subtests**, 153.98 seconds, then media
+**12,305 passed / 6 skipped / 36 subtests**, 181.74 seconds. All 24 delivery
+checks and five isolated packaging cases (13.66 seconds) pass. 196 Python AST,
+22 JavaScript syntax, JSON, six asset hashes and cumulative 119-file hygiene
+checks are clean. Counts overlap between environments and are not summed.
+
+The first pre-publication snapshot attempt safely deferred on the busy shared
+controller lock. The bounded retry captured **2026-10-04 01:03:54 UTC** under
+that lock: all services healthy, current incoming route and four database
+integrity checks valid, zero active rooms, unchanged effective configuration
+since the first rollout, all 23 unrelated running services and the original
+protected checkout retained. This snapshot includes immutable call-session
+identity hashes; holds remain ephemeral lifecycle state, not historical records.
+Publication, idle reconciliation and new live RTC proofs remain pending.
+
 ## Pre-rollout preservation qualification
 
 Read-only hash-only snapshot at 2026-10-03 20:34:39 UTC records healthy web,
