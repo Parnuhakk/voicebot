@@ -1152,11 +1152,11 @@ class RestaurantCallTools(CallTools):
                 changes_booking
                 or self._restaurant_question
                 and any(
-                    topic == "allergens" or topic in CAPABILITIES
+                    topic in {"allergens", "emergency_help"} or topic in CAPABILITIES
                     for topic in self._restaurant_question.topics
                 )
             ):
-                # Clearing preferences must not erase the canonical allergy or
+                # Clearing preferences must not erase emergency, allergy or
                 # capability safety classification, even for an unknown clause.
                 return
             self._restaurant_focus = None
