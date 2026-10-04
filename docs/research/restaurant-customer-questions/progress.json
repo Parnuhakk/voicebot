@@ -1,47 +1,53 @@
 {
-  "started_local": "2026-10-04",
-  "goal": "Comprehensive ET/EN/RU restaurant customer-question research and answer material",
-  "worktree": "C:/Users/salov.ml7b493/projects/voicebot-customer-research",
-  "branch": "research/restaurant-customer-questions-20261004",
-  "owner_confirmed_facts": {
-    "source": "User instruction on 2026-10-04",
+  "status": "complete",
+  "review_date": "2026-10-04",
+  "scope": "Comprehensive ET/EN/RU restaurant customer-question research, owner-confirmed family facts, shared service policy, regression verification and website publication.",
+  "counts": {
+    "concepts": 270,
+    "language_pairs": 810,
+    "categories": 17,
+    "unconfirmed_owner_fields": 216,
+    "generic_unknown_runtime_replies": 214
+  },
+  "owner_confirmed_family_facilities": {
     "drawing": true,
     "toys": true,
     "play_corner": true,
     "children_menu": true
   },
-  "completed": [
-    "Current restaurant architecture, pinned dependencies and existing reviewed answers inspected",
-    "Isolated worktree created from master 9fd4ced",
-    "Family facilities represented as optional validated operator-owned data",
-    "Shared browser/native family selectors and ET/EN/RU reviewed responses implemented",
-    "Initial 319 focused family, conversation, natural-speech and reasoning checks passed",
-    "Family feature published in PR32, merge 6dbf78f; public website readback confirmed all four facts and all three language summaries",
-    "Primary-source ledger written; current legal-text read limitations recorded instead of citing a historical version",
-    "269 question concepts, 807 trilingual question-answer pairs and 215 owner intake fields written as JSON/CSV",
-    "Searchable standalone review HTML implemented; language/category/status/search/empty-state and mobile checks passed with zero page errors or external requests",
-    "Initial 771-turn shared-code replay identified wrong pet policy, adult menu for child allergies, missing urgent guidance and a false booking inquiry",
-    "Reviewed service question selectors implemented with 101 dedicated regressions passing; broader focused suite previously 321 passed",
-    "Latest 807-turn replay: zero urgent/pet/child-allergy/booking-inquiry flags; 226 generic unknown replies remain and need qualitative review",
-    "270 concepts, 810 language pairs, 216 unconfirmed owner fields; report and scenario material written",
-    "Final pre-integration full suite: 11741 passed, 10 skipped, 36 subtests passed",
-    "Restaurant browser flow passed including 18 new ET/EN/RU service questions; zero page errors and external requests",
-    "Catalog determinism and completeness: 7 tests passed; final HTML filters reviewed on desktop and mobile",
-    "Current master including ff11d69 integrated; complete local suite: 12756 passed, 17 skipped, 36 subtests passed",
-    "Final word-boundary and fixture-import corrections: 165 focused tests, selected Flake8 rules and BasedPyright passed",
-    "Integrated Linux CI: 12439 passed, 86 skipped; shared production image identities match",
-    "Public pre-release telephone status readback now in_sync at ff11d69; public ingress and carrier call remain unverified"
+  "publication": {
+    "pull_request": "https://github.com/Parnuhakk/voicebot/pull/39",
+    "checked_head": "0be0f2bdbf0c847985fd55c3b8bf0533a339ee00",
+    "release_revision": "0bbffde9d84b52272270adb4439a12b35253acc6",
+    "merged_at_utc": "2026-10-04T06:27:43Z",
+    "public_readback_at_utc": "2026-10-04T06:33:06Z",
+    "service_version": "reviewed-service-v1",
+    "family_facts_verified": true,
+    "telephone_release_status": "in_sync",
+    "web_telephone_fingerprint": "b3153e3e98b396d1c2719776e66a1e02442ca12f6de0086704ea1bbbd94a599c"
+  },
+  "validation": {
+    "local_full_passed": 12756,
+    "local_full_skipped": 17,
+    "last_focused_passed": 433,
+    "ci_core_passed": 12440,
+    "ci_core_skipped": 86,
+    "ci_subtests_passed": 36,
+    "ci_host_passed": 216,
+    "ci_host_skipped": 5,
+    "browser_languages": 3,
+    "new_browser_service_questions": 18,
+    "browser_page_errors": 0,
+    "browser_external_requests": 0,
+    "flake8_selected_rules": "passed",
+    "typed_modules_basedpyright_errors": 0,
+    "typed_modules_basedpyright_warnings": 0
+  },
+  "remaining_limits": [
+    "Fictional restaurant profile; 216 owner fields remain unconfirmed and must not become invented facts",
+    "No live provider STT/TTS/model or carrier call performed in this research",
+    "Public ingress and carrier-call verification remain false",
+    "Readback is a public controller report, not a direct operator or SSH audit"
   ],
-  "next": [
-    "Wait for CI on the final PR39 commit and merge with the exact checked head",
-    "Read back reviewed-service-v1 on the public site and current telephone release status",
-    "Record publication result and hand off research artifacts; actual carrier call remains a documented external limitation"
-  ],
-  "production_limits": [
-    "The venue is a fictional restaurant demo",
-    "No production operator credential or deployed native-worker revision access",
-    "Do not invent children's-menu dishes, prices, babysitting, age limits or free-use conditions",
-    "Research examples from other restaurants must never become this venue's facts"
-  ],
-  "status": "publication_pending"
+  "next": []
 }
