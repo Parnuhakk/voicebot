@@ -465,3 +465,91 @@ def test_compact_separator_booking_request_preserves_details_without_a_hold(
     assert result["reply"] == COPY[language]["invalid_time"]
     assert result["booking_changes"] == [] and result["recap_delivery_id"] is None
     assert state.pending is None and not state.holds and not state.bookings
+
+
+@pytest.mark.parametrize(
+    "clock", ["1800 hours", "18:00 hours", "eighteen hours", "18 hours"]
+)
+def test_clock_unit_hours_cannot_steal_the_initial_booking(make_state, clock):
+    state = make_state("et")
+    state.observe_user_text(
+        f"Please reserve a table tomorrow at {clock} for two guests total.",
+        detected_language="en",
+    )
+    assert state.language == "en"
+    assert state.booking_inquiry is not None
+    assert state.booking_inquiry["start_time"] == "18:00"
+    assert state.booking_inquiry["party_size"] == 2 and state.booking_inquiry["date"]
+    assert trusted_booking_response(state) == {
+        "name": "plan_restaurant_reservation",
+        "arguments": state.booking_inquiry,
+    }
+    assert state.pending is None and not state.holds and not state.bookings
+
+
+@pytest.mark.parametrize(
+    "clock",
+    [
+        "2500 hours",
+        "1860 hours",
+        "1800 hours and 1900 hours",
+        "1800 hours or 1900 hours",
+        "18 hours or 19 hours",
+        "eighteen hours or nineteen hours",
+        "18 hours or six hours",
+    ],
+)
+def test_invalid_clock_units_still_clarify_without_a_hold(make_state, clock):
+    state = make_state("en")
+    state.observe_user_text(
+        f"Reserve a table tomorrow at {clock} for two guests.", detected_language="en"
+    )
+    assert (
+        state.booking_inquiry is not None and "start_time" not in state.booking_inquiry
+    )
+    assert state.clarification == "invalid_time"
+    assert trusted_booking_response(state) == {"content": COPY["en"]["invalid_time"]}
+    assert state.pending is None and not state.holds and not state.bookings
+
+
+@pytest.mark.parametrize(
+    "clock",
+    ["18 hours thirty hours", "eighteen hours thirty hours", "18 hours and 19 hours"],
+)
+def test_repeated_hours_units_never_expose_a_malformed_plan(make_state, clock):
+    state = make_state("en")
+    state.observe_user_text(
+        f"Reserve a table tomorrow at {clock} for two guests.", detected_language="en"
+    )
+    decision = trusted_booking_response(state) or {}
+    assert decision.get("name") != "plan_restaurant_reservation"
+    assert state.pending is None and not state.holds and not state.bookings
+
+
+@pytest.mark.parametrize("clock", ["6 hours", "six hours"])
+def test_ambiguous_clock_units_ask_am_pm_instead_of_opening_hours(make_state, clock):
+    state = make_state("en")
+    state.observe_user_text(
+        f"Reserve a table tomorrow at {clock} for two guests.", detected_language="en"
+    )
+    assert state.booking_inquiry is not None
+    assert state.booking_inquiry["time_candidates"] == ("06:00", "18:00")
+    assert trusted_booking_response(state) == {"content": COPY["en"]["ambiguous_time"]}
+    assert not state.holds and not state.bookings
+
+
+@pytest.mark.parametrize(
+    "text,topic",
+    [
+        ("What are your hours?", "hours"),
+        ("Are you open tomorrow at 1800 hours?", "hours"),
+        ("What are your opening hours tomorrow at 18:00 hours?", "hours"),
+        ("What are your kitchen hours tomorrow at eighteen hours?", "kitchen"),
+        ("How long can we keep a table, for how many hours?", "duration"),
+    ],
+)
+def test_real_hours_and_duration_questions_survive_clock_unit_filter(text, topic):
+    from app.restaurant_answers import match_question
+
+    question = match_question(text)
+    assert question is not None and topic in question.topics

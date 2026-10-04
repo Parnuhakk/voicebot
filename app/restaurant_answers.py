@@ -12,6 +12,7 @@ from .booking_faq import FAQ_PATH, load_faq, normalize
 from .restaurant_data import DAYS
 from .restaurant_dates import resolve_restaurant_date
 from .restaurant_family import family_topic
+from .restaurant_times import ALTERNATIVE, DIGITAL, PREFIX
 
 
 @dataclass(frozen=True)
@@ -194,6 +195,29 @@ def match_question(
             information_text = pattern.sub(
                 lambda match: " " * len(match.group()), information_text
             )
+    # "At 1800 hours" gives a clock unit, not an opening-hours question.
+    # Mask only that unit, retaining offsets and every explicit information cue.
+    for clock in (
+        *DIGITAL.finditer(information_text),
+        *PREFIX.finditer(information_text),
+        *re.finditer(r"\b\d{4}\s+hours\b", information_text),
+    ):
+        start, end = clock.span()
+        suffix = re.match(r"\s+hours\b", information_text[end:])
+        # A second hours unit after captured minutes is not another clock unit.
+        if suffix and not re.search(r"\bhours\b", information_text[start:end]):
+            end += suffix.end()
+        while alternative := ALTERNATIVE.search(information_text, end):
+            if information_text[end : alternative.start()].strip():
+                break
+            end = alternative.end()
+            suffix = re.match(r"\s+hours\b", information_text[end:])
+            end += suffix.end() if suffix else 0
+        information_text = (
+            information_text[:start]
+            + re.sub(r"\bhours\b", "     ", information_text[start:end])
+            + information_text[end:]
+        )
     matches.extend(
         (match.start(), topic)
         for topic, pattern in PATTERNS.items()
