@@ -292,3 +292,37 @@ lost the accent-qualified Spanish and German source-language controls. Groq also
 provides global, not per-phrase, source metadata. The comparison completed with
 unchanged production/state/runtime; its top-level success is not recognition
 acceptance. No recognizer replacement or rejection-policy relaxation was made.
+
+## Published Russian repair — fresh whole-batch proof
+
+PR **#50** published the one-question repair as **`5e9b44f`**. Both PR and master
+CI jobs passed; the published tree matches the tested candidate. Locked delivery
+checks matched **102 source hashes per role**, equal native images, unchanged
+recognition/speech/VAD fields, infrastructure and original volume. Four database
+integrity checks, persistent/event prefixes and the whole restaurant digest
+passed. Configured-number read-only routing and signed/unsigned **POST** webhook,
+stream binding and `no-store` checks passed. Public desktop/mobile checks passed;
+the separate Meretuule routes remained **503**.
+
+At **2026-10-04T15:25:57Z**, one fresh strict serial batch on this release passed
+**12/12** cases: ET **4/4**, EN **4/4**, RU **4/4**. All **24 original caption and
+independent-audio gates** passed, with raw audio similarities **0.972973–1.0**
+under the unchanged **0.78** floor. Whole restaurant state, runtime, checker and
+observer stayed unchanged. No cases/captions were filtered and no previous
+failure was promoted. Raw observer diagnostics reported missing-proposition
+indices **6** (ET note), **8** (ET takeaway) and **3** (EN takeaway). These
+pre-equivalence flags do not override the unchanged original checker's existing
+whole-answer equivalence, refusal and contradiction gates.
+
+The wrapper exited **0**. It counted **15** unraisable SDK/FFI teardown assertions
+without retaining their raw output. Worker generation, fallback, interruption
+and SDK playout-completion internals remain unobserved. This proof uses authored
+synthetic speech, not a human microphone or a carrier call.
+
+A separate same-audio native comparison of documented MAI-2 diarization completed
+at **15:29:52Z**: default **6/8**, diarization **6/8**, identical source/content
+outcomes in every pair. Speaker metadata confirmed the option was applied, but
+isolated evening still failed and prefixed morning remained below the input
+criterion. No production option changed. The original failed clock probe and
+the user's short-word recognition issue remain unresolved; the telephone goal
+stays active.
