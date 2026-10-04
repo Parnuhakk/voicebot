@@ -62,6 +62,37 @@ for repeated units, hyphenated words or fraction-unit suffixes.
   executable passed. External guarded oracles: **177 passed**, zero network,
   subprocess or nonfixture database operations, 97 disposable connections.
 
+## Concurrent overlapping correction
+
+The first intended four-file commit was made locally as `806f721`; pre-push
+fetch found independently published `2aced839` with another clock-unit filter
+and extra native/HTTP clock tests. No stale or force push was attempted. Normal
+merge `93f4711` preserved both histories but mechanically retained both filters.
+Three existing repeated-unit regressions then failed again. The integration
+coalesces the filters into one guarded selector view, retaining the published
+`SUFFIX` support and every contributed test. Fresh affected-core/probe checks:
+**558 passed / 6 skipped**, including the suffix-clock control and red-then-green
+repeated-unit cases. Final combined checks and rollout are recorded separately.
+
+The one new-merge review found a further P2: suffix-only `six PM hours or seven
+hours` was not rejected by the raw parser, so erasing its units exposed the first
+time. Five authored suffix/bare-alternative no-plan cases failed before the
+correction. The filter now leaves that selector untouched unless raw parsing
+rejects the contiguous choice. It neither repairs nor broadens the time grammar.
+Fresh affected-core/probe checks: **563 passed / 6 skipped**. Existing recognized
+PREFIX alternatives still clarify, scalar suffix clocks still work, and no hold
+or booking is accepted by these negative cases. Five current host Compose checks
+also passed. Earlier 2ca counts above remain historical, not this final guard's
+whole-source results.
+
+Final suffix-guard whole-source gate on the normally merged source:
+`python -m pytest -q --tb=short -p no:cacheprovider tests` — cleared-env core
+**11,927 passed / 81 skipped** (149.40 s); pinned-media **12,330 passed / 12
+skipped** (203.78 s). Each reports **36 passing subtests**, exit 0, and the three
+source/test files remained unchanged during verification. SDK/media skips,
+manual-audio doubles and real-carrier limits remain as above; overlapping totals
+are not combined.
+
 Live native EN/ET booking, decline, whole recap, later confirmation, REST read,
 cancellation and owned cleanup are separate rollout gates. No physical
 microphone, outbound PSTN/carrier or real PMS acceptance follows from these tests.

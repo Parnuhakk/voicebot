@@ -468,7 +468,8 @@ def test_compact_separator_booking_request_preserves_details_without_a_hold(
 
 
 @pytest.mark.parametrize(
-    "clock", ["1800 hours", "18:00 hours", "eighteen hours", "18 hours"]
+    "clock",
+    ["1800 hours", "18:00 hours", "eighteen hours", "18 hours", "six o'clock hours PM"],
 )
 def test_clock_unit_hours_cannot_steal_the_initial_booking(make_state, clock):
     state = make_state("et")
@@ -520,6 +521,26 @@ def test_repeated_hours_units_never_expose_a_malformed_plan(make_state, clock):
     state = make_state("en")
     state.observe_user_text(
         f"Reserve a table tomorrow at {clock} for two guests.", detected_language="en"
+    )
+    decision = trusted_booking_response(state) or {}
+    assert decision.get("name") != "plan_restaurant_reservation"
+    assert state.pending is None and not state.holds and not state.bookings
+
+
+@pytest.mark.parametrize(
+    "clock",
+    [
+        "six PM hours or seven hours",
+        "six PM hours or seven",
+        "at six PM hours or seven hours",
+        "6 PM hours or 7 hours",
+        "6 PM hours or 7",
+    ],
+)
+def test_unparsed_suffix_alternatives_never_expose_the_first_time(make_state, clock):
+    state = make_state("en")
+    state.observe_user_text(
+        f"Reserve a table tomorrow {clock} for two guests.", detected_language="en"
     )
     decision = trusted_booking_response(state) or {}
     assert decision.get("name") != "plan_restaurant_reservation"
