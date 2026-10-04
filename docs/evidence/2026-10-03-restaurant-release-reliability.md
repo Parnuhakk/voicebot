@@ -592,6 +592,89 @@ protected checkout retained. This snapshot includes immutable call-session
 identity hashes; holds remain ephemeral lifecycle state, not historical records.
 Publication, idle reconciliation and new live RTC proofs remain pending.
 
+### Published clock repair and actual RTC results
+
+The verified repair is committed and normally pushed to both recovery branch and
+`master` as `2aced8392e09a1db71c095999e5a2fe910e86114`. At **01:07:12 UTC** the
+running public web container is healthy on that source, with the exact index,
+all six assets, restaurant-only ET/EN/RU DTO, retired hotel HTTP 410 and
+unauthenticated confirmation HTTP 403. Native worker/bridge at **01:08:58 UTC**
+are healthy on the same revision and image, bound to the actual running website
+container. Their common loaded fingerprint is
+`ce56374ff7079d3765303111e7e3814f54496dd99e2505640233ab0347ffdea5`;
+dependency check passes. The first explicit controller invocation deferred on
+the shared lock while the scheduled controller reconciled; the later invocation
+returns `PASS: release_current`. Installed controller bytes remain unchanged.
+
+The new fictional real-provider RTC batch on that exact runtime:
+
+| Language | Outcome | Final inputs / replies / recaps | Voiced frames |
+| --- | --- | --- | --- |
+| ET | FAIL `probe_no_recap` | 2 / 4 / 0 | not accepted |
+| EN | PASS, owned confirmation and same-booking cancellation | 7 / 9 / 3 | 4,206 |
+| RU | PASS, owned confirmation and same-booking cancellation | 7 / 9 / 3 | 4,116 |
+
+Both successful flows independently prove exact intended date/time/party and
+zero premature, conditional or declined writes, with later explicit consent and
+bounded cleanup. The aggregate batch **fails** because ET is not accepted.
+It completes with zero active rooms and no native restart. ET preflight success
+does not substitute for its RTC failure; a scoped no-confirmation finalized-turn
+diagnostic is the next justified step, not blind repetition.
+
+Fresh unauthenticated public Chromium at **01:18:45 UTC** verifies ET/EN/RU
+mobile voice/microphone controls on the first screen, five widths without
+overflow, zero page errors/external requests/mutation requests, and refreshed
+`in_sync` status. A prior browser attempt stopped at its stale alignment receipt
+while the long RTC batch held the deployment lock. The 180-second freshness
+guard correctly refused a current-status claim; it was not weakened, and the
+controller refresh resolved that verification gate. No physical microphone or
+carrier acceptance is implied.
+
+### Qualified ET root cause after the failed RTC batch
+
+The scoped ET finalized-turn diagnostic finishes without live confirmation:
+both owned-ledger reads remain empty and cleanup leaves zero rooms. Its temporary
+policy mirror sees a supported-language candidate and the exact requested
+date/time/party only when the parser is forced to treat a prior inquiry as active;
+there is no recognized booking keyword, no information topic, and no stored
+inquiry. Actual replies are categorized as English `information_unknown`.
+
+A same-provider whole-WAV **sequential policy** check then independently isolates
+both failures: the synthesized premature Estonian `Jah` is recognized as a short
+English `Yeah`/`Yep` with supported EN metadata, selecting and locking EN. The
+following recognized ET request lacks the booking keyword: parsing **without**
+a forced prior returns `None`; parsing with `{}` extracts the correct fields.
+The earlier preflight therefore established only field extraction and is not
+evidence of usable booking intent, planning, or RTC acceptance.
+
+Ten actual state/audio-HTTP/installed-SDK REDs precede adding only `yeah` and
+`yep` to the existing weak-language-evidence set. Exact explicit commitments,
+selected-language stickiness, unsupported-source rejection and later owned
+consent remain unchanged. The repaired scope **462 passed**, 26.37 seconds.
+The caller fixture now says natural `Soovin lauda…`; the date/time/party and all
+probe protocol limits remain unchanged. An actual same-voice/provider preflight
+now requires the parser **without prior**, canonical planning and independently
+expected fields. Sequential premature acknowledgement, request and affirmative
+all pass those appropriate predicates; no dispatcher action is executed.
+
+Both new disjoint independent static reviews are clear; reviewers did not run
+providers or suites. The canonical probe **112 passed**, 20.11 seconds. All ten
+fresh Chromium journeys, all 24 delivery cases and five isolated Docker packaging
+cases (10.54 seconds) pass. Fresh own-source core **11,908 passed / 80 skipped**,
+145.71 seconds; media **12,315 passed / 6 skipped**, 159.02 seconds; each has 36
+passing subtests. Syntax/JSON/assets and cumulative 119-file hygiene are clean.
+
+The pre-rollout snapshot at **01:32:17 UTC** retains all stable rows from before
+the first publication, four database integrity checks, original volumes/current
+incoming route, unchanged effective configuration, zero rooms, all 23 unrelated
+service identities and the protected checkout. A contributor native release
+`598a1a1` appeared during verification; published `master` now normally includes
+it as `2b65eee`. The session froze that intake in a read-only persistent worktree
+and reviews it before normal integration. These own-source counts do not verify
+that still-pending combined source. No stale/force push or runtime overwrite is
+attempted. Final combined gates, publication, reconciliation and RTC/preservation
+acceptance remain pending.
+
 ## Pre-rollout preservation qualification
 
 Read-only hash-only snapshot at 2026-10-03 20:34:39 UTC records healthy web,
