@@ -103,6 +103,9 @@ for number, (cardinal, stem) in enumerate(
     ),
     11,
 ):
+    ESTONIAN_COUNTS.update(
+        dict.fromkeys((cardinal, stem + "kümne", stem + "kümnele"), number)
+    )
     DAY_FORMS.update(
         dict.fromkeys(
             _forms((cardinal, stem + "kümne", stem + "kümnes", stem + "kümnenda")),
@@ -110,6 +113,10 @@ for number, (cardinal, stem) in enumerate(
         )
     )
 for tens, cardinal, stem in ((20, "kakskümmend", "kahe"), (30, "kolmkümmend", "kolme")):
+    if tens == 20:
+        ESTONIAN_COUNTS.update(
+            dict.fromkeys((cardinal, stem + "kümne", stem + "kümnele"), tens)
+        )
     DAY_FORMS.update(
         dict.fromkeys(
             _forms((cardinal, stem + "kümne", stem + "kümnes", stem + "kümnenda")), tens
@@ -165,7 +172,7 @@ NAMED_DATES = (
     re.compile(
         r"(?<!\w)(?P<day>"
         + DAY_PATTERN
-        + r")(?:\s+(?:of(?:\s+the)?|day\s+of|числа|kuupäeval))?\s*(?P<month>"
+        + r")(?:\s+(?:of(?:\s+the)?|day\s+of|числа|(?:kuu)?päeval))?\s*(?P<month>"
         + MONTH_PATTERN
         + r")\.?(?!\w)"
     ),
@@ -193,7 +200,9 @@ YEAR_FIRST_DATE = re.compile(
     r"\b(?P<year>\d{4})(?P<sep>[./-])(?P<month>\d{1,2})(?P=sep)(?P<day>\d{1,2})\b"
 )
 LOCAL_DATE = re.compile(r"\b(?P<day>\d{1,2})\.(?P<month>\d{1,2})\.(?P<year>\d{4})\b")
-AMBIGUOUS_NUMERIC_DATE = re.compile(r"\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b")
+AMBIGUOUS_NUMERIC_DATE = re.compile(
+    r"(?<![\w:])\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?(?![\w:])"
+)
 NUMERIC_DATE_TOKEN = re.compile(r"(?<![\w./-])\d[\d./-]*[./-][\d./-]*(?![\w./-])")
 GUEST_NOUN = re.compile(
     r"\s+(?:inimes|külalis|külalist|täiskasvan|last|lapse|people|guests|adults|children|человек|гост|взросл|дет|реб[её]н)\w*\b"
@@ -460,6 +469,10 @@ def resolve_restaurant_date(
     Conflicting, negated or impossible dates ask for clarification instead.
     """
     text = " ".join(unicodedata.normalize("NFC", text.casefold()).split())
+    # Join ASR-spaced numeric fields only for a whole date answer. The existing
+    # whole-token guard still rejects extra fields and malformed separators.
+    if re.fullmatch(r"\d+(?:\s*[./-]+\s*\d+){2,}(?:\s*[./-]+)?[!?,]*", text):
+        text = "".join(text.split())
     spelling = CALENDAR_SPELLING.normalize(text, date_reply=allow_bare_day)
     text = spelling.text
     spans: list[tuple[int, int]] = list(spelling.ambiguous_spans)
@@ -608,7 +621,10 @@ def resolve_restaurant_date(
                 and not GUEST_NOUN.match(text[end + trailing_alternative.end() :])
             ):
                 error = "date_ambiguous"
-            value, invalid = calendar(day, MONTH_FORMS[match["month"]], year)
+            month = MONTH_FORMS[match["month"]]
+            if year is None and allow_bare_day and pending_month == month:
+                year = pending_year
+            value, invalid = calendar(day, month, year)
             record(start, end, value, error or invalid)
     qualifiers: list[tuple[re.Match[str], int, bool]] = []
     for pattern, weeks in WEEK_QUALIFIERS:
@@ -716,7 +732,11 @@ def resolve_restaurant_date(
             + r")[.!?,]*(?:\s+kuupäeval)?(?:\s+palun[.!?,]*)?[.!?,]*",
             text,
         )
-        if bare_day:
+        if bare_day and not (
+            bare_day["day"].endswith(
+                tuple(word for word in ESTONIAN_COUNTS if word.endswith("le"))
+            )
+        ):
             raw = bare_day["day"].rstrip(".")
             numeric = re.match(r"\d+", raw)
             partial_day = int(numeric[0]) if numeric else DAY_FORMS[raw]

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from .restaurant_dates import ESTONIAN_COUNTS
 
@@ -15,6 +15,7 @@ class RequestedTime:
     candidates: tuple[str, str] | None = None
     invalid: bool = False
     span: tuple[int, int] | None = None
+    spans: tuple[tuple[int, int], ...] = ()
 
 
 TIME_INPUT_EXAMPLES = {
@@ -182,9 +183,61 @@ def _number_words() -> dict[str, int]:
 
 NUMBERS = _number_words()
 NUMBERS.update(ESTONIAN_COUNTS)
+ESTONIAN_CLOCK_STEMS = dict(
+    enumerate(
+        (
+            "nulli",
+            "ühe",
+            "kahe",
+            "kolme",
+            "nelja",
+            "viie",
+            "kuue",
+            "seitsme",
+            "kaheksa",
+            "üheksa",
+            "kümne",
+            "üheteistkümne",
+            "kaheteistkümne",
+            "kolmeteistkümne",
+            "neljateistkümne",
+            "viieteistkümne",
+            "kuueteistkümne",
+            "seitsmeteistkümne",
+            "kaheksateistkümne",
+            "üheksateistkümne",
+        )
+    )
+)
+for ten, prefix in enumerate(
+    (
+        "kahekümne",
+        "kolmekümne",
+        "neljakümne",
+        "viiekümne",
+        "kuuekümne",
+        "seitsmekümne",
+        "kaheksakümne",
+        "üheksakümne",
+    ),
+    2,
+):
+    ESTONIAN_CLOCK_STEMS[ten * 10] = prefix
+    for digit in range(1, 10):
+        ESTONIAN_CLOCK_STEMS[ten * 10 + digit] = (
+            prefix + " " + ESTONIAN_CLOCK_STEMS[digit]
+        )
+ESTONIAN_CLOCK_NUMBERS = {
+    form + ending: value
+    for value, stem in ESTONIAN_CLOCK_STEMS.items()
+    for form in {stem, stem.replace(" ", "")}
+    for ending in ("", "ks")
+}
 MINUTES = {
     # Dative Estonian numbers identify diners ("neljale"), not minutes.
     **{word: value for word, value in NUMBERS.items() if not word.endswith("le")},
+    # As with EN/RU, 60..99 are recognized only so range validation rejects them.
+    **ESTONIAN_CLOCK_NUMBERS,
     **{
         f"null {word}": digit
         for digit, word in enumerate(
@@ -204,7 +257,7 @@ MINUTES = {
     },
 }
 HOURS = {
-    **NUMBERS,
+    **{word: value for word, value in NUMBERS.items() if not word.endswith("le")},
     "час": 1,
     "одного": 1,
     "двух": 2,
@@ -231,35 +284,9 @@ HOURS = {
     "одиннадцатого": 11,
     "двенадцатого": 12,
 }
-for hour, stem in enumerate(
-    (
-        "nulli",
-        "ühe",
-        "kahe",
-        "kolme",
-        "nelja",
-        "viie",
-        "kuue",
-        "seitsme",
-        "kaheksa",
-        "üheksa",
-        "kümne",
-        "üheteistkümne",
-        "kaheteistkümne",
-        "kolmeteistkümne",
-        "neljateistkümne",
-        "viieteistkümne",
-        "kuueteistkümne",
-        "seitsmeteistkümne",
-        "kaheksateistkümne",
-        "üheksateistkümne",
-        "kahekümne",
-        "kahekümne ühe",
-        "kahekümne kahe",
-        "kahekümne kolme",
-    )
-):
-    HOURS.update({stem + ending: hour for ending in ("", "ks", "le", "l")})
+for hour, stem in ESTONIAN_CLOCK_STEMS.items():
+    if hour <= 23:
+        HOURS.update({stem + ending: hour for ending in ("", "ks", "l")})
 
 
 def _pattern(words: dict[str, int]) -> str:
@@ -535,8 +562,6 @@ def parse_spoken_time(
         )
 
     approximate = APPROXIMATE_TIME.search(text)
-    if approximate:
-        return RequestedTime(invalid=True, span=approximate.span())
 
     for pattern, kind in NAMED_FRACTIONS:
         for match in pattern.finditer(text):
@@ -641,11 +666,18 @@ def parse_spoken_time(
                 continue
             compact = match["h"].isdigit() and len(match["h"]) == 4
             if compact:
-                for clock_range in COMPACT_RANGE.finditer(text):
-                    if clock_range.start() <= match.start(
-                        "h"
-                    ) and clock_range.end() >= match.end("h"):
-                        return RequestedTime(invalid=True, span=clock_range.span())
+                clock_range = next(
+                    (
+                        value
+                        for value in COMPACT_RANGE.finditer(text)
+                        if value.start() <= match.start("h")
+                        and value.end() >= match.end("h")
+                    ),
+                    None,
+                )
+                if clock_range:
+                    add(clock_range, 24)
+                    continue
                 if match["m"] or re.match(
                     r"\s+" + GUEST_NOUN + r"\b", text[match.end() :]
                 ):
@@ -653,6 +685,12 @@ def parse_spoken_time(
                     continue
                 hour, minute = divmod(hour, 100)
             add(match, hour, minute, explicit=compact or hour == 0 or hour > 12)
+    if approximate:
+        return RequestedTime(
+            invalid=True,
+            span=approximate.span(),
+            spans=(*occupied, approximate.span()),
+        )
     bare = None
     if not found and (allow_bare or pending):
         bare = text
@@ -664,6 +702,14 @@ def parse_spoken_time(
         if COMPACT_RANGE.fullmatch(bare):
             return RequestedTime(invalid=True)
         match = BARE.fullmatch(bare) if allow_bare else None
+        if not match and allow_bare:
+            fragment = BARE.match(bare)
+            tail = CLOCK_TAIL.match(bare[fragment.end("h") :]) if fragment else None
+            if tail and not re.match(
+                r"\s+" + GUEST_NOUN + r"\b",
+                bare[fragment.end("h") + tail.end() :],
+            ):
+                return RequestedTime(invalid=True)
         if match:
             hour = _number(match["h"], hour=True)
             minute = _number(match["m"]) if match["m"] else 0
@@ -696,6 +742,7 @@ def parse_spoken_time(
         return RequestedTime(invalid=True) if TIME_RANGE.search(text) else None
     # An adjacent unconsumed clock fragment is not permission to use its prefix.
     # Explicit guest nouns and Estonian party case forms are separate selectors.
+    invalid_tails = []
     for start, end in occupied:
         tail = CLOCK_TAIL.match(text[end:])
         if (
@@ -716,9 +763,15 @@ def parse_spoken_time(
                 text[end + tail.end() :],
             )
         ):
-            return RequestedTime(invalid=True, span=(start, end + tail.end()))
+            invalid_tails.append((start, end + tail.end()))
+    if invalid_tails:
+        return RequestedTime(
+            invalid=True,
+            span=invalid_tails[0],
+            spans=tuple(occupied + invalid_tails),
+        )
     if any(NEGATED_TIME.search(text[:start]) for start, _ in occupied):
-        return RequestedTime(invalid=True)
+        return RequestedTime(invalid=True, spans=tuple(occupied))
     # A date/guest alternative elsewhere in the request is not a clock choice.
     alternative_time = bool(TIME_RANGE.search(text))
     for alternative in ALTERNATIVE.finditer(text):
@@ -741,5 +794,5 @@ def parse_spoken_time(
         > 1
         or alternative_time
     ):
-        return RequestedTime(invalid=True)
-    return found[0]
+        return RequestedTime(invalid=True, spans=tuple(occupied))
+    return replace(found[0], spans=tuple(occupied))

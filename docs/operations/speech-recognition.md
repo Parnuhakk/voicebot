@@ -106,3 +106,46 @@ This is a remaining acoustic/source-detection limit, not permission to guess
 18:00, force Estonian decoding or reuse an old time. Parser and HTTP tests verify
 actual inquiry/recap fields; synthetic audio is not physical microphone or
 carrier qualification.
+
+## Estonian field retention repair (2026-10-04)
+
+The follow-up to the live caller report separates recognition from dialogue:
+
+- Explicit diner allatives (`neljale`, `viiele`, `üheteistkümnele`) are counts,
+  not bare calendar days or clock hours, including out-of-order answers.
+- Every recognized clock span, including conflicting choices, is excluded from
+  diner extraction. Resolving `tuleme 6:30 või 7:30` never invents six diners.
+- A partial compound such as `kahekümne ühele` cannot become one diner. The same
+  whole-number check applies to adults, children, subsets and explicit totals;
+  uncertain larger quantities ask for clarification rather than a smaller table.
+- Closed cardinal case forms through twenty and collectives through ten are
+  understood as input. This does not increase the restaurant's configured
+  maximum party size or imply availability for a larger group.
+- A whole Estonian correction beginning with `tegelikult` or `hoopis` can change
+  one field during incomplete collection without erasing unrelated fields.
+  Unknown neighboring clauses still cannot inherit a complete plan.
+- `nelja inimese jaoks` retains the previously requested date and clock.
+- Inflected minutes such as `kella kuue kolmekümneks õhtul` retain **18:30**,
+  rather than silently accepting the hour prefix as 18:00. Invalid minutes and
+  unconsumed numeric tails still require clarification.
+- Completing an owned month/year with the same named month keeps its explicit
+  year. A fresh explicit year wins; a different month does not blindly reuse it.
+- Whole spaced numeric dates and the ordinal `päeval` scaffold are validated as
+  dates, never clocks. Ambiguous, malformed and impossible dates remain rejected.
+
+The in-memory diagnostic used synthesized caller audio reduced to **8 kHz,
+mu-law**, then resampled to the worker's **24 kHz upload**. On the same twelve
+Anu-voiced Estonian field samples, exact fields with matching original source
+metadata passed **8/12** with MAI, **9/12** with Whisper Turbo and **8/12** with
+full Whisper after the parsing repairs. MAI rejected the foreign-language
+control and returned an empty result for silence; both Whisper variants failed
+those controls in this bounded experiment. Therefore MAI stays configured;
+there is no automatic foreign-source override, forced locale or consent prompt.
+
+Other Nova-voiced diagnostic samples were substantially less reliable. These
+small synthetic results are not human-call accuracy estimates or proof that a
+different model is universally better. Isolated counts and some short clocks
+still fail original-source qualification. Audio and recognized text were kept
+only in memory; the recorded evidence contains case IDs and match booleans.
+Native finalized-turn and delivered-recap regressions cover state retention;
+they do not establish physical-microphone, carrier or public-ingress acceptance.
