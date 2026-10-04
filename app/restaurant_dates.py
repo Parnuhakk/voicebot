@@ -20,7 +20,7 @@ from .restaurant_date_vocabulary import (
     RUSSIAN_DAY_FORMS,
     RUSSIAN_MONTH_FORMS,
 )
-from .restaurant_date_years import SpokenYears
+from .restaurant_date_years import NUMERIC_YEAR, SpokenYears
 
 CASE_ENDINGS = (
     "",
@@ -156,7 +156,7 @@ def _alternatives(forms: dict[str, int]) -> str:
 
 
 DAY_PATTERN = (
-    r"(?:\d{1,2}(?:st|nd|rd|th|-(?:го|е|й|ое|ого|ому|ом))?\.?|"
+    r"(?:\d{1,2}(?:st|nd|rd|th|-(?:ndal|ndaks|ndast|nda|го|е|й|ое|ого|ому|ом))?\.?|"
     + _alternatives(DAY_FORMS)
     + ")"
 )
@@ -165,7 +165,7 @@ NAMED_DATES = (
     re.compile(
         r"(?<!\w)(?P<day>"
         + DAY_PATTERN
-        + r")(?:\s+(?:of(?:\s+the)?|day\s+of|числа))?\s*(?P<month>"
+        + r")(?:\s+(?:of(?:\s+the)?|day\s+of|числа|kuupäeval))?\s*(?P<month>"
         + MONTH_PATTERN
         + r")\.?(?!\w)"
     ),
@@ -206,6 +206,7 @@ TOMORROW_FORMS = {"homme", "hommele", "hommeks"} | {
 RELATIVE_FORMS = {
     **dict.fromkeys(TOMORROW_FORMS, 1),
     **dict.fromkeys({"üle" + form for form in TOMORROW_FORMS}, 2),
+    **dict.fromkeys({"üle " + form for form in TOMORROW_FORMS}, 2),
     **dict.fromkeys(
         {"täna", "tänaks", "tänale"}
         | {
@@ -393,6 +394,11 @@ OFFSETS = (
         + r")\s+(?P<unit>päeva|päev|nädala|nädalat|nädal)\s+pärast\b"
     ),
     re.compile(r"\b(?P<unit>nädala)\s+pärast\b"),
+    re.compile(
+        r"\bpärast\s+(?P<n>"
+        + OFFSET_NUMBER
+        + r")\s+(?P<unit>päeva|päev|nädala|nädalat|nädal)\b"
+    ),
     re.compile(r"\bin\s+(?P<n>" + OFFSET_NUMBER + r")\s+(?P<unit>days?|weeks?)\b"),
     re.compile(
         r"(?<![\w-])(?P<n>"
@@ -553,10 +559,8 @@ def resolve_restaurant_date(
                 ):
                     continue
             raw_day = match["day"].rstrip(".")
-            numeric_day = re.fullmatch(
-                r"(\d{1,2})(?:st|nd|rd|th|-(?:го|е|й|ое|ого|ому|ом))?", raw_day
-            )
-            day = int(numeric_day[1]) if numeric_day else DAY_FORMS[raw_day]
+            numeric_day = re.match(r"\d+", raw_day)
+            day = int(numeric_day[0]) if numeric_day else DAY_FORMS[raw_day]
             end = match.end()
             if text[end : end + 1] == ".":
                 end += 1
@@ -564,7 +568,7 @@ def resolve_restaurant_date(
             year = None
             error = None
             # Do not consume a neighbouring guest count as a year.
-            year_match = re.match(r"(?:\s*,\s*|\s+)(\d{2,4})(?![\w:.])", text[end:])
+            year_match = NUMERIC_YEAR.match(text[end:])
             if year_match and not GUEST_NOUN.match(text[end + year_match.end() :]):
                 end += year_match.end()
                 if len(year_match[1]) != 4:
@@ -641,7 +645,12 @@ def resolve_restaurant_date(
             )
         elif include_weekdays:
             offset = (WEEKDAYS[match["base"]] - now.weekday()) % 7 or 7
-            record(*match.span(), now.date() + timedelta(days=offset))
+            after_next = re.search(r"\bülejärgmis\w*\s*$", text[: match.start()])
+            record(
+                after_next.start() if after_next else match.start(),
+                match.end(),
+                now.date() + timedelta(days=offset + (7 if after_next else 0)),
+            )
     for qualifier, _, used in qualifiers:
         if used:
             spans.append(qualifier.span())
@@ -651,6 +660,22 @@ def resolve_restaurant_date(
             record(*qualifier.span(), None, "date_incomplete")
     for pattern in OFFSETS:
         for match in pattern.finditer(text):
+            alternative = re.match(
+                r"[\s,]*(?:(?:või|kuni|or|to|или|до)\b[\s,]+|[-–—]\s*)"
+                + OFFSET_NUMBER
+                + r"\b(?:\s+(?:päeva|päev|nädala|nädalat|nädal|days?|weeks?|день|дня|дней|неделю|недели|недель)\b)?(?:\s+pärast\b)?",
+                text[match.end() :],
+            )
+            if alternative and not GUEST_NOUN.match(
+                text[match.end() + alternative.end() :]
+            ):
+                record(
+                    match.start(),
+                    match.end() + alternative.end(),
+                    None,
+                    "date_ambiguous",
+                )
+                continue
             raw = match.groupdict().get("n")
             if (
                 raw is None
@@ -680,21 +705,21 @@ def resolve_restaurant_date(
         record(*match.span(), now.date() + timedelta(days=RELATIVE_FORMS[match[0]]))
     # A numeric dot date is not a clock when replying to a date question.
     # Month/day order remains uncertain without a named month.
-    if allow_bare_day and re.fullmatch(r"\d{1,2}[./-]\d{1,2}\.?", text.strip(" !?,")):
+    if allow_bare_day and re.fullmatch(
+        r"\d{1,2}\s*[./-]\s*\d{1,2}\.?", text.strip(" !?,")
+    ):
         record(0, len(text), None, "date_ambiguous")
     if allow_bare_day and not spans:
         bare_day = re.fullmatch(
-            r"(?:(?:on|the|na|на|kuupäeval|kuupäevaks)\s+)*(?P<day>"
+            r"(?:(?:on|the|na|на|kuupäeval|kuupäevaks|tegelikult|hoopis)\s+)*(?P<day>"
             + DAY_PATTERN
-            + r")[.!?,]*(?:\s+palun[.!?,]*)?",
+            + r")[.!?,]*(?:\s+kuupäeval)?(?:\s+palun[.!?,]*)?[.!?,]*",
             text,
         )
         if bare_day:
             raw = bare_day["day"].rstrip(".")
-            numeric = re.fullmatch(
-                r"(\d{1,2})(?:st|nd|rd|th|-(?:го|е|й|ое|ого|ому|ом))?", raw
-            )
-            partial_day = int(numeric[1]) if numeric else DAY_FORMS[raw]
+            numeric = re.match(r"\d+", raw)
+            partial_day = int(numeric[0]) if numeric else DAY_FORMS[raw]
             if not 1 <= partial_day <= 31:
                 record(0, len(text), None, "date_invalid")
             elif pending_month is not None:
@@ -702,9 +727,37 @@ def resolve_restaurant_date(
                 record(0, len(text), value, error)
             else:
                 record(0, len(text), None, "date_incomplete")
+    if (
+        allow_bare_day
+        and not spans
+        and (pending_day is not None or pending_month is not None)
+    ):
+        fragment = " " + text.strip(" .!?,")
+        numeric_year = NUMERIC_YEAR.fullmatch(fragment)
+        spoken_year = SPOKEN_YEARS.after(fragment) if not numeric_year else None
+        if (
+            numeric_year
+            or spoken_year
+            and not fragment[spoken_year.end :].strip(" .!?,")
+        ):
+            partial_year = int(numeric_year[1]) if numeric_year else spoken_year.value
+            error = (
+                "date_ambiguous"
+                if numeric_year and len(numeric_year[1]) != 4
+                else spoken_year.issue
+                if spoken_year
+                else None
+            )
+            if pending_day is not None and pending_month is not None and not error:
+                value, error = calendar(pending_day, pending_month, partial_year)
+                record(0, len(text), value, error)
+            else:
+                record(0, len(text), None, error or "date_incomplete")
     partial_months: set[int] = set()
     for match in MONTHS.finditer(text):
-        year_match = re.match(r"(?:\s*,\s*|\s+)(\d{4})(?![\w:.])", text[match.end() :])
+        year_match = NUMERIC_YEAR.match(text[match.end() :])
+        if year_match and GUEST_NOUN.match(text[match.end() + year_match.end() :]):
+            year_match = None
         spoken_year = (
             SPOKEN_YEARS.after(text[match.end() :]) if not year_match else None
         )
@@ -727,6 +780,9 @@ def resolve_restaurant_date(
             partial_months.add(partial_month)
             partial_year = int(year_match[1]) if year_match else pending_year
             end = match.end() + (year_match.end() if year_match else 0)
+            if year_match and len(year_match[1]) != 4:
+                record(match.start(), end, None, "date_ambiguous")
+                continue
             if spoken_year:
                 partial_year = spoken_year.value
                 end = match.end() + spoken_year.end

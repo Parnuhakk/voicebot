@@ -290,7 +290,7 @@ PERIODS = {
         r"(?<![a-z])a\.?\s*m\.?(?![a-z])|\b(?:morning|hommik\w*|утр\w*)\b"
     ),
     "pm": re.compile(
-        r"(?<![a-z])p\.?\s*m\.?(?![a-z])|\b(?:afternoon|evening|õhtu\w*|pärastlõuna\w*|päeval|вечер\w*|дня|днем)\b"
+        r"(?<![a-z])p\.?\s*m\.?(?![a-z])|\b(?:afternoon|evening|õhtu\w*|pärastlõuna\w*|pärast\s+lõunat|päeval|вечер\w*|дня|днем)\b"
     ),
     "night": re.compile(r"\b(?:night|öösel|ööl|ночи|ночью)\b"),
 }
@@ -332,8 +332,10 @@ NAMED_FRACTIONS = (
         "ru",
     ),
 )
-DIGITAL = re.compile(r"(?<![\w:.])(?P<h>\d{1,2})[:.](?P<m>\d{2})(?![\d:]|\.\d)")
-MALFORMED_DIGITAL = re.compile(r"(?<![\w:.])\d{1,3}[:.]\d+(?!\w)")
+DIGITAL = re.compile(
+    r"(?<![\w:.])(?P<h>\d{1,2})\s*[:.]\s*(?P<m>\d{2})(?!\d|\s*:|\s*\.\s*\d)"
+)
+MALFORMED_DIGITAL = re.compile(r"(?<![\w:.])\d{1,3}\s*[:.]\s*\d+(?!\w)")
 FRACTIONS = (
     (
         re.compile(
@@ -370,7 +372,10 @@ FRACTIONS = (
         "et_minutes",
     ),
     (re.compile(r"\bhalf\s+(?P<h>" + HOUR + r")\b"), "en_half"),
-    (re.compile(r"\b(?P<m>kolmveerand|veerand|pool)\s+(?P<h>" + HOUR + r")\b"), "et"),
+    (
+        re.compile(r"\b(?P<m>kolm\s*veerand|veerand|pool)\s*(?P<h>" + HOUR + r")\b"),
+        "et",
+    ),
     (re.compile(r"\b(?:пол\s*|половин[аеуы]\s+)(?P<h>" + HOUR + r")\b"), "ru_half"),
     (re.compile(r"\bчетверть\s+(?P<h>" + HOUR + r")\b"), "ru_quarter"),
     (
@@ -387,7 +392,7 @@ FRACTIONS = (
 PREFIX = re.compile(
     r"\b(?:at|kell|kella|в|к|около)\s+(?P<h>"
     + HOUR
-    + r")(?:\s+(?:час(?:а|ов)?|hours?))?(?:\s+(?:(?:ja|and|и)\s+)?(?P<m>"
+    + r")(?:\s+(?:час(?:а|ов)?|hours?))?(?:[\s,]+(?:(?:ja|and|и)\s+)?(?P<m>"
     + MINUTE
     + r")\b"
     + MINUTE_NOT_GUEST
@@ -401,7 +406,7 @@ SUFFIX = re.compile(
     + r"))?\s*(?:o'clock|час(?:а|ов)?|[ap]\.?\s*m\.?|ajal)(?!\w)"
 )
 CLOCK_TAIL = re.compile(
-    r"^\s+(?:(?:ja|and|и)\s+)?(?P<n>-?\d+|"
+    r"^[\s,]+(?:(?:ja|and|и)\s+)?(?P<n>-?\d+|"
     + MINUTE
     + r"|half|quarter|pool|poolteist|veerand|kolmveerand|läbi|с\s+половиной|четверт[ьи]|половин\w*)\b"
 )
@@ -503,7 +508,7 @@ def parse_spoken_time(
     text = re.sub(r"(?<=[a-z])-(?=[a-z])", " ", text)
     # Dates must never become clock times. Spaces preserve overlap positions.
     text = re.sub(
-        r"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[./]\d{1,2}[./]\d{2,4})\b",
+        r"\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}\s*[./]\s*\d{1,2}\s*[./]\s*\d{2,4})\b",
         lambda match: " " * len(match[0]),
         text,
     )
@@ -589,7 +594,9 @@ def parse_spoken_time(
                 minute = 15 if kind == "ru_quarter" else 30
             elif kind == "et":
                 hour = (target - 1) % 12 if target <= 12 else target - 1
-                minute = {"pool": 30, "veerand": 15, "kolmveerand": 45}[match["m"]]
+                minute = {"pool": 30, "veerand": 15, "kolmveerand": 45}[
+                    re.sub(r"\s+", "", match["m"])
+                ]
             else:
                 word = match["m"]
                 minute = {"half": 30, "quarter": 15, "четверти": 15}.get(word)
@@ -647,15 +654,16 @@ def parse_spoken_time(
                 hour, minute = divmod(hour, 100)
             add(match, hour, minute, explicit=compact or hour == 0 or hour > 12)
     bare = None
-    if not found and allow_bare:
+    if not found and (allow_bare or pending):
         bare = text
         for pattern in PERIODS.values():
             bare = pattern.sub(" ", bare)
         bare = re.sub(r"\b(?:in the|in|the|please|palun|пожалуйста)\b", " ", bare)
+        bare = re.sub(r"^(?:jah|pigem|tegelikult|hoopis)(?:,\s*|\s+)", "", bare)
         bare = " ".join(bare.strip(" .,!?").split())
         if COMPACT_RANGE.fullmatch(bare):
             return RequestedTime(invalid=True)
-        match = BARE.fullmatch(bare)
+        match = BARE.fullmatch(bare) if allow_bare else None
         if match:
             hour = _number(match["h"], hour=True)
             minute = _number(match["m"]) if match["m"] else 0
@@ -674,7 +682,7 @@ def parse_spoken_time(
                 )
             )
     if not found and pending and period:
-        if any(
+        if bare != "" or any(
             NEGATED_TIME.search(text[: match.start()])
             for pattern in PERIODS.values()
             for match in pattern.finditer(text)

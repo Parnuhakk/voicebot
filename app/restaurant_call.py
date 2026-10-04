@@ -41,7 +41,7 @@ from .restaurant_answers import (
 from .restaurant_consent import CONFIRMATION_QUESTIONS, is_restaurant_confirmation
 from .restaurant_data import restaurant_booking_details, restaurant_demo_profile
 from .restaurant_date_vocabulary import RUSSIAN_COUNTS
-from .restaurant_dates import ESTONIAN_COUNTS, resolve_restaurant_date
+from .restaurant_dates import DAY_FORMS, ESTONIAN_COUNTS, resolve_restaurant_date
 from .restaurant_family import family_topic
 from .restaurant_service_questions import (
     GENERAL_TOPICS,
@@ -327,6 +327,20 @@ SIDE_QUESTION = re.compile(
 )
 
 
+def _restaurant_date_reply(text, previous, expected_field):
+    correction = re.sub(r"^(?:tegelikult|hoopis)\s+", "", text.strip(" .!?"))
+    return (
+        expected_field in {"date", "date_invalid", "date_incomplete", "date_ambiguous"}
+        or bool(previous.get("date_issue"))
+        or bool(
+            previous.get("date")
+            and correction != text.strip(" .!?")
+            and correction in DAY_FORMS
+            and correction not in NUMBER_WORDS
+        )
+    )
+
+
 def parse_restaurant_request(text, previous=None, *, now=None, expected_field=None):
     """Parse requested details only: never infer availability, contacts or consent."""
     if not isinstance(text, str) or len(text) > 2000:
@@ -337,12 +351,7 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
     if not active:
         return None
     now = now or datetime.now(ZoneInfo("Europe/Tallinn"))
-    date_reply = expected_field in {
-        "date",
-        "date_invalid",
-        "date_incomplete",
-        "date_ambiguous",
-    } or bool(inquiry.get("date_issue"))
+    date_reply = _restaurant_date_reply(text, inquiry, expected_field)
     resolved = resolve_restaurant_date(
         text,
         now,
@@ -556,14 +565,7 @@ def _restaurant_detail_followup(text, previous, *, expected_field=None):
     resolved = resolve_restaurant_date(
         text,
         datetime.now(ZoneInfo("Europe/Tallinn")),
-        allow_bare_day=expected_field
-        in {
-            "date",
-            "date_invalid",
-            "date_incomplete",
-            "date_ambiguous",
-        }
-        or bool(previous.get("date_issue")),
+        allow_bare_day=_restaurant_date_reply(text, previous, expected_field),
         pending_day=previous.get("date_day"),
         pending_month=previous.get("date_month"),
         pending_year=previous.get("date_year"),
@@ -608,6 +610,8 @@ def _restaurant_detail_followup(text, previous, *, expected_field=None):
             remaining = pattern.sub(" ", remaining)
         remaining = re.sub(r"\bo'clock\b", " ", remaining)
     remaining = " ".join(remaining.strip(" .,!?").split())
+    if clock and allow_bare:
+        remaining = re.sub(r"^(?:jah|pigem|tegelikult|hoopis)(?:\s+|$)", "", remaining)
     if resolved.value or resolved.issue:
         remaining = re.sub(r"^on\s+", "", remaining)
     remaining = re.sub(r",\s*(please|palun|пожалуйста)$", r" \1", remaining)
@@ -1197,8 +1201,16 @@ class RestaurantCallTools(CallTools):
             )
             prior = self._restaurant_inquiry or {}
             resume_plan = previously_paused and not booking_question and agreement
+            # Native VAD can split the terminal year noun from its dated phrase.
+            # This owns no new number and is accepted only while a clock is missing.
+            date_tail = bool(
+                prior.get("date")
+                and expected_field == "time"
+                and re.fullmatch(r"aastal[.!]*", planning_text)
+            )
             retain_details = (
-                recap_retry
+                date_tail
+                or recap_retry
                 or resume_plan
                 or _restaurant_detail_followup(
                     planning_text, prior, expected_field=expected_field
@@ -1226,6 +1238,20 @@ class RestaurantCallTools(CallTools):
                 and question is None
                 and (followup.get("party_size") != prior.get("party_size"))
             )
+            date_followup = date_tail or (
+                retain_details
+                and followup is not None
+                and any(
+                    followup.get(key) != prior.get(key)
+                    for key in (
+                        "date",
+                        "date_issue",
+                        "date_day",
+                        "date_month",
+                        "date_year",
+                    )
+                )
+            )
             time_followup = (
                 (self._restaurant_inquiry is not None or previous_unmatched)
                 and question is None
@@ -1245,6 +1271,7 @@ class RestaurantCallTools(CallTools):
                 and not booking_request
                 and not time_followup
                 and not party_followup
+                and not date_followup
                 and (
                     self._restaurant_inquiry is None
                     or not details
