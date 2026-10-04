@@ -591,6 +591,13 @@ def parse_spoken_time(
         for match in pattern.finditer(text):
             hour = _number(match["h"], hour=True)
             minute = _number(match["m"]) if match["m"] else 0
+            if (
+                match["m"]
+                and re.search(r"\bhours\b", text[match.end("h") : match.start("m")])
+                and re.match(r"\s+hours\b", text[match.end() :])
+            ):
+                add(match, 24)
+                continue
             compact = match["h"].isdigit() and len(match["h"]) == 4
             if compact:
                 for clock_range in COMPACT_RANGE.finditer(text):
@@ -657,7 +664,7 @@ def parse_spoken_time(
             for pattern in PERIODS.values():
                 gap = pattern.sub(" ", gap)
             gap = re.sub(r"\b(?:in the|in|the)\b", " ", gap)
-            alternative_time |= not gap.strip(" ,.!?")
+            alternative_time |= not gap.strip(" ,.!?;")
     # Two different offered times are a choice, never authority to pick one.
     if (
         len(

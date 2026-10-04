@@ -205,8 +205,9 @@ def match_question(
     ):
         start, end = clock.span()
         suffix = re.match(r"\s+hours\b", information_text[end:])
-        # A second hours unit after captured minutes is not another clock unit.
-        if suffix and not re.search(r"\bhours\b", information_text[start:end]):
+        # The shared clock parser rejects repeated units; they still aren't
+        # independent opening-hours questions.
+        if suffix:
             end += suffix.end()
         while alternative := ALTERNATIVE.search(information_text, end):
             if information_text[end : alternative.start()].strip():

@@ -1,5 +1,25 @@
 # Restaurant telephone capability integration
 
+## Current verified disposition
+
+The robot-only restaurant release `598a1a1c498f24bac524083e83780b74ce680e52`
+and its published descendant `2b65eee73585b460bf7f6b74627b99bc635ad138` have
+verified synchronization checkpoints. All 94 app/demo files matched the healthy
+web/worker/bridge roles; original volume and LiveKit/SIP/Redis connections were
+preserved. The reviewed clock-choice repair below passed 12,357 tests and 36
+subtests on the 2b65 base, plus ten browser journeys. Newer published `8494f8a`
+was subsequently observed healthy in all three roles; final-source acceptance
+must use that descendant, not treat older receipts as current proof.
+
+Strict final native telephone acceptance is **not complete**: the first 598 suite
+passed ET menu/allergy before an unexpected note reply; EN menu/allergy/note before
+an independent takeaway-audio rejection; RU menu before an allergy-audio rejection.
+These failures remain recorded and are under metadata-only root-cause investigation.
+No physical-microphone, carrier/PSTN or real restaurant acceptance is claimed.
+
+The sections below retain the chronological repair and verification history;
+their earlier “current”/“final” checkpoints are not the latest acceptance result.
+
 ## Scope and preserved upstream work
 
 The recovery integrates only the outstanding restaurant telephone behavior into
@@ -392,3 +412,117 @@ marker. Its reply then failed `approved_reply_mismatch`, consistent with the mis
 literal `kõügile` selector. This separates a demonstrated selector correction from
 the Kert synthetic-language-detection limitation. The diagnostic changes only the
 in-memory test-caller preset; no production voice or recognizer is changed.
+
+## Published alias repair and retained clock-unit correction
+
+Master advanced to published `2aced839` during the first PR35 checks. Normal
+merge `19c0e265` retains its clock-unit-versus-opening-hours correction and spoken
+probe fixtures, alongside this session's three aliases. No conflicts or dirty
+source were copied. Fresh combined verification passed **12,320 tests and 36
+subtests**, six skips, two existing warnings, 166.15 seconds; basetemp
+`/tmp/opencode/restaurant-recovery-clock-alias-combined`. All ten Chromium journeys
+passed again with zero JavaScript errors or external requests. Independent Codex
+clock/capability-seam review passed **ten** committed tests and **75** bounded
+assertions, with no concrete P0/P1. All twelve live-check oracles independently
+equal the canonical renderer/final guard on the combined tree without any holds
+or bookings.
+
+The final branch-to-master delta is exactly the intended FAQ bank, phone tests
+and this report; cumulative credential/diff checks are clean. [PR35](https://github.com/Parnuhakk/voicebot/pull/35)
+normally merged as `598a1a1c498f24bac524083e83780b74ce680e52` at
+`2026-10-04T01:19:22Z`, under the shared release lock with zero active rooms.
+Its head CI `37167354057` passed both jobs; tested `19c0e265` and merged `598a1a1`
+trees are identical. Master CI and synchronized runtime acceptance are separate
+post-publication gates, not inferred from that merge.
+
+Fresh premerge read-only storage proof preserved every original and historical
+premerge row prefix across all four databases, with integrity `ok`: restaurant
+41 reservations, 79 actions, zero holds; Easy 42 writes and Stay 5 bookings. The
+earlier attempted comparison to the 2ca snapshot failed only for its transient
+hold; all original and permanent/call-history prefixes matched. That failed
+comparison and shared-lock deferrals remain recorded, not relabeled as global
+table equality. No other caller's hold or record was removed.
+
+Final native proof uses the existing `azure-calm` synthetic caller preset uniformly
+for ET/EN/RU in the private test process only. This diagnoses the observed Kert
+automatic-language ambiguity without relaxing it: initial source-language
+recognition and all caller/final-reply/PCM/output-proposition/storage/runtime/lock
+guards remain unchanged. The independent Azure recognizer receives no expected
+text, caller language or phrase hints. Kert ambiguity remains a coverage limit;
+one synthetic caller fixture is not an accent, physical-microphone or PSTN proof.
+
+Synchronization returned `PASS: release_synced`, exit0. Independent locked
+runtime verification at `2026-10-04T01:22:23Z` matched all **94** application/demo
+files in all three healthy roles, exact source labels, identical media images,
+original data volume and original LiveKit/SIP/Redis IDs. Nine private authorization
+checks on the three actual routes returned **403/403/200**, all `no-store`.
+Master CI `37167653929` subsequently passed both release jobs. Five actual installed
+image permission checks passed in9.41s without pulls/network.
+
+Read-only postrelease storage checks preserved every original and fresh premerge
+row prefix across all four databases, all integrity `ok`. Restaurant41reservations/
+79actions/0holds, Easy42writes and Stay5bookings equal the fresh premerge business
+tables; legitimate native-test call history grew, so that database's whole tables
+are not claimed equal. Fresh-environment signed webhook-only proof passed
+unsigned403/signed200, `no-store` and bound stream contract, without agent dispatch
+or carrier invocation. It does not establish account ownership or phone continuity.
+
+Public HTTPS/asset/menu/private-denial/retired-host checks passed again on598.
+Desktop and all three language screenshots were re-read; layout/design remain
+preserved. At390x844 ET controls are y699.28125/46.5px, EN699.28125/69px and
+RU765.96875/69px, all44px+ and wholly on the first screen, no overflow/JS errors.
+
+The first uniform azure-calm four-case598 run did **not** pass all cases:
+ET menu/allergy0.980/0.998 then `approved_reply_mismatch`; EN menu/allergy/note
+1.000 then `independent_audio_content_mismatch`; RU menu0.973 then the same
+independent-content failure. Diagnostic-only follow-ups do not replace final
+four-case acceptance. A first instrumentation attempt itself failed closed because
+the existing `match_question` selector has keyword-only options, not a language
+positional parameter; corrected instrumentation is separate from production code.
+
+Receipts: `/tmp/opencode/restaurant-recovery-598-{sync,verification,preservation,
+incoming,rtc-et,rtc-en,rtc-ru,rtc-summary}.json`, plus
+`restaurant-recovery-alias-publication.json` and the public live summary. Historical
+receipts stay intact. Both goals remain active pending final verified acceptance,
+evidence publication and once-only completion audit.
+
+## Explicit clock-choice clarification repair
+
+Published 2b65 retained the literal capability aliases and added clock-unit
+masking. Independent Codex review exposed a P1 planning regression: `six PM; or
+1900 hours` could expose the first time, while `1800 hours and 19 hours` lost its
+required clarification. Six failing-first actual-call/recognized-HTTP cases
+reproduced these and `18 hours thirty hours`; all six failed before the repair.
+
+The shared time parser now treats a semicolon as punctuation between a clock and
+its alternative, and rejects a repeated hour unit after captured minutes. The
+existing information selector masks those clock units while preserving genuine
+hours questions and safety/capability priorities. No first offered time becomes
+a plan: the caller must clarify, and no hold or booking is created.
+
+Focused clock/SDK-audio-turn/phone/interruption checks: **421 passed** in42.91s.
+Independent Codex re-review: **229 passed** plus **43** bounded assertions, no
+concrete P0/P1. Whole repository on the repaired 2b65 tree: **12,357 passed,
+36 subtests**, six explicit skips, two existing warnings, 181.05s; command above
+with basetemp `/tmp/opencode/restaurant-recovery-2b65-clock-repair`. All ten
+Chromium journeys passed again, zero JavaScript errors/external requests.
+
+Metadata-only native and direct-output checks on 2b65 localized the English
+takeaway rejection to the independent recognizer's `take away` spelling. The
+private audio validator admits this whole-token equivalence **only when the
+entire normalized response then equals the approved answer**. Generic input
+normalization, exact captions, language matching, refusal/referral propositions,
+canonical-plus-extra guard and raw0.78 threshold are unchanged. Existing explicit
+contradiction checks also reject newly demonstrated kitchen/order promises added
+to an otherwise near-canonical response. Four failing-first assertions and twelve
+already-passing rejection cases preceded this private-only correction; **99**
+offline checks passed. Independent Codex review passed the same99 and **71** audio
+rejections, twelve canonical positives and two caption rejections. It did not
+independently establish live/account authentication.
+
+Russian allergy output remains strict: missing the staff-verification proposition
+is still rejected, despite high similarity. Variable direct-recognition outcomes
+do not justify dropping or normalizing that safety requirement. Estonian native
+input still needs identification of the complete synthetic-question artifact;
+no fuzzy production substitution is introduced. Concurrent state changes and
+runtime-not-current deferrals stay failures, not accepted telephone evidence.
