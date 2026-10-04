@@ -26,8 +26,9 @@ The private ET whole-canonical compound-spacing correction and tightened Russian
 staff/refusal/contradiction guards remain reviewed and unchanged. The first failed
 batch is retained; a successful repeat does not establish deterministic recognition.
 No physical-microphone, carrier/PSTN or real restaurant acceptance is claimed.
-The final telephone completion audit remains pending; the dashboard's completed
-audit is separate and is not repeated.
+The once-only Codex telephone completion audit is **PASS**, with the raw-log
+availability qualification below. The dashboard's completed audit is separate
+and was not repeated.
 
 The sections below retain the chronological repair and verification history;
 their earlier “current”/“final” checkpoints are not the latest acceptance result.
@@ -1032,7 +1033,30 @@ batch. There were no failure-observer records.
 The result establishes this bounded native RTC witness, not deterministic ASR,
 physical listening, carrier/PSTN reachability, number continuity/ownership or
 real-restaurant acceptance. Earlier failures and all diagnostic qualifications
-remain retained. The once-only telephone completion audit is still pending.
+remain retained. The once-only telephone completion audit passes as qualified below.
 
 Receipts in `/tmp/opencode/`:
 `restaurant-recovery-ru-staff-note-{publication,head-ci,master-ci,sync,verification,verification-final,incoming,live-summary,rtc-summary}.json`.
+
+## Final independent telephone completion audit
+
+The explicitly selected OpenAI/Codex-account reviewer returns **PASS** for all
+four substantive goal criteria, with no concrete unmet criterion or remaining
+P0/P1. The audit independently checked the native raw output, the scoped-review
+176-test raw output, published source, strict checker, catalogue/FAQ consumers,
+consent/ownership tests and preservation/publication receipts. It did not repeat
+provider calls, the completed dashboard audit or another owner's pipeline work.
+
+The full-suite and browser raw-log paths were unavailable to the auditor; a
+subsequent parent availability check confirms those two files absent while native
+and scoped-review raw logs remain present. Full-suite results were assessed from
+the retained tested-source manifest and green head/masterCI; browser results from
+the retained manifest, not independently reread raw browser logs. This explicit
+qualification is not an additional rerun or a claim that CI ran browser journeys.
+The reviewer found no unmet criterion from it. Historical failed runs and scope
+limits remain unchanged.
+
+The full native evidence report was already committed/pushed as `447755a5…` and
+GitHub content-verified. This audit disposition is a documentation-only addendum;
+application/test/deployment source remains the verifieda7be release and is not
+redeployed merely to update the report.
