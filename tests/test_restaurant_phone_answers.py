@@ -47,6 +47,88 @@ CASES = [
 ]
 
 
+ESTONIAN_ASR_NOTE_QUESTIONS = [
+    "Kas saate minu allergiast kõügile teatada?",
+    "Kas saate lisada proneeringule eri soovi?",
+    "Kas saate mu allergiaproneeringule kirja panna?",
+]
+
+
+@pytest.mark.parametrize("question", ESTONIAN_ASR_NOTE_QUESTIONS)
+def test_estonian_note_asr_variants_keep_canonical_refusal_without_booking(
+    make_state, question
+):
+    state = make_state("et")
+    state.observe_user_text(question, is_final=True, detected_language="et")
+    assert trusted_booking_response(state) == {"content": CASES[0][2]}
+    assert state.guard_reply("Saadan köögile teate.", []) == CASES[0][2]
+    assert state.booking_inquiry is None
+    assert not state.holds and not state.bookings and not state.pending
+
+
+@pytest.mark.parametrize("question", ESTONIAN_ASR_NOTE_QUESTIONS)
+def test_estonian_note_asr_variants_keep_automatic_audio_http_refusal(client, question):
+    session = start(client, "auto")["session_id"]
+    client.provider.transcript = question
+    response = client.post(
+        "/api/turn",
+        headers=AUTH,
+        json={
+            "session_id": session,
+            "audio_b64": base64.b64encode(b"RIFF-synthetic-fixture").decode(),
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()
+    assert result["language"] == "et" and result["reply"] == CASES[0][2]
+    assert result["reply"] == client.provider.spoken[-1]
+    assert result["booking_changes"] == [] and not result["recap_delivery_id"]
+    assert client.provider.recognized_languages == ["auto"]
+    state = client.app.state.demo_sessions.sessions[session].tools
+    assert state.booking_inquiry is None
+    assert not state.holds and not state.bookings and not state.pending
+
+
+@pytest.mark.parametrize("question", ESTONIAN_ASR_NOTE_QUESTIONS)
+def test_estonian_note_asr_variants_revoke_delivered_booking_consent(
+    make_state, question
+):
+    async def run():
+        state = make_state("et")
+        proposal = await prepare(state)
+        previous = state.pending
+        recap = state.render_recap()
+        assert state.mark_recap_delivered(proposal["hold_id"])
+        state.observe_user_text(question, is_final=True, detected_language="et")
+        assert state.guard_reply("Saadan köögile teate.", []) == (
+            CASES[0][2] + " " + COPY["et"]["resume_booking"] + " " + recap
+        )
+        assert state.pending is not previous
+        assert state.pending["hold_id"] == previous["hold_id"]
+        assert state.pending["expires_at"] == previous["expires_at"]
+        assert not state.pending["delivery"] and not state.pending["approved"]
+        assert not state.bookings
+        assert (
+            await state.dispatch(
+                "confirm_slot_booking", {"hold_id": proposal["hold_id"]}
+            )
+        )["error"] == "consent_required"
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("question", ESTONIAN_ASR_NOTE_QUESTIONS)
+def test_partial_estonian_note_asr_variants_cannot_change_english_booking(
+    make_state, question
+):
+    state = make_state("en")
+    state.observe_user_text("Book a table tomorrow for four.", language="en")
+    inquiry = state.booking_inquiry
+    state.observe_user_text(question, is_final=False, detected_language="et")
+    assert state.language == "en" and state.booking_inquiry == inquiry
+    assert trusted_booking_response(state) == {"content": COPY["en"]["time"]}
+
+
 @pytest.mark.parametrize(
     "question",
     [
