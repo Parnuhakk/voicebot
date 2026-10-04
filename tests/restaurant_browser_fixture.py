@@ -5,6 +5,7 @@ import json
 import tempfile
 import httpx
 from pathlib import Path
+from typing import Annotated
 from unittest.mock import patch
 
 from app.server import create_app as server_app
@@ -22,9 +23,9 @@ class FixtureSpeech:
         selected = language if language in {"et", "en", "ru"} else "en"
         return Transcription(self.transcribe(audio, language=language), selected)
 
-    def transcribe(self, audio, *, language=None):
+    def transcribe(self, audio: bytes, *, language: str | None = None):
         return {"et": "Milline on menüü?", "ru": "Что есть в меню?"}.get(
-            language, "What is on the menu?"
+            language or "", "What is on the menu?"
         )
 
     def synthesize(self, text):
@@ -104,4 +105,74 @@ def create_app():
     )
     app.state.stack.update(stt=speech, tts=tts, llm_primary=FixtureLlm())
     app.state.capabilities.update(text_turn_ready=True, audio_turn_ready=True)
+    return app
+
+
+def create_confirmation_app():
+    """Real MP3 playback and a controlled underrun on restaurant HTTP routes."""
+    import threading
+
+    from fastapi import Header, HTTPException
+
+    gate = threading.Event()
+    progress = {"gated": False, "started": False, "completed": False}
+
+    class ConfirmationSpeech(FixtureSpeech):
+        transcript = "That's very good."
+
+        def transcribe(self, audio: bytes, *, language: str | None = None):
+            return self.transcript
+
+        def for_language(self, language):
+            return self
+
+        def stream(self, text):
+            progress.update(started=True, completed=False)
+            audio = self.synthesize(text)
+            offset = 0
+            if audio.startswith(b"ID3"):
+                offset = 10 + sum(audio[6 + i] << (7 * (3 - i)) for i in range(4))
+            audio = audio[:offset] + audio[offset:] * 8
+            if progress["gated"]:
+                gate.clear()
+                split = len(audio) // 2
+                yield audio[:split]
+                if not gate.wait(15):
+                    raise RuntimeError("synthetic restaurant stream gate expired")
+                yield audio[split:]
+            else:
+                yield audio
+            progress["completed"] = True
+
+    app = create_app()
+    static_route = app.router.routes.pop()
+    speech = ConfirmationSpeech()
+    app.state.stack["tts"].close()
+    app.state.stack.update(tts=speech, stt=speech)
+
+    def authorized(authorization):
+        if authorization != "Bearer restaurant-fixture-operator":
+            raise HTTPException(403)
+
+    @app.post("/test/confirmation/configure")
+    def configure(
+        body: dict[str, object],
+        authorization: Annotated[str | None, Header()] = None,
+    ):
+        authorized(authorization)
+        progress["gated"] = body.get("gated") is True
+        if "transcript" in body:
+            transcript = body["transcript"]
+            if not isinstance(transcript, str):
+                raise HTTPException(400)
+            speech.transcript = transcript
+        return {"ok": True}
+
+    @app.post("/test/confirmation/release")
+    def release(authorization: Annotated[str | None, Header()] = None):
+        authorized(authorization)
+        gate.set()
+        return {"ok": True}
+
+    app.router.routes.append(static_route)
     return app

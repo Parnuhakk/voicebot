@@ -9,6 +9,10 @@ recaps, consent and cancellation. Optional modern browser voices retain their
 existing configuration and fallback behavior. Browser turns use bounded NDJSON
 audio streaming and require an exact terminal response before acknowledging a
 recap. Seeking, interruption and incomplete audio do not acknowledge it.
+An ordinary buffering stall followed by complete playback does acknowledge the
+recap: it has not skipped any speech. A typed response to the complete displayed
+recap acknowledges reading it, without requiring a separate read-button click.
+The backend still requires an unconditional affirmative response before writing.
 
 The bundled restaurant, menu, capacity and guests are fictional. Restaurant
 specialization consists of validated knowledge, prompts, deterministic routine
@@ -94,6 +98,9 @@ recognition accuracy. Unsupported or ambiguous wording still needs clarification
 Questions, quoted examples, declines and mixed changes are not consent. A
 current owned recap must still have been delivered before a later final turn;
 partial recognition and expired or interrupted recaps cannot confirm a table.
+If a final affirmative arrives without delivery acknowledgement, the assistant
+retains the requested date, time and guest count and offers the recap again.
+It does not restart the date interview or claim a reservation was saved.
 
 Date requests understand Estonian case forms such as `homseks`, `homsele`,
 `ülehomseks`, `esmaspäevaks`, `neljas oktoober`, `neljandal oktoobril` and

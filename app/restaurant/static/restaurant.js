@@ -1321,8 +1321,12 @@ async function sendTurn(input, capture = null) {
     state.turnBusy
   )
     return;
-  if (typeof input.text === "string" && input.text.trim()) stopMic();
-  else if (
+  if (typeof input.text === "string" && input.text.trim()) {
+    stopMic();
+    // A typed reply to the complete visible recap is its reading acknowledgement.
+    // The server still decides whether that reply grants unconditional consent.
+    acknowledgeRecap(state.recap);
+  } else if (
     !input.audio_b64 ||
     !capture ||
     capture.generation !== state.generation ||
