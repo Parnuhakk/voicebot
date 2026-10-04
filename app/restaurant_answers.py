@@ -11,9 +11,9 @@ from zoneinfo import ZoneInfo
 from .booking_faq import FAQ_PATH, load_faq, normalize
 from .restaurant_data import DAYS
 from .restaurant_dates import resolve_restaurant_date
-from .restaurant_times import ALTERNATIVE, DIGITAL, PREFIX, SUFFIX, parse_spoken_time
 from .restaurant_family import family_topic
 from .restaurant_service_questions import CONFLICTS, GENERAL_TOPICS, general_topic
+from .restaurant_times import ALTERNATIVE, DIGITAL, PREFIX, SUFFIX, parse_spoken_time
 
 
 @dataclass(frozen=True)
@@ -92,6 +92,11 @@ CAPABILITY_PATTERNS = {
     for topic, entry in CAPABILITIES.items()
 }
 
+# Whole pet questions only: never mask a booking correction or arbitrary clause.
+PET_QUESTION = re.compile(
+    r"kas (?:koeraga|kutsuga|kassiga|lemmikloomaga) (?:võib|saab|tohib) tulla[.!?]*"
+)
+
 
 def capability_booking_clause(text: str) -> str | None:
     """A capability question is not booking intent; require a positive clause."""
@@ -100,6 +105,22 @@ def capability_booking_clause(text: str) -> str | None:
         r"juhis\w*|näide|пример\w*|инструкц\w*)\b",
         text,
     ):
+        return None
+    pet_question = PET_QUESTION.search(text)
+    if pet_question:
+        remainder = PET_QUESTION.sub(" ", text)
+        remainder = re.sub(r"\bja\s*$", "", remainder.strip(" .!?;"))
+        # The table desire is accepted only inside this whole pet-question pair.
+        remainder = re.sub(
+            r"^(?:ma )?(?:soovin|sooviksin|tahan|tahaksin) (?=[^!?;]*\blauda\b)",
+            "broneeri ",
+            remainder,
+        )
+        candidate = capability_booking_clause(remainder)
+        if candidate and re.fullmatch(
+            r"[\s.!?;]*" + re.escape(candidate) + r"[\s.!?;]*", remainder
+        ):
+            return candidate
         return None
     for pattern in CAPABILITY_PATTERNS.values():
         text = pattern.sub(" ", text)
@@ -161,7 +182,7 @@ BOOKING_REQUEST = re.compile(
     r"lau[ad]\w*|tables?|(?:за)?брон\w*|столик\w*)\b"
 )
 RECOMMENDATION = re.compile(
-    r"^(?:mida (?:te )?soovit(?:ad|ate)(?: süüa)?|"
+    r"^(?:mida (?:te )?soovit(?:ad|ate|aksite)(?: süüa)?|"
     r"what (?:would|do) you recommend(?: to eat)?|"
     r"что (?:вы )?(?:посоветуете|порекомендуете)(?: поесть)?)[.!?]*$|"
     r"(?:soovit|recommend|посовет|порекоменд).*(?:menüü|menu|süüa|eat|dish|rooga|food|vegan|vegetarian|поесть|блюд)|"
@@ -233,6 +254,8 @@ def match_question(
         if (match := re.search(pattern, information_text))
     )
     topics = [topic for _, topic in sorted(matches)]
+    if has_dish and re.fullmatch(r"kas selles on piima[.!?]*", text):
+        topics.insert(0, "allergens")
     family = family_topic(text)
     if family:
         # A children's menu is distinct from the reviewed adult dish list, and
@@ -346,15 +369,22 @@ def match_question(
     if not topics and (has_dish or has_diet):
         topics = ["menu"]
     extra = general_topic(information_text)
-    if not extra and previous and previous.family_allergens and re.fullmatch(
-        r"(?:aga|ja|and|what about|а|и)\s+(?:milk|eggs?|gluten|nuts?|lactose|soy|piim\w*|muna\w*|gluteen\w*|pähkl\w*|laktoos\w*|молок\w*|яйц\w*|глютен\w*|орех\w*|лактоз\w*|со[яю])\s*[.!?]*",
-        text,
+    if (
+        not extra
+        and previous
+        and previous.family_allergens
+        and re.fullmatch(
+            r"(?:aga|ja|and|what about|а|и)\s+(?:milk|eggs?|gluten|nuts?|lactose|soy|piim\w*|muna\w*|gluteen\w*|pähkl\w*|laktoos\w*|молок\w*|яйц\w*|глютен\w*|орех\w*|лактоз\w*|со[яю])\s*[.!?]*",
+            text,
+        )
     ):
         extra = "child_allergens"
     if extra == "emergency_help":
         topics = [extra]
     elif extra:
-        topics = [extra] + [topic for topic in topics if topic not in CONFLICTS.get(extra, set())]
+        topics = [extra] + [
+            topic for topic in topics if topic not in CONFLICTS.get(extra, set())
+        ]
     days = tuple(
         index
         for index, pattern in enumerate(DAY_PATTERNS)

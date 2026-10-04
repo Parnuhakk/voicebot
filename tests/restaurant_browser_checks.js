@@ -108,7 +108,7 @@ async page => {
   for (const code of ['en', 'ru', 'et']) {
     await chooseLanguage(code);
     for (const [profile, names] of [
-      ['azure-conversational', {et:'Anu',en:'Emma',ru:'Эмма'}],
+      ['azure-conversational', {et:'Nova Turbo',en:'Emma',ru:'Эмма'}],
       ['azure-conversational-male', {et:'Kert',en:'Andrew',ru:'Эндрю'}],
     ]) {
       await page.locator('#demo-voice').selectOption(profile);
@@ -293,7 +293,7 @@ async page => {
     }
     const timeQuestions = {
       en: ["I'd like a table tomorrow at 6 o clock", 'in the evening', 'Do you mean AM or PM?', 'How many of you are coming, including children?'],
-      et: ['Soovin homme lauda kell kuus', 'õhtul', 'Kas mõtlete hommikul või õhtul?', 'Mitmele inimesele lauda soovite?'],
+      et: ['Soovin homme lauda kell kuus', 'õhtul', 'Kas mõtlete hommikul või õhtul?', 'Mitu inimest tuleb, lapsed kaasa arvatud?'],
       ru: ['Хочу столик завтра в шесть часов', 'вечером', 'Вы имеете в виду утром или вечером?', 'Сколько вас будет, вместе с детьми?'],
     }[language.code];
     for (let index = 0; index < 2; index++) {
@@ -321,7 +321,7 @@ async page => {
     const recommendation = await page.locator('#demo-messages .message').last().locator('span').textContent();
     assert(recommendation.startsWith(reasoningExample[1]));
     assert(recommendation.endsWith({
-      et:'Mitmele inimesele lauda soovite? Palun arvestage ka lapsed.',
+      et:timeQuestions[3],
       en:timeQuestions[3],ru:timeQuestions[3],
     }[language.code]));
     assert.equal(await page.evaluate(()=>state.recap), null, 'reasoning response created a booking proposal');
@@ -340,7 +340,7 @@ async page => {
     await page.locator('#demo-start').click();
     await page.waitForFunction(()=>state.sessionId && !state.turnBusy);
     const temporalAnswers = {
-      et: ['Soovin lauda', 'kahe päeva pärast', 'kell kuueks õhtul', 'meid tuleb neli', 'Mis päevaks', 'Mis kell', 'Mitmele inimesele'],
+      et: ['Soovin lauda', 'kahe päeva pärast', 'kell kuueks õhtul', 'meid tuleb neli', 'Mis päevaks', 'Mis kell', 'Mitu inimest'],
       en: ["I'd like to book a table", 'in two days', 'at six and a half PM', 'for a party of four', 'What date', 'What time', 'How many'],
       ru: ['Хочу забронировать столик', 'через два дня', 'в половине седьмого вечера', 'нас будет четверо', 'На какой день', 'Во сколько', 'Сколько вас'],
     }[language.code];

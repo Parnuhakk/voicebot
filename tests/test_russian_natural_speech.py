@@ -8,13 +8,13 @@ from xml.etree import ElementTree as ET
 import httpx
 import pytest
 
+from app.booking.tools import Dispatcher
 from app.languages import CONSENT
 from app.providers.azure_tts import AzureTtsClient, ssml
 from app.providers.russian_speech import duration, guest_count, spoken_date, spoken_time
 from app.providers.speech_delivery import SpeechDelivery
 from app.restaurant_answers import format_schedule, match_question
 from app.restaurant_call import COPY, RestaurantCallTools
-from app.booking.tools import Dispatcher
 from app.restaurant_data import load_restaurant_data
 from tests.test_restaurant_http import start, tomorrow, turn
 
@@ -385,6 +385,6 @@ def test_native_provider_uses_the_same_russian_markup_and_language_reset():
         )
         assert requests[1].find(".//" + SSML + "prosody").get("rate") == "1.00"
         assert all(not list(doc.iter(MSTTS + "silence")) for doc in requests[:2])
-        assert requests[2].find(".//" + MSTTS + "silence").get("value") == "120ms"
+        assert requests[2].find(".//" + MSTTS + "silence") is None
 
     asyncio.run(run())

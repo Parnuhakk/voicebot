@@ -4,20 +4,20 @@ from __future__ import annotations
 
 import importlib
 import os
-from inspect import getattr_static
-from contextlib import contextmanager
 from collections.abc import Iterator
+from contextlib import contextmanager
+from inspect import getattr_static
 
+from .azure_tts import AZURE_PRESETS
 from .modern_tts import (
+    MAX_AUDIO_BYTES,
     CartesiaTtsClient,
     ElevenLabsTtsClient,
     GoogleTtsClient,
-    MAX_AUDIO_BYTES,
     Mp3Audio,
     provider_error,
     validate_text,
 )
-from .azure_tts import AZURE_PRESETS
 
 PROFILES = {
     "azure": ("Azure Neural", ("et", "en", "ru"), True),
@@ -26,12 +26,28 @@ PROFILES = {
     "cartesia": ("Cartesia Sonic 3.6", ("en", "ru"), True),
     "azure-male": ("Kert / Guy / Dmitry", ("et", "en", "ru"), True),
     "azure-calm": ("Anu / Jenny / Svetlana (calm)", ("et", "en", "ru"), True),
-    "azure-male-calm": ("Kert (calm) / Davis / Dmitry (calm)", ("et", "en", "ru"), True),
-    "azure-male-warm": ("Kert (lively) / Andrew / Dmitry (lively)", ("et", "en", "ru"), True),
+    "azure-male-calm": (
+        "Kert (calm) / Davis / Dmitry (calm)",
+        ("et", "en", "ru"),
+        True,
+    ),
+    "azure-male-warm": (
+        "Kert (lively) / Andrew / Dmitry (lively)",
+        ("et", "en", "ru"),
+        True,
+    ),
     "azure-brian": ("Brian (American English)", ("en",), True),
     "azure-ryan": ("Ryan (British English)", ("en",), True),
-    "azure-conversational": ("Anu / Emma (conversational)", ("et", "en", "ru"), True),
-    "azure-conversational-male": ("Kert / Andrew (conversational)", ("et", "en", "ru"), True),
+    "azure-conversational": (
+        "Nova Turbo / Emma (conversational)",
+        ("et", "en", "ru"),
+        True,
+    ),
+    "azure-conversational-male": (
+        "Kert / Andrew (conversational)",
+        ("et", "en", "ru"),
+        True,
+    ),
 }
 
 
@@ -159,7 +175,9 @@ class DemoVoices:
         if not isinstance(profile_id, str) or profile_id not in PROFILES:
             raise ValueError("unknown voice profile") from None
         if profile_id in AZURE_PRESETS:
-            if azure is None or not callable(getattr_static(azure, "for_profile", None)):
+            if azure is None or not callable(
+                getattr_static(azure, "for_profile", None)
+            ):
                 raise ValueError("voice profile unavailable") from None
             return _Choice(profile_id, azure.for_profile(profile_id), azure)
         if (profile_id == "azure" and azure is None) or (

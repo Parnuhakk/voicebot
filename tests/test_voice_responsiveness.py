@@ -55,10 +55,7 @@ def test_default_provider_delivery_is_brisk_but_recaps_keep_normal_speed(
     assert "".join(ordinary.itertext()) == text
     assert ordinary.find(".//" + SSML + "prosody").get("rate") == "1.12"
     silence = ordinary.find(".//" + MSTTS + "silence")
-    if language == "ru":
-        assert silence is None
-    else:
-        assert silence.get("value") == "120ms"
+    assert silence is None
     assert "".join(recap.itertext()) == CONSENT[language]
     assert recap.find(".//" + SSML + "prosody").get("rate") == "1.00"
     assert recap.find(".//" + MSTTS + "silence") is None

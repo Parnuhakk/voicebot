@@ -11,17 +11,16 @@ import unicodedata
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
+from .restaurant_date_spelling import CalendarSpelling
 from .restaurant_date_vocabulary import (
     ENGLISH_CARDINALS,
     ENGLISH_DAY_FORMS,
     ENGLISH_MONTH_FORMS,
+    RUSSIAN_COUNTS,
     RUSSIAN_DAY_FORMS,
     RUSSIAN_MONTH_FORMS,
-    RUSSIAN_COUNTS,
 )
-from .restaurant_date_spelling import CalendarSpelling
 from .restaurant_date_years import SpokenYears
-
 
 CASE_ENDINGS = (
     "",
@@ -393,6 +392,7 @@ OFFSETS = (
         + OFFSET_NUMBER
         + r")\s+(?P<unit>päeva|päev|nädala|nädalat|nädal)\s+pärast\b"
     ),
+    re.compile(r"\b(?P<unit>nädala)\s+pärast\b"),
     re.compile(r"\bin\s+(?P<n>" + OFFSET_NUMBER + r")\s+(?P<unit>days?|weeks?)\b"),
     re.compile(
         r"(?<![\w-])(?P<n>"
@@ -652,6 +652,16 @@ def resolve_restaurant_date(
     for pattern in OFFSETS:
         for match in pattern.finditer(text):
             raw = match.groupdict().get("n")
+            if (
+                raw is None
+                and match["unit"] == "nädala"
+                and re.search(
+                    r"\b(?:\d+|pool|poole|paar|paari|mõne|mitme|\w*(?:kümmend|kümne|sada|saja|tuhat|tuhande\w*))\s+$",
+                    text[: match.start()],
+                )
+            ):
+                record(*match.span(), None, "date_ambiguous")
+                continue
             count = (
                 int(raw)
                 if raw and raw.lstrip("-").isdigit()
@@ -676,7 +686,7 @@ def resolve_restaurant_date(
         bare_day = re.fullmatch(
             r"(?:(?:on|the|na|на|kuupäeval|kuupäevaks)\s+)*(?P<day>"
             + DAY_PATTERN
-            + r")[.!?,]*",
+            + r")[.!?,]*(?:\s+palun[.!?,]*)?",
             text,
         )
         if bare_day:

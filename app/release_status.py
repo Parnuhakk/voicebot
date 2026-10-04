@@ -2,19 +2,20 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict
-from functools import lru_cache
 import hashlib
 import json
 import math
 import os
-from pathlib import Path
 import re
 import sys
 import tempfile
 import time
+from dataclasses import asdict
+from functools import lru_cache
+from pathlib import Path
 
 from .business import business_type, restaurant_database, restaurant_writes_enabled
+from .providers.azure_stt import stt_descriptor
 from .providers.speech_delivery import SpeechDelivery
 from .providers.voice_config import SpeechConfig, VoiceConfig
 
@@ -50,6 +51,7 @@ def identity(*, restaurant_data: dict | None = None) -> str:
         "source": source_digest(),
         "business": business,
         "models": asdict(VoiceConfig.from_env()),
+        "recognition": stt_descriptor(),
         "speech": asdict(SpeechConfig.from_env()),
         "delivery": asdict(SpeechDelivery.from_env()),
         "azure_region": env.get("AZURE_REGION", ""),

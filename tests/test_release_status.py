@@ -4,8 +4,8 @@ import json
 import time
 from unittest.mock import patch
 
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 
 from app import release_status as releases
 from app.server import create_app
@@ -71,6 +71,44 @@ def test_changed_shared_settings_invalidate_old_receipt(
     path, _ = receipt(tmp_path)
     monkeypatch.setenv(key, value)
     assert releases.status(path=path)["status"] == "out_of_sync"
+
+
+def test_different_effective_recognizers_cannot_share_or_refresh_receipt(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("AZURE_REGION", "northeurope")
+    monkeypatch.setenv("AZURE_SPEECH_KEY", "fixture")
+    monkeypatch.setenv("VOICEBOT_STT_PROVIDER", "azure")
+    path, _ = receipt(tmp_path)
+    azure_identity = releases.identity()
+    original = path.read_bytes()
+    monkeypatch.setenv("VOICEBOT_STT_PROVIDER", "groq")
+    assert releases.status(path=path)["status"] == "out_of_sync"
+    with pytest.raises(ValueError, match="release_identity_mismatch"):
+        releases.record(SHA, azure_identity, path=path)
+    assert path.read_bytes() == original
+
+
+@pytest.mark.parametrize("provider", ["azure", "groq"])
+def test_effective_recognizer_identity_excludes_credential_values(
+    monkeypatch, provider
+):
+    monkeypatch.setenv("AZURE_REGION", "northeurope")
+    monkeypatch.setenv("AZURE_SPEECH_KEY", "fixture")
+    monkeypatch.setenv("VOICEBOT_STT_PROVIDER", provider)
+    before = releases.identity()
+    monkeypatch.setenv("AZURE_SPEECH_KEY", "different-fixture")
+    monkeypatch.setenv("GROQ_API_KEY", "different-fixture")
+    assert releases.identity() == before
+
+
+def test_automatic_and_explicit_azure_selection_have_same_identity(monkeypatch):
+    monkeypatch.setenv("AZURE_REGION", "northeurope")
+    monkeypatch.setenv("AZURE_SPEECH_KEY", "fixture")
+    default = releases.identity()
+    for override in ("", "azure"):
+        monkeypatch.setenv("VOICEBOT_STT_PROVIDER", override)
+        assert releases.identity() == default
 
 
 def test_credentials_and_carrier_configuration_never_enter_receipt(
@@ -197,7 +235,7 @@ def test_public_status_exposes_receipt_without_claiming_real_carrier_verificatio
     assert response.headers["Cache-Control"] == "no-store"
     telephone = response.json()["telephone"]
     assert telephone["release"]["status"] == "in_sync"
-    assert telephone["sentence_pause_ms"] == 120
+    assert telephone["sentence_pause_ms"] == 0
     assert telephone["carrier_call_verified"] is False
     assert telephone["public_ingress_verified"] is False
 

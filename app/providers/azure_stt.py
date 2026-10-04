@@ -16,9 +16,13 @@ from ..business import business_type
 from ..languages import language_code
 from .errors import ProviderError, RetryableProviderError, raise_for_provider
 from .transcription import Transcription
+from .voice_config import VoiceConfig
 
 AZURE_STT_MODEL = "MAI-Transcribe-2"
-AZURE_STT_PATH = "/speechtotext/transcriptions:transcribe?api-version=2025-10-15"
+AZURE_STT_API_VERSION = "2025-10-15"
+AZURE_STT_PATH = (
+    f"/speechtotext/transcriptions:transcribe?api-version={AZURE_STT_API_VERSION}"
+)
 
 
 def stt_provider_from_env(env=None) -> str:
@@ -29,6 +33,19 @@ def stt_provider_from_env(env=None) -> str:
     if provider not in ("azure", "groq") or (provider == "azure" and not configured):
         raise ValueError("invalid speech recognition configuration")
     return provider
+
+
+def stt_descriptor(env=None) -> dict[str, str]:
+    """Effective recognizer identity; never include credential values."""
+    env = os.environ if env is None else env
+    provider = stt_provider_from_env(env)
+    return {
+        "provider": provider,
+        "model": AZURE_STT_MODEL
+        if provider == "azure"
+        else VoiceConfig.from_env(env).stt_model,
+        "api_version": AZURE_STT_API_VERSION if provider == "azure" else "v1",
+    }
 
 
 def azure_stt_base(region: str) -> str:
@@ -66,7 +83,11 @@ def parse_azure_transcription(payload: object) -> Transcription:
         if (
             not isinstance(text, str)
             or not isinstance(locale, str)
-            or not locale.strip()
+            # Azure emits language codes, optionally with a script and region.
+            # Do not normalize malformed suffixes into supported consent.
+            or not re.fullmatch(
+                r"[A-Za-z]{2,3}(?:-[A-Za-z]{4})?(?:-(?:[A-Za-z]{2}|\d{3}))?", locale
+            )
         ):
             raise ValueError("invalid transcription")
         if text.strip():

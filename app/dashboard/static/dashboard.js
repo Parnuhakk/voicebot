@@ -70,7 +70,7 @@ function localizeDemo() {
   renderDemoModels();
   renderVoices();
 }
-const VOICE_LABELS={azure:"Azure",elevenlabs:"ElevenLabs",google:"Google Chirp 3 HD",cartesia:"Cartesia","azure-male":"Kert / Guy / Dmitry","azure-calm":"Anu / Jenny / Svetlana (calm)","azure-male-calm":"Kert (calm) / Davis / Dmitry (calm)","azure-male-warm":"Kert (lively) / Andrew / Dmitry (lively)","azure-brian":"Brian (American English)","azure-ryan":"Ryan (British English)","azure-conversational":"Anu / Emma (conversational)","azure-conversational-male":"Kert / Andrew (conversational)"};
+const VOICE_LABELS={azure:"Azure",elevenlabs:"ElevenLabs",google:"Google Chirp 3 HD",cartesia:"Cartesia","azure-male":"Kert / Guy / Dmitry","azure-calm":"Anu / Jenny / Svetlana (calm)","azure-male-calm":"Kert (calm) / Davis / Dmitry (calm)","azure-male-warm":"Kert (lively) / Andrew / Dmitry (lively)","azure-brian":"Brian (American English)","azure-ryan":"Ryan (British English)","azure-conversational":"Nova Turbo / Emma (conversational)","azure-conversational-male":"Kert / Andrew (conversational)"};
 const VOICE_REASONS=new Set(["missing_credentials","credentials_missing","not_configured","invalid_configuration","missing_dependency","dependency_missing","dependency_unavailable","missing_voice","missing_voice_id","unsupported_language","provider_unavailable","provider_failed","provider_failure","synthesis_failed","catalog_unavailable","unavailable","disabled","transport_error","request_rejected","rate_limited","invalid_response","completion_incomplete"]);
 function voiceReason(code) { return VOICE_REASONS.has(code) ? code : "unavailable"; }
 function renderVoices() {

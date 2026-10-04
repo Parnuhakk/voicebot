@@ -10,8 +10,9 @@ the robot webhook were verified through a read-only Twilio request at06:37:11Z.
 No number/credentials were printed or saved and no paid call was made.
 
 Published MAI-Transcribe-2 preview input recognition is retained, explicitly not
-called unchanged ASR. Original reply voices/delivery, canonical safety copy and
-the shared booking pipeline remain intact. Only published peers were merged;
+called unchanged ASR. Published voice profiles, delivery settings, canonical
+safety copy and the shared booking pipeline are preserved rather than rolled back.
+Only published peers were merged;
 no other owner's dirty work was copied or reset. Current0bb combined checks pass
 12,861 tests/36 subtests and all eleven browser journeys, with green masterCI.
 
@@ -28,8 +29,27 @@ The completed a7be witness/audit below remains dated base evidence.
 A parallel published speech repair advanced master and all three healthy roles to
 `20b474994c3f883794f8f056faf3a9a27bd5420e` before publication. It is not rolled
 back. The reviewed emergency repair is being integrated through normal merges,
-with fresh combined checks for that newer source. A 956 idle-baseline attempt
+with fresh combined checks for that newer source. The combined source passes
+**13,143 tests/36 subtests**, all eleven browser journeys and the narrow Codex
+integration review (788 scoped tests, twelve exact canonical replies and twelve
+owned-proposal controls). Its only runtime difference from published20b is the
+reviewed emergency repair. A 956 idle-baseline attempt
 failed `release_locked` after its bounded wait; it is not preservation proof.
+The peer introduces a Nova Turbo Estonian conversational profile, a zero default
+sentence pause and effective recognizer identity in release fingerprints. These
+are independently published changes, not described as unchanged voice settings.
+The private checker remains unmodified, with 173 offline guards passing and no
+expected-text or language hints supplied to independent recognition.
+
+The fresh locked20b baseline at06:58:33Z has zero active rooms, the original data
+volume and four successful integrity checks. It records88restaurant reservations,
+173actions/0holds,42Easy writes,5Stay bookings and37call-booking associations.
+The original/a7be/prepublish20b prefixes and whole current booking state pass a
+separate exact read-only preservation check. Peer native activity added three
+fictional reservations/six actions after the earlier85/167checkpoint; those older
+records were not replaced. Effective native voices are Nova Turbo ET, Jenny EN and
+Svetlana RU, with automatic language selection, natural1.12rate, recap1.0 and
+zero fixed sentence pause. Publication/new exact-release acceptance follows.
 
 ### Auditeda7be checkpoint
 

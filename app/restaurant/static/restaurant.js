@@ -860,7 +860,7 @@ function requireDemoConnection() {
 }
 const VOICE_LABELS = {
   azure: ["Tavahääl", "Standard voice", "Обычный голос"],
-  "azure-conversational": ["Anu · vestluslik", "Emma · conversational", "Эмма · разговорный"],
+  "azure-conversational": ["Nova Turbo · vestluslik", "Emma · conversational", "Эмма · разговорный"],
   "azure-conversational-male": ["Kert · vestluslik", "Andrew · conversational", "Эндрю · разговорный"],
   "azure-male": ["Kert · meeshääl", "Guy · male voice", "Дмитрий · мужской голос"],
   "azure-calm": ["Anu · rahulik", "Jenny · calm", "Светлана · спокойный"],

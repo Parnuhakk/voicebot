@@ -10,10 +10,10 @@ import pytest
 from app.booking.restaurant import RestaurantAdapter
 from app.booking_response import trusted_booking_response
 from app.business import restaurant_dispatcher
+from app.call_factory import make_call_tools
 from app.languages import AFFIRMATIONS_ET, CONSENT, ENGLISH_INVITATION, select_language
 from app.restaurant_call import COPY, parse_restaurant_request, restaurant_spoken_date
 from app.restaurant_data import load_restaurant_data
-from app.call_factory import make_call_tools
 
 
 @pytest.fixture
@@ -262,7 +262,7 @@ def test_partial_asr_confirmation_waits_for_final_user_turn(make_state):
 @pytest.mark.parametrize(
     "language,expected",
     [
-        ("et", "pühapäeval, 4. oktoobril 2026"),
+        ("et", "pühapäeval, neljandal oktoobril 2026"),
         ("en", "Sunday, 4 October 2026"),
         ("ru", "4 октября 2026"),
     ],
@@ -318,16 +318,25 @@ def test_one_missing_detail_at_a_time_and_fields_survive_turns(
 
 
 @pytest.mark.parametrize("detected", [None, "english", "estonian"])
-@pytest.mark.parametrize("utterance", [
-    "I'd like a table for four tomorrow at 2 pm",
-    "We would like to make a booking for four tomorrow at two pm",
-    "Can I reserve a table for four tomorrow at 2 pm?",
-])
-def test_english_caller_automatically_gets_an_english_booking(make_state, detected, utterance):
+@pytest.mark.parametrize(
+    "utterance",
+    [
+        "I'd like a table for four tomorrow at 2 pm",
+        "We would like to make a booking for four tomorrow at two pm",
+        "Can I reserve a table for four tomorrow at 2 pm?",
+    ],
+)
+def test_english_caller_automatically_gets_an_english_booking(
+    make_state, detected, utterance
+):
     state = make_state()
     state.observe_user_text(utterance, detected_language=detected)
     assert state.language == "en"
-    assert state.booking_inquiry == {"date": tomorrow(), "start_time": "14:00", "party_size": 4}
+    assert state.booking_inquiry == {
+        "date": tomorrow(),
+        "start_time": "14:00",
+        "party_size": 4,
+    }
     assert trusted_booking_response(state)["name"] == "plan_restaurant_reservation"
 
 
@@ -345,26 +354,33 @@ def test_english_auto_conversation_keeps_details_across_question(make_state):
     assert state.guard_reply("Untrusted answer", []) == COPY["en"]["party"]
     state.observe_user_text("There will be four of us")
     assert trusted_booking_response(state)["arguments"] == {
-        "date": tomorrow(), "start_time": "14:00", "party_size": 4,
+        "date": tomorrow(),
+        "start_time": "14:00",
+        "party_size": 4,
     }
 
 
-@pytest.mark.parametrize("question,topic", [
-    ("Does the salmon cost ten euros?", "price"),
-    ("How much is the soup?", "price"),
-    ("Where are you located?", "location"),
-    ("Do you have highchairs?", "highchair"),
-    ("How long can we keep the table?", "duration"),
-    ("Do you serve vegan food?", "menu"),
-    ("Is this a real restaurant?", "demo"),
-    ("Where can I park?", "parking"),
-    ("What are the café opening hours?", "hours"),
-])
+@pytest.mark.parametrize(
+    "question,topic",
+    [
+        ("Does the salmon cost ten euros?", "price"),
+        ("How much is the soup?", "price"),
+        ("Where are you located?", "location"),
+        ("Do you have highchairs?", "highchair"),
+        ("How long can we keep the table?", "duration"),
+        ("Do you serve vegan food?", "menu"),
+        ("Is this a real restaurant?", "demo"),
+        ("Where can I park?", "parking"),
+        ("What are the café opening hours?", "hours"),
+    ],
+)
 def test_english_questions_answer_the_requested_topic(make_state, question, topic):
     state = make_state()
     state.observe_user_text(question)
     assert state.language == "en"
-    assert trusted_booking_response(state) == {"content": state.information_reply(topic)}
+    assert trusted_booking_response(state) == {
+        "content": state.information_reply(topic)
+    }
 
 
 def test_unknown_question_does_not_replay_previous_booking_plan(make_state):
@@ -379,9 +395,13 @@ def test_unknown_question_does_not_replay_previous_booking_plan(make_state):
     assert state.pending is None
 
 
-@pytest.mark.parametrize("question", ["What is Wi-Fi for six devices?", "What is the Wi-Fi password?"])
+@pytest.mark.parametrize(
+    "question", ["What is Wi-Fi for six devices?", "What is the Wi-Fi password?"]
+)
 @pytest.mark.parametrize("has_inquiry", [False, True])
-def test_unknown_question_with_numbers_cannot_become_a_booking(make_state, question, has_inquiry):
+def test_unknown_question_with_numbers_cannot_become_a_booking(
+    make_state, question, has_inquiry
+):
     state = make_state()
     if has_inquiry:
         state.observe_user_text("I'd like a table tomorrow at 2 pm for four")
@@ -396,16 +416,25 @@ def test_unknown_question_with_numbers_cannot_become_a_booking(make_state, quest
     assert state.booking_inquiry == previous
 
 
-@pytest.mark.parametrize("question", [
-    "Do you serve English breakfast?",
-    "Does your website contain advertisements?",
-    "What is the Wi-Fi password?",
-])
-def test_unverified_english_question_does_not_get_unrelated_menu_answer(make_state, question):
+@pytest.mark.parametrize(
+    "question",
+    [
+        "Do you serve English breakfast?",
+        "Does your website contain advertisements?",
+        "What is the Wi-Fi password?",
+    ],
+)
+def test_unverified_english_question_does_not_get_unrelated_menu_answer(
+    make_state, question
+):
     state = make_state()
     state.observe_user_text(question)
     assert state.language == "en"
-    expected = state.information_reply("amenities_help") if "Wi-Fi" in question else COPY["en"]["information_unknown"]
+    expected = (
+        state.information_reply("amenities_help")
+        if "Wi-Fi" in question
+        else COPY["en"]["information_unknown"]
+    )
     assert trusted_booking_response(state) == {"content": expected}
 
 

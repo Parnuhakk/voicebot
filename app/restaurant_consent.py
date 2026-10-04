@@ -9,7 +9,6 @@ This helper does not authorize a write; CallTools owns delivery and consent.
 import re
 import unicodedata
 
-
 CONFIRMATION_QUESTIONS = {
     "et": "Kas teile sobib?",
     "en": "Does that work for you?",
@@ -22,7 +21,7 @@ EXPRESSIONS = {
         r"jah+|jaa+|jep+|jepp|jup+|jess?|jees|mhm|muidugi|loomulikult|kindlasti|täpselt|"
         r"õige|õigus|päri|nõus|nõustun|sobib|sobivad|klapib|kinnit(?:an|a|age|ame|ää|än)|"
         r"okei|okay|ok|olgu|selge|super|suurepärane|suurepäraselt|"
-        r"perfektne|ideaalne|hästi|hea|kena|tore|võib\s+küll|"
+        r"perfektne|ideaalne|kõlab\s+hästi|hästi|hea|kena|tore|võib\s+küll|"
         r"(?:teeme|tehke|tee)(?:\s+selle)?\s+(?:ära|nii)|las\s+käia|peab\s+paika|"
         r"(?:pane|pange)(?:\s+(?:see|meid|broneering))?\s+(?:kirja|lukku)|"
         r"broneeri(?:ge|me)?|või(?:d|te)\s+(?:(?:selle|broneeringu)\s+)?(?:ära\s+)?(?:kinnitada|broneerida)|"
@@ -53,7 +52,7 @@ EXPRESSIONS = {
 MODIFIERS = {
     "et": (
         r"palun|aitäh|tänan|suur\s+tänu|tänud|väga|igati|täiesti|"
-        r"ka|küll|ja|ning|see|selle|seda|sellega|kõik|mulle|minule|meile|"
+        r"nii|täitsa|ka|küll|ja|ning|see|selle|seda|sellega|kõik|mulle|minule|meile|"
         r"ma|mina|me|meie|olen|oleme|on|siis|täielikult|broneeringu|testbroneeringu|laua|"
         r"just\s+nii|igatpidi|igapidi"
     ),

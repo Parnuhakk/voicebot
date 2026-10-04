@@ -16,39 +16,41 @@ from __future__ import annotations
 
 import time
 from dataclasses import replace
-
-import httpx
 from xml.sax.saxutils import quoteattr
 
-from .speech_delivery import SpeechDelivery, is_recap, speech_markup
-from .azure_voices import validated_voice
+import httpx
 
+from .azure_voices import validated_voice
 from .errors import (
     ProviderError,
     RetryableProviderError,
     raise_for_provider,
 )
-from .speech_text import normalize_estonian_speech
 from .modern_tts import (
-    Mp3Audio,
     TOTAL_TIMEOUT,
+    Mp3Audio,
     check_status,
     provider_error,
     remaining,
     validate_text,
 )
+from .speech_delivery import SpeechDelivery, is_recap, speech_markup
+from .speech_text import normalize_estonian_speech
 
 TOKEN_TTL_SECONDS = 9 * 60
 
 # Profiles share the authenticated client without mutating its settings.
 # The multilingual voices explicitly support Russian; locale must be selected
 # with <lang>, rather than inferred from the voice's English name.
-CONVERSATIONAL_PROFILES = frozenset({
-    "azure-conversational", "azure-conversational-male",
-})
+CONVERSATIONAL_PROFILES = frozenset(
+    {
+        "azure-conversational",
+        "azure-conversational-male",
+    }
+)
 AZURE_PRESETS = {
     "azure-conversational": {
-        "et": ("et-EE-AnuNeural", "et-EE"),
+        "et": ("en-US-NovaTurboMultilingualNeural", "et-EE"),
         "en": ("en-US-EmmaMultilingualNeural", "en-US"),
         "ru": ("en-US-EmmaMultilingualNeural", "ru-RU"),
     },
@@ -113,7 +115,10 @@ class _ProfileSpeaker:
         delivery = self.client._delivery
         if self.profile in CONVERSATIONAL_PROFILES:
             delivery = replace(delivery, native_timing=True)
-        elif self.profile in {"azure-calm", "azure-male-calm"} and delivery.mode == "natural":
+        elif (
+            self.profile in {"azure-calm", "azure-male-calm"}
+            and delivery.mode == "natural"
+        ):
             delivery = replace(
                 delivery,
                 rate=max(0.85, delivery.rate - 0.04),

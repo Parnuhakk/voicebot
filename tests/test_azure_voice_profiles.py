@@ -8,10 +8,10 @@ from xml.etree import ElementTree as ET
 import httpx
 import pytest
 
-from app.providers.azure_tts import AzureTtsClient
 from app.languages import CONSENT
-from app.providers.errors import ProviderError
+from app.providers.azure_tts import AzureTtsClient
 from app.providers.demo_voices import DemoVoices
+from app.providers.errors import ProviderError
 from app.providers.speech_delivery import SpeechDelivery
 from tests import test_restaurant_http
 from tests.test_restaurant_http import AUTH
@@ -138,9 +138,11 @@ def test_parallel_profiles_keep_their_voice_and_pacing_isolated(azure):
         assert document.find(".//" + SSML + "prosody").get("rate") == (
             "1.08" if text == "azure-calm" else "1.12"
         )
-        assert document.find(".//" + MSTTS + "silence").get("value") == (
-            "240ms" if text == "azure-calm" else "120ms"
-        )
+        silence = document.find(".//" + MSTTS + "silence")
+        if text == "azure-calm":
+            assert silence.get("value") == "240ms"
+        else:
+            assert silence is None
     assert speaker._delivery == SpeechDelivery()
 
 
@@ -232,8 +234,8 @@ def test_neutral_delivery_disables_calm_style_and_pause_adjustments(azure):
         ("azure-male-warm", "et", "et-EE-KertNeural", "1.14", "160ms"),
         ("azure-male-warm", "en", "en-US-AndrewNeural", "1.14", "160ms"),
         ("azure-male-warm", "ru", "ru-RU-DmitryNeural", "1.14", "160ms"),
-        ("azure-brian", "en", "en-US-BrianNeural", "1.12", "120ms"),
-        ("azure-ryan", "en", "en-GB-RyanNeural", "1.12", "120ms"),
+        ("azure-brian", "en", "en-US-BrianNeural", "1.12", None),
+        ("azure-ryan", "en", "en-GB-RyanNeural", "1.12", None),
     ],
 )
 def test_added_male_profiles_preview_and_session_routing(
@@ -255,7 +257,7 @@ def test_added_male_profiles_preview_and_session_routing(
     assert voice(document) == expected
     assert document.find(".//" + SSML + "prosody").get("rate") == rate
     silence = document.find(".//" + MSTTS + "silence")
-    if language == "ru":
+    if language == "ru" or pause is None:
         assert silence is None
     else:
         assert silence is not None
@@ -384,7 +386,7 @@ def test_audition_provider_failure_is_closed_and_has_no_session(client, azure):
     assert not client.app.state.demo_sessions.sessions
 
 
-@pytest.mark.parametrize("setting", ["0", "501", "180.5", "not-a-number"])
+@pytest.mark.parametrize("setting", ["-1", "1", "99", "501", "180.5", "not-a-number"])
 def test_invalid_sentence_pause_configuration_is_rejected(setting):
     with pytest.raises(ValueError, match="invalid speech delivery configuration"):
         SpeechDelivery.from_env({"VOICEBOT_SENTENCE_PAUSE_MS": setting})

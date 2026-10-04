@@ -13,9 +13,9 @@ def detect_language(text: str, default: str = "et") -> str:
     if len(re.findall(r"[а-яё]", text, re.I)) >= 2:
         return "ru"
     if re.search(
-        r"[õäöü]|\b(?:tere|jah|ei|kinnitan|palun|soovin|sooviks|tahaks|aitäh|"
+        r"[õäöü]|\b(?:tere|tervist|jah|ei|kinnitan|palun|soovin|sooviks|sooviksin|tahaks|tahaksin|aitäh|"
         r"tänan|tühista|broneering|broneerida|hotelli|tuba|mis|kas|kuidas|kus|"
-        r"millal|millist|kaua|kestab|maksab|meid|oleme|tuleme|kell|homme|"
+        r"millal|millist|kaua|kestab|maksab|meid|oleme|tuleme|kell|homme|homseks|lauda|menüü|menuu|"
         r"kahekesi|kolmekesi|neljakesi|viiekesi|kuuekesi)\b",
         text,
         re.I,

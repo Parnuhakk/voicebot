@@ -19,7 +19,7 @@ Unconfigured profiles are disabled in the selector rather than silently enabled.
 | Profile | Languages | Browser delivery |
 | --- | --- | --- |
 | Azure (existing) | Estonian, English, Russian | Incremental REST MP3; retains current voices, pronunciation and 48 kHz / 96 kbps output. |
-| Conversational female voice (website default) | Estonian Anu, English/Russian Emma Multilingual | Existing Azure credentials; native sentence timing in all three languages, explicit locale for multilingual speech. |
+| Conversational female voice (website default) | Estonian Nova Turbo Multilingual, English/Russian Emma Multilingual | Existing Azure credentials; native sentence timing in all three languages, explicit locale for multilingual speech. |
 | Conversational male voice | Estonian Kert, English/Russian Andrew Multilingual | Existing Azure credentials; native sentence timing, explicit locale, same guarded replies and slower recaps. |
 | Male voice | Estonian Kert, English Guy, Russian Dmitry | Uses the existing Azure credentials and MP3 streaming. Voice selection is request-local. |
 | Calm female voice | Estonian Anu, English Jenny, Russian Svetlana | Existing Azure credentials; a slower delivery variant of these voices, not another Estonian speaker. |
@@ -37,10 +37,10 @@ back to Azure before output begins. Failure after partial streamed audio stops
 delivery and cannot issue a completed-recap receipt; it does not rerun booking
 operations or automatically retry the turn POST.
 
-The conversational profiles change the English/Russian speaker model rather than
-pitch-shifting Svetlana or Dmitry. The application uses only the documented
-`en-US` and `ru-RU` locales for Emma/Andrew Multilingual, explicitly wrapped in
-`<lang xml:lang>` even in neutral mode. It retains Anu/Kert for Estonian and removes
+The conversational profiles change the speaker model rather than pitch-shifting
+existing voices. The application uses `et-EE` for Nova Turbo Multilingual and
+`en-US`/`ru-RU` for Emma/Andrew Multilingual, explicitly wrapped in
+`<lang xml:lang>` even in neutral mode. The male profile retains Kert for Estonian and removes
 the fixed sentence-pause override for these profiles. Speaking rates still honor
 the existing environment settings, including slower canonical booking recaps.
 No unsupported emotion styles, artificial breaths or random pitch changes are
@@ -48,9 +48,9 @@ sent. This is a voice option for listening comparison, not proof of human qualit
 Use **Listen to voice** and compare standard versus conversational in each target
 language. Actual pronunciation/quality requires live Azure access and listening.
 
-The shared native renderer also supports these two multilingual voices if an
-operator configures `AZURE_EN_VOICE` or `AZURE_RU_VOICE`; deployment does not change
-the separate worker's existing voice environment. It does not accept arbitrary
+The shared native renderer also supports Nova Turbo for `AZURE_VOICE` with
+`AZURE_LANG=et-EE`, and Emma/Andrew for `AZURE_EN_VOICE` or `AZURE_RU_VOICE`.
+Deployments copy these settings from the trusted web container. It does not accept arbitrary
 cross-locale voices or infer language from the speaker's `en-US` name.
 Microsoft's [multilingual locale controls](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-synthesis-markup-voice#adjust-speaking-languages)
 and [language/voice support](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=tts)
@@ -66,9 +66,9 @@ concurrently. Logout aborts the browser request and stops audio. Language or
 voice changes stop the earlier sample; preview is disabled during a conversation.
 
 Natural Azure delivery uses native intonation and a modest speaking rate.
-Estonian and English use an absolute 120 ms sentence pause instead of adding
-artificial silence to the provider's pause. `VOICEBOT_SENTENCE_PAUSE_MS` accepts
-100–500 ms for those languages. Russian keeps the neural voice's own sentence
+`VOICEBOT_SENTENCE_PAUSE_MS=0` is the default and adds no fixed sentence silence.
+An explicit 100–500 ms override remains supported for native Estonian/English
+voices; multilingual voices use native timing. Russian keeps the neural voice's own sentence
 timing, including in the calm profile. The calm profile lowers normal rate by
 0.04 and recap rate by 0.03, bounded at 0.85, and uses 240 ms sentence pauses
 for Estonian and English. Recaps keep the provider's natural pauses and
@@ -102,8 +102,9 @@ not different speakers. Azure's documented native Estonian speakers remain Anu
 and Kert. English offers Guy, Davis, Andrew, Brian and Ryan as distinct male
 speakers. English-only profiles are disabled for Estonian and Russian in the
 browser; an API request or automatic language switch uses native Azure fallback
-with `unsupported_language` metadata. No foreign voice is forced to pronounce
-Estonian. Neutral delivery also disables the added male pacing/style controls.
+with `unsupported_language` metadata. No unsupported cross-locale voice is forced
+to pronounce Estonian; Nova Turbo is explicitly multilingual and uses `et-EE`.
+Neutral delivery also disables the added male pacing/style controls.
 
 Restaurant recommendations select only listed dishes matching declared dietary
 preferences. Explicit short follow-up requests retain their immediately preceding

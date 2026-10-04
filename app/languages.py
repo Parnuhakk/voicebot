@@ -5,9 +5,10 @@ from __future__ import annotations
 import re
 from datetime import datetime
 from typing import Any
-from .russian import detect_language
+
 from .input_recovery import WRITE_LANGUAGE_PROMPT
 from .restaurant_times import NUMBERS
+from .russian import detect_language
 
 LANGUAGES = ("et", "en", "ru")
 SUPPORTED_LANGUAGE_PROMPT = WRITE_LANGUAGE_PROMPT
@@ -201,6 +202,17 @@ def requested_language(text: object) -> str | None:
     if not isinstance(text, str):
         return None
     text = " ".join(text.casefold().strip(' .!?"“”').replace(",", " ").split())
+    estonian_request = re.fullmatch(
+        r"(?:(?:palun\s+)?(?:räägi|rääkige|räägime|vastake|vasta|jätka(?:ke)?|jätkame)"
+        r"(?:\s+palun)?\s+|kas\s+(?:saaks|saaksite|võiks|võiksite)"
+        r"(?:\s+(?:rääkida|vastata|jätkata))?(?:\s+palun)?\s+|(?:palun\s+)?)"
+        r"(?P<language>eesti|inglise|vene)\s+keeles(?:\s+palun)?",
+        text,
+    )
+    if estonian_request:
+        return {"eesti": "et", "inglise": "en", "vene": "ru"}[
+            estonian_request["language"]
+        ]
     patterns = {
         "ru": r"(?:russian(?: please)?|(?:please )?(?:speak|answer|continue)(?: to me)? (?:in )?russian|(?:can|could) (?:we|you) (?:speak|continue)(?: to me)? (?:in )?russian(?: please)?|(?:please )?use russian|(?:palun )?(?:räägi|vastake|vasta|jätka)(?: palun)? vene keeles|(?:palun )?vene keeles|(?:пожалуйста )?(?:говорите|говори|отвечайте|отвечай|продолжайте|продолжай) (?:по-русски|на русском(?: языке)?)(?: пожалуйста)?|(?:по-русски|на русском(?: языке)?|русский)(?: пожалуйста)?)",
         "en": r"(?:english(?: please)?|(?:please )?(?:speak|answer|continue)(?: to me)? (?:in )?english|(?:can|could) (?:we|you) (?:speak|continue)(?: to me)? (?:in )?english(?: please)?|(?:please )?use english|(?:palun )?(?:räägi|vastake|vasta|jätka)(?: palun)? inglise keeles|(?:palun )?inglise keeles)",
@@ -252,7 +264,10 @@ def select_language(text: str, detected: object, current: str) -> str:
         return "ru"
     if (
         inferred == "et"
-        and detect_language(re.sub(r"[õäöü]", "", text, flags=re.I), "en") == "et"
+        and detect_language(
+            text.casefold().translate(str.maketrans("õäöü", "oaou")), "en"
+        )
+        == "et"
     ):
         return "et"
     if re.search(

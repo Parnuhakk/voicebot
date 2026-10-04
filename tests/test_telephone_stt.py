@@ -9,7 +9,7 @@ import pytest
 
 pytest.importorskip("livekit.agents")
 from livekit import rtc  # noqa: E402
-from livekit.agents import APIError, APIConnectOptions, llm, stt  # noqa: E402
+from livekit.agents import APIConnectOptions, APIError, llm, stt  # noqa: E402
 
 from app.input_recovery import REPEAT_PROMPT, WRITE_LANGUAGE_PROMPT  # noqa: E402
 from app.providers.telephone_stt import TelephoneSTT  # noqa: E402
@@ -84,6 +84,37 @@ def test_native_restaurant_uses_same_unconstrained_azure_recognition(
         finally:
             await provider.aclose()
         assert provider._http.is_closed
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "locale", ["et-!", "en-", "ru--RU", "et-EE-extra!", "et_!", "et-EE trailing"]
+)
+def test_native_malformed_azure_locale_never_emits_a_consent_transcript(locale):
+    async def run():
+        provider = TelephoneSTT.from_env(
+            model="whisper-large-v3-turbo",
+            mode="et",
+            env={
+                "VOICEBOT_STT_PROVIDER": "azure",
+                "AZURE_SPEECH_KEY": "fixture",
+                "AZURE_REGION": "northeurope",
+            },
+            transport=httpx.MockTransport(
+                lambda _: httpx.Response(
+                    200,
+                    json={"phrases": [{"text": "Jah, kinnitan.", "locale": locale}]},
+                )
+            ),
+        )
+        try:
+            with pytest.raises(APIError):
+                await provider.recognize(
+                    audio_frame(), conn_options=APIConnectOptions(max_retry=0)
+                )
+        finally:
+            await provider.aclose()
 
     asyncio.run(run())
 

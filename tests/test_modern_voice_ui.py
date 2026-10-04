@@ -6,7 +6,6 @@ from pathlib import Path
 
 import pytest
 
-
 ROOT = Path(__file__).resolve().parents[1]
 STATIC = ROOT / "app/dashboard/static"
 
@@ -144,6 +143,7 @@ async function checks(){
    catalog={voices:[...profiles,...['azure-conversational','azure-conversational-male'].map(id=>({id,label:id,languages:['et','en','ru'],configured:true,available:true,disabled_reason:null,streaming:true}))],endpointing_ms:650};
    await run('loadVoices()');
    assert.equal(run('state.voiceCatalog.length'),6,'conversational catalog was rejected');
+   assert.equal(run('VOICE_LABELS["azure-conversational"]'),'Nova Turbo / Emma (conversational)','catalog still names the old Estonian speaker');
    for(const id of ['azure-conversational','azure-conversational-male'])assert.equal(el('demo-voice').children.find(o=>o.value===id).disabled,false,'conversational voice remained disabled');
    catalog={};await run('loadVoices()');assert.equal(run('state.demoVoice'),'azure');assert.equal(el('demo-voice').children.filter(o=>!o.disabled).length,1,'legacy catalog optimistically enabled modern providers');
    assert(el('demo-voice-help').textContent.includes('catalog_unavailable'),'legacy readiness is not honest');

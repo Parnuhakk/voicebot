@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import os
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from html import escape
-import os
-import re
 from xml.sax.saxutils import quoteattr
 
 from ..languages import CONSENT
@@ -21,7 +21,7 @@ class SpeechDelivery:
     mode: str = "natural"
     rate: float = 1.12
     recap_rate: float = 1.00
-    sentence_pause_ms: int = 120
+    sentence_pause_ms: int = 0
     native_timing: bool = False
 
     def __post_init__(self) -> None:
@@ -31,7 +31,8 @@ class SpeechDelivery:
             or not 0.85 <= self.recap_rate <= 1.15
             or isinstance(self.sentence_pause_ms, bool)
             or not isinstance(self.sentence_pause_ms, int)
-            or not 100 <= self.sentence_pause_ms <= 500
+            or self.sentence_pause_ms != 0
+            and not 100 <= self.sentence_pause_ms <= 500
             or not isinstance(self.native_timing, bool)
         ):
             raise ValueError("invalid speech delivery configuration")
@@ -88,11 +89,73 @@ def spoken_estonian_date(value: str) -> str:
         "novembril",
         "detsembril",
     )
-    return f"{days[date.weekday()]}, {date.day}. {months[date.month - 1]} {date.year}"
+    # Make the Estonian ordinal explicit for speech. This also keeps dates
+    # intact with the basic sentence tokenizer; native blingfire already does.
+    ordinals = (
+        "",
+        "esimesel",
+        "teisel",
+        "kolmandal",
+        "neljandal",
+        "viiendal",
+        "kuuendal",
+        "seitsmendal",
+        "kaheksandal",
+        "üheksandal",
+        "kümnendal",
+        "üheteistkümnendal",
+        "kaheteistkümnendal",
+        "kolmeteistkümnendal",
+        "neljateistkümnendal",
+        "viieteistkümnendal",
+        "kuueteistkümnendal",
+        "seitsmeteistkümnendal",
+        "kaheksateistkümnendal",
+        "üheksateistkümnendal",
+        "kahekümnendal",
+    )
+    day = (
+        ordinals[date.day]
+        if date.day <= 20
+        else (
+            "kolmekümnendal"
+            if date.day == 30
+            else ("kahekümne " if date.day < 30 else "kolmekümne ")
+            + ordinals[date.day % 10]
+        )
+    )
+    return f"{days[date.weekday()]}, {day} {months[date.month - 1]} {date.year}"
+
+
+_ESTONIAN_GUESTS = (
+    "",
+    "ühele",
+    "kahele",
+    "kolmele",
+    "neljale",
+    "viiele",
+    "kuuele",
+    "seitsmele",
+    "kaheksale",
+    "üheksale",
+    "kümnele",
+    "üheteistkümnele",
+    "kaheteistkümnele",
+    "kolmeteistkümnele",
+    "neljateistkümnele",
+    "viieteistkümnele",
+    "kuueteistkümnele",
+    "seitsmeteistkümnele",
+    "kaheksateistkümnele",
+    "üheksateistkümnele",
+    "kahekümnele",
+)
 
 
 _PRONUNCIATION = re.compile(
-    r"(?<!\w)(?:\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2})?)?|kell \d{1,2}(?::\d{2})?|ajavöönd Europe/Tallinn|Europe/Tallinn)(?![\w:]|\.\d)"
+    r"(?<!\w)(?:\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2})?)?"
+    r"|kell \d{1,2}(?::\d{2})?|ajavöönd Europe/Tallinn|Europe/Tallinn"
+    r"|(?<![.+-])(?P<guests>[1-9]|1\d|20)\s+inimesele)(?![\w:]|\.\d)"
 )
 
 _RUSSIAN_PRONUNCIATION = re.compile(
@@ -226,7 +289,9 @@ def _pronounced_text(text: str, language: str) -> str:
         parts.append(escape(text[end : match.start()], quote=False))
         original = match[0]
         try:
-            if "Europe/Tallinn" in original:
+            if match["guests"]:
+                alias = _ESTONIAN_GUESTS[int(match["guests"])] + " inimesele"
+            elif "Europe/Tallinn" in original:
                 alias = "Tallinna aja järgi"
             elif original.startswith("kell "):
                 clock = original[5:].split(":")
@@ -277,15 +342,14 @@ def speech_markup(
         body = f'<mstts:express-as style="friendly" styledegree="0.8">{body}</mstts:express-as>'
     elif voice == "en-GB-RyanNeural" and language == "en-GB":
         body = f'<mstts:express-as style="chat" styledegree="0.8">{body}</mstts:express-as>'
-    # Short sentence pauses keep replies conversational. Recaps retain the
-    # provider's default pauses so dates and consent remain easy to follow.
-    # Russian neural voices keep their own sentence timing and question
-    # intonation. An identical forced pause after every sentence flattens it.
+    # Let the provider use natural timing by default. Fixed pauses are only
+    # for explicitly constructed legacy delivery profiles, never recap speech.
     if (
         not recap
         and language != "ru-RU"
         and not delivery.native_timing
         and not multilingual
+        and delivery.sentence_pause_ms > 0
     ):
         body = (
             f'<mstts:silence type="Sentenceboundary-exact" '

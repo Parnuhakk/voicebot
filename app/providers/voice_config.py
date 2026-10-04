@@ -1,22 +1,22 @@
 """Shared speech/model settings for HTTP turns and the native telephone worker.
 
-Defaults are current production Groq models, checked against the provider's
-model and speech documentation. The multilingual accuracy model is preferred
-for booking dates and consent; operators can select turbo after measuring it.
+These are the Groq conversation and rollback-recognition models. Restaurants
+with Azure configured default to MAI-Transcribe-2 (preview); explicit Groq
+recognition uses Turbo, with large-v3 available for accuracy comparisons.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from collections.abc import Mapping
-from typing import Any
 import os
 import re
+from collections.abc import Mapping
+from dataclasses import dataclass
+from typing import Any
 
 from ..languages import LANGUAGES
 from .azure_voices import validated_voice
 
-STT_MODEL = "whisper-large-v3"
+STT_MODEL = "whisper-large-v3-turbo"
 CHAT_MODEL = "openai/gpt-oss-120b"
 STT_LANGUAGE = "et"
 MAX_COMPLETION_TOKENS = 2048
