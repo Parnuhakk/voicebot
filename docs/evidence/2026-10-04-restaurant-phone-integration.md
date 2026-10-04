@@ -221,8 +221,8 @@ Independent Codex-account narrow review against `2119c343`: **PASS**, three
 added real-path tests and ten matcher priority/no-booking probes. No concrete
 P0/P1 found. The review did not claim browser, provider or deployment proof and
 could not independently establish the untracked private helper's baseline.
-Private live ET/EN/RU acceptance and deployment of this final correction remain
-pending until recorded against the actual synchronized release.
+At this checkpoint, private live ET/EN/RU acceptance and deployment of the final
+correction were still pending. The published receipts below supersede that status.
 
 The normal merge of subsequently published `8123638` preserves its natural
 restaurant replies, the configured name `Meretuule`, guest display names and
@@ -242,3 +242,153 @@ acceptance-validator verification, not a claim that live speech has passed.
 
 This document does not claim a physical microphone test, a carrier/PSTN call,
 real restaurant acceptance, an allergy-safe meal, a food order or a real booking.
+
+## Verified published snapshot
+
+PR #34 normally merged the repaired integration as
+`56e7c9ff37e32c7e17c4d8eb218131b494762b51`, with zero rooms under the shared
+release lock. Head CI `37161746936` and master CI `37161932490` both pass
+`linux-release` and `shared-images`. The tested and merged trees are identical.
+
+Locked runtime observation at `2026-10-03T23:37:23Z` verifies all 94 app/demo
+files on the healthy web, worker and bridge, with no missing/extra/changed files.
+The media images and source labels agree; original shared volume and original
+LiveKit/SIP/Redis container IDs remain unchanged. Nine private authorization
+checks pass: missing/wrong/valid authorization yields 403/403/200 on bookings,
+calls and call history, all `no-store`, with no credentials disclosed.
+
+Read-only postrelease SQLite checks retain every original and premerge row in
+all four databases; whole-table digests also equal the premerge snapshot.
+Integrity checks are all `ok`: restaurant 33 reservations/63 actions/0 holds,
+Easy 42 writes, Stay 5 bookings. Other sessions' legitimate added records remain.
+The signed incoming webhook-only probe also passes with fresh environment
+credentials: unsigned denial, signed bound-stream response and `no-store`.
+It dispatches no paid/native agent and does not contact a carrier account API.
+
+Fresh public Chromium verification passes robot HTTPS root, all six exact
+versioned assets, three menu items, private route denial, retired hotel 410 and
+retired Meretuule host 503 without redirects. On 390×844, voice and microphone
+controls fit entirely on the first screen in ET/EN/RU; Russian controls start at
+y=765.97 with height 69, retain 44-pixel minimum touch targets, and do not overflow.
+No JavaScript errors occur; desktop and all three mobile screenshots were read.
+
+The first repaired private-validator review is **PASS** with 67 offline checks: earlier
+referral reversals and contradictory appended claims now reject, while twelve
+canonical and four legacy positives accept. This is a bounded recognition guard,
+not universal semantic proof. The first live Estonian menu case passed fresh
+input/reply, voiced PCM and independent recognition (157,760 PCM bytes; similarity
+0.960). The allergy case failed its strict independent-audio check and required
+metadata-only diagnosis; that result is not a passing four-case Estonian suite or
+complete ET/EN/RU speech acceptance.
+
+## Current published descendant and independent speech verification
+
+Normal fast-forward intake retains published `2ca82abddc1a7eefb9176b3d59c653307c7bf7cf`,
+including the other owner's renewal receipts, nonblocking UI, date/time corrections,
+family-allergen containment and release-state freshness. It retains this session's
+menu-spelling correction and mobile spacing; the upstream breadcrumb flex/min-width
+improvement remains. Master CI `37163514831` passed. No dirty source was copied.
+
+Fresh combined media-interpreter suite: **12,257 passed, 36 subtests, 6 skips**,
+two existing warnings, 171.58 seconds, basetemp
+`/tmp/opencode/restaurant-recovery-2ca-final`. Four skips are private installed-
+backend opt-ins; the other two packaging cases require an explicitly local image.
+Running that packaging file with the already-installed image then passed all
+**five** cases in 9.53 seconds, without pulls/network access. All **ten** Chromium
+journeys and the additional **24** delivery/status/receipt race checks pass,
+without JavaScript errors or external requests.
+
+Locked runtime verification at `2026-10-04T00:11:41Z` matches all 94 app/demo files
+on web, worker and bridge exactly. All three are healthy, media images/source
+labels agree, the original data volume and LiveKit/SIP/Redis IDs remain unchanged,
+and the nine private authorization/no-store checks pass. Fresh public browser
+acceptance retains robot-only HTTPS and ET/EN/RU first-screen mobile controls;
+the newer CSS/JS/capture fingerprints match. Signed incoming webhook-only proof
+passes again without native-agent dispatch or a carrier-account API request.
+
+Read-only SQLite transactions on the pinned release preserve every original and
+premerge row-prefix digest across all four databases. All integrity checks are
+`ok`. Other callers added records: the snapshot has 38 restaurant reservations,
+73 actions and one active hold, Easy 42 writes and Stay 5 bookings. Whole-table
+equality during their calls is intentionally not claimed. No other owner's hold
+or booking is cleaned up. Carrier ownership/routing and original-number continuity
+are not established by this signed protocol test; no account setting was changed.
+
+Groq output-recognition diagnosis identified Russian `на вынос` versus `навынос`
+and Estonian lexical/compound-word artifacts. The Russian spacing equivalence has
+one failing-first positive and three refusal/added-promise rejection cases. No
+Estonian fuzzy safety-word repair, expected-answer prompt or lower safety threshold
+was introduced. Changing speech rate did not resolve the strict Estonian check.
+
+The already-installed Azure standard recognizer independently passed the same
+Estonian allergy propositions with 0.998 similarity. The private proof helper now
+uses it uniformly for every language/case, via the published bounded private child
+runner. Only PCM enters stdin and Azure environment credentials enter the child;
+no expected answer, caller language or phrase hints are supplied. Recognition text,
+audio and credentials remain private/in-memory. ET/EN/RU are the automatic language
+candidates; this is not an unsupported-language detection certificate. The bot's
+Groq recognition, initial automatic caller language, voices and production settings
+are unchanged.
+
+At the first child checkpoint all **79** private offline checks passed.
+Independent Codex source/mock review is
+**PASS**, including **27** additional SDK/error/privacy/cancellation/timeout/child-
+termination checks; no concrete new P0/P1 found. The installed published runner is
+an explicit dependency. Serial native ET/EN/RU acceptance is being recorded against
+the exact detached `2ca82ab` snapshot; diagnostic or earlier partial cases are not
+substituted for its final three-language result.
+
+The first native child invocation failed closed as `independent_audio_unavailable`.
+The SDK signals a normal stream end through `cancellation_details` with
+`EndOfStream` and `NoError`; the helper had treated every cancellation as failure.
+Four actual-child-code stub scenarios preceded the bounded enum correction:
+normal EOF failed first; SDK error, user cancellation and EOF/auth stayed rejected.
+The full private suite then passed **83** checks. Independent Codex recheck passed
+those four and **seven** additional late-cancel/no-result/timeout scenarios. The
+isolated real child retained the exact ET allergy propositions at 0.998 similarity.
+The next native attempt passed ET menu (0.980) and allergy (0.998), then rejected
+the special-request input as `fresh_final_input_required`. It is not a four-case
+passing suite. All earlier failed receipts remain preserved.
+
+## Bounded Estonian capability-question spelling follow-up
+
+Public synthetic input diagnostics found three complete-question spellings:
+`kõügile`, `proneeringule eri soovi` and `allergiaproneeringule`. Their existing
+literal selector missed the special-request refusal. Only these full questions
+are added to `booking-101`'s ET variants; canonical notices and all other languages,
+general matchers, booking parsers, voices and production recognition are unchanged.
+
+Failing-first native, recognized-audio HTTP and pending-consent scenarios produced
+**nine failures and three passing partial-input guards**. With the three aliases,
+the focused phone/reasoning/interruption suite passed **294** checks. The full
+combined suite passed **12,272 tests and 36 subtests**, six skips and two existing
+warnings, 169.65 seconds; basetemp
+`/tmp/opencode/restaurant-recovery-note-alias-final`. All ten Chromium journeys
+passed again, with no JavaScript errors or external requests. Independent Codex
+review passed the **12** new real-path cases and **23** additional bounded
+selector/parser assertions: no concrete P0/P1 found. An alias alone creates no
+booking; side questions retain the owned hold/expiry but replace proposal identity,
+revoke delivery/approval and deny confirmation without fresh consent.
+
+Normal fast-forward also retains published `b3ca570`'s bounded probe calendar-date
+support; its **80** probe tests pass separately. It changes no deployed app/demo
+source and carries `[skip cd]`. The three new aliases still require guarded
+publication and deployed-source verification before any live acceptance claim.
+
+The native special-request diagnostic had one final input, two caption words and
+0.203 question similarity. A 400 ms leading-silence experiment did not improve it
+and is discarded. Default local Silero segmentation retains almost the whole
+question: Kert's segment is 2.656 seconds, but automatic recognition yields no
+supported language; Anu's segment is 2.752 seconds and detects ET (0.951 similarity).
+The public unsupported-language caption has exactly the same word count/similarity
+as the failed native caption; exact native caption equality has not yet been
+established. The safety rejection is not relaxed or treated as accepted speech.
+Caller-voice diagnosis is distinct from production voice selection, and no initial
+recognition language is forced. Final native ET/EN/RU acceptance remains active.
+
+A controlled native Anu-caller diagnostic on the unchanged `2ca82ab` release
+recognized all six question words, similarity0.951, and did not emit the unsupported
+marker. Its reply then failed `approved_reply_mismatch`, consistent with the missing
+literal `kõügile` selector. This separates a demonstrated selector correction from
+the Kert synthetic-language-detection limitation. The diagnostic changes only the
+in-memory test-caller preset; no production voice or recognizer is changed.
