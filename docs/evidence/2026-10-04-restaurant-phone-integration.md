@@ -2,22 +2,23 @@
 
 ## Current verified disposition
 
-Robot-only restaurant release `870aa41b0caad388a50421740c7ea749eda64f94`
-is published and synchronized after PR36. Both jobs in head and master CI passed.
-Its tree equals reviewed8f; application/tests equal the fully tested6c98 source.
-All 94 app/demo files match each healthy
-web/worker/bridge role. Original volume and LiveKit/SIP/Redis infrastructure are
-preserved, nine authorization/no-store cases pass, and original/fresh-premerge
-stored rows remain intact. The combined source passed 12,623 tests and 36 subtests,
-eleven browser journeys and five installed-image packaging checks. Public HTTPS,
-assets, menu, ET/EN/RU mobile layout and robot-only retired-host behavior pass.
+Robot-only restaurant release `94baecee81577e9e1f0ba1ff5a350874bb3e94a3` is
+published and synchronized. It retains PR36's clock/FAQ repairs and adds a peer's
+bounded whole-question retention repair. Both master CI jobs passed. Fresh combined
+checks passed 12,646 tests/36 subtests and all eleven Chromium journeys. All94
+app/demo files match each healthy web/worker/bridge role; nine authorization and
+no-store cases pass. Original volume/infrastructure and all original/earlier fresh-
+premerge row prefixes remain intact. Fresh HTTPS/assets/menu/ET-EN-RU mobile and
+robot-only retired-host checks pass. The870 receipts below remain dated checkpoints.
 
-Strict complete multilingual native acceptance is **not complete**. On870, English
-passed all four cases with unchanged restaurant state. Estonian menu/allergy passed
-and the note had fresh input/canonical captions/voiced PCM, but independent audio
-content validation failed. Russian menu passed before its allergy-audio rejection.
+Strict complete multilingual native acceptance is **not complete**. On94, English
+passed all four cases with unchanged restaurant state. Estonian menu/allergy/note
+passed, but takeaway independent-audio content validation failed. Russian menu
+passed before its allergy-audio rejection.
 Current and historical failures remain recorded; metadata-only diagnosis continues
 without weakening required refusals/referrals or changing production voices/ASR.
+The reviewed private ET whole-canonical compound-spacing correction passed the
+actual94note; the incomplete ET/RU runs are not inferred to be complete from870.
 No physical-microphone, carrier/PSTN or real restaurant acceptance is claimed.
 
 The sections below retain the chronological repair and verification history;
@@ -702,3 +703,88 @@ Russian direct output still fails proposition17 at0.983, with a noncanonical
 staff-verification phrase. This is **not** accepted as the required clause, and
 no Russian safety/referral exception is introduced. Diagnostic transcripts/audio
 stay in memory; receipts contain only indexes, counts and public-fixture matches.
+
+## Newer published `94baece` reconciliation
+
+The once-only Codex dashboard completion audit passed all four robot-only870
+snapshot criteria, independently inspecting receipts/screenshots/report publication
+and recomputing14 preservation-prefix comparisons. It explicitly excludes later
+descendants and telephone completion. Closure-time03:46:05Z verification found
+newer master/deployed94 in all three healthy roles; the old audit is not presented
+as current94 proof. That published history was normally merged ase46e4ab without
+conflicts or another owner's dirty source/goal intake.
+
+The new application's only delta to870 is three lines adding seven complete
+known questions inside the existing `fullmatch`; mixed unknown-count corrections
+still cannot retain stale four-person plans. The peer's four ET synthetic booking-
+caller literals are qualified separately, not production voice/language/consent
+changes and not a change to our private FAQ caller. Our tracked difference to94
+is now only this evidence document; no production redeployment for documentation.
+
+Fresh isolated combinede46 verification:
+
+```bash
+env -i PATH=/usr/bin:/bin HOME=/tmp/opencode LANG=C.UTF-8 \
+  PYTHONDONTWRITEBYTECODE=1 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 EASY_LIVE_TESTS=0 \
+  /home/arle/.cache/voicebot-restaurant-recovery-venv/bin/python -m pytest \
+  -q -ra -p no:cacheprovider --tb=line \
+  --basetemp=/tmp/opencode/restaurant-recovery-94-combined
+```
+
+**12,646 tests, 36 subtests PASS**, exit0,210.21s; six explicit opt-in skips and
+two existing warnings. All eleven Chromium journeys pass, including the current
+guest failure/renewal/receipt matrix, with no JavaScript errors/external requests.
+Current masterCI37173731889 passed both Linux/shared-image jobs.
+
+Independent Codex review qualified only the new94 delta:24targeted tests and
+63 supplemental state assertions passed (42 appended-clause negatives,7current
+hold/expiry/proposal cases,14expired/unowned cases), no concreteP0/P1. No provider,
+live recognition, fabricated-to-live receipt equivalence or repeated dashboard
+completion audit is claimed from those supplemental checks.
+
+Locked03:51:05Z current94 verification: all94files per healthy role, original
+volume/LiveKit-SIP-Redis IDs, matching media configuration/image, automatic initial
+language and nine403/403/200/no-store authorization cases PASS. All four integrity
+checks are `ok`; every original and earlier972 idle-premerge row prefix remains
+intact. Current restaurant85reservations/167actions/0holds, Easy42writes/Stay5bookings
+include concurrent additions, not deletions or byte equality of growing tables.
+Read-only transactions do not claim a global cross-database atomic snapshot.
+
+Fresh signed webhook-only03:51:47Z403/200/no-store/bound stream proof passed without
+agent/carrier invocation. Fresh public Chromium verifies HTTPS200, six exact
+same-origin asset fingerprints/menu3/private denial/hotel410/removed-host503 and
+ET/EN/RU first-screen voice/microphone controls without overflow/JavaScript errors.
+All four new94 production screenshots were read. Receipts in `/tmp/opencode`:
+`restaurant-recovery-94-{master-ci,verification,incoming,live-summary}.json`.
+
+## Reviewed private ET compound boundary
+
+Direct unchanged production synthesis proved that the entire ET note reply was
+canonical except `allergia ohutust` spacing. Only the private audio comparator
+now admits that word-boundary equivalence when **all normalized words** then equal
+the approved reply. It does not normalize captions, other compounds, missing
+negations, extra words, staff-verification clauses or production recognition.
+The raw similarity remains measured on unmodified recognized text with the
+existing0.78 floor. The ET accepted fixture returns0.994152, not1.
+
+Failing-first:2expected failures/122passes. The first green invocation had
+4failures/120passes because four negative fixtures used lowercase replacement
+against capitalized `Allergia`; their mutation never occurred. Those fixtures
+were corrected and each asserts its replacement target exists. **124offline checks
+passed** in4.35s, zero providers. Independent Codex approved the narrow boundary
+with124tests and24 supplemental assertions, including all12 canonical positives,
+high-similarity negatives and caption rejection. Its first root import-path
+invocation had116passes/8dependency failures; corrected execution scope passed
+without edits. The attempted Spark route failed before execution because the
+ChatGPT account does not support it; the existing Codex-account route was used,
+never a Go fallback. All failures remain recorded as failures or invalid fixtures.
+
+Russian `нужно проверить с сотрудником` remains mandatory; noncanonical or missing
+staff verification is still rejected. A fresh exact94 ET/EN/RU run held the
+shared release lock across the serial batch, preserving every freshness, canonical
+caption, audio, language, safety and unchanged-restaurant-state requirement.
+Only English satisfied all4cases/exactrelease/unchangedstate. ET menu/allergy/note
+passed at0.980/0.998/0.994 before takeaway audio failed; RU menu passed at0.982
+before allergy audio failed. Both incomplete runs remain FAIL, exit1 aggregate.
+Current receipts: `restaurant-recovery-94-rtc-{et,en,ru,summary}.json`. Further
+ET takeaway diagnosis is pending; no new audio/caption equivalence is assumed.
