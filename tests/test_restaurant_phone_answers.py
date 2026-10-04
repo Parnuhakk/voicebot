@@ -1,6 +1,7 @@
 """Reviewed capability disclosures, mixed planning and real consent boundaries."""
 
 import asyncio
+import base64
 import json
 
 import pytest
@@ -16,34 +17,74 @@ CASES = [
     (
         "et",
         "Kas saate minu allergiast köögile teatada?",
-        "See demo ei salvesta erisoove ega saada köögile teateid. Allergiaohutust ma kinnitada ei saa.",
+        "Ma ei salvesta erisoove ega saada köögile teateid. Allergiaohutust ma kinnitada ei saa.",
     ),
     (
         "en",
         "Can you record an allergy note?",
-        "This demo can't save special requests or notify the kitchen. I can't confirm allergy safety.",
+        "I can't save special requests or notify the kitchen. I can't confirm allergy safety.",
     ),
     (
         "ru",
         "Можете записать мою аллергию в бронирование?",
-        "Эта демонстрация не сохраняет особые пожелания и не уведомляет кухню. Я не могу подтвердить безопасность при аллергии.",
+        "Я не сохраняю особые пожелания и не уведомляю кухню. Я не могу подтвердить безопасность при аллергии.",
     ),
     (
         "et",
         "Kas saan toitu kaasa tellida?",
-        "See demo ei võta vastu toidu-, kaasamüügi- ega kohaletoimetamise tellimusi. Saan aidata fiktiivse lauabroneeringuga.",
+        "Ma ei võta vastu toidu-, kaasamüügi- ega kohaletoimetamise tellimusi. Saan aidata lauabroneeringuga.",
     ),
     (
         "en",
         "Can I order takeaway?",
-        "This demo doesn't take food, takeaway or delivery orders. I can help with a fictional table reservation.",
+        "I don't take food, takeaway or delivery orders. I can help with a table reservation.",
     ),
     (
         "ru",
         "Можно заказать еду навынос?",
-        "Эта демонстрация не принимает заказы еды, навынос или с доставкой. Я могу помочь с тестовым бронированием столика.",
+        "Я не принимаю заказы еды, навынос или с доставкой. Могу помочь с бронированием столика.",
     ),
 ]
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "Mis on menüs?",
+        "Tere! Soovin teada, mida teie restorani menüs pakutakse?",
+    ],
+)
+def test_estonian_menu_vowel_loss_retains_grounded_native_turn(make_state, question):
+    state = make_state("et")
+    state.observe_user_text(question, is_final=True, detected_language="et")
+    assert trusted_booking_response(state) == {
+        "content": "Menüüs on Köögiviljasupp, Ahjulõhe ning Seenerisoto."
+    }
+    assert not state.holds and not state.bookings and not state.pending
+
+
+def test_estonian_menu_vowel_loss_uses_reviewed_audio_http_reply(client):
+    session = start(client, "auto")["session_id"]
+    client.provider.transcript = (
+        "Tere! Soovin teada, mida teie restorani menüs pakutakse?"
+    )
+    response = client.post(
+        "/api/turn",
+        headers=AUTH,
+        json={
+            "session_id": session,
+            "audio_b64": base64.b64encode(b"RIFF-synthetic-fixture").decode(),
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()
+    assert result["language"] == "et"
+    assert result["reply"] == "Menüüs on Köögiviljasupp, Ahjulõhe ning Seenerisoto."
+    assert result["reply"] == client.provider.spoken[-1]
+    assert result["booking_changes"] == []
+    assert client.provider.recognized_languages == ["auto"]
+    state = client.app.state.demo_sessions.sessions[session].tools
+    assert not state.holds and not state.bookings and not state.pending
 
 
 @pytest.mark.parametrize(

@@ -42,7 +42,7 @@ def test_first_clear_turn_selects_language_despite_initial_voice(
         assert f"Reply only in {selected}" in state.conversation_instructions
 
 
-@pytest.mark.parametrize("weak", ["", "4", "14:00", "OK", "Demo Teine"])
+@pytest.mark.parametrize("weak", ["", "4", "14:00", "OK", "Teine Külaline"])
 def test_weak_or_rejected_first_input_does_not_choose_language(make_state, weak):
     state = make_state()
     state.observe_user_text(weak, detected_language="english")

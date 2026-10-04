@@ -5,14 +5,19 @@ const {spawn}=require('node:child_process');
 const {chromium}=require(process.argv[2] || 'playwright');
 const root=path.resolve(__dirname,'..');
 process.chdir(root);
-const available=['dashboard_browser_checks.js','booking_browser_checks.js','hotel_browser_checks.js','voice_browser_checks.js','microphone_race_browser_checks.js','english_demo_browser_checks.js','modern_voice_browser_checks.js','streaming_voice_browser_checks.js','restaurant_browser_checks.js','restaurant_guest_current_browser_checks.js'];
+const available=['dashboard_browser_checks.js','booking_browser_checks.js','hotel_browser_checks.js','voice_browser_checks.js','microphone_race_browser_checks.js','english_demo_browser_checks.js','modern_voice_browser_checks.js','streaming_voice_browser_checks.js','restaurant_browser_checks.js','restaurant_guest_current_browser_checks.js','restaurant_quality_browser_checks.js'];
+const restaurantChecks=['restaurant_browser_checks.js','restaurant_guest_current_browser_checks.js','restaurant_quality_browser_checks.js'];
 const checks=process.argv.slice(4);
 if(!checks.length)checks.push(...available);
 if(checks.some(name=>!available.includes(name)))throw new Error('expected a local browser check filename');
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 (async()=>{
-  const channel=process.env.PLAYWRIGHT_BROWSER_CHANNEL;
+  let channel=process.env.PLAYWRIGHT_BROWSER_CHANNEL;
   if(channel && !['chrome','msedge','chromium'].includes(channel))throw new Error('unknown browser channel');
+  if(!channel && process.platform==='win32' && !fs.existsSync(chromium.executablePath())){
+    const candidates=[['msedge',process.env['PROGRAMFILES(X86)'],'Microsoft/Edge/Application/msedge.exe'],['chrome',process.env.PROGRAMFILES,'Google/Chrome/Application/chrome.exe']];
+    channel=candidates.find(([,base,file])=>base && fs.existsSync(path.join(base,file)))?.[0];
+  }
   const fixtures=[];
   let browser;
   const startFixture=async factory=>{
@@ -38,11 +43,11 @@ const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   try {
     const regular=await startFixture('create_app');
     const streaming=checks.includes('streaming_voice_browser_checks.js') ? await startFixture('create_streaming_app') : regular;
-    const restaurant=checks.some(name=>['restaurant_browser_checks.js','restaurant_guest_current_browser_checks.js'].includes(name)) ? await startFixture('tests.restaurant_browser_fixture:create_app') : regular;
+    const restaurant=checks.some(name=>restaurantChecks.includes(name)) ? await startFixture('tests.restaurant_browser_fixture:create_app') : regular;
     fs.mkdirSync(path.join(root,'output/playwright'),{recursive:true});
     browser=await chromium.launch({headless:true,...(channel?{channel}:{})});
     for(const name of checks){
-      const origin=['restaurant_browser_checks.js','restaurant_guest_current_browser_checks.js'].includes(name) ? restaurant.origin : name==='streaming_voice_browser_checks.js' ? streaming.origin : regular.origin;
+      const origin=restaurantChecks.includes(name) ? restaurant.origin : name==='streaming_voice_browser_checks.js' ? streaming.origin : regular.origin;
       const context=await browser.newContext({serviceWorkers:'block'}), external=[];
       await context.route('**/*',route=>{const url=new URL(route.request().url());if(url.origin!==origin && url.protocol!=='blob:'){external.push(url.origin);return route.abort('blockedbyclient');}return route.continue();});
       const page=await context.newPage();

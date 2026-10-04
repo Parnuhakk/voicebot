@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import json
 import uuid
+from typing import Any
 
 import httpx
 
@@ -222,14 +223,14 @@ async def _guarded(code: str, call, *args):
         raise ProviderError(f"tools: {code}") from None
 
 
-def _require_str(args: dict, name: str, cap: int = 256) -> str:
+def _require_str(args: dict[str, Any], name: str, cap: int = 256) -> str:
     value = args.get(name)
     if not isinstance(value, str) or not value or len(value) > cap:
         raise ProviderError(f"tools: bad arg {name!r}")
     return value
 
 
-def _require_date(args: dict, name: str) -> str:
+def _require_date(args: dict[str, Any], name: str) -> str:
     from datetime import datetime
 
     value = _require_str(args, name)
@@ -240,7 +241,7 @@ def _require_date(args: dict, name: str) -> str:
     return value
 
 
-def _coerce_adults(args: dict) -> int:
+def _coerce_adults(args: dict[str, Any]) -> int:
     try:
         adults = int(str(args.get("adults", 2)))
     except (ValueError, TypeError) as exc:
@@ -250,7 +251,7 @@ def _coerce_adults(args: dict) -> int:
     return adults
 
 
-def _coerce_children(args: dict) -> int:
+def _coerce_children(args: dict[str, Any]) -> int:
     value = args.get("children", 0)
     if isinstance(value, bool):
         raise ProviderError("tools: bad children")
@@ -263,7 +264,7 @@ def _coerce_children(args: dict) -> int:
     return children
 
 
-def _require_guest(args: dict) -> dict:
+def _require_guest(args: dict[str, Any]) -> dict[str, Any]:
     guest = args.get("guest")
     if not isinstance(guest, dict) or not guest:
         raise ProviderError("tools: bad arg 'guest'")
@@ -283,7 +284,7 @@ _SLOT_GUEST_ALLOW = frozenset(
 )
 
 
-def _require_slot_guest(args: dict) -> dict:
+def _require_slot_guest(args: dict[str, Any]) -> dict[str, Any]:
     """Slot-track guest: customerId, or first+last+email+phone (strict).
 
     A display `name` maps into first/last on a whitespace split. Trusted
@@ -314,7 +315,7 @@ def _require_slot_guest(args: dict) -> dict:
     return {k: mapped[k] for k in mapped if k in _SLOT_GUEST_ALLOW}
 
 
-def _idempotency_key(args: dict) -> str:
+def _idempotency_key(args: dict[str, Any]) -> str:
     import re as _re
 
     key = args.get("idempotency_key")
@@ -329,7 +330,7 @@ def _idempotency_key(args: dict) -> str:
     return "srv_" + uuid.uuid4().hex
 
 
-def speak_offer(offer: dict) -> str:
+def speak_offer(offer: dict[str, Any]) -> str:
     """Verbatim price utterance. Raises unless the offer carries a live
     price_quote_id AND a quoted_total — the anti-hallucination gate."""
     quote_id = offer.get("price_quote_id")
@@ -349,12 +350,12 @@ class Dispatcher:
 
     def __init__(self, stay=None, slot=None, faq=None, *, business_type="hotel_spa", restaurant_data=None) -> None:
         self.business_type: str = business_type
-        self.restaurant_data: dict = restaurant_data or {}
+        self.restaurant_data: dict[str, Any] = restaurant_data or {}
         self._stay: StayAdapter | None = stay
         self._slot: SlotAdapter | None = slot
         self._faq = faq  # callable(question) -> passages
 
-    def available_tools(self) -> list[dict]:
+    def available_tools(self) -> list[dict[str, Any]]:
         """Advertise only workflows that can actually execute.
 
         Configured PMS stubs remain status-visible but never tempt the LLM
@@ -387,7 +388,9 @@ class Dispatcher:
             raise ProviderError("tools: stay hold read not configured")
         return await _guarded("hold_invalid", getter, _require_str({"hold_id": hold_id}, "hold_id"))
 
-    async def dispatch(self, name: str, args: dict) -> dict:
+    async def dispatch(
+        self, name: str, args: dict[str, Any] | str
+    ) -> dict[str, Any]:
         if isinstance(args, str):
             # Real LLM wire shape sends arguments as a JSON string.
             try:
@@ -418,7 +421,7 @@ class Dispatcher:
                 hold = await stay.create_hold(quote_id)
             except (UnknownQuoteError, ProviderError):
                 raise ProviderError("tools: hold_invalid") from None
-            result = {
+            result: dict[str, Any] = {
                 "hold_id": hold.hold_id,
                 "price_quote_id": hold.price_quote_id,
                 "quoted_total": hold.quoted_total,

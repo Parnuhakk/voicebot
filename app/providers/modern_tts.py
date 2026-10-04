@@ -11,6 +11,7 @@ import json
 import re
 import threading
 import time
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from types import MappingProxyType
 
@@ -197,7 +198,7 @@ class Mp3Audio:
 
 @dataclass(frozen=True)
 class _LanguageSpeaker:
-    client: object = field(repr=False)
+    client: _Client = field(repr=False)
     language: str
     audio_type = "audio/mpeg"
 
@@ -219,6 +220,9 @@ class _Client:
     languages = ("et", "en", "ru")
     audio_type = "audio/mpeg"
     streaming = True
+
+    def _stream(self, text, language) -> Iterator[bytes]:
+        raise provider_error("request_rejected")
 
     def __repr__(self):
         return f"{type(self).__name__}(redacted)"
@@ -403,13 +407,15 @@ class GoogleTtsClient(_Client):
 
                     self._auth_request = Request()
                 transport = self._auth_request
-                request = transport
                 if self._owns_auth_request:
 
-                    def request(*args, **kwargs):
+                    def auth_request(*args, **kwargs):
                         kwargs["timeout"] = remaining(deadline)
                         return transport(*args, **kwargs)
 
+                    request = auth_request
+                else:
+                    request = transport
                 if self._credentials is None:
                     import google.auth
 

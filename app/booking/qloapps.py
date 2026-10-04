@@ -9,6 +9,8 @@ Network-copyleft: legal read before multi-tenant hosting.
 
 from __future__ import annotations
 
+from typing import Any
+
 from .base import Hold, HoldLedger, StayAdapter
 
 
@@ -21,8 +23,8 @@ class QloAppsAdapter(StayAdapter):
         return "QloAppsAdapter(redacted)"
 
     async def search_availability(
-        self, checkin: str, checkout: str, party: dict
-    ) -> list[dict]:
+        self, checkin: str, checkout: str, party: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         raise NotImplementedError("map rate tables in Phase 1")
 
     async def create_hold(self, price_quote_id: str) -> Hold:
@@ -38,7 +40,9 @@ class QloAppsAdapter(StayAdapter):
             payload={},
         )
 
-    async def confirm(self, hold_id: str, guest: dict, idempotency_key: str) -> dict:
+    async def confirm(
+        self, hold_id: str, guest: dict[str, Any], idempotency_key: str
+    ) -> dict[str, Any]:
         replayed = self._holds.check_replay(idempotency_key)
         if replayed is not None:
             return replayed
@@ -47,7 +51,7 @@ class QloAppsAdapter(StayAdapter):
             return {"ok": False, "error": "hold_expired_or_unknown"}
         raise NotImplementedError("wire confirm in Phase 1")
 
-    async def cancel(self, booking_id: str, idempotency_key: str) -> dict:
+    async def cancel(self, booking_id: str, idempotency_key: str) -> dict[str, Any]:
         replayed = self._holds.check_replay(idempotency_key)
         if replayed is not None:
             return replayed

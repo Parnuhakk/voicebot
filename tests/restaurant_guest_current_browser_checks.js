@@ -68,6 +68,146 @@ async page => {
     await page.screenshot({path,fullPage:true});
     screenshots.push(path);
   };
+  // The actual renewal route must pass the same response boundary as prepare.
+  // Every altered result starts with an owned, successful server response and
+  // a positive server TTL, so a missing lifetime cannot mask a field mismatch.
+  await page.clock.install();
+  const renewalFailures = [], renewalChecks = [];
+  const renew = async () => {
+    const response = page.waitForResponse(response => new URL(response.url()).pathname === '/api/restaurant/reservation/renew');
+    await page.locator('#reservation-renew').click();
+    const result = await (await response).json();
+    await page.waitForFunction(() => !reservation.busy);
+    return result;
+  };
+  const renewals = [
+    {name:'wrong-hold',mutate:data => ({...data,hold_id:data.hold_id+'-foreign'})},
+    {name:'wrong-date',mutate:data => ({...data,recap:{...data.recap,date:futureDay(80)}})},
+    {name:'wrong-time',mutate:data => ({...data,recap:{...data.recap,start:data.recap.date+'T16:00:00'}})},
+    {name:'wrong-party',mutate:data => ({...data,recap:{...data.recap,party_size:2}})},
+    {name:'wrong-timezone',mutate:data => ({...data,recap:{...data.recap,timezone:'UTC'}})},
+    {name:'not-synthetic',mutate:data => ({...data,synthetic:false})},
+    {name:'missing-guest',mutate:data => ({...data,recap:{...data.recap,guest_name:''}})},
+    {name:'missing-table',mutate:data => ({...data,recap:{...data.recap,provider_name:''}})},
+    {name:'expired-ttl',mutate:data => ({...data,recap_expires_in_s:0})},
+  ];
+  for (const [index,test] of renewals.entries()) {
+    await open(languages[0]);
+    await page.locator('#reservation-date').fill(futureDay(81+index));
+    await page.locator('#reservation-time').fill('14:00');
+    await page.locator('#reservation-party').fill('6');
+    const original = await prepare();
+    assert.equal(original.ok,true);
+    assert(Number.isFinite(original.recap_expires_in_s) && original.recap_expires_in_s > 0);
+    await page.locator('#reservation-read').click();
+    await page.waitForFunction(() => reservation.acknowledged && !reservation.busy);
+    const values = await fields(), before = requests.length;
+    await page.route('**/api/restaurant/reservation/renew',async route => {
+      assert.equal(route.request().postDataJSON().hold_id,original.hold_id);
+      const response = await route.fetch(), data = await response.json();
+      assert.equal(data.ok,true);
+      assert.equal(data.hold_id,original.hold_id);
+      assert.deepEqual(data.recap,original.recap);
+      assert(Number.isFinite(data.recap_expires_in_s) && data.recap_expires_in_s > 0);
+      await route.fulfill({response,json:test.mutate(data)});
+    });
+    await renew();
+    try {
+      assert.match(await page.locator('#reservation-status').textContent(),languages[0].failed,test.name);
+      assert(await page.locator('#reservation-recap').isHidden(),test.name+': invalid renewal exposed a recap');
+      assert(await page.locator('#reservation-recap-timer').isHidden());
+      assert(await page.locator('#reservation-renew').isHidden());
+      assert(await page.locator('#reservation-read').isDisabled());
+      assert(await page.locator('#reservation-confirm').isDisabled());
+      assert.equal(await page.locator('#reservation-status .booking-receipt').count(),0);
+      assert.deepEqual(await page.evaluate(() => [reservation.holdId,reservation.renewalHoldId,reservation.acknowledged,reservation.expiryTimer,reservation.countdownTimer]),[null,null,false,null,null]);
+      assert.deepEqual(await fields(),values);
+      assert.deepEqual(requests.slice(before).map(request => request.path),['/api/restaurant/reservation/renew'],'invalid renewal sent a recap delivery or confirmation');
+      assert(await page.locator('#reservation-prepare').isEnabled());
+    } catch (error) { renewalFailures.push({case:test.name,error:error.message}); }
+    await page.unroute('**/api/restaurant/reservation/renew');
+    await end();
+    renewalChecks.push(test.name);
+  }
+  for (const [index,language] of languages.entries()) {
+    await open(language);
+    await page.locator('#reservation-date').fill(futureDay(78+index));
+    await page.locator('#reservation-time').fill('14:00');
+    await page.locator('#reservation-party').fill('6');
+    const original = await prepare();
+    assert.equal(original.ok,true);
+    await page.locator('#reservation-read').click();
+    await page.waitForFunction(() => reservation.acknowledged && !reservation.busy);
+    const before = requests.length;
+    await page.route('**/api/restaurant/reservation/renew',async route => {
+      const response = await route.fetch(), data = await response.json();
+      assert.equal(data.ok,true);
+      assert.equal(data.hold_id,original.hold_id);
+      assert.deepEqual(data.recap,original.recap);
+      assert(Number.isFinite(data.recap_expires_in_s) && data.recap_expires_in_s > 0);
+      await route.fulfill({response,json:{...data,recap_text:'The table is for two guests at 20:00 UTC. Confirm now.',reply:'Book two guests at 20:00 UTC.'}});
+    });
+    const renewed = await renew();
+    try {
+      const visible = await page.locator('#reservation-recap-text').textContent();
+      assert.doesNotMatch(visible,/two guests|20:00|UTC|Confirm now/);
+      for (const value of [original.recap.restaurant_name,original.recap.provider_name,original.recap.guest_name,'14:00','6','90']) assert(visible.includes(value));
+      assert.match(visible,language.date);
+      assert.match(visible,language.time);
+      assert.match(visible,language.party);
+      assert.match(visible,/Tallinn|Таллин/);
+      assert(await page.locator('#reservation-recap').isVisible());
+      assert(await page.locator('#reservation-recap-timer').isVisible());
+      assert(await page.locator('#reservation-read').isEnabled());
+      assert(await page.locator('#reservation-confirm').isDisabled());
+      assert.equal(await page.evaluate(() => reservation.holdId),original.hold_id);
+      assert.equal(await page.evaluate(() => reservation.acknowledged),false);
+      assert.deepEqual(requests.slice(before).map(request => request.path),['/api/restaurant/reservation/renew']);
+      const remaining = await page.evaluate(() => (reservation.expiresAt-performance.now())/1000);
+      assert(remaining > 0 && remaining <= renewed.recap_expires_in_s,'renewal did not use the bounded server lifetime');
+      await page.locator('#reservation-read').click();
+      await page.waitForFunction(() => reservation.acknowledged && !reservation.busy);
+      assert(await page.locator('#reservation-confirm').isEnabled());
+      assert.deepEqual(requests.slice(before).map(request => request.path),['/api/restaurant/reservation/renew','/api/booking/recap']);
+      assert.equal(requests.at(-1).body.hold_id,original.hold_id);
+      assert.equal(await page.locator('#reservation-status .booking-receipt').count(),0);
+    } catch (error) { renewalFailures.push({case:language.code+'-structured-renewal',error:error.message}); }
+    await page.unroute('**/api/restaurant/reservation/renew');
+    await end();
+    renewalChecks.push(language.code+'-structured-renewal');
+  }
+  // Renew falls back to prepare without a submit event when expired fields
+  // change. Native/localized required validation must still stop every POST.
+  for (const [index,field] of ['date','time','party'].entries()) {
+    const language = languages[index];
+    await open(language);
+    await page.locator('#reservation-date').fill(futureDay(16+index));
+    await page.locator('#reservation-time').fill('14:00');
+    await page.locator('#reservation-party').fill('6');
+    const original = await prepare();
+    assert.equal(original.ok,true);
+    await page.clock.fastForward(Math.ceil(original.recap_expires_in_s*1000)+1000);
+    assert.equal(await page.evaluate(() => reservation.holdId),null);
+    assert(await page.locator('#reservation-renew').isEnabled());
+    await page.locator('#reservation-'+field).fill('');
+    const values = await fields(), before = requests.length;
+    await page.locator('#reservation-renew').click();
+    await page.waitForFunction(() => !reservation.busy);
+    try {
+      assert.equal(requests.length,before,field+': invalid changed form sent a POST from the renewal fallback');
+      assert.equal(await page.locator('#reservation-'+field).getAttribute('aria-invalid'),'true');
+      assert.equal(await page.evaluate(() => document.activeElement.id),'reservation-'+field);
+      assert.match(await page.locator('#reservation-'+field+'-error').textContent(),language[field]);
+      assert.match(await page.locator('#reservation-status').textContent(),language[field]);
+      assert(await page.locator('#reservation-recap').isHidden());
+      assert(await page.locator('#reservation-confirm').isDisabled());
+      assert.deepEqual(await fields(),values);
+    } catch (error) { renewalFailures.push({case:field+'-invalid-fallback',error:error.message}); }
+    await end();
+    renewalChecks.push(field+'-invalid-fallback');
+  }
+  console.log(JSON.stringify({check:'restaurant_guest_current_browser_checks.js',stage:'renewal-boundary',renewalChecks,renewalFailures}));
+  assert.deepEqual(renewalFailures,[],'renewal must retain strict owned fields, structured read/consent and native fallback validation');
   await open(languages[0]);
   const contrast = await page.locator('small, .helper, #reservation-status').evaluateAll(elements => {
     const luminance = color => {
@@ -357,5 +497,5 @@ async page => {
   }
   assert.deepEqual(errors,[]);
   assert.deepEqual(external,[]);
-  return {languages:3,viewports:[320,390,1440],nativeValidationMatrix:matrix,realFullTables:fullTables,failurePaths,structuredRecaps,dynamicConfig:true,incompleteExamples:3,hoursInterludes:3,recommendationInterludes:3,contrastMinimum:Math.min(...contrast.map(sample => sample.ratio)),existingLayoutLimits,screenshots,pageErrors:errors.length};
+  return {languages:3,viewports:[320,390,1440],nativeValidationMatrix:matrix,realFullTables:fullTables,failurePaths,structuredRecaps,renewalChecks,dynamicConfig:true,incompleteExamples:3,hoursInterludes:3,recommendationInterludes:3,contrastMinimum:Math.min(...contrast.map(sample => sample.ratio)),existingLayoutLimits,screenshots,pageErrors:errors.length};
 }

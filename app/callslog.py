@@ -15,6 +15,7 @@ import os
 import logging
 import sqlite3
 import time
+from typing import Any
 
 from . import call_history
 
@@ -141,10 +142,13 @@ def log_call(
             (at, lang[:8], mask_peer(peer), summary[:500], outcome[:32]),
         )
         db.commit()
-        return int(cursor.lastrowid)
+        row_id = cursor.lastrowid
+        if row_id is None:
+            raise RuntimeError("callslog: insert returned no row id")
+        return row_id
 
 
-def list_calls(db: sqlite3.Connection, limit: int = 50) -> list[dict]:
+def list_calls(db: sqlite3.Connection, limit: int = 50) -> list[dict[str, Any]]:
     if isinstance(limit, bool):
         limit = 50
     try:

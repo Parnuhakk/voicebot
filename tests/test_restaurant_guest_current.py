@@ -47,9 +47,21 @@ READS = [
         "Это настоящий ресторан?",
         restaurant_demo_profile(APPROVED_RESTAURANT)["faq"][0]["answer_ru"],
     ),
-    ("et", "Kus restoran asub?", "päris aadressi"),
-    ("en", "Where is the restaurant?", "no real address"),
-    ("ru", "Где находится ресторан?", "настоящего адреса"),
+    (
+        "et",
+        "Kus restoran asub?",
+        restaurant_demo_profile(APPROVED_RESTAURANT)["faq"][1]["answer_et"],
+    ),
+    (
+        "en",
+        "Where is the restaurant?",
+        restaurant_demo_profile(APPROVED_RESTAURANT)["faq"][1]["answer_en"],
+    ),
+    (
+        "ru",
+        "Где находится ресторан?",
+        restaurant_demo_profile(APPROVED_RESTAURANT)["faq"][1]["answer_ru"],
+    ),
     ("en", "Can I speak to a person?", "can't transfer calls"),
 ]
 MIXED = [
@@ -1488,3 +1500,91 @@ def test_native_sdk_unparsed_count_cannot_restore_delivered_recap(
                 await session.aclose()
 
     asyncio.run(run())
+
+
+MEDICAL_HISTORY = {
+    "en": (
+        "I have celiac disease. What can I eat from your menu?",
+        "What would you recommend?",
+        "Vegetable soup is safe for you.",
+    ),
+    "et": (
+        "Mul on tsöliaakia. Mida saan menüüst süüa?",
+        "Mida soovitad süüa?",
+        "Köögiviljasupp on teile ohutu.",
+    ),
+    "ru": (
+        "У меня целиакия. Что можно есть из вашего меню?",
+        "Что посоветуете поесть?",
+        "Овощной суп для вас безопасен.",
+    ),
+}
+
+
+@pytest.mark.parametrize("language", ["et", "en", "ru"])
+@pytest.mark.parametrize("switch_language", [False, True])
+def test_medical_food_history_survives_unknown_interlude_and_language_switch(
+    client, language, switch_language
+):
+    from tests.test_restaurant_reasoning import Model
+
+    disclosure, recommendation, _ = MEDICAL_HISTORY[language]
+    selected, switch = (
+        next(
+            (selected, switch)
+            for original, selected, switch in LANGUAGE_SWITCHES
+            if original == language
+        )
+        if switch_language
+        else (language, None)
+    )
+    unsafe = MEDICAL_HISTORY[selected][2]
+    model = Model(unsafe, selected)
+    client.app.state.stack["llm_primary"] = model
+    session = start(client, language)["session_id"]
+    turn(client, session, REQUESTS[language].format(day=tomorrow()), language=language)
+    turn(client, session, disclosure, language=language)
+    turn(client, session, recommendation, language=language)
+    interlude = turn(client, session, "Who won Wimbledon?", language=language)
+    assert interlude["booking_changes"] == []
+    assert unsafe not in interlude["reply"] and not model.calls
+    if switch:
+        switched = turn(client, session, switch, language=language)
+        assert unsafe not in switched["reply"] and switched["booking_changes"] == []
+    before = len(model.calls)
+    answer = turn(client, session, MEDICAL_HISTORY[selected][1], language=selected)
+    state = client.app.state.demo_sessions.sessions[session].tools
+    assert len(model.calls) == before
+    assert state._restaurant_focus == "allergens"
+    assert state.information_reply("allergens") in answer["reply"]
+    assert unsafe not in answer["reply"]
+    assert answer["booking_changes"] == [] and answer["recap_delivery_id"] is None
+    assert state.pending is None and not state.holds and not state.bookings
+    assert not client.get("/api/bookings?date=" + tomorrow(), headers=AUTH).json()[
+        "items"
+    ]
+
+
+@pytest.mark.parametrize("language", ["et", "en", "ru"])
+def test_medical_history_does_not_reclassify_hours_or_leak_to_new_session(
+    client, language
+):
+    from tests.test_restaurant_reasoning import Model, REPLIES
+
+    session = start(client, language)["session_id"]
+    turn(client, session, MEDICAL_HISTORY[language][0], language=language)
+    hours, hours_fact = {
+        "et": ("Millal restoran avatud on?", "12–21"),
+        "en": ("What are your opening hours?", "12–21"),
+        "ru": ("Когда ресторан открыт?", "с 12 до 21"),
+    }[language]
+    answer = turn(client, session, hours, language=language)
+    state = client.app.state.demo_sessions.sessions[session].tools
+    assert state._restaurant_focus == "hours" and hours_fact in answer["reply"]
+    assert answer["booking_changes"] == []
+    model = Model(REPLIES[language], language)
+    client.app.state.stack["llm_primary"] = model
+    fresh = start(client, language)["session_id"]
+    answer = turn(client, fresh, MEDICAL_HISTORY[language][1], language=language)
+    assert len(model.calls) == 2 and REPLIES[language] in answer["reply"]
+    assert answer["booking_changes"] == []

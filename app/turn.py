@@ -18,7 +18,9 @@ import asyncio
 import json
 import re
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from inspect import getattr_static
+from typing import Any
 
 from .input_recovery import REPEAT_PROMPT
 from .providers.transcription import Transcription
@@ -115,19 +117,17 @@ def _norm_price(raw: str) -> str:
     return s
 
 
-def _canon_price(raw: str):
+def _canon_price(raw: str) -> Decimal | str:
     """Decimal when numeric (240.00 == 240), else the norm string."""
-    from decimal import Decimal, InvalidOperation
-
     try:
         return Decimal(_norm_price(raw))
     except InvalidOperation:
         return _norm_price(raw)
 
 
-def allowed_prices(tool_results: list) -> set[str]:
+def allowed_prices(tool_results: list[Any]) -> set[Decimal | str]:
     """Collect verbatim quoted totals from this turn's tool results."""
-    allowed: set[str] = set()
+    allowed: set[Decimal | str] = set()
     for item in tool_results:
         result = item.get("result") if isinstance(item, dict) else None
         if not isinstance(result, dict):
@@ -140,7 +140,7 @@ def allowed_prices(tool_results: list) -> set[str]:
     return allowed
 
 
-def enforce_price_gate(reply: str, tool_results: list, lang: str) -> tuple[str, bool]:
+def enforce_price_gate(reply: str, tool_results: list[Any], lang: str) -> tuple[str, bool]:
     """Replace replies containing unquoted prices with a safe handoff.
 
     Returns (reply_to_speak, gated_flag).
@@ -153,7 +153,7 @@ def enforce_price_gate(reply: str, tool_results: list, lang: str) -> tuple[str, 
     return PRICE_HANDOFF.get(lang, PRICE_HANDOFF["et"]), True
 
 
-def sanitize_history(history: list | None) -> list:
+def sanitize_history(history: list[Any] | None) -> list[Any]:
     """Role allowlist + turn cap + char cap. Tool output stays untrusted.
 
     Non-string content blocks are JSON-encoded (truncated) so a list
@@ -183,11 +183,11 @@ async def run_turn(
     dispatcher,
     llm_secondary=None,
     language: str = "et",
-    history: list | None = None,
+    history: list[Any] | None = None,
     text: str | None = None,
     recognition_status: str | None = None,
     recovery_prompt: str | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """Execute one voice turn. Returns heard/reply/audio/tool_results.
 
     text skips STT (typed/test turns); audio turns transcribe first. Session
@@ -277,13 +277,13 @@ async def _speak(tts, text: str) -> bytes:
 async def _run_dialogue(
     text: str,
     lang: str,
-    messages: list,
+    messages: list[Any],
     stt,
     llm_primary,
     tts,
     dispatcher,
     llm_secondary=None,
-) -> dict:
+) -> dict[str, Any]:
     """Core turn after audio/text are validated (may raise)."""
     messages = messages
     available_tools = dispatcher.available_tools()
@@ -316,7 +316,7 @@ async def _run_dialogue(
                 }
             round_results.append({"id": call_id, "result": result})
         tool_results.extend(round_results)
-        assistant_msg: dict = {
+        assistant_msg: dict[str, Any] = {
             "role": "assistant",
             "content": answer.get("content"),
             "tool_calls": tool_calls,
@@ -360,8 +360,8 @@ async def _run_dialogue(
 
 
 def _sync_chat(
-    llm_primary, llm_secondary, messages: list, tools=None
-) -> tuple[dict, bool]:
+    llm_primary, llm_secondary, messages: list[Any], tools=None
+) -> tuple[dict[str, Any], bool]:
     """Synchronous chat with one failover (LLM clients are sync)."""
     try:
         if tools is None:
@@ -405,7 +405,7 @@ def _scrub(value):
     return value
 
 
-def _redact_for_secondary(messages: list) -> list:
+def _redact_for_secondary(messages: list[Any]) -> list[Any]:
     """Strip tool-call skeletons and guest PII before the failover LLM.
 
     The free-tier secondary may train on prompts: it gets conversation

@@ -32,6 +32,7 @@ from .restaurant_answers import (
     GUIDANCE,
     INFORMATION_TOPICS,
     DETAIL_FOLLOWUP,
+    MEDICAL_FOOD_CONCERN,
     RestaurantQuestion,
     capability_booking_clause,
     format_schedule,
@@ -43,7 +44,7 @@ from .turn import REPEAT_PROMPT, STT_UNAVAILABLE, TURN_UNAVAILABLE
 
 COPY: dict[str, dict[str, str]] = {
     "et": {
-        "greeting": "Tere! Olen restorani tehisintellekti abiline. Siin teeme ainult testbroneeringuid. Kuidas saan aidata?",
+        "greeting": "Tere! Olen restorani tehisintellekti abiline. Kuidas saan teid aidata?",
         "date": "Mis päevaks soovite lauda?",
         "date_invalid": "Sellist kuupäeva kalendris ei ole. Palun öelge päev ja kuu uuesti.",
         "date_ambiguous": "Millist kuupäeva mõtlete? Palun öelge üks päev ja kuu.",
@@ -53,12 +54,12 @@ COPY: dict[str, dict[str, str]] = {
         "invalid_time": "Mis täpne kellaaeg sobib? Näiteks kell 18.30.",
         "party": "Mitmele inimesele lauda soovite? Palun arvestage ka lapsed.",
         "unavailable": "Sel ajal sobivat lauda ei ole. Kas sobiks mõni teine kellaaeg või päev?",
-        "unknown": "Ma ei saanud kinnitust, kas broneering salvestus. Palun kontrollige veebilehel broneeringuid enne uuesti proovimist.",
-        "confirmed": "Teie broneering on tehtud. Broneeringu detailid leiate siit lehelt.",
-        "cancelled": "Teie testbroneering on tühistatud.",
+        "unknown": "Ma ei saanud kinnitust, kas broneering salvestus. Palun kontrollige broneeringu olekut enne uuesti proovimist.",
+        "confirmed": "Teie lauabroneering on kinnitatud.",
+        "cancelled": "Teie broneering on tühistatud.",
         "existing": "See laud on juba broneeritud. Teist broneeringut ma ei teinud.",
         "already_cancelled": "See lauabroneering on juba tühistatud.",
-        "staff": "Seda tuleks küsida restorani töötajalt. Selles demos ei saa ma kõnet edasi suunata.",
+        "staff": "Seda palun küsige restorani töötajalt. Ma ei saa kõnet edasi suunata.",
         "waitlist": "Ma ei paku ootenimekirja ega tagasihelistamist. Võite valida teise kuupäeva või kellaaja tegeliku inimeste arvuga; saadavust tuleb eraldi kontrollida.",
         "domain": "Aitan restorani lauabroneeringute, menüü ja lahtiolekuaegadega. Milles saan aidata?",
         "information_unknown": "Seda ma praegu täpselt ei tea. Palun täpsustage küsimust või küsige restorani töötajalt.",
@@ -74,7 +75,7 @@ COPY: dict[str, dict[str, str]] = {
         "recap": "Saan pakkuda lauda {date} kell {time}, {party} inimesele restoranis {name}. Broneering kestab {duration} minutit ja on nimele {guest}. {question}",
     },
     "en": {
-        "greeting": "Hello! This is an AI restaurant demo. No real table is booked here. How can I help?",
+        "greeting": "Hello! I'm the restaurant's AI assistant. How can I help you?",
         "date": "What date would you like the table for?",
         "date_invalid": "That date isn't in the calendar. What day and month do you mean?",
         "date_ambiguous": "Which date do you mean? Please give one day and month.",
@@ -84,12 +85,12 @@ COPY: dict[str, dict[str, str]] = {
         "invalid_time": "What exact time works for you? For example, 6:30 PM.",
         "party": "How many of you are coming, including children?",
         "unavailable": "There is no suitable table at that time. Would you like another time or date?",
-        "unknown": "I couldn't check whether the reservation was saved. Please check the reservations on the website before trying again.",
-        "confirmed": "Your reservation is confirmed. You can see the details on this page.",
-        "cancelled": "Done! Your test reservation is cancelled.",
+        "unknown": "I couldn't check whether the reservation was saved. Please check its status before trying again.",
+        "confirmed": "Your table reservation is confirmed.",
+        "cancelled": "Your reservation is cancelled.",
         "existing": "That table is already booked. I haven't made a second reservation.",
         "already_cancelled": "This table reservation is already cancelled.",
-        "staff": "Please ask a member of the restaurant team about that. I can't transfer calls in this demo.",
+        "staff": "Please ask a member of the restaurant team about that. I can't transfer calls.",
         "waitlist": "There is no waitlist or callback. You can choose another date or time with your actual diner count; availability needs a separate check.",
         "domain": "I can help with restaurant table reservations, the menu and opening hours. How can I help?",
         "information_unknown": "I don't have verified information about that. Could you clarify your question, or check with the restaurant team?",
@@ -102,10 +103,10 @@ COPY: dict[str, dict[str, str]] = {
         "closed": "closed",
         "alternatives": "That time isn't available. On the same day, we have {times}. Which works for you?",
         "confirmation_question": CONFIRMATION_QUESTIONS["en"],
-        "recap": "Your test reservation: {name}, {date} at {time}, for {party} guests. The table is for {duration} minutes, under {guest}. {question}",
+        "recap": "I can offer a table at {name}, {date} at {time}, for {party} guests. The table is for {duration} minutes, under {guest}. {question}",
     },
     "ru": {
-        "greeting": "Здравствуйте! Я голосовой помощник ресторана. Здесь можно сделать только тестовую бронь. Чем помочь?",
+        "greeting": "Здравствуйте! Я голосовой ИИ-помощник ресторана. Чем помочь?",
         "date": "На какой день нужен столик?",
         "date_invalid": "Такого дня в календаре нет. Назовите, пожалуйста, день и месяц ещё раз.",
         "date_ambiguous": "Какой именно день? Назовите, пожалуйста, одну дату.",
@@ -115,12 +116,12 @@ COPY: dict[str, dict[str, str]] = {
         "invalid_time": "Во сколько именно? Например, в 18:30.",
         "party": "Сколько вас будет, вместе с детьми?",
         "unavailable": "На это время столика нет. Подойдёт другое время или день?",
-        "unknown": "Не получилось проверить, сохранилась ли бронь. Сначала посмотрите брони на сайте, чтобы не сделать её дважды.",
-        "confirmed": "Готово, бронь подтверждена. Детали есть на этой странице.",
-        "cancelled": "Готово, тестовая бронь отменена.",
+        "unknown": "Не получилось проверить, сохранилась ли бронь. Сначала проверьте её статус, чтобы не сделать её дважды.",
+        "confirmed": "Готово, бронь подтверждена.",
+        "cancelled": "Готово, бронь отменена.",
         "existing": "Этот столик уже забронирован. Дублировать бронь не будем.",
         "already_cancelled": "Эта бронь уже отменена.",
-        "staff": "Это лучше уточнить у сотрудника ресторана. В демоверсии перевести звонок не получится.",
+        "staff": "Это лучше уточнить у сотрудника ресторана. Перевести звонок не получится.",
         "waitlist": "Здесь нет листа ожидания и обратного звонка. Вы можете выбрать другую дату или время с фактическим числом гостей; наличие мест нужно проверить отдельно.",
         "domain": "Могу помочь со столиком, меню или часами работы. Что вас интересует?",
         "information_unknown": "Пока не знаю. Можете уточнить вопрос или спросить сотрудника ресторана.",
@@ -133,7 +134,7 @@ COPY: dict[str, dict[str, str]] = {
         "closed": "закрыто",
         "alternatives": "На это время столика нет. В тот же день есть {times}. Что вам удобнее?",
         "confirmation_question": CONFIRMATION_QUESTIONS["ru"],
-        "recap": "Итак, тестовая бронь в {name}: {date}, в {time}, на {party}. На имя {guest}, столик на {duration}. {question}",
+        "recap": "Могу предложить столик в {name}: {date}, в {time}, на {party}. На имя {guest}, столик на {duration}. {question}",
     },
 }
 
@@ -710,6 +711,7 @@ class RestaurantCallTools(CallTools):
 
         # Selector identities only; carry disclosures through booking followups.
         self._restaurant_capability_topics = ()
+        self._restaurant_medical_concern = False
 
     def conversation_tools(self):
         public = {
@@ -758,6 +760,7 @@ class RestaurantCallTools(CallTools):
             "In Russian use everyday polite spoken language, usually one or two short sentences. "
             "Avoid канцелярит such as 'осуществить бронирование', 'на запрошенное время', 'подтверждённые сведения'. "
             "Do not add filler, invented laughter or claim to be human. Do not repeat the introduction each turn. "
+            "Do not narrate testing or demo status in greetings or ordinary answers. Be truthful if explicitly asked about reality or capabilities. "
             "You help with dining table reservations, approved menu information, opening/kitchen hours and restaurant policies. "
             "Do not offer hotel rooms, spa treatments, food ordering, payments or an unimplemented call transfer/callback. "
             "Before planning a table ask for date, exact Tallinn local time and total party size INCLUDING children. "
@@ -861,6 +864,9 @@ class RestaurantCallTools(CallTools):
             or kwargs.get("recognition_status") in {"stt_unavailable", "input_invalid"}
         ):
             return
+        if re.search(MEDICAL_FOOD_CONCERN, text):
+            # Safety context outlives question selectors and booking preferences.
+            self._restaurant_medical_concern = True
         if requested_language(text):
             # Keep requested details when explicitly changing language. The
             # shared guard already revoked delivery of any pending recap.
@@ -912,6 +918,7 @@ class RestaurantCallTools(CallTools):
             else None,
             has_dish=self._restaurant_dish is not None,
             has_diet=self._restaurant_diet is not None,
+            medical_concern=self._restaurant_medical_concern,
         )
         if self._restaurant_question:
             self._restaurant_focus = self._restaurant_question.topics[0]
@@ -1379,7 +1386,7 @@ class RestaurantCallTools(CallTools):
             )
             if self._restaurant_question and self._restaurant_question.recommendation:
                 return {
-                    "et": "Menüüst võiksid valida: {items}. Mis neist sulle meeldiks?",
+                    "et": "Menüüst võiksite valida: {items}. Mis teile meeldiks?",
                     "en": "You could choose {items} from our menu. Which would you prefer?",
                     "ru": "Из нашего меню можно выбрать: {items}. Что вам больше нравится?",
                 }[self.language].format(items=items)
@@ -1417,7 +1424,7 @@ class RestaurantCallTools(CallTools):
             return reply + (
                 " "
                 + {
-                    "et": "Erandpäevadel võivad ajad erineda. Mis kuupäeva silmas pead?",
+                    "et": "Erandpäevadel võivad ajad erineda. Millist kuupäeva silmas peate?",
                     "en": "Special dates may have different hours. Which date do you mean?",
                     "ru": "В отдельные даты часы могут отличаться. Какую дату вы имеете в виду?",
                 }[self.language]
@@ -1455,6 +1462,7 @@ class RestaurantCallTools(CallTools):
         topics = self._restaurant_question.topics if self._restaurant_question else ()
         return bool(
             (self._restaurant_focus or self._restaurant_unmatched)
+            and not self._restaurant_medical_concern
             and self._restaurant_focus not in {"staff", "domain", "demo", "waitlist"}
             and "allergens" not in topics
             and not any(topic in CAPABILITIES for topic in topics)

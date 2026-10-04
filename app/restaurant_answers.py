@@ -51,6 +51,16 @@ INFORMATION_TOPICS = (
     "family_details",
 )
 
+# Medical suitability and food-safety outcomes are canonical, not diet preferences.
+MEDICAL_FOOD_CONCERN = (
+    r"allerg(?:y|ies|ic)|allergi|аллерги|"
+    r"c(?:o)?eliac|ts[öo]liaak|целиак|"
+    r"intoleran|talumatu|ei\s+talu|непереносим|"
+    r"anaphyla|anafülak|анафилак|reaction|reaktsioon|реакци|"
+    r"cross[-\s]*(?:contact|contaminat)|ristsaast|ristkontak|"
+    r"перекр[её]стн\w*\s+(?:контакт|загрязн)"
+)
+
 CAPABILITIES = {
     {"booking-101": "special_requests", "booking-102": "food_orders"}[
         entry["id"]
@@ -100,13 +110,14 @@ def capability_booking_clause(text: str) -> str | None:
 
 
 PATTERNS = {
-    "allergens": r"allerg|allergeen|аллерг|глютен|glut(?:ee|e)n|peanut|pähkl|орех|laktoos|lactose|лактоз|sisald|contain|koostis|ingredients|содерж|состав",
-    "price": r"\b(?:price|cost|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maksab|цен\w*|стоим\w*|сколько(?:\s+\w+){0,2}\s+сто(?:ит|ят|ить))\b",
-    "menu": r"menüü|menu|меню|vegan|веган|vegetarian|taimetoit|вегетар|\b(?:dishes|serve|roogi|блюд\w*)\b|mis.*süüa|mida.*(?:süüa|pakute)",
+    "allergens": MEDICAL_FOOD_CONCERN
+    + r"|allerg|allergeen|аллерг|глютен|glut(?:ee|e)n|peanut|pähkl|орех|laktoos|lactose|лактоз|sisald|contain|koostis|ingredients|содерж|состав",
+    "price": r"\b(?:price|cost|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maks(?:ab|avad|ma)|цен\w*|стоим\w*|сколько(?:\s+\w+){0,2}\s+сто(?:ит|ят|ить))\b",
+    "menu": r"menüü?|menu|меню|vegan|веган|vegetarian|taimetoit|вегетар|\b(?:dishes|serve|roogi|блюд\w*)\b|mis.*süüa|mida.*(?:süüa|pakute)",
     "kitchen": r"kitchen|köök|köögi|кухн|(?:kell|kellaajani|millal).*süüa|when.*(?:food|eat)|(?:до скольки|когда).*еда",
     "hours": r"\b(?:hours|open\w*|close\w*|shut|lahtiole\w*|avatud|avate|avane\w*|lahti|kinni|sulg\w*|tööa\w*|откры\w*|закры\w*|работа\w*|часы\s+работы)\b",
     "location": r"\b(?:where are you|where is (?:the )?restaurant|where is it|address|location|located|aadress|asute|asub|kus|где|адрес|находит\w*)\b",
-    "duration": r"(?:how long|kui kaua|сколько времени|как долго).*(?:table|stay|keep|laua|broneering|стол|брон)|(?:reservation|broneering|брон\w*).*(?:last|kest|длит)",
+    "duration": r"(?:how long|kui kaua|сколько времени|как долго).*(?:table|stay|keep|laua|laud|broneering|стол|брон)|(?:reservation|broneering|брон\w*).*(?:last|kest|длит)",
     "groups": r"\b(?:group\w*|grup\w*|seltskonn\w*|firmapidu|sünnipäev\w*|групп\w*|компани\w*)\b",
     "children": r"\b(?:children|kids?|child|lapsed|lastega|laste|laps|дети|детей|детьми|реб[её]н\w*)\b",
     "cancellation_help": r"(?:how|kuidas|как).*(?:cancel|tühista|отмен)|(?:can|kas|можно).*(?:cancel|tühista|отмен)",
@@ -118,7 +129,7 @@ PATTERNS = {
     "accessibility": r"wheelchair|accessible|accessibility|ratastool|ligipääs|инвалид|коляск|доступн",
     "terrace": r"terrac|terrass|outside seating|outdoor seating|террас",
     "extras": r"dessert|magustoit|magustoitu|drinks?|vein|wine|jook|joog|напит|десерт",
-    "staff": r"\b(?:staff|human|transfer|callback|personali\w*|teenindaja\w*|персонал\w*|сотрудник\w*|оператор\w*|перевед\w*)\b|\b(?:speak|talk) to (?:a |the )?person\b|\b(?:order|delivery|takeaway|tellim\w*|kojuvedu|достав\w*|заказ\w*)\b|\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b.*\binimese\w*\b|\binimese\w*\b.*\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b",
+    "staff": r"\b(?:staff|human|transfer|callback|personali\w*|teenindaja\w*|töötaja\w*|персонал\w*|сотрудник\w*|оператор\w*|перевед\w*)\b|\b(?:speak|talk) to (?:a |the )?person\b|\b(?:order|delivery|takeaway|tellim\w*|kojuvedu|достав\w*|заказ\w*)\b|\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b.*\binimese\w*\b|\binimese\w*\b.*\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b",
     "policies": r"polic|reegl|tingimus|правил",
 }
 
@@ -132,7 +143,8 @@ DAY_PATTERNS = (
     r"sunday|pühapäev\w*|воскресень\w*",
 )
 BOOKING_REQUEST = re.compile(
-    r"broneer|reserve|reservation|book|lau[ad]|table|брон|столик"
+    r"\b(?:broneer\w*|reserv(?:e[ds]?|ing|ations?)|book(?:s|ed|ing)?|"
+    r"lau[ad]\w*|tables?|(?:за)?брон\w*|столик\w*)\b"
 )
 RECOMMENDATION = re.compile(
     r"^(?:mida (?:te )?soovit(?:ad|ate)(?: süüa)?|"
@@ -155,6 +167,7 @@ def match_question(
     previous: RestaurantQuestion | None = None,
     has_dish: bool = False,
     has_diet: bool = False,
+    medical_concern: bool = False,
     now: datetime | None = None,
 ) -> RestaurantQuestion | None:
     text = " ".join(text.casefold().split())
@@ -203,7 +216,8 @@ def match_question(
     # An English question about an unlisted dish or a non-food "contain"
     # must not receive an unrelated menu/allergen answer.
     if "allergens" in topics and not (
-        has_dish
+        re.search(MEDICAL_FOOD_CONCERN, text)
+        or has_dish
         or has_diet
         or previous
         and re.search(r"\b(?:it|this|that)\b", text)
@@ -221,6 +235,39 @@ def match_question(
         and not (has_dish or has_diet or re.search(r"\b(?:menu|dishes|food)\b", text))
     ):
         topics.remove("menu")
+    # A short food follow-up does not turn an existing medical concern into
+    # permission to generate a recommendation or a safety assurance.
+    if (
+        (
+            previous
+            and "allergens" in previous.topics
+            or medical_concern
+            and (
+                recommendation
+                or "menu" in topics
+                or (has_dish or has_diet)
+                and all(topic in {"menu", "allergens", "price"} for topic in topics)
+            )
+        )
+        and not BOOKING_REQUEST.search(text)
+        and (
+            recommendation
+            or medical_concern
+            and "menu" in topics
+            or detail_followup
+            or all(topic in {"menu", "allergens", "price"} for topic in topics)
+            and (
+                has_dish
+                or has_diet
+                or re.search(
+                    r"\b(?:it|this|that|me|us|see|seda|selle|minule|mulle|это|его|мне|нам)\b",
+                    text,
+                )
+            )
+        )
+        and "allergens" not in topics
+    ):
+        topics.insert(0, "allergens")
     # Narrative party counts are booking details, not a request for policies.
     # In particular, "for two adults and two children" must reach the planner.
     policy_question = bool(
@@ -240,7 +287,10 @@ def match_question(
     if "highchair" in topics:
         topics = [topic for topic in topics if topic != "children"]
     if "allergens" in topics:
-        topics = [topic for topic in topics if topic != "menu"]
+        # Safety guidance must survive the three-topic response limit.
+        topics = ["allergens"] + [
+            topic for topic in topics if topic not in {"menu", "allergens"}
+        ]
     if not topics and (has_dish or has_diet):
         topics = ["menu"]
     days = tuple(
@@ -443,13 +493,13 @@ def format_schedule(
 GUIDANCE = {
     "et": {
         "duration": "Lauabroneering kestab {duration} minutit.",
-        "children": "Palun arvestage lapsed külaliste koguarvu sisse.",
+        "children": "Palun arvestage ka lapsed külaliste koguarvu hulka.",
         "groups": "Laua saab broneerida kuni {maximum} inimesele. Suurema seltskonna puhul palun võtke ühendust restorani töötajaga.",
         "cancellation_help": "Selles vestluses tehtud broneeringu tühistamiseks öelge „Jah, tühista”.",
         "changes": "Broneeringu muutmiseks palun võtke ühendust restorani töötajaga.",
         "late": "Kui jääte hiljaks, küsige restorani töötajalt, kas lauda saab teile hoida.",
         "parking": "Parkimisvõimalused täpsustab restorani töötaja.",
-        "pets": "Mul pole lemmikloomade reeglit kirjas. Palun küsige koeraga tulek restorani töötajalt üle.",
+        "pets": "Mul pole lemmikloomade kohta kinnitatud infot. Palun küsige restorani töötajalt, kas lemmikloomaga võib tulla.",
         "highchair": "Lastetooli olemasolu oskab öelda restorani töötaja.",
         "accessibility": "Ligipääsetavust palun täpsustage restorani töötajaga.",
         "terrace": "Terrassikoht tuleb restorani töötajaga kokku leppida.",

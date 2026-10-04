@@ -10,6 +10,8 @@ getPaymentsCapabilities.
 
 from __future__ import annotations
 
+from typing import Any
+
 from .base import Hold, HoldLedger, StayAdapter, UnknownQuoteError
 from ..providers.errors import ProviderError
 
@@ -21,14 +23,14 @@ class CloudbedsAdapter(StayAdapter):
         self._key = api_key
         self._base = base_url.rstrip("/")
         self._holds = HoldLedger()
-        self._quotes: dict[str, dict] = {}
+        self._quotes: dict[str, dict[str, Any]] = {}
 
     def __repr__(self) -> str:
         return "CloudbedsAdapter(redacted)"
 
     async def search_availability(
-        self, checkin: str, checkout: str, party: dict
-    ) -> list[dict]:
+        self, checkin: str, checkout: str, party: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         raise NotImplementedError("wire getAvailableRoomTypes in Phase 2")
 
     async def create_hold(self, price_quote_id: str) -> Hold:
@@ -47,7 +49,9 @@ class CloudbedsAdapter(StayAdapter):
             payload={"quote": quote},
         )
 
-    async def confirm(self, hold_id: str, guest: dict, idempotency_key: str) -> dict:
+    async def confirm(
+        self, hold_id: str, guest: dict[str, Any], idempotency_key: str
+    ) -> dict[str, Any]:
         replayed = self._holds.check_replay(idempotency_key)
         if replayed is not None:
             return replayed
@@ -56,7 +60,7 @@ class CloudbedsAdapter(StayAdapter):
             return {"ok": False, "error": "hold_expired_or_unknown"}
         raise NotImplementedError("tokenize-first + postReservation")
 
-    async def cancel(self, booking_id: str, idempotency_key: str) -> dict:
+    async def cancel(self, booking_id: str, idempotency_key: str) -> dict[str, Any]:
         replayed = self._holds.check_replay(idempotency_key)
         if replayed is not None:
             return replayed
