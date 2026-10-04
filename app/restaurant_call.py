@@ -20,7 +20,7 @@ from .languages import (
     spoken_time,
 )
 from .providers import russian_speech
-from .providers.speech_delivery import spoken_estonian_date
+from .providers.speech_delivery import spoken_estonian_date, spoken_estonian_time
 from .restaurant_answers import (
     CAPABILITIES,
     CAPABILITY_PATTERNS,
@@ -684,7 +684,7 @@ def _read_only_restaurant_question(text, menu):
     """Only whole known read forms can retain an earlier reservation inquiry."""
     if len(text) > 2000:
         return False
-    if general_read_question(text):
+    if general_read_question(text) or _restaurant_time_question(text, {}) is not None:
         return True
     value = text.rstrip(" .!?")
     dishes = "|".join(
@@ -725,6 +725,7 @@ def _read_only_restaurant_question(text, menu):
             r"show (?:me )?(?:the |your )?menu|what (?:vegan|vegetarian) dishes are on the menu|"
             r"что (?:есть )?в меню|(?:покажи|покажите) (?:мне )?меню|есть ли (?:веганское|вегетарианское) меню|"
             r"millal (?:demo)?restoran (?:on )?(?:avatud|lahti)(?: on)?|millal (?:restoran|köök) (?:avaneb|sulgub)|mis kell (?:te )?avatud olete|mis kellani te lahti olete|"
+            r"kas (?:te )?olete (?:hommikul või õhtul|õhtul või hommikul) (?:avatud|lahti)|"
             r"(?:what time|when) does (?:the |your )?(?:restaurant|kitchen) (?:open|close)|"
             r"(?:what are|what's|what is) (?:the |your )?(?:restaurant |kitchen )?(?:opening |working )?hours|"
             r"когда (?:ресторан|кухня) (?:открыт|закрыт|открывается|закрывается)|"
@@ -755,6 +756,78 @@ def _read_only_restaurant_question(text, menu):
     )
 
 
+def _restaurant_time_question(text, previous):
+    """Whole read-only clock questions; () means the clock still needs a name."""
+    if len(text) > 2000:
+        return None
+    value = text.rstrip(" .!?")
+    patterns = (
+        (
+            r"(?:hommikul või õhtul|õhtul või hommikul)",
+            r"(?:(?:kas )?(?:see on |mõtlete )?|kas )",
+            r"(?:kas )?(.+?) on ",
+        ),
+        (
+            r"(?:am or pm|morning or evening|in the morning or (?:in the )?evening)",
+            r"(?:is (?:that|it) |do you mean )?",
+            r"is (.+?) ",
+        ),
+        (
+            r"(?:утром или вечером|вечером или утром)",
+            r"(?:это |вы имеете в виду )?",
+            r"(.+?) (?:это |— )?",
+        ),
+    )
+    for periods, prefix, explicit in patterns:
+        if re.fullmatch(prefix + periods, value):
+            if previous.get("time_candidates"):
+                return tuple(previous["time_candidates"])
+            return (previous["start_time"],) if previous.get("start_time") else ()
+        match = re.fullmatch(explicit + periods, value)
+        if not match:
+            continue
+        clock_text = match[1]
+        clock = parse_spoken_time(clock_text, allow_bare=True)
+        if not clock or not _restaurant_detail_followup(
+            clock_text, {}, expected_field="time"
+        ):
+            return None
+        if clock.invalid:
+            return ()
+        # Read a fully formatted 24-hour clock as written. This never selects
+        # a reservation time or changes the booking parser's AM/PM rules.
+        formatted = re.fullmatch(
+            r"(?:(?:at|kell|kella|в|к)\s+)?(\d{2}:\d{2})", clock_text
+        )
+        if formatted:
+            return (formatted[1],)
+        return (clock.value,) if clock.value else tuple(clock.candidates or ())
+    return None
+
+
+def _restaurant_time_meaning(clocks, language):
+    if not clocks:
+        return {
+            "et": "Millist kellaaega mõtlete?",
+            "en": "Which time do you mean?",
+            "ru": "Какое время вы имеете в виду?",
+        }[language]
+    sentences = []
+    for clock in clocks:
+        hour, minute = map(int, clock.split(":"))
+        period = 0 if hour < 6 else 1 if hour < 12 else 2 if hour < 18 else 3
+        if language == "et":
+            daypart = ("öösel", "hommikul", "päeval", "õhtul")[period]
+            words = spoken_estonian_time(hour % 12 or 12, minute)
+            sentences.append(f"{clock} tähendab kell {words} {daypart}.")
+        elif language == "en":
+            sentences.append(f"{clock} means {spoken_time(clock)}.")
+        else:
+            words = russian_speech.spoken_time(hour, minute)
+            sentences.append(f"{clock} — это {words}.")
+    return " ".join(sentences)
+
+
 class RestaurantCallTools(CallTools):
     def __init__(self, dispatcher, **kwargs):
         super().__init__(dispatcher, **kwargs)
@@ -775,6 +848,7 @@ class RestaurantCallTools(CallTools):
         self._reasoned_reply: tuple[int, str, str, str] | None = None
         self._restaurant_booking_paused = False
         self._restaurant_pending_question = False
+        self._restaurant_time_explanation = None
 
         # Selector identities only; carry disclosures through booking followups.
         self._restaurant_capability_topics = ()
@@ -898,6 +972,7 @@ class RestaurantCallTools(CallTools):
         self._reasoned_reply = None
         self._restaurant_booking_paused = False
         self._restaurant_pending_question = False
+        self._restaurant_time_explanation = None
         if previous_unmatched:
             # A one-turn unknown-question snapshot expires even when the next
             # turn returns early for a language switch or input recovery.
@@ -1049,6 +1124,12 @@ class RestaurantCallTools(CallTools):
             text,
         ):
             self._restaurant_focus = "domain"
+        clocks = _restaurant_time_question(text, self._restaurant_inquiry or {})
+        if clocks is not None:
+            self._restaurant_focus = "time_meaning"
+            self._restaurant_time_explanation = _restaurant_time_meaning(
+                clocks, self.language
+            )
         if re.search(
             r"\b(?:waitlist|waiting list|ootenimekir\w*|лист ожидания)\b", text
         ) and not (
@@ -1322,7 +1403,11 @@ class RestaurantCallTools(CallTools):
             or self.conversation.intent in {"identity", "how_are_you"}
         )
         corrected_inquiry = None
-        if question_turn and self._restaurant_inquiry is not None:
+        if (
+            question_turn
+            and self._restaurant_inquiry is not None
+            and not self._restaurant_time_explanation
+        ):
             prior = self._restaurant_inquiry
             corrected = prior
             # Only non-information declarative clauses can correct a booking.
@@ -1505,6 +1590,8 @@ class RestaurantCallTools(CallTools):
         return prefix + " " + reply if prefix else reply
 
     def question_reply(self):
+        if self._restaurant_time_explanation:
+            return self._restaurant_time_explanation
         if self._restaurant_question and self._restaurant_question.date_issue:
             return COPY[self.language][self._restaurant_question.date_issue]
         topics = (
@@ -1698,7 +1785,7 @@ class RestaurantCallTools(CallTools):
             (self._restaurant_focus or self._restaurant_unmatched)
             and not self._restaurant_medical_concern
             and self._restaurant_focus
-            not in {"staff", "domain", "demo", "waitlist", "status"}
+            not in {"staff", "domain", "demo", "waitlist", "status", "time_meaning"}
             and "allergens" not in topics
             and not set(topics).intersection(GENERAL_TOPICS)
             and not any(topic in CAPABILITIES for topic in topics)
