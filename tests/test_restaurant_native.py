@@ -451,7 +451,9 @@ def test_native_startup_uses_restaurant_policy_and_shared_database(tmp_path, lan
             ) as agent,
             patch.object(worker.callslog, "log_call"),
             patch.object(worker.callslog, "history_safe"),
-            patch.object(worker, "TelephoneSTT", return_value=NS(aclose=AsyncMock())),
+            patch.object(
+                worker.TelephoneSTT, "from_env", return_value=NS(aclose=AsyncMock())
+            ),
             patch.object(worker.groq, "LLM"),
             patch.object(worker, "TelephoneTTS"),
             patch.object(worker, "play_failure", new_callable=AsyncMock) as failure,

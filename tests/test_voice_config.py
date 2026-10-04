@@ -164,7 +164,7 @@ def test_native_startup_uses_same_models_and_room_journal(tmp_path):
             patch.object(worker, "TelephoneAgent"),
             patch.object(worker.callslog, "log_call"),
             patch.object(
-                worker, "TelephoneSTT", return_value=NS(aclose=AsyncMock())
+                worker.TelephoneSTT, "from_env", return_value=NS(aclose=AsyncMock())
             ) as stt,
             patch.object(worker.groq, "LLM") as llm,
             patch.object(worker, "TelephoneTTS"),
