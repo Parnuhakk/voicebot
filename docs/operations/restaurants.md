@@ -219,6 +219,13 @@ an owned recap is reissued with earlier delivery/approval revoked. A question
 does not choose a time, check availability, or confirm a booking. This is a
 dialogue repair, not a measured improvement in speech recognition accuracy.
 
+A single day-part reply also retains an exact saved clock: after an 18:00 recap,
+`õhtul`, `PM`, or `вечером` reissues that recap without losing the date or count.
+The reply is not booking consent, even when it starts with `jah`. A conflicting
+morning reply requires a new full clock; it never silently changes 18:00 to 06:00.
+Mixed period/count replies retain the date and new count but conservatively ask
+for the full time. A known single clock is never presented as two AM/PM choices.
+
 The calendar also understands day/week offsets (`kahe päeva pärast`,
 `in two days`, `через два дня`) and explicitly qualified calendar weeks
 (`järgmise nädala reedel`, `next week on Friday`,

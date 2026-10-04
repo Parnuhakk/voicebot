@@ -349,6 +349,13 @@ def _restaurant_date_reply(text, previous, expected_field):
     )
 
 
+def _restaurant_time_context(previous):
+    """An exact saved clock can anchor a day-part reply, never a bare number."""
+    return previous.get("time_candidates") or (
+        (previous["start_time"],) if previous.get("start_time") else None
+    )
+
+
 def parse_restaurant_request(text, previous=None, *, now=None, expected_field=None):
     """Parse requested details only: never infer availability, contacts or consent."""
     if not isinstance(text, str) or len(text) > 2000:
@@ -398,7 +405,7 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
     text = " ".join(resolved.remaining_text.split())
     requested_time = parse_spoken_time(
         text,
-        pending=inquiry.get("time_candidates"),
+        pending=_restaurant_time_context(inquiry),
         allow_bare=(
             expected_field in {"time", "ambiguous_time", "invalid_time"}
             if expected_field is not None
@@ -638,7 +645,7 @@ def _restaurant_detail_followup(text, previous, *, expected_field=None):
         else "date" in previous and "start_time" not in previous
     )
     clock = parse_spoken_time(
-        remaining, pending=previous.get("time_candidates"), allow_bare=allow_bare
+        remaining, pending=_restaurant_time_context(previous), allow_bare=allow_bare
     )
     if clock and clock.span:
         low, high = clock.span
@@ -662,7 +669,7 @@ def _restaurant_detail_followup(text, previous, *, expected_field=None):
             remaining = pattern.sub(" ", remaining)
         remaining = re.sub(r"\bo'clock\b", " ", remaining)
     remaining = " ".join(remaining.strip(" .,!?").split())
-    if clock and allow_bare:
+    if clock and (allow_bare or previous.get("start_time")):
         remaining = re.sub(r"^(?:jah|pigem|tegelikult|hoopis)(?:\s+|$)", "", remaining)
     if resolved.value or resolved.issue:
         remaining = re.sub(r"^on\s+", "", remaining)
@@ -1389,7 +1396,7 @@ class RestaurantCallTools(CallTools):
                 and question is None
                 and parse_spoken_time(
                     planning_text,
-                    pending=prior.get("time_candidates"),
+                    pending=_restaurant_time_context(prior),
                     allow_bare=(
                         expected_field in {"time", "ambiguous_time", "invalid_time"}
                         if expected_field is not None

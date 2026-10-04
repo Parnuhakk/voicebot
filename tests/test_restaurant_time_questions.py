@@ -158,6 +158,165 @@ def test_counterquestion_revokes_earlier_recap_delivery(make_state):
     asyncio.run(run())
 
 
+@pytest.mark.parametrize("asked_question", [False, True])
+@pytest.mark.parametrize(
+    "language,booking_request,question,daypart",
+    [
+        (
+            "et",
+            "Soovin homme lauda neljale kell 18:00",
+            "Hommikul või õhtul?",
+            "Õhtul.",
+        ),
+        (
+            "et",
+            "Soovin homme lauda neljale kell 18:00",
+            "Hommikul või õhtul?",
+            "Jah, õhtul.",
+        ),
+        (
+            "en",
+            "I'd like a table tomorrow at 18:00 for four people",
+            "AM or PM?",
+            "PM.",
+        ),
+        (
+            "ru",
+            "Хочу столик завтра в 18:00 для четырёх гостей",
+            "Утром или вечером?",
+            "Вечером.",
+        ),
+    ],
+)
+def test_exact_recap_accepts_same_daypart_without_discarding_clock(
+    client, asked_question, language, booking_request, question, daypart
+):
+    session = start(client, language)["session_id"]
+    response = turn(client, session, booking_request, language=language)
+    assert response["recap_delivery_id"]
+    state = client.app.state.demo_sessions.sessions[session].tools
+    before = state.booking_inquiry
+    if asked_question:
+        turn(client, session, question, language=language)
+    response = turn(client, session, daypart, language=language)
+    assert state.booking_inquiry == before
+    assert response["recap_delivery_id"] and not state.bookings
+    assert not state.pending["approved"] and not state.pending["delivery"]
+
+
+def test_conflicting_daypart_after_exact_recap_requires_new_clock(client):
+    session = start(client, "et")["session_id"]
+    turn(client, session, "Soovin homme lauda neljale kell 18:00", language="et")
+    state = client.app.state.demo_sessions.sessions[session].tools
+    before = state.booking_inquiry
+    turn(client, session, "Hommikul või õhtul?", language="et")
+    response = turn(client, session, "Hommikul.", language="et")
+    assert state.booking_inquiry["date"] == before["date"]
+    assert state.booking_inquiry["party_size"] == 4
+    assert state.booking_inquiry.get("time_invalid") and not state.booking_inquiry.get(
+        "start_time"
+    )
+    assert not state.pending and not state.bookings
+    assert response["reply"] == COPY["et"]["invalid_time"]
+
+
+@pytest.mark.parametrize(
+    "daypart",
+    ["Õhtul.", "Jah, õhtul.", "Hommikul.", "Mitte õhtul.", "Hommikul või õhtul sobib."],
+)
+def test_daypart_reply_never_confirms_a_delivered_exact_recap(make_state, daypart):
+    from app.booking_response import trusted_booking_response
+    from tests.test_restaurant_conversation import prepare
+
+    async def run():
+        state = make_state("et")
+        await prepare(state, time="18:00")
+        assert state.mark_recap_delivered(state.pending["hold_id"])
+        state.observe_user_text(daypart, language="et")
+        response = trusted_booking_response(state)
+        assert response is None or response.get("name") != "confirm_slot_booking"
+        assert not state.bookings
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "anchor,answer,expected",
+    [
+        ("18:00", "PM", "18:00"),
+        ("18:00", "AM", None),
+        ("06:00", "PM", None),
+        ("06:00", "AM", "06:00"),
+        ("12:00", "PM", "12:00"),
+        ("12:00", "AM", None),
+        ("00:00", "PM", None),
+        ("00:00", "AM", "00:00"),
+        ("18:30", "õhtul", "18:30"),
+        ("18:30", "hommikul", None),
+        ("18:00", "18:00 PM", None),
+        ("18:00", "AM or PM", None),
+        ("18:00", "с шести до семи вечера", None),
+        ("18:00", "not PM", None),
+        ("18:00", "mitte õhtul", None),
+        ("18:00", "At night.", "18:00"),
+        ("06:00", "At night.", None),
+    ],
+)
+def test_daypart_must_agree_with_a_single_exact_clock_anchor(anchor, answer, expected):
+    from app.restaurant_times import parse_spoken_time
+
+    result = parse_spoken_time(answer, pending=(anchor,))
+    assert result is not None
+    assert result.value == expected
+    assert result.invalid is (expected is None)
+    if expected is None:
+        assert not result.candidates
+
+
+@pytest.mark.parametrize(
+    "language,booking_request,answer",
+    [
+        ("et", "Soovin homme lauda neljale kell 18:00", "Õhtul viiele."),
+        ("et", "Soovin homme lauda neljale kell 18:00", "Hommikul viiele."),
+        (
+            "en",
+            "I'd like a table tomorrow at 18:00 for four people",
+            "PM for five people.",
+        ),
+        (
+            "en",
+            "I'd like a table tomorrow at 18:00 for four people",
+            "AM for five people.",
+        ),
+        (
+            "ru",
+            "Хочу столик завтра в 18:00 для четырёх гостей",
+            "Вечером для пяти гостей.",
+        ),
+        (
+            "ru",
+            "Хочу столик завтра в 18:00 для четырёх гостей",
+            "Утром для пяти гостей.",
+        ),
+    ],
+)
+def test_mixed_daypart_and_count_cannot_turn_exact_clock_into_fake_choice(
+    client, language, booking_request, answer
+):
+    session = start(client, language)["session_id"]
+    turn(client, session, booking_request, language=language)
+    state = client.app.state.demo_sessions.sessions[session].tools
+    previous = state.booking_inquiry
+    result = turn(client, session, answer, language=language)
+    assert state.booking_inquiry["date"] == previous["date"]
+    assert state.booking_inquiry["party_size"] == 5
+    assert state.booking_inquiry["time_invalid"] and not state.booking_inquiry.get(
+        "time_candidates"
+    )
+    assert result["reply"] == COPY[language]["invalid_time"]
+    assert not state.pending and not state.bookings
+
+
 @pytest.mark.parametrize(
     "question",
     [
@@ -246,6 +405,18 @@ def test_native_daypart_counterquestion_reissues_owned_recap_without_model(
                 assert (
                     state.pending is not original
                     and state.pending["hold_id"] == original["hold_id"]
+                )
+                assert state.pending["delivery"] and not state.pending["approved"]
+                assert not state.bookings and model.calls == 0
+                await native_turn(
+                    session,
+                    agent,
+                    {"et": "Õhtul.", "en": "PM.", "ru": "Вечером."}[language],
+                )
+                assert state.booking_inquiry == before
+                assert (
+                    state.pending
+                    and agent.chat_ctx.items[-1].text_content == state.render_recap()
                 )
                 assert state.pending["delivery"] and not state.pending["approved"]
                 assert not state.bookings and model.calls == 0
