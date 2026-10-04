@@ -6,10 +6,12 @@ The robot-only restaurant release `598a1a1c498f24bac524083e83780b74ce680e52`
 and its published descendant `2b65eee73585b460bf7f6b74627b99bc635ad138` have
 verified synchronization checkpoints. All 94 app/demo files matched the healthy
 web/worker/bridge roles; original volume and LiveKit/SIP/Redis connections were
-preserved. The combined 8494/clock repair/final literal-question tree passed
-12,372 tests and 36 subtests, plus ten browser journeys. Published `8494f8a`
-was observed healthy in all three roles; publication and exact-source acceptance
-of these final repairs remain separate gates, not inferred from older receipts.
+preserved. The combined 972/clock repair/final literal-question tree passed
+12,623 tests and 36 subtests, plus eleven browser journeys. Newer published
+`97218039288dcefefa38e6e3b40598de10c50be1` was observed healthy with matching
+source links in all three roles at02:48:42Z, then retained by normal integration.
+Its source/storage acceptance and final repair publication remain separate gates;
+neither is inferred from older receipts.
 
 Strict final native telephone acceptance is **not complete**: the first 598 suite
 passed ET menu/allergy before an unexpected note reply; EN menu/allergy/note before
@@ -575,3 +577,48 @@ Independent Codex final-alias review: **16** variant/partial cases and all **128
 phone-answer cases passed, plus bounded JSON/routing/context assertions. No
 concrete P0/P1 found; exact phrase boundaries, capability priority and retained
 owned-hold/fresh-delivery consent were verified. It makes no native-wire claim.
+
+## Published guest-current intake
+
+PR36 head9638 CI37171125464 passed both Linux/shared-image jobs. Its guarded
+zero-room publication attempt correctly stopped with `published_base_changed`
+when another session published newer guest-interface, renewal/receipt and medical-
+context safeguards. No stale-base merge or deployment was performed. Published
+9721803 was normally merged as6c98c22 without conflicts; no other owner's dirty
+source or goal was copied or edited. Our cumulative delta remains six files.
+
+All **eleven** local Chromium journeys pass on the combined source, including
+the new guest-current journey: ET/EN/RU at320/390/1440px, 45 preparation failure
+paths, structured recaps, wrong/missing/foreign/expired receipt/renewal rejection,
+contrast minimum4.55, and zero JavaScript errors/external requests. The new
+desktop/ET320/RU390 screenshots were also re-read. The full tests below and
+narrow Codex interaction review passed before the updated branch ships.
+
+Fresh combined6c98 verification passed **12,623 tests, 36 subtests**, six explicit
+opt-in skips and two existing warnings in208.91s. The isolated command above used
+basetemp `/tmp/opencode/restaurant-recovery-972-combined`; no provider opt-in or
+inherited host credentials. The new published guest tests are included rather
+than treating the earlier12,372 checkpoint as current combined coverage.
+
+Independent Codex review of only the new guest/medical/renewal integration seams
+passed **229 tests** and **42** temporary-state assertions; no concrete P0/P1.
+The retained medical concern excludes generated recommendations without masking
+canonical capability refusals. Existing owned-hold/expiry and renewal/receipt/
+language/fresh-consent boundaries remain intact. Two supplementary comparison
+probes had invalid forced-ET versus initial-English fixtures and are retained as
+invalid-oracle failures, not product passes or a blanket native/HTTP equivalence
+claim. This review makes no provider or deployment-acceptance claim.
+
+The fresh read-only published972 public checkpoint passed root HTTPS200, six
+versioned same-origin assets, three fictional menu items, denied private routes,
+hotel410 and retired-host503, plus ET/EN/RU mobile controls within the first844px
+screen without overflow or JavaScript errors. Receipt:
+`/tmp/opencode/restaurant-recovery-972-live-summary.json`. Final repair-release
+runtime/source/auth/storage/incoming and strict telephone checks are still pending.
+
+All twelve private expected replies also matched the real renderer and guarded
+fallback sequentially in each language on6c98, with zero providers/booking state.
+Pure menu questions still permit separately reviewed free wording; this offline
+comparison does not prove every eligible generated menu reply will be identical.
+No supported reasoning is disabled to satisfy a witness. The live strict caption,
+audio and safety checks remain necessary for the sampled native turns.
