@@ -393,7 +393,7 @@ async page => {
     assert(await page.locator('#demo-recap-read').isVisible(), 'new booking recap is missing');
     assert(temporalRecap.endsWith({et:'Kas teile sobib?',en:'Does that work for you?',ru:'Вам подходит?'}[language.code]));
     await page.locator('#demo-recap-read').click();
-    const affirmative = {et:'See kõlab väga hästi!',en:"That's very good.",ru:'Это очень хороший вариант!'}[language.code];
+    const affirmative = {et:'See aeg sobib, paneme kirja!',en:'thats perfect',ru:'Давайте так и сделаем!'}[language.code];
     for (let index = 0; index < 2; index++) {
       await page.locator('#demo-text').fill(affirmative);
       await page.locator('#demo-send').click();
@@ -510,7 +510,7 @@ async page => {
   const voiceReceipt=await page.evaluate(()=>state.recapDeliveryId);
   assert(voiceReceipt);
   await page.evaluate(()=>{state.page=2;document.getElementById('booking-date').value=tallinnDay();});
-  await send("That's very good.");
+  await send('Thats absolutely perfect, thank you!');
   const confirmedVoice=requests.findLast(request=>request.body.recap_delivery_id);
   assert.equal(confirmedVoice.body.recap_delivery_id,voiceReceipt);
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('confirmed'));

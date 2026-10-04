@@ -229,8 +229,12 @@ def test_native_short_acknowledgement_keeps_language_unselected(tmp_path, weak):
         ),
         ("en", "A table for four tomorrow at 2 pm", "yes"),
         ("en", "A table for four tomorrow at 2 pm", "That's very good."),
+        ("en", "A table for four tomorrow at 2 pm", "thats perfect"),
+        ("en", "A table for four tomorrow at 2 pm", "Lets book the table"),
         ("et", "Soovin homme lauda neljale kell 14.00", "See kõlab väga hästi!"),
         ("ru", "Столик на четверых завтра в 14:00", "Это очень хороший вариант!"),
+        ("et", "Soovin homme lauda neljale kell 14.00", "See aeg sobib, paneme kirja"),
+        ("ru", "Столик на четверых завтра в 14:00", "Давайте так и сделаем"),
         ("en", "A table for four tomorrow at 2 pm", "That works for me, thank you!"),
         ("ru", "Столик на четверых завтра в 14:00", "да"),
         (
