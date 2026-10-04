@@ -8,8 +8,11 @@ from datetime import datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from .booking_faq import FAQ_PATH, load_faq, normalize
 from .restaurant_data import DAYS
 from .restaurant_dates import resolve_restaurant_date
+from .restaurant_times import ALTERNATIVE, DIGITAL, PREFIX, SUFFIX, parse_spoken_time
+from .restaurant_family import family_topic
 
 
 @dataclass(frozen=True)
@@ -20,22 +23,114 @@ class RestaurantQuestion:
     date: str | None = None
     date_issue: str | None = None
     recommendation: bool = False
+    family_allergens: bool = False
 
 
 INFORMATION_TOPICS = (
-    "menu", "hours", "kitchen", "allergens", "policies", "location", "price",
-    "duration", "children", "groups", "cancellation_help", "changes", "late",
-    "parking", "pets", "highchair", "accessibility", "terrace", "extras", "staff",
+    "menu",
+    "hours",
+    "kitchen",
+    "allergens",
+    "policies",
+    "location",
+    "price",
+    "duration",
+    "children",
+    "groups",
+    "cancellation_help",
+    "changes",
+    "late",
+    "parking",
+    "pets",
+    "highchair",
+    "accessibility",
+    "terrace",
+    "extras",
+    "staff",
+    "special_requests",
+    "food_orders",
+    "family",
+    "family_details",
 )
 
+ALLERGY_SAFETY = (
+    r"allerg|allergeen|аллерг|глютен|glut(?:ee|e)n|peanut|pähkl|орех|laktoos|lactose|лактоз|"
+    r"co?eliac|tsöliaak|целиак|cross[- ](?:contact|contaminat)|ristsaast|ristkontakt|"
+    r"перекр[её]стн\w*\s+(?:контакт|загрязн)"
+)
+
+# Medical suitability and food-safety outcomes are canonical, not diet preferences.
+MEDICAL_FOOD_CONCERN = (
+    r"allerg(?:y|ies|ic)|allergi|аллерги|"
+    r"c(?:o)?eliac|ts[öo]liaak|целиак|"
+    r"intoleran|talumatu|ei\s+talu|непереносим|"
+    r"anaphyla|anafülak|анафилак|reaction|reaktsioon|реакци|"
+    r"cross[-\s]*(?:contact|contaminat)|ristsaast|ristkontak|"
+    r"перекр[её]стн\w*\s+(?:контакт|загрязн)"
+)
+
+CAPABILITIES = {
+    {"booking-101": "special_requests", "booking-102": "food_orders"}[
+        entry["id"]
+    ]: entry
+    for entry in load_faq(FAQ_PATH.with_name("restaurant-phone-faq.json"))
+}
+CAPABILITY_PATTERNS = {
+    topic: re.compile(
+        r"\b(?:"
+        + "|".join(
+            r"\W+".join(re.escape(word) for word in normalize(phrase).split())
+            for language in ("et", "en", "ru")
+            for phrase in (
+                entry["question_" + language],
+                *entry.get("variants_" + language, []),
+            )
+        )
+        + r")\b"
+    )
+    for topic, entry in CAPABILITIES.items()
+}
+
+
+def capability_booking_clause(text: str) -> str | None:
+    """A capability question is not booking intent; require a positive clause."""
+    if re.search(
+        r'["“”«»`]|\b(?:do not|don[\x27’]t|not|ära|ei|не|instructions?|example|'
+        r"juhis\w*|näide|пример\w*|инструкц\w*)\b",
+        text,
+    ):
+        return None
+    for pattern in CAPABILITY_PATTERNS.values():
+        text = pattern.sub(" ", text)
+    clauses = [
+        clause.strip()
+        for clause in re.split(r"[!?;]+|(?<!\d)\.(?!\d)", text)
+        if clause.strip()
+    ]
+    for index, clause in enumerate(clauses):
+        if re.match(
+            r"^(?:(?:and|ja|и)\s+)?(?:(?:please|palun|пожалуйста)[,\s]+)?"
+            r"(?:(?:can|could|would)\s+(?:you|i)\s+(?:please\s+)?)?"
+            r"(?:book|reserve|broneeri\w*|заброниру\w*|"
+            r"(?:i|we)\s+(?:want|need|would like)\s+to\s+(?:book|reserve)|"
+            r"(?:ma\s+)?(?:soovin|sooviksin|tahan|tahaksin)\s+broneeri\w*|"
+            r"(?:(?:я|мы)\s+)?(?:хочу|хотим)\s+заброниро\w*)\b",
+            clause,
+        ):
+            # Never discard a later correction/cancellation or other detail.
+            return clause if index == len(clauses) - 1 else None
+    return None
+
+
 PATTERNS = {
-    "allergens": r"allerg|allergeen|аллерг|глютен|glut(?:ee|e)n|peanut|pähkl|орех|laktoos|lactose|лактоз|sisald|contain|koostis|ingredients|содерж|состав",
-    "price": r"\b(?:price|cost|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maksab|цен\w*|стоим\w*|сколько(?:\s+\w+){0,2}\s+сто(?:ит|ят|ить))\b",
-    "menu": r"menüü|menu|меню|vegan|веган|vegetarian|taimetoit|вегетар|\b(?:dishes|serve|roogi|блюд\w*)\b|mis.*süüa|mida.*(?:süüa|pakute)",
+    "allergens": MEDICAL_FOOD_CONCERN
+    + r"|allerg|allergeen|аллерг|глютен|glut(?:ee|e)n|peanut|pähkl|орех|laktoos|lactose|лактоз|sisald|contain|koostis|ingredients|содерж|состав",
+    "price": r"\b(?:prices?|costs?|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maks(?:ab|avad|ma)|цен\w*|стоим\w*|сколько(?:\s+\w+){0,2}\s+сто(?:ит|ят|ить))\b",
+    "menu": r"menüü?|menu|меню|vegan|веган|vegetarian|taimetoit|вегетар|\b(?:dishes|serve|roogi|блюд\w*)\b|mis.*süüa|mida.*(?:süüa|pakute)",
     "kitchen": r"kitchen|köök|köögi|кухн|(?:kell|kellaajani|millal).*süüa|when.*(?:food|eat)|(?:до скольки|когда).*еда",
-    "hours": r"\b(?:hours|open\w*|close\w*|shut|lahtiole\w*|avatud|avate|lahti|kinni|sulge\w*|tööa\w*|откры\w*|закры\w*|работа\w*)\b",
+    "hours": r"\b(?:hours|open\w*|close\w*|shut|lahtiole\w*|avatud|avate|avane\w*|lahti|kinni|sulg\w*|tööa\w*|откры\w*|закры\w*|работа\w*|часы\s+работы)\b",
     "location": r"\b(?:where are you|where is (?:the )?restaurant|where is it|address|location|located|aadress|asute|asub|kus|где|адрес|находит\w*)\b",
-    "duration": r"(?:how long|kui kaua|сколько времени|как долго).*(?:table|stay|keep|laua|broneering|стол|брон)|(?:reservation|broneering|брон\w*).*(?:last|kest|длит)",
+    "duration": r"(?:how long|kui kaua|сколько времени|как долго).*(?:table|stay|keep|laua|laud|broneering|стол|брон)|(?:reservation|broneering|брон\w*).*(?:last|kest|длит)",
     "groups": r"\b(?:group\w*|grup\w*|seltskonn\w*|firmapidu|sünnipäev\w*|групп\w*|компани\w*)\b",
     "children": r"\b(?:children|kids?|child|lapsed|lastega|laste|laps|дети|детей|детьми|реб[её]н\w*)\b",
     "cancellation_help": r"(?:how|kuidas|как).*(?:cancel|tühista|отмен)|(?:can|kas|можно).*(?:cancel|tühista|отмен)",
@@ -47,7 +142,7 @@ PATTERNS = {
     "accessibility": r"wheelchair|accessible|accessibility|ratastool|ligipääs|инвалид|коляск|доступн",
     "terrace": r"terrac|terrass|outside seating|outdoor seating|террас",
     "extras": r"dessert|magustoit|magustoitu|drinks?|vein|wine|jook|joog|напит|десерт",
-    "staff": r"\b(?:staff|human|transfer|callback|personali\w*|teenindaja\w*|персонал\w*|сотрудник\w*|оператор\w*|перевед\w*)\b|\b(?:order|delivery|takeaway|tellim\w*|kojuvedu|достав\w*|заказ\w*)\b|\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b.*\binimese\w*\b|\binimese\w*\b.*\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b",
+    "staff": r"\b(?:staff|human|transfer|callback|personali\w*|teenindaja\w*|töötaja\w*|персонал\w*|сотрудник\w*|оператор\w*|перевед\w*)\b|\b(?:speak|talk) to (?:a |the )?person\b|\b(?:order|delivery|takeaway|tellim\w*|kojuvedu|достав\w*|заказ\w*)\b|\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b.*\binimese\w*\b|\binimese\w*\b.*\b(?:rääk|ühend|suun|kõnel|vestel)\w*\b",
     "policies": r"polic|reegl|tingimus|правил",
 }
 
@@ -60,7 +155,10 @@ DAY_PATTERNS = (
     r"saturday|laupäev\w*|суббот\w*",
     r"sunday|pühapäev\w*|воскресень\w*",
 )
-BOOKING_REQUEST = re.compile(r"broneer|reserve|reservation|book|lau[ad]|table|брон|столик")
+BOOKING_REQUEST = re.compile(
+    r"\b(?:broneer\w*|reserv(?:e[ds]?|ing|ations?)|book(?:s|ed|ing)?|"
+    r"lau[ad]\w*|tables?|(?:за)?брон\w*|столик\w*)\b"
+)
 RECOMMENDATION = re.compile(
     r"^(?:mida (?:te )?soovit(?:ad|ate)(?: süüa)?|"
     r"what (?:would|do) you recommend(?: to eat)?|"
@@ -82,21 +180,75 @@ def match_question(
     previous: RestaurantQuestion | None = None,
     has_dish: bool = False,
     has_diet: bool = False,
+    medical_concern: bool = False,
     now: datetime | None = None,
 ) -> RestaurantQuestion | None:
     text = " ".join(text.casefold().split())
     if not text or len(text) > 2000:
         return None
-    matches = [(match.start(), topic) for topic, pattern in PATTERNS.items()
-               if (match := re.search(pattern, text))]
+    matches = []
+    information_text = text
+    for topic, pattern in CAPABILITY_PATTERNS.items():
+        if match := pattern.search(text):
+            matches.append((match.start(), topic))
+            # "Tell the kitchen about my allergy" is one capability request,
+            # not a kitchen-hours question plus an allergen catalogue request.
+            information_text = pattern.sub(
+                lambda match: " " * len(match.group()), information_text
+            )
+    # "At 1800 hours" gives a clock unit, not an opening-hours question.
+    # Mask only that unit, retaining offsets and every explicit information cue.
+    for clock in (
+        *DIGITAL.finditer(information_text),
+        *PREFIX.finditer(information_text),
+        *SUFFIX.finditer(information_text),
+        *re.finditer(r"\b\d{4}\s+hours\b", information_text),
+    ):
+        start, end = clock.span()
+        suffix = re.match(r"\s+hours\b", information_text[end:])
+        # The shared clock parser rejects repeated units; they still aren't
+        # independent opening-hours questions.
+        if suffix:
+            end += suffix.end()
+        while alternative := ALTERNATIVE.search(information_text, end):
+            if information_text[end : alternative.start()].strip():
+                break
+            # Do not expose a first time when raw parsing ignored the choice.
+            selection = parse_spoken_time(text)
+            if selection is None or not selection.invalid:
+                end = start
+                break
+            end = alternative.end()
+            suffix = re.match(r"\s+hours\b", information_text[end:])
+            end += suffix.end() if suffix else 0
+        information_text = (
+            information_text[:start]
+            + re.sub(r"\bhours\b", "     ", information_text[start:end])
+            + information_text[end:]
+        )
+    matches.extend(
+        (match.start(), topic)
+        for topic, pattern in PATTERNS.items()
+        if (match := re.search(pattern, information_text))
+    )
     topics = [topic for _, topic in sorted(matches)]
+    family = family_topic(text)
+    if family:
+        # A children's menu is distinct from the reviewed adult dish list, and
+        # toys/drawing questions must not receive only a guest-count reminder.
+        topics = [topic for topic in topics if topic != "children"]
+        if not re.search(r"täiskasvan|adults?|взросл", text):
+            topics = [topic for topic in topics if topic != "menu"]
+        topics.insert(0, family)
     recommendation = bool(RECOMMENDATION.search(text))
     if recommendation and "menu" not in topics:
         topics.append("menu")
     # "Сколько стоят блюда?" asks for prices, not a recital of every dish.
     # Keep explicit additional menu/recommendation requests as separate topics.
     if (
-        "price" in topics and "menu" in topics and not recommendation
+        "price" in topics
+        and "menu" in topics
+        and not recommendation
         and re.match(r"сколько(?:\s+\w+){0,2}\s+сто(?:ит|ят|ить)\b", text)
         and not re.search(r"\b(?:что|какие|покажите|расскажите)\b", text)
     ):
@@ -106,26 +258,76 @@ def match_question(
         topics = list(previous.topics)
     # An English question about an unlisted dish or a non-food "contain"
     # must not receive an unrelated menu/allergen answer.
-    if "allergens" in topics and not (
-        has_dish or has_diet or previous and re.search(r"\b(?:it|this|that)\b", text) and any(
-            topic in {"menu", "allergens"} for topic in previous.topics
-        ) or re.search(
-            r"allerg|allergeen|аллерг|глютен|glut|peanut|pähkl|орех|laktoos|lactose|лактоз|"
-            r"food|dish|ingredient|milk|fish|celery|sisald|koostis|содерж|состав", text
+    if (
+        "allergens" in topics
+        and not detail_followup
+        and not (
+            has_dish
+            or has_diet
+            or re.search(ALLERGY_SAFETY, text)
+            or re.search(MEDICAL_FOOD_CONCERN, text)
+            or previous
+            and re.search(r"\b(?:it|this|that)\b", text)
+            and any(topic in {"menu", "allergens"} for topic in previous.topics)
+            or re.search(
+                r"allerg|allergeen|аллерг|глютен|glut|peanut|pähkl|орех|laktoos|lactose|лактоз|"
+                r"food|dish|ingredient|milk|fish|celery|sisald|koostis|содерж|состав",
+                text,
+            )
         )
     ):
         topics.remove("allergens")
-    if "menu" in topics and re.search(r"\bdo you (?:have|serve)\b", text) and not (
-        has_dish or has_diet or re.search(r"\b(?:menu|dishes|food)\b", text)
+    if (
+        "menu" in topics
+        and re.search(r"\bdo you (?:have|serve)\b", text)
+        and not (has_dish or has_diet or re.search(r"\b(?:menu|dishes|food)\b", text))
     ):
         topics.remove("menu")
+    # A short food follow-up does not turn an existing medical concern into
+    # permission to generate a recommendation or a safety assurance.
+    if (
+        (
+            previous
+            and "allergens" in previous.topics
+            or medical_concern
+            and (
+                recommendation
+                or "menu" in topics
+                or (has_dish or has_diet)
+                and all(topic in {"menu", "allergens", "price"} for topic in topics)
+            )
+        )
+        and not BOOKING_REQUEST.search(text)
+        and (
+            recommendation
+            or medical_concern
+            and "menu" in topics
+            or detail_followup
+            or all(topic in {"menu", "allergens", "price"} for topic in topics)
+            and (
+                has_dish
+                or has_diet
+                or re.search(
+                    r"\b(?:it|this|that|me|us|see|seda|selle|minule|mulle|это|его|мне|нам)\b",
+                    text,
+                )
+            )
+        )
+        and "allergens" not in topics
+    ):
+        topics.insert(0, "allergens")
     # Narrative party counts are booking details, not a request for policies.
     # In particular, "for two adults and two children" must reach the planner.
-    policy_question = bool(re.search(
-        r"\?|^(?:kas|kuidas|miks|do|does|can|are|is|how|what|may|мож\w*|как|сколько|вход\w*|учит\w*)\b",
-        text,
-    ))
-    if not policy_question or re.search(r"\b(?:book|reserve|broneeri\w*|заброниру\w*)\b", text):
+    policy_question = bool(
+        re.search(
+            r"\?|^(?:kas|kuidas|miks|do|does|can|are|is|how|what|may|мож\w*|как|сколько|вход\w*|учит\w*)\b",
+            text,
+        )
+    )
+    if not detail_followup and (
+        not policy_question
+        or re.search(r"\b(?:book|reserve|broneeri\w*|заброниру\w*)\b", text)
+    ):
         topics = [topic for topic in topics if topic not in {"children", "groups"}]
     if "kitchen" in topics:
         topics = [topic for topic in topics if topic != "hours"]
@@ -134,16 +336,26 @@ def match_question(
     if "highchair" in topics:
         topics = [topic for topic in topics if topic != "children"]
     if "allergens" in topics:
+        # Safety guidance must survive the three-topic response limit.
+        topics = ["allergens"] + [
+            topic for topic in topics if topic not in {"menu", "price", "allergens"}
+        ]
+    elif "price" in topics:
         topics = [topic for topic in topics if topic != "menu"]
     if not topics and (has_dish or has_diet):
         topics = ["menu"]
-    days = tuple(index for index, pattern in enumerate(DAY_PATTERNS)
-                 if re.search(r"\b(?:" + pattern + r")\b", text))
+    days = tuple(
+        index
+        for index, pattern in enumerate(DAY_PATTERNS)
+        if re.search(r"\b(?:" + pattern + r")\b", text)
+    )
     if re.search(r"nädalavahetus|weekends?|выходн", text):
         days = (5, 6)
     elif re.search(r"tööpäev|weekdays?|будн", text):
         days = (0, 1, 2, 3, 4)
-    elif len(days) == 2 and re.search(r"through|\bto\b|kuni|päevast|reedest|\bпо\b", text):
+    elif len(days) == 2 and re.search(
+        r"through|\bto\b|kuni|päevast|reedest|\bпо\b", text
+    ):
         days = tuple(range(days[0], days[-1] + 1))
     resolved = resolve_restaurant_date(
         text, now or datetime.now(ZoneInfo("Europe/Tallinn")), include_weekdays=False
@@ -152,11 +364,16 @@ def match_question(
     date_issue = None
     if not topics and previous and not BOOKING_REQUEST.search(text):
         if (days or resolved.value or resolved.issue) and len(text.split()) <= 8:
-            topics = [topic for topic in previous.topics if topic in {"hours", "kitchen"}]
+            topics = [
+                topic for topic in previous.topics if topic in {"hours", "kitchen"}
+            ]
     if not topics:
         return None
     if (
-        not days and not resolved.value and not resolved.issue and previous
+        not days
+        and not resolved.value
+        and not resolved.issue
+        and previous
         and (detail_followup or re.search(r"^(?:aga|ja|and|what about|а|и)\b", text))
         and any(topic in {"hours", "kitchen"} for topic in topics)
         and any(topic in {"hours", "kitchen"} for topic in previous.topics)
@@ -169,29 +386,102 @@ def match_question(
             requested_date, days = resolved.value, (target.weekday(),)
         elif resolved.issue:
             date_issue = resolved.issue
+    # Canonical safety/capability disclosures precede optional information.
+    priority = [
+        topic for topic in topics if topic == "allergens" or topic in CAPABILITIES
+    ]
+    topics = priority + [topic for topic in topics if topic not in priority]
     return RestaurantQuestion(
-        tuple(topics[:3]), days or None, requested_date, date_issue, recommendation
+        tuple(topics[:3]),
+        days or None,
+        requested_date,
+        date_issue,
+        recommendation,
+        family_allergens=bool(
+            "allergens" in topics
+            and (family or detail_followup and previous and previous.family_allergens)
+        ),
     )
 
 
 SINGLES = {
-    "et": ("esmaspäeval", "teisipäeval", "kolmapäeval", "neljapäeval", "reedel", "laupäeval", "pühapäeval"),
-    "en": ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"),
-    "ru": ("в понедельник", "во вторник", "в среду", "в четверг", "в пятницу", "в субботу", "в воскресенье"),
+    "et": (
+        "esmaspäeval",
+        "teisipäeval",
+        "kolmapäeval",
+        "neljapäeval",
+        "reedel",
+        "laupäeval",
+        "pühapäeval",
+    ),
+    "en": (
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+    ),
+    "ru": (
+        "в понедельник",
+        "во вторник",
+        "в среду",
+        "в четверг",
+        "в пятницу",
+        "в субботу",
+        "в воскресенье",
+    ),
 }
 FROM_DAYS = {
-    "et": ("esmaspäevast", "teisipäevast", "kolmapäevast", "neljapäevast", "reedest", "laupäevast", "pühapäevast"),
-    "ru": ("с понедельника", "со вторника", "со среды", "с четверга", "с пятницы", "с субботы", "с воскресенья"),
+    "et": (
+        "esmaspäevast",
+        "teisipäevast",
+        "kolmapäevast",
+        "neljapäevast",
+        "reedest",
+        "laupäevast",
+        "pühapäevast",
+    ),
+    "ru": (
+        "с понедельника",
+        "со вторника",
+        "со среды",
+        "с четверга",
+        "с пятницы",
+        "с субботы",
+        "с воскресенья",
+    ),
 }
 TO_DAYS = {
-    "et": ("esmaspäevani", "teisipäevani", "kolmapäevani", "neljapäevani", "reedeni", "laupäevani", "pühapäevani"),
-    "ru": ("по понедельник", "по вторник", "по среду", "по четверг", "по пятницу", "по субботу", "по воскресенье"),
+    "et": (
+        "esmaspäevani",
+        "teisipäevani",
+        "kolmapäevani",
+        "neljapäevani",
+        "reedeni",
+        "laupäevani",
+        "pühapäevani",
+    ),
+    "ru": (
+        "по понедельник",
+        "по вторник",
+        "по среду",
+        "по четверг",
+        "по пятницу",
+        "по субботу",
+        "по воскресенье",
+    ),
 }
 
 
 def natural_list(items: list[str], language: str) -> str:
     conjunction = {"et": " ning ", "en": " and ", "ru": " и "}[language]
-    return conjunction.join(items) if len(items) <= 2 else ", ".join(items[:-1]) + conjunction + items[-1]
+    return (
+        conjunction.join(items)
+        if len(items) <= 2
+        else ", ".join(items[:-1]) + conjunction + items[-1]
+    )
 
 
 def _day_label(indices: list[int], language: str) -> str:
@@ -205,7 +495,9 @@ def _day_label(indices: list[int], language: str) -> str:
             labels[1] = labels[1].removeprefix("в ").removeprefix("во ")
         return {"et": " ja ", "en": " and ", "ru": " и "}[language].join(labels)
     if language == "en":
-        return SINGLES[language][indices[0]] + " through " + SINGLES[language][indices[-1]]
+        return (
+            SINGLES[language][indices[0]] + " through " + SINGLES[language][indices[-1]]
+        )
     return FROM_DAYS[language][indices[0]] + " " + TO_DAYS[language][indices[-1]]
 
 
@@ -229,7 +521,10 @@ def format_schedule(
         if hours:
             end = hours["end"]
             if kitchen:
-                end = (datetime.strptime(end, "%H:%M") - timedelta(minutes=data["kitchen_closes_minutes_before"])).strftime("%H:%M")
+                end = (
+                    datetime.strptime(end, "%H:%M")
+                    - timedelta(minutes=data["kitchen_closes_minutes_before"])
+                ).strftime("%H:%M")
             if end > hours["start"]:
                 interval = (hours["start"], end)
         if groups and groups[-1][1] == interval and groups[-1][0][-1] + 1 == index:
@@ -243,13 +538,18 @@ def format_schedule(
             value = {"et": "suletud", "en": "closed", "ru": "закрыто"}[language]
         else:
             start, end = map(_clock, interval)
-            value = {"et": f"kell {start}–{end}", "en": f"{start}–{end}", "ru": f"с {start} до {end}"}[language]
+            value = {
+                "et": f"kell {start}–{end}",
+                "en": f"{start}–{end}",
+                "ru": f"с {start} до {end}",
+            }[language]
         parts.append(label + " " + value)
     # Russian weekly schedules sound clearer as short sentences, with the
     # neural voice's own pauses rather than one long chain of conjunctions.
     answer = (
         ". ".join(part[:1].upper() + part[1:] for part in parts)
-        if language == "ru" else natural_list(parts, language)
+        if language == "ru"
+        else natural_list(parts, language)
     )
     return answer[:1].upper() + answer[1:]
 
@@ -257,13 +557,13 @@ def format_schedule(
 GUIDANCE = {
     "et": {
         "duration": "Lauabroneering kestab {duration} minutit.",
-        "children": "Palun arvestage lapsed külaliste koguarvu sisse.",
+        "children": "Palun arvestage ka lapsed külaliste koguarvu hulka.",
         "groups": "Laua saab broneerida kuni {maximum} inimesele. Suurema seltskonna puhul palun võtke ühendust restorani töötajaga.",
         "cancellation_help": "Selles vestluses tehtud broneeringu tühistamiseks öelge „Jah, tühista”.",
         "changes": "Broneeringu muutmiseks palun võtke ühendust restorani töötajaga.",
         "late": "Kui jääte hiljaks, küsige restorani töötajalt, kas lauda saab teile hoida.",
         "parking": "Parkimisvõimalused täpsustab restorani töötaja.",
-        "pets": "Mul pole lemmikloomade reeglit kirjas. Palun küsige koeraga tulek restorani töötajalt üle.",
+        "pets": "Mul pole lemmikloomade kohta kinnitatud infot. Palun küsige restorani töötajalt, kas lemmikloomaga võib tulla.",
         "highchair": "Lastetooli olemasolu oskab öelda restorani töötaja.",
         "accessibility": "Ligipääsetavust palun täpsustage restorani töötajaga.",
         "terrace": "Terrassikoht tuleb restorani töötajaga kokku leppida.",

@@ -1,6 +1,7 @@
 """Deployment keeps trusted runtime settings without restarting unrelated media."""
 
 import importlib.util
+import ast
 import json
 import subprocess
 from pathlib import Path
@@ -79,6 +80,37 @@ def test_worker_agent_selection_survives_environment_copy():
     assert env["GROQ_CHAT_MODEL"] == "openai/gpt-oss-120b"
 
 
+def shared_speech_settings():
+    names = set()
+    for filename in ("voice_config.py", "speech_delivery.py"):
+        tree = ast.parse(
+            (ROOT / "app/providers" / filename).read_text(encoding="utf-8")
+        )
+        names.update(
+            node.value
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Constant)
+            and isinstance(node.value, str)
+            and node.value.startswith(("VOICEBOT_", "GROQ_", "AZURE_"))
+        )
+    return sorted(names)
+
+
+@pytest.mark.parametrize("field", shared_speech_settings())
+def test_every_shared_speech_setting_reaches_manager_and_worker_manifest(field):
+    container = web_container()
+    container["Config"]["Env"].append(field + "=fixture-shared-setting")
+    inspected = subprocess.CompletedProcess([], 0, json.dumps([container]).encode())
+    with (
+        patch.dict("os.environ", {}, clear=True),
+        patch.object(manage.subprocess, "run", return_value=inspected),
+    ):
+        env = manage.environment("fixture-web")
+    assert env[field] == "fixture-shared-setting"
+    compose = (ROOT / "deploy/telephony/compose.yaml").read_text()
+    assert field + ": ${" + field in compose
+
+
 @pytest.mark.parametrize(
     "field,value",
     [
@@ -88,6 +120,8 @@ def test_worker_agent_selection_survives_environment_copy():
         ("VOICEBOT_SPEAKING_STYLE", "natural"),
         ("VOICEBOT_SPEECH_RATE", "0.98"),
         ("VOICEBOT_RECAP_RATE", "0.94"),
+        ("VOICEBOT_SENTENCE_PAUSE_MS", "300"),
+        ("VOICEBOT_SENTENCE_PAUSE_MS", "240"),
     ],
 )
 def test_published_speech_settings_survive_web_to_worker_copy(field, value):

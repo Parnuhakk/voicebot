@@ -80,8 +80,7 @@ def load_demo_data(path=None) -> DemoData:
             "address": None,
             "real_visitor_location": False,
         }
-        for suffix in ("en", "ru"):
-            key = "description_" + suffix
+        for key in ("description_en", "description_ru"):
             if key in source["fictional_property"]:
                 profile[key] = _text(source["fictional_property"][key])
         faq = [

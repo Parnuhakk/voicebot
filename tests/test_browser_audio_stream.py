@@ -269,8 +269,9 @@ def test_stream_guards_reject_before_provider_execution(client, case, status):
 class AsgiExchange:
     """An incremental HTTP peer with explicit disconnect, using the app's ASGI API."""
 
-    def __init__(self, app, body):
+    def __init__(self, app, body, headers=None):
         self.app, self.body = app, json.dumps(body).encode()
+        self.headers = headers or AUTH
         self.inbound, self.outbound = asyncio.Queue(), asyncio.Queue()
         self.task = None
         self.buffer = b""
@@ -292,7 +293,7 @@ class AsgiExchange:
             "server": ("fixture", 80),
             "client": ("fixture", 1234),
             "headers": [
-                (b"authorization", AUTH["Authorization"].encode()),
+                (b"authorization", self.headers["Authorization"].encode()),
                 (b"accept", b"application/x-ndjson"),
                 (b"content-type", b"application/json"),
             ],
@@ -354,7 +355,10 @@ def test_first_chunk_precedes_completion_and_disconnect_keeps_producer_ownership
                 if disconnect:
                     await exchange.disconnect()
                     assert session.busy and app.state.turn_producers
-                    session.recap_delivery = {"id": "a" * 32}
+                    session.recap_delivery = {
+                        "id": "a" * 32,
+                        "transport": next(iter(app.state.turn_streams)),
+                    }
                     speaker.release.set()
                     await asyncio.wait_for(asyncio.gather(*app.state.turn_producers), 2)
                     assert session.recap_delivery is None and not session.busy
@@ -445,7 +449,10 @@ def test_disconnect_before_reply_does_not_unlock_running_thread_or_rearm_receipt
         ).start()
         try:
             assert await asyncio.to_thread(entered.wait, 2)
-            session.recap_delivery = {"id": "a" * 32}
+            session.recap_delivery = {
+                "id": "a" * 32,
+                "transport": next(iter(client.app.state.turn_streams)),
+            }
             await exchange.disconnect()
             assert session.busy and session.recap_delivery is None
             from fastapi import HTTPException

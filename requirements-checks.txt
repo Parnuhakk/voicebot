@@ -1,0 +1,2 @@
+# CI-only tools, kept out of both production images.
+pytest==9.1.1

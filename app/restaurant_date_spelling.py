@@ -188,13 +188,21 @@ class CalendarSpelling:
                 for kind in ("relative", "weekday", "day"):
                     if kind == "day" and not (date_reply and len(tokens) == 1):
                         continue
-                    if not date_reply and len(tokens) != 1 and len(word) < 6:
+                    # Short weekday repairs need a nearby explicit calendar,
+                    # with only day/year/joiner tokens between it and the month.
+                    short_weekday = kind == "weekday" and any(
+                        abs(index - month) <= 3 and neighbours(month) and all(
+                            tokens[other][0].isdigit() or day(other) or tokens[other][0] in JOINERS
+                            for other in range(min(index, month) + 1, max(index, month))
+                        ) for month in months
+                    )
+                    if not date_reply and len(tokens) != 1 and len(word) < 6 and not short_weekday:
                         continue
                     canonical, uncertain = self._closest(word, kind)
                     if canonical:
                         replacements[index] = canonical
                         break
-                    if uncertain and date_reply:
+                    if uncertain and (date_reply or short_weekday):
                         ambiguous.add(index)
                         break
 

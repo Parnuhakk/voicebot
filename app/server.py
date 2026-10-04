@@ -16,7 +16,7 @@ import asyncio
 import os
 import sqlite3
 from inspect import getattr_static
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from starlette.requests import Request
@@ -27,7 +27,7 @@ else:
         Request = None
 
 
-def build_stack() -> dict:
+def build_stack() -> dict[str, Any]:
     """Construct providers/adapters from env. Never logs or returns keys."""
     from .booking.apaleo import ApaleoAdapter
     from .booking.cloudbeds import CloudbedsAdapter
@@ -40,7 +40,7 @@ def build_stack() -> dict:
     from .providers.voice_config import SpeechConfig
     from .providers.speech_delivery import SpeechDelivery
 
-    stack: dict = {
+    stack: dict[str, Any] = {
         "stt": None,
         "llm_primary": None,
         "llm_secondary": None,
@@ -102,14 +102,11 @@ def build_stack() -> dict:
         elif os.environ.get("CLOUDBEDS_API_KEY"):
             stack["stay"] = CloudbedsAdapter(os.environ["CLOUDBEDS_API_KEY"])
         if os.environ.get("EASY_BASE_URL") and os.environ.get("EASY_API_KEY"):
-            read_options = {
-                "auth_scheme": os.environ.get("EASY_AUTH_SCHEME", "Bearer "),
-                "api_prefix": os.environ.get("EASY_API_PREFIX", "/index.php/api/v1"),
-            }
             stack["booking_reader"] = EasyAppointmentsAdapter(
                 os.environ["EASY_BASE_URL"],
                 os.environ["EASY_API_KEY"],
-                **read_options,
+                auth_scheme=os.environ.get("EASY_AUTH_SCHEME", "Bearer "),
+                api_prefix=os.environ.get("EASY_API_PREFIX", "/index.php/api/v1"),
             )
             # Sole-writer demo gate: credentials alone never advertise booking
             # tools. Explicit opt-in plus a persistent journal are required
@@ -290,7 +287,7 @@ def create_app():
                 status_code=500,
                 headers={"Cache-Control": "no-store"},
             )
-        if private:
+        if private or request.url.path == "/api/status":
             response.headers["Cache-Control"] = "no-store"
         return response
 
@@ -306,12 +303,15 @@ def create_app():
         "stay_booking_ready": "search_availability" in advertised,
         "slot_booking_ready": "search_slots" in advertised,
         "booking_read_ready": stack["booking_reader"] is not None,
-        "restaurant_english_dates_times_ready": stack.get("business_type") == "restaurant",
+        "restaurant_english_dates_times_ready": stack.get("business_type")
+        == "restaurant",
         "restaurant_flexible_dates_ready": stack.get("business_type") == "restaurant",
         "booking_view_source": (
             stack.get("business_type", "hotel_spa")
             if stack.get("business_type") == "restaurant"
-            else "easyappointments" if stack["booking_reader"] is not None else None
+            else "easyappointments"
+            if stack["booking_reader"] is not None
+            else None
         ),
         # Dashboard queue is still explicit demo state; never claim a PMS write.
         "operator_hold_commands_ready": False,
@@ -322,7 +322,7 @@ def create_app():
     app.state.capabilities = capabilities
     dashboard_api.configure_mode(
         demo=stack["demo"],
-        commands_ready=capabilities["operator_hold_commands_ready"],
+        commands_ready=capabilities["operator_hold_commands_ready"] is True,
     )
     if app.state.stack["demo"]:
         # Demo mode only: seed sample calls so the UI is alive before
@@ -332,14 +332,15 @@ def create_app():
         callslog.seed_demo(callslog.get_default())
 
     @app.get("/health")
-    def health() -> dict:
+    def health() -> dict[str, Any]:
         return {"ok": True}
 
     @app.get("/api/status")
-    def status() -> dict:
+    def status() -> dict[str, Any]:
         stack = app.state.stack
         from .providers.voice_config import SpeechConfig, VoiceConfig
         from .providers.speech_delivery import SpeechDelivery
+        from .release_status import status as telephone_release_status
 
         config = getattr(stack.get("llm_primary"), "config", VoiceConfig())
         speech = SpeechConfig.from_env()
@@ -382,6 +383,10 @@ def create_app():
                 "speaking_style": delivery.mode,
                 "speech_rate": delivery.rate,
                 "recap_rate": delivery.recap_rate,
+                "sentence_pause_ms": delivery.sentence_pause_ms,
+                "release": telephone_release_status(
+                    restaurant_data=stack.get("restaurant_data")
+                ),
                 "media_credentials_configured": stack["livekit"] is not None,
                 "worker_health_probe": "separate_private_endpoint",
                 "public_ingress_verified": False,
@@ -478,12 +483,12 @@ def create_app():
             ]
         )
         try:
-            silence_ms = int(os.environ.get("VOICEBOT_MIC_SILENCE_MS", "650"))
+            silence_ms = int(os.environ.get("VOICEBOT_MIC_SILENCE_MS", "500"))
         except ValueError:
-            silence_ms = 650
+            silence_ms = 500
         return {
             "voices": rows,
-            "endpointing_ms": silence_ms if 300 <= silence_ms <= 2000 else 650,
+            "endpointing_ms": silence_ms if 300 <= silence_ms <= 2000 else 500,
         }
 
     preview_slots = asyncio.Semaphore(2)
@@ -553,6 +558,7 @@ def create_app():
         stack = app.state.stack
         audio, text, language = validate_input(body, stack)
         key = body.get("session_id")
+        selected = None
         if key is not None:
             session = sessions.acquire(key, operator_scope(authorization))
         else:
@@ -586,6 +592,8 @@ def create_app():
         except BaseException:
             if key is not None:
                 sessions.release(session)
+            else:
+                callslog.history_safe(call_history.end, session.tools.call_id)
             raise
 
         streaming = any(
@@ -596,11 +604,10 @@ def create_app():
         if streaming:
             from .browser_audio import AudioEvents, StreamingSpeaker
 
-            originating_turn = session.turn_count
-
             def invalidate_receipt():
                 with sessions.lock:
-                    if session.turn_count == originating_turn:
+                    receipt = session.recap_delivery
+                    if receipt is not None and receipt.get("transport") is events:
                         session.recap_delivery = None
 
             events = AudioEvents(invalidate_receipt)
@@ -618,6 +625,7 @@ def create_app():
                     recap_delivery_id=recap_delivery_id,
                     tts_override=selected,
                     emit=events.emit if events is not None else None,
+                    receipt_transport=events,
                 )
                 response["session_id"] = key
                 if key is None:
@@ -724,7 +732,7 @@ def create_app():
             history_router.routes = [
                 route
                 for route in dashboard_api.router.routes
-                if route.path.startswith(
+                if getattr(route, "path", "").startswith(
                     ("/api/calls", "/api/call-history", "/api/metrics")
                 )
             ]

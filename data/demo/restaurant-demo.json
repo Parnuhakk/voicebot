@@ -2,9 +2,15 @@
   "schema_version": 1,
   "synthetic": true,
   "restaurant_id": "meretuule-restaurant-demo",
-  "name": "Meretuule Demo Restaurant",
+  "name": "Meretuule",
   "timezone": "Europe/Tallinn",
   "address": null,
+  "family_facilities": {
+    "drawing": true,
+    "toys": true,
+    "play_corner": true,
+    "children_menu": true
+  },
   "description": {
     "et": "Fiktiivne restoran kõneabilise ja lauabroneeringute katsetamiseks.",
     "en": "A fictional restaurant for testing a voice assistant and table reservations.",
@@ -38,18 +44,18 @@
     {"id": "mushroom-risotto", "name": {"et": "Seenerisoto", "en": "Mushroom risotto", "ru": "Ризотто с грибами"}, "diet": ["vegetarian"], "allergens": ["milk"], "price": null}
   ],
   "policies": {
-    "et": "Broneering kestab 90 minutit. Üle kuue külalisega grupid tuleb personaliga kokku leppida. Laste arv sisaldub külaliste koguarvus. Terrassi, ligipääsetavust, lastetooli ja erisoove peab kinnitama personal. Tellimusi, makseid ja päris üleandmist demokeskkonnas ei tehta.",
-    "en": "Reservations last 90 minutes. Groups larger than six must arrange their visit with staff. Children count toward the total party size. Staff must confirm terrace seating, accessibility, highchairs and special requests. This demo does not place food orders, collect payments or transfer real calls.",
-    "ru": "Столик бронируется на полтора часа. Если вас больше шести, договоритесь с сотрудником ресторана. Детей тоже считаем. Террасу, доступность, детский стул и особые пожелания нужно уточнить у сотрудника. Здесь не принимают заказы еды и оплату, а перевести звонок в демоверсии нельзя."
+    "et": "Broneering kestab 90 minutit. Üle kuue külalisega grupid tuleb personaliga kokku leppida. Laste arv sisaldub külaliste koguarvus. Terrassi, ligipääsetavust, lastetooli ja erisoove peab kinnitama personal. Toidutellimusi ja makseid ma vastu ei võta ning kõnet edasi suunata ei saa.",
+    "en": "Reservations last 90 minutes. Groups larger than six must arrange their visit with staff. Children count toward the total party size. Staff must confirm terrace seating, accessibility, highchairs and special requests. I can't take food orders, collect payments or transfer calls.",
+    "ru": "Столик бронируется на полтора часа. Если вас больше шести, договоритесь с сотрудником ресторана. Детей тоже считаем. Террасу, доступность, детский стул и особые пожелания нужно уточнить у сотрудника. Здесь не принимают заказы еды и оплату, а перевести звонок нельзя."
   },
   "pet_policy": {
-    "et": "Jah, koeraga võib tulla.",
-    "en": "Yes, dogs are welcome.",
-    "ru": "Да, можно прийти с собакой."
+    "et": "Koeraga võib tulla. Teiste lemmikloomade kohta palun küsige restorani töötajalt.",
+    "en": "Dogs are welcome. Please ask the restaurant team about other pets.",
+    "ru": "Можно прийти с собакой. О других питомцах спросите сотрудника ресторана."
   },
   "allergy_notice": {
-    "et": "Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral räägi enne tellimist otse restoraniga.",
+    "et": "Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
     "en": "The menu lists known allergens, but staff must verify ingredients and possible cross-contact. I cannot guarantee allergen-free food. For a serious allergy, speak directly with the restaurant before ordering.",
-    "ru": "В меню указаны аллергены, но состав и возможный контакт с аллергенами на кухне нужно проверить с сотрудником. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа."
+    "ru": "В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа."
   }
 }

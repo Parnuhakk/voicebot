@@ -288,26 +288,33 @@ def test_unsupported_fragment_is_not_hidden_by_later_supported_fragment():
         ("ru", "[Неподдерживаемый язык речи]"),
     ],
 )
+@pytest.mark.parametrize("later_supported", [False, True])
 def test_rejected_final_is_not_exposed_through_public_sdk_transcription(
-    language, caption
+    language, caption, later_supported
 ):
+    from livekit.agents.language import LanguageCode
     from livekit.agents.voice.agent_activity import AgentActivity
+    from livekit.agents.voice.audio_recognition import AudioRecognition
 
     async def run():
         state = CallTools(Slots(), language=language)
         agent = TelephoneAgent(state)
 
         async def events(*args):
-            yield stt.SpeechEvent(
-                type=stt.SpeechEventType.FINAL_TRANSCRIPT,
-                alternatives=[
-                    stt.SpeechData(
-                        text="Bonjour, je voudrais une table.",
-                        language="und",
-                        metadata={"unsupported_language": True},
-                    )
-                ],
-            )
+            fragments = [("Bonjour, je voudrais une table.", "und", True)]
+            if later_supported:
+                fragments.append(("Yes, I confirm.", language, False))
+            for text, code, unsupported in fragments:
+                yield stt.SpeechEvent(
+                    type=stt.SpeechEventType.FINAL_TRANSCRIPT,
+                    alternatives=[
+                        stt.SpeechData(
+                            text=text,
+                            language=code,
+                            metadata={"unsupported_language": unsupported},
+                        )
+                    ],
+                )
 
         with patch("livekit.agents.Agent.default.stt_node", events):
             sanitized = [event async for event in agent.stt_node(None, None)]
@@ -325,12 +332,24 @@ def test_rejected_final_is_not_exposed_through_public_sdk_transcription(
             _cancel_speech_pause_task=None,
             _cancel_speech_pause=cancel_pause,
         )
-        AgentActivity.on_final_transcript(activity, sanitized[0])
-        await activity._cancel_speech_pause_task
-        assert len(public) == 1 and public[0].is_final
-        assert public[0].transcript == caption
-        assert str(public[0].language) == language
-        message = llm.ChatMessage(role="user", content=[public[0].transcript])
+        recognition = NS(_last_language=None)
+        for event in sanitized:
+            data = event.alternatives[0]
+            # Recognition consumes LanguageCode before the public caption hook.
+            # Calling only that hook would mask an invalid plain-string value.
+            AudioRecognition._update_last_language(
+                recognition, data.language, data.text
+            )
+            assert isinstance(data.language, LanguageCode)
+            AgentActivity.on_final_transcript(activity, event)
+            await activity._cancel_speech_pause_task
+        assert len(public) == 1 + int(later_supported)
+        assert all(item.is_final and item.transcript == caption for item in public)
+        assert all(str(item.language) == language for item in public)
+        assert str(recognition._last_language) == language
+        message = llm.ChatMessage(
+            role="user", content=[" ".join(item.transcript for item in public)]
+        )
         await agent.on_user_turn_completed(None, message)
         assert state.unsupported_language and message.text_content is None
         assert state.direct_reply == REPEAT_PROMPT[language]

@@ -83,6 +83,14 @@ def modern():
     return importlib.import_module("app.providers.modern_tts")
 
 
+@pytest.mark.parametrize("language", ["et", "en", "ru"])
+def test_unimplemented_stream_reports_a_provider_failure(language):
+    client = modern()._Client()
+    with pytest.raises(ProviderError) as caught:
+        client.for_language(language).stream(TEXT)
+    assert caught.value.reason == "request_rejected"
+
+
 class ByteStream(httpx.SyncByteStream):
     def __init__(self, chunks, error=None):
         self.chunks, self.error, self.closed = chunks, error, False

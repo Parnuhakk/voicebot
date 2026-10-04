@@ -5,7 +5,10 @@ from unittest.mock import patch
 
 import pytest
 
-from tests.test_product_demo import AUTH, SimpleLlm, Speaker, client
+from tests.test_product_demo import AUTH, Speaker
+from tests import test_product_demo
+
+client = test_product_demo.client
 
 
 def test_bootstrap_installs_optional_registry_without_capturing_default_azure():
@@ -17,8 +20,18 @@ def test_bootstrap_installs_optional_registry_without_capturing_default_azure():
     azure = Speaker()
     rows = stack["voices"].catalog(azure=azure)
     assert {row["id"] for row in rows} == {
-        "azure", "elevenlabs", "google", "cartesia", "azure-male", "azure-calm",
-        "azure-male-calm", "azure-male-warm", "azure-brian", "azure-ryan",
+        "azure",
+        "elevenlabs",
+        "google",
+        "cartesia",
+        "azure-male",
+        "azure-calm",
+        "azure-male-calm",
+        "azure-male-warm",
+        "azure-brian",
+        "azure-ryan",
+        "azure-conversational",
+        "azure-conversational-male",
     }
     assert next(row for row in rows if row["id"] == "azure")["available"]
     assert (
@@ -100,7 +113,7 @@ def test_catalog_is_authenticated_private_and_uses_current_azure(client):
                 "streaming": True,
             }
         ],
-        "endpointing_ms": 650,
+        "endpointing_ms": 500,
     }
 
 

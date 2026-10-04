@@ -18,6 +18,7 @@ import time
 import uuid
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
+from typing import Any, TypedDict
 from zoneinfo import ZoneInfo
 
 from .base import Hold, StayAdapter, UnknownQuoteError
@@ -30,7 +31,19 @@ DEMO_PROPERTY = {
     "checkout_time": "12:00",
     "notice": "Fiktiivne hotell ja spaa. Testbroneering ei anna õigust päris majutusele. Makseid ei koguta.",
 }
-ROOM_TYPES = (
+
+
+class RoomType(TypedDict):
+    id: str
+    name: str
+    description: str
+    capacity: int
+    inventory: int
+    nightly_cents: int
+    amenities: list[str]
+
+
+ROOM_TYPES: tuple[RoomType, ...] = (
     {
         "id": "garden-double",
         "name": "Aiavaatega kaheinimesetuba",
@@ -266,7 +279,7 @@ class DemoStayAdapter(StayAdapter):
             "SELECT q.*,t.name FROM stay_quotes q JOIN stay_room_types t"
             " ON t.id=q.room_type_id WHERE q.id=?", (row["quote_id"],)
         ).fetchone()
-        recap = {
+        recap: dict[str, Any] = {
             "room_type_id": quote["room_type_id"], "room_name": quote["name"],
             "checkin": quote["checkin"], "checkout": quote["checkout"],
             "nights": (date.fromisoformat(quote["checkout"]) - date.fromisoformat(quote["checkin"])).days,
@@ -329,7 +342,9 @@ class DemoStayAdapter(StayAdapter):
         if not isinstance(guest, dict):
             raise ProviderError("demo_stay: fictional guest required")
         first, last, email = (guest.get(k) for k in ("firstName", "lastName", "email"))
-        if any(not isinstance(v, str) or not v.strip() or len(v) > 160 for v in (first, last, email)):
+        if not isinstance(first, str) or not isinstance(last, str) or not isinstance(email, str):
+            raise ProviderError("demo_stay: fictional guest required")
+        if any(not v.strip() or len(v) > 160 for v in (first, last, email)):
             raise ProviderError("demo_stay: fictional guest required")
         if not re.fullmatch(r"demo\.[a-z]+(?:\+[A-Za-z0-9_-]{8,48})?@example\.invalid", email):
             raise ProviderError("demo_stay: fictional guest required")

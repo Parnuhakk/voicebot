@@ -1,12 +1,15 @@
 async page => {
   const assert = require('node:assert/strict');
   const errors = [], requests = [];
+  const waitBooking=async(id,label)=>page.waitForFunction(({id,label})=>!state.readBusy && Array.from(document.querySelectorAll('#bookings .booking-row')).some(row=>row.dataset.bookingId===id && row.textContent.includes(label)),{id:String(id),label});
   page.on('pageerror', error => errors.push(error.message));
   page.on('request', request => {
     if (request.method() === 'POST' && request.url().includes('/api/')) requests.push({path:new URL(request.url()).pathname,body:request.postDataJSON()});
   });
   await page.setViewportSize({width:1440,height:1000});
   await page.goto('http://127.0.0.1:8766/', {waitUntil:'networkidle'});
+  const familyInformation = await (await page.request.get('http://127.0.0.1:8766/api/public/restaurant')).json();
+  assert.deepEqual(familyInformation.restaurant.family_facilities, {drawing:true,toys:true,play_corner:true,children_menu:true});
   assert.equal(await page.locator('a[href]').evaluateAll(links=>links.some(link=>new URL(link.href).hostname==='meretuule.arleserver.cfd')),false,'Robot navigation still opens the removed demo site');
   const chooseLanguage = async code => page.locator('.language-option').filter({
     has: page.locator('input[value="' + code + '"]'),
@@ -61,11 +64,31 @@ async page => {
     {code:'et', greeting:'Tere!', menu:'Milline on menüü?', soup:'Köögiviljasupp', confirmed:'kinnitatud', cancelled:'tühistatud'},
     {code:'ru', greeting:'Здравствуйте!', menu:'Что есть в меню?', soup:'Овощной суп', confirmed:'подтверждено', cancelled:'отменено'},
   ];
+  let releaseCatalog;
+  const catalogGate = new Promise(resolve=>{releaseCatalog=resolve;});
+  await page.route('**/api/demo/voices', async route=>{
+    await catalogGate;
+    await route.continue();
+  });
   await page.locator('#operator-token').fill('restaurant-fixture-operator');
   await page.locator('#connect').click();
+  await page.waitForFunction(()=>state.connected && state.voicesLoading);
+  assert(await page.locator('#demo-start').isDisabled());
+  assert(await page.locator('#demo-mic').isDisabled());
+  assert(await page.locator('#demo-voice-preview').isDisabled());
+  releaseCatalog();
   await page.waitForFunction(()=>state.connected && !state.readBusy);
+  let gatedBookings=false, releaseBookings;
+  const bookingGate=new Promise(resolve=>{releaseBookings=resolve;});
+  await page.route('**/api/bookings?**',async route=>{if(gatedBookings)await bookingGate;await route.continue();});
   await page.waitForFunction(()=>state.voiceCatalog);
-  assert.equal(await page.locator('#demo-voice option:not(:disabled)').count(), 5);
+  assert.equal(await page.locator('#demo-voice option:not(:disabled)').count(), 7);
+  assert.equal(await page.locator('#demo-voice').inputValue(), 'azure-conversational');
+  await page.unroute('**/api/demo/voices');
+  for (const code of ['en', 'ru', 'et']) {
+    await chooseLanguage(code);
+    assert.equal(await page.locator('#demo-voice').inputValue(), 'azure-conversational');
+  }
   await chooseLanguage('et');
   for (const profile of ['azure-male', 'azure-calm', 'azure-male-calm', 'azure-male-warm']) {
     await page.locator('#demo-voice').selectOption(profile);
@@ -80,7 +103,23 @@ async page => {
   assert(await page.locator('#demo-voice option[value="azure-brian"]').isDisabled());
   assert(await page.locator('#demo-voice option[value="azure-ryan"]').isDisabled());
   await chooseLanguage('en');
-  assert.equal(await page.locator('#demo-voice option:not(:disabled)').count(), 7);
+  assert.equal(await page.locator('#demo-voice option:not(:disabled)').count(), 9);
+  for (const code of ['en', 'ru', 'et']) {
+    await chooseLanguage(code);
+    for (const [profile, names] of [
+      ['azure-conversational', {et:'Anu',en:'Emma',ru:'Эмма'}],
+      ['azure-conversational-male', {et:'Kert',en:'Andrew',ru:'Эндрю'}],
+    ]) {
+      await page.locator('#demo-voice').selectOption(profile);
+      await page.locator('#demo-voice-preview').click();
+      await page.waitForFunction(()=>!state.previewBusy && !document.getElementById('demo-audio').hidden);
+      assert.equal(requests.at(-1).body.voice, profile);
+      assert.equal(requests.at(-1).body.language, code);
+      assert((await page.locator('#demo-voice-result').textContent()).includes(names[code]));
+      assert.equal(await page.evaluate(()=>state.sessionId), null);
+    }
+  }
+  await chooseLanguage('en');
   for (const [profile, name] of [['azure-male-calm','Davis'], ['azure-male-warm','Andrew'], ['azure-brian','Brian'], ['azure-ryan','Ryan']]) {
     await page.locator('#demo-voice').selectOption(profile);
     await page.locator('#demo-voice-preview').click();
@@ -90,6 +129,8 @@ async page => {
   }
   await chooseLanguage('et');
   assert.equal(await page.locator('#demo-voice').inputValue(), 'azure');
+  await page.evaluate(()=>loadVoices());
+  assert.equal(await page.locator('#demo-voice').inputValue(), 'azure', 'catalog refresh replaced an explicit selection');
   await page.locator('#demo-voice').selectOption('azure-male-calm');
   await page.screenshot({path:'output/playwright/natural-voices-desktop.png',fullPage:true});
   await page.setViewportSize({width:390,height:844});
@@ -104,12 +145,80 @@ async page => {
   assert.equal(await page.evaluate(()=>state.sessionId), null);
   await page.unroute('**/api/demo/voices/preview');
   await page.locator('#demo-voice').selectOption('azure');
+  // Slow or failed operator reads must not keep a completed voice turn busy.
+  await page.locator('#demo-start').click();
+  await page.waitForFunction(()=>state.sessionId && !state.turnBusy);
+  let releaseReads;
+  const readGate = new Promise(resolve=>{releaseReads=resolve;});
+  let bookingsSeen, historySeen;
+  const bookingsRequested = new Promise(resolve=>{bookingsSeen=resolve;});
+  const historyRequested = new Promise(resolve=>{historySeen=resolve;});
+  const blockRead = signal => async route => {
+    signal();
+    await readGate;
+    await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({detail:'fixture_read_unavailable'})}).catch(()=>{});
+  };
+  const blockedBookings = blockRead(bookingsSeen), blockedHistory = blockRead(historySeen);
+  await page.route('**/api/bookings?**',blockedBookings);
+  await page.route('**/api/call-history?**',blockedHistory);
+  try {
+    await page.locator('#demo-text').fill('Mis kell restoran avatakse?');
+    await page.locator('#demo-send').click();
+    await Promise.all([bookingsRequested,historyRequested]);
+    assert.equal(await page.evaluate(()=>state.turnBusy),false,'secondary reads kept a completed voice turn busy');
+    assert(await page.locator('#demo-send').isEnabled(),'secondary reads blocked the next answer');
+    assert(await page.locator('#demo-mic').isEnabled(),'secondary reads blocked the next microphone turn');
+    await page.locator('#demo-text').fill('Kas koeraga võib tulla?');
+    await page.locator('#demo-send').click();
+    await page.waitForFunction(()=>!state.turnBusy && document.querySelector('#demo-messages .message:last-child span').textContent.includes('Koeraga võib tulla'));
+    assert.equal(await page.evaluate(()=>state.recapDeliveryId),null,'background reads granted booking consent');
+  } finally {
+    releaseReads();
+    await page.waitForFunction(()=>!state.readBusy);
+    await page.unroute('**/api/bookings?**',blockedBookings);
+    await page.unroute('**/api/call-history?**',blockedHistory);
+  }
+  assert.equal(await page.evaluate(()=>state.turnBusy),false);
+  assert.equal(await page.locator('#demo-status').evaluate(element=>element.classList.contains('error')),false,'failed secondary reads marked a successful voice answer failed');
+  await page.locator('#demo-end').click();
+  await page.waitForFunction(()=>!state.sessionId && !state.turnBusy);
+  // An older successful or failed history read must not overwrite a newer one.
+  for (const oldStatus of [200,503]) {
+    let releaseOld, oldRequested;
+    const oldGate = new Promise(resolve=>{releaseOld=resolve;});
+    const oldSeen = new Promise(resolve=>{oldRequested=resolve;});
+    let historyRequests = 0;
+    await page.route('**/api/call-history?**',async route=>{
+      const order = ++historyRequests;
+      if (order === 1) {oldRequested(); await oldGate;}
+      const failed = order === 1 && oldStatus === 503;
+      await route.fulfill({status:failed?503:200,contentType:'application/json',body:JSON.stringify(failed
+        ? {detail:'fixture_read_unavailable'}
+        : {items:[{channel:'web',language:'et',turns:order,outcome:order===1?'in_progress':'completed'}]})});
+    });
+    try {
+      await page.evaluate(()=>{window.latencyOldHistoryRead=loadHistory();});
+      await oldSeen;
+      await page.evaluate(()=>loadHistory());
+      assert((await page.locator('#call-history').textContent()).includes('2 sõnumit'));
+      assert((await page.locator('#call-history').textContent()).includes('Lõpetatud'));
+      releaseOld();
+      await page.evaluate(()=>window.latencyOldHistoryRead);
+      assert((await page.locator('#call-history').textContent()).includes('2 sõnumit'),'older history response replaced the newest result');
+      assert.equal(await page.locator('#history-status').evaluate(element=>element.classList.contains('error')),false,'older history failure replaced the newest successful status');
+    } finally {
+      releaseOld();
+      await page.evaluate(async()=>{await window.latencyOldHistoryRead;delete window.latencyOldHistoryRead;});
+      await page.unroute('**/api/call-history?**');
+    }
+  }
   for (const language of languages) {
     await chooseLanguage(language.code);
     assert.equal(await page.locator('html').getAttribute('lang'),language.code);
     await page.locator('#demo-start').click();
     await page.waitForFunction(()=>state.sessionId && !state.turnBusy);
     assert((await page.locator('#demo-messages').textContent()).includes(language.greeting));
+    assert(!/demo|testbroneering|test reservation|тестов|демо/i.test(await page.locator('#demo-messages .message').last().locator('span').textContent()), 'greeting narrated internal test status');
     assert.equal(requests.at(-1).body.language,language.code);
     const recoveryPrompts = {
       et: ['Ma ei saanud päris aru. Palun korda oma vastust.', 'Ma ei saanud ikka aru. Palun kirjuta oma vastus eesti, vene või inglise keeles.'],
@@ -117,8 +226,13 @@ async page => {
       ru: ['Не удалось разобрать ответ. Повторите, пожалуйста.', 'Всё ещё не удалось понять. Напишите ответ по-эстонски, по-русски или по-английски.'],
     }[language.code];
     for (const prompt of recoveryPrompts) {
-      await page.evaluate(() => sendTurn({audio_b64: btoa('fixture-unsupported-recovery')}));
+      const before = requests.length;
+      await page.evaluate(() => sendTurn(
+        {audio_b64: btoa('fixture-unsupported-recovery')},
+        {generation:state.generation, session:state.sessionId, micEpoch:state.micEpoch},
+      ));
       await page.waitForFunction(() => !state.turnBusy);
+      assert.equal(requests.length, before + 1, 'owned fixture audio did not exercise the backend');
       assert.equal(await page.locator('#demo-status').textContent(), prompt);
       assert((await page.locator('#demo-messages .message').last().textContent()).includes(prompt));
     }
@@ -139,9 +253,9 @@ async page => {
       assert.equal(await page.evaluate(()=>state.recap), null);
     }
     const petQuestions = {
-      et: ['Tahaks tulla koeraga.', 'Kas kutsuga võib tulla?', 'Jah, koeraga võib tulla.'],
-      en: ['Can I bring my dog?', 'Can we bring a puppy?', 'Yes, dogs are welcome.'],
-      ru: ['Можно прийти с собакой?', 'Можно с питомцем?', 'Да, можно прийти с собакой.'],
+      et: ['Tahaks tulla koeraga.', 'Kas kutsuga võib tulla?', 'Koeraga võib tulla. Teiste lemmikloomade kohta palun küsige restorani töötajalt.'],
+      en: ['Can I bring my dog?', 'Can we bring a puppy?', 'Dogs are welcome. Please ask the restaurant team about other pets.'],
+      ru: ['Можно прийти с собакой?', 'Можно с питомцем?', 'Можно прийти с собакой. О других питомцах спросите сотрудника ресторана.'],
     }[language.code];
     for (const question of petQuestions.slice(0, 2)) {
       await page.locator('#demo-text').fill(question);
@@ -149,6 +263,18 @@ async page => {
       await page.waitForFunction(()=>!state.turnBusy);
       assert.equal(await page.locator('#demo-messages .message').last().locator('span').textContent(), petQuestions[2]);
       assert.equal(await page.evaluate(()=>state.recap), null);
+    }
+    const familyQuestions = {
+      et: ['Kas lastele on joonistamisvõimalus?', 'Kas lastemenüü on olemas?'],
+      en: ['Can children do some drawing?', "Do you have a children's menu?"],
+      ru: ['Дети могут порисовать?', 'Есть детское меню?'],
+    }[language.code];
+    for (const question of familyQuestions) {
+      await page.locator('#demo-text').fill(question);
+      await page.locator('#demo-send').click();
+      await page.waitForFunction(()=>!state.turnBusy);
+      assert.equal(await page.locator('#demo-messages .message').last().locator('span').textContent(), familyInformation.family_facilities_summary[language.code]);
+      assert.equal(await page.evaluate(()=>state.recap), null, 'family answer created a booking proposal');
     }
     const timeQuestions = {
       en: ["I'd like a table tomorrow at 6 o clock", 'in the evening', 'Do you mean AM or PM?', 'How many of you are coming, including children?'],
@@ -177,7 +303,12 @@ async page => {
     await page.locator('[data-example="recommendation"]').click();
     await page.waitForFunction(()=>!state.turnBusy);
     assert.equal(await page.locator('#demo-messages .message').nth(-2).locator('span').textContent(), reasoningExample[0]);
-    assert.equal(await page.locator('#demo-messages .message').last().locator('span').textContent(), reasoningExample[1]);
+    const recommendation = await page.locator('#demo-messages .message').last().locator('span').textContent();
+    assert(recommendation.startsWith(reasoningExample[1]));
+    assert(recommendation.endsWith({
+      et:'Mitmele inimesele lauda soovite? Palun arvestage ka lapsed.',
+      en:timeQuestions[3],ru:timeQuestions[3],
+    }[language.code]));
     assert.equal(await page.evaluate(()=>state.recap), null, 'reasoning response created a booking proposal');
     assert(await page.getByRole('radio', {name:'Eesti', exact:true}).isDisabled());
     await page.evaluate(code => {
@@ -206,9 +337,20 @@ async page => {
         const answer = await page.locator('#demo-messages .message').last().locator('span').textContent();
         assert(answer.includes(temporalAnswers[index + 4]), `incorrect ${language.code} temporal follow-up`);
         assert.equal(await page.evaluate(()=>state.recap), null);
+        const sideQuestions = [hoursQuestions[0], language.menu, {
+          et:'Kus saab parkida?',en:'Where can I park?',ru:'Где парковка?',
+        }[language.code]];
+        await page.locator('#demo-text').fill(sideQuestions[index]);
+        await page.locator('#demo-send').click();
+        await page.waitForFunction(()=>!state.turnBusy);
+        const resumed = await page.locator('#demo-messages .message').last().locator('span').textContent();
+        assert(resumed.endsWith(answer), `side question lost ${language.code} booking prompt`);
+        assert(resumed.length > answer.length, 'side question was ignored');
+        assert.equal(await page.evaluate(()=>state.recap), null);
       }
     }
     const temporalRecap = await page.evaluate(()=>state.recap && state.recap.reply);
+    assert(!/demo|testbroneering|test reservation|тестов|демо/i.test(temporalRecap), 'recap narrated internal test status');
     assert(temporalRecap && (language.code === 'ru' ? temporalRecap.includes('на четырёх гостей') : /4\s+(?:guests|külalist|inimesele)/.test(temporalRecap)));
     if (language.code === 'ru') {
       assert(temporalRecap.includes('на полтора часа'));
@@ -216,6 +358,14 @@ async page => {
       assert(!temporalRecap.includes('Возможное время на ту же дату'));
     }
     assert(temporalRecap.includes({et:'18:00',en:'6:30 PM',ru:'18:30'}[language.code]));
+    const oldReceipt = await page.evaluate(()=>state.recap.id);
+    await page.locator('#demo-text').fill(language.menu);
+    await page.locator('#demo-send').click();
+    await page.waitForFunction(()=>!state.turnBusy);
+    const resumedRecap = await page.evaluate(()=>state.recap && state.recap.reply);
+    assert(resumedRecap && resumedRecap.endsWith(temporalRecap));
+    assert(resumedRecap.startsWith({et:'Menüüs',en:'The menu',ru:'В меню'}[language.code]));
+    assert.notEqual(await page.evaluate(()=>state.recap.id),oldReceipt,'old recap receipt survived question');
     assert(await page.locator('#demo-recap-read').isVisible(), 'new booking recap is missing');
     assert(temporalRecap.endsWith({et:'Kas teile sobib?',en:'Does that work for you?',ru:'Вам подходит?'}[language.code]));
     await page.locator('#demo-recap-read').click();
@@ -239,7 +389,7 @@ async page => {
     await page.locator('#reservation-party').fill('4');
     await page.locator('#reservation-prepare').click();
     await page.waitForFunction(()=>reservation.holdId && !reservation.busy);
-    assert((await page.locator('#reservation-recap-text').textContent()).includes(language.code === 'ru' ? 'на четырёх гостей' : '4'));
+    assert((await page.locator('#reservation-recap-text').textContent()).includes({et:'Külalisi: 4',en:'Guests: 4',ru:'Гостей: 4'}[language.code]));
     assert(await page.locator('#reservation-date').isDisabled(),'held recap allowed editable dates');
     assert(await page.getByRole('radio', {name:'Eesti', exact:true}).isDisabled(),'owned booking language changed');
     assert(await page.locator('#reservation-confirm').isDisabled(),'recap automatically granted consent');
@@ -248,9 +398,20 @@ async page => {
     assert.equal(requests.at(-1).path,'/api/booking/recap');
     // A previously selected later page must not hide a newly saved reservation.
     await page.evaluate(()=>{state.page=2;});
+    gatedBookings=language.code==='en';
     await page.locator('#reservation-confirm').click();
     await page.waitForFunction(()=>reservation.bookingId && !reservation.busy);
-    assert((await page.locator('#bookings').textContent()).includes(language.confirmed));
+    const directBooking=await page.evaluate(()=>reservation.bookingId);
+    try {
+      if(gatedBookings) {
+        assert.equal(await page.evaluate(()=>state.readBusy),true,'post-write read was not gated');
+        assert(await page.locator('#reservation-cancel').isEnabled(),'successful write controls waited for readback');
+        assert.equal(await page.locator(`#bookings [data-booking-id="${directBooking}"]`).count(),0,'gated readback appeared complete');
+      }
+      gatedBookings=false;releaseBookings();
+      await waitBooking(directBooking,language.confirmed);
+      assert((await page.locator('#bookings').textContent()).includes(language.confirmed));
+    } finally {gatedBookings=false;releaseBookings();}
     assert.equal(await page.locator('#booking-page').textContent(),'1');
     assert.equal(await page.locator('#bookings .booking-recent').count(),1);
     assert(await page.locator('#reservation-status .booking-link').isVisible());
@@ -259,6 +420,7 @@ async page => {
     assert(await page.locator('#reservation-prepare').isDisabled(),'new preparation lost owned cancellation');
     await page.locator('#reservation-cancel').click();
     await page.waitForFunction(()=>!reservation.bookingId && !reservation.busy);
+    await waitBooking(directBooking,language.cancelled);
     assert((await page.locator('#bookings').textContent()).includes(language.cancelled));
     await assertReceipt(page.locator('#reservation-status'), '14:00–15:30', formBooking, 'cancelled');
     await page.locator('#reservation-end').click();
@@ -322,6 +484,7 @@ async page => {
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('confirmed'));
   const voiceBooking=await page.evaluate(()=>state.latestBooking);
   assert(voiceBooking && voiceBooking.date===await page.evaluate(()=>tallinnDay(1)));
+  await waitBooking(voiceBooking.id,'confirmed');
   assert.equal(await page.locator('#booking-page').textContent(),'1');
   assert.equal(await page.locator('#bookings .booking-recent').getAttribute('data-booking-id'),voiceBooking.id);
   await assertReceipt(page.locator('#demo-messages'), '18:00–19:30', voiceBooking.id);
@@ -335,23 +498,40 @@ async page => {
   await page.waitForFunction(()=>document.activeElement?.dataset.bookingId===state.latestBooking.id);
   assert.equal(await page.locator('#booking-date').inputValue(),voiceBooking.date);
   await send('Yes, cancel.');
+  await waitBooking(voiceBooking.id,'cancelled');
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('cancelled'));
   await assertReceipt(page.locator('#demo-messages'), '18:00–19:30', voiceBooking.id, 'cancelled');
   assert.equal(await page.locator('.booking-receipt[data-action="confirmed"]').count(),0,'cancellation left a stale confirmed receipt');
   await page.evaluate(()=>{HTMLMediaElement.prototype.play=restaurantOriginalPlay;});
   await page.evaluate(()=>{
-    const context=new AudioContext(),sink=context.createMediaStreamDestination(),source=context.createOscillator(),gain=context.createGain();
-    source.frequency.value=300;gain.gain.value=.08;source.connect(gain);gain.connect(sink);source.start();
-    window.restaurantAudio={context,source};
-    Object.defineProperty(navigator.mediaDevices,'getUserMedia',{configurable:true,value:async()=>sink.stream});
+    window.installRestaurantAudio = () => {
+      const context=new AudioContext(),sink=context.createMediaStreamDestination(),source=context.createOscillator(),gain=context.createGain();
+      source.frequency.value=300;gain.gain.value=.08;source.connect(gain);gain.connect(sink);source.start();
+      window.restaurantAudio={context,source,stream:sink.stream};
+      Object.defineProperty(navigator.mediaDevices,'getUserMedia',{configurable:true,value:async()=>sink.stream});
+    };
+    installRestaurantAudio();
   });
   await page.locator('#demo-mic').click();
   await page.waitForFunction(()=>state.mic && state.mic.frames>4096);
   assert(await page.locator('#demo-send').isDisabled(),'text input remained active during microphone capture');
   assert(await page.locator('.example-button').first().isDisabled(),'example could overlap a microphone turn');
   const turnsBeforeRecordingText=requests.length;
+  await page.evaluate(()=>{
+    window.retiredRestaurantCapture = {generation:state.generation,session:state.sessionId,micEpoch:state.micEpoch};
+  });
   await page.evaluate(()=>sendTurn({text:'unintended overlapping turn'}));
-  assert.equal(requests.length,turnsBeforeRecordingText,'programmatic text overlapped microphone capture');
+  await page.waitForFunction(()=>!state.turnBusy && !state.mic);
+  assert.equal(requests.length,turnsBeforeRecordingText+1,'central text retirement did not send exactly one text turn');
+  assert.equal(requests.at(-1).body.text,'unintended overlapping turn');
+  assert(await page.evaluate(()=>restaurantAudio.stream.getTracks().every(track=>track.readyState==='ended')),'text left retired capture live');
+  await page.evaluate(()=>sendTurn({audio_b64:btoa('retired-capture')},retiredRestaurantCapture));
+  assert.equal(requests.length,turnsBeforeRecordingText+1,'retired capture uploaded stale audio');
+  await page.evaluate(async()=>{
+    restaurantAudio.source.stop();await restaurantAudio.context.close();installRestaurantAudio();
+  });
+  await page.locator('#demo-mic').click();
+  await page.waitForFunction(()=>state.mic && state.mic.frames>4096);
   await page.locator('#demo-mic').click();
   await page.waitForFunction(()=>!state.micStarting && !state.turnBusy);
   const audioRequest=requests.findLast(request=>request.body.audio_b64);
@@ -377,9 +557,12 @@ async page => {
   await page.locator('#demo-recap-read').click();
   await send('Да, всё отлично!');
   assert.equal(await page.evaluate(()=>state.latestBooking.date),await page.evaluate(()=>tallinnDay(1)));
-  assert.equal(await page.locator('#bookings .booking-recent').getAttribute('data-booking-id'),await page.evaluate(()=>state.latestBooking.id));
+  const russianBooking=await page.evaluate(()=>state.latestBooking.id);
+  await waitBooking(russianBooking,'подтверждено');
+  assert.equal(await page.locator('#bookings .booking-recent').getAttribute('data-booking-id'),russianBooking);
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('подтверждено'));
   await send('Да, отмените.');
+  await waitBooking(russianBooking,'отменено');
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('отменено'));
   await page.locator('#demo-end').click();
   await page.waitForFunction(()=>!state.sessionId && !state.turnBusy);
@@ -399,10 +582,11 @@ async page => {
   assert(await page.locator('#demo-recap-read').isVisible(), 'Estonian imperfect date: ' + await page.locator('#demo-messages .message').last().textContent());
   await page.locator('#demo-recap-read').click();
   await send('ja kinnitää');
-  assert((await page.locator('#demo-messages .message').last().textContent()).includes('Teie broneering on tehtud.'));
+  assert((await page.locator('#demo-messages .message').last().textContent()).includes('Teie lauabroneering on kinnitatud.'));
   assert.equal(await page.evaluate(()=>state.latestBooking.date),await page.evaluate(()=>tallinnDay(1)));
-  assert.equal(await page.locator('#bookings .booking-recent').count(),1);
   const estonianBooking=await page.evaluate(()=>state.latestBooking.id);
+  await waitBooking(estonianBooking,'kinnitatud');
+  assert.equal(await page.locator('#bookings .booking-recent').count(),1);
   await assertReceipt(page.locator('#demo-messages'), '17:00–18:30', estonianBooking);
   await page.locator('#demo-end').click();
   await page.waitForFunction(()=>!state.sessionId && !state.turnBusy);
@@ -471,5 +655,5 @@ async page => {
     assert.equal(retired.headers().location,undefined,'retired hostname redirected');
   }
   assert.deepEqual(errors,[]);
-  return {languages:3,groundedAnswers:3,calendarSpellingRepair:true,multilingualStepwiseDateTimeAndParty:true,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,englishSpokenDates:true,englishClockClarification:true,russianMixedDateCases:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,retiredHostDenied:true,pageErrors:errors.length};
+  return {languages:3,familyFacilities:true,groundedAnswers:3,bookingSideQuestions:12,calendarSpellingRepair:true,backgroundReadsNonblocking:true,failedBackgroundReadsRecover:true,historyRefreshOrderGuard:true,multilingualStepwiseDateTimeAndParty:true,unsupportedLanguagePrompts:3,confirmed:3,cancelled:3,voiceReservation:true,englishSpokenDates:true,englishClockClarification:true,russianMixedDateCases:true,estonianDateCaseForms:true,estonianAsrConfirmation:true,bookingVisibleAfterReload:true,bookingPageReset:true,gatedReadback:true,recapReceipt:true,microphoneWav:true,logoutIsolation:true,desktop:true,mobile:true,retiredHostDenied:true,pageErrors:errors.length};
 }

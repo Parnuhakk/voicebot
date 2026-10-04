@@ -437,7 +437,7 @@ def test_ssml_escapes_payload_and_pronounces_estonian_dates_without_changing_the
     text = 'Fiktiivne testbroneering: <audio src="https://example.invalid"/>, 2026-11-02 10:30, ajavöönd Europe/Tallinn. Jah, kinnitan.'
     document = ET.fromstring(ssml(text, "et-EE-AnuNeural", "et-EE"))
     assert not list(document.iter(SSML + "audio"))
-    assert document.find(".//" + SSML + "prosody").get("rate") == "0.94"
+    assert document.find(".//" + SSML + "prosody").get("rate") == "1.00"
     aliases = [node.get("alias") for node in document.iter(SSML + "sub")]
     assert aliases == [
         "esmaspäeval, teisel novembril 2026 kell kümme kolmkümmend",
@@ -524,7 +524,7 @@ def test_http_retry_keeps_the_same_voice_markup_and_recap_rate():
         provider.close()
     assert bodies[0] == bodies[1]
     document = ET.fromstring(bodies[0])
-    assert document.find(".//" + SSML + "prosody").get("rate") == "0.94"
+    assert document.find(".//" + SSML + "prosody").get("rate") == "1.00"
 
 
 def test_native_social_reply_uses_public_llm_node_without_model_request():
@@ -671,7 +671,7 @@ def test_native_provider_builds_complete_markup_per_sentence_and_resets_language
         )
         assert [
             doc.find(".//" + SSML + "prosody").get("rate") for doc in documents
-        ] == ["0.98", "0.94", "0.98"]
+        ] == ["1.12", "1.00", "1.12"]
         assert (
             documents[1].find(".//" + SSML + "voice").get("name") == "et-EE-AnuNeural"
         )

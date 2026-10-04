@@ -8,9 +8,10 @@ carries driver names and masked key fingerprints only.
 from __future__ import annotations
 
 import time
+from typing import Any
 
 
-def seed() -> dict:
+def seed() -> dict[str, Any]:
     now = time.time()
     return {
         "holds": [
@@ -89,9 +90,9 @@ def seed() -> dict:
     }
 
 
-STORE: dict = seed()
+STORE: dict[str, Any] = seed()
 
 
 def reset() -> None:
-    global STORE
-    STORE = seed()
+    STORE.clear()
+    STORE.update(seed())

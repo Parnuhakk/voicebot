@@ -8,7 +8,9 @@ import pytest
 
 from tests.test_browser_audio_stream import AsgiExchange, StreamingSpeaker
 from tests.test_product_demo import AUTH, start
-from tests.test_product_demo import client as client
+from tests import test_product_demo
+
+client = test_product_demo.client
 
 
 def test_stream_fixture_controls_are_authenticated_and_not_shadowed_by_static():
@@ -44,14 +46,14 @@ def test_stream_explicitly_disables_proxy_buffering(client):
 @pytest.mark.parametrize(
     "setting,want",
     [
-        (None, 650),
+        (None, 500),
         ("800", 800),
         ("300", 300),
         ("2000", 2000),
-        ("0", 650),
-        ("2001", 650),
-        ("not-a-number", 650),
-        ("650.5", 650),
+        ("0", 500),
+        ("2001", 500),
+        ("not-a-number", 500),
+        ("650.5", 500),
     ],
 )
 def test_actual_catalog_matches_browser_envelope_and_bounds_endpointing(
@@ -78,6 +80,8 @@ def test_actual_catalog_matches_browser_envelope_and_bounds_endpointing(
         "azure-male-warm",
         "azure-brian",
         "azure-ryan",
+        "azure-conversational",
+        "azure-conversational-male",
     ]
     assert data["voices"][0]["available"] is True
     assert all(not row["available"] for row in data["voices"][1:])

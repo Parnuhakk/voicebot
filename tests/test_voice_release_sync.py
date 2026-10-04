@@ -112,6 +112,9 @@ class ExternalCommands:
         self.repository = repository
         self.origin = "https://github.com/Parnuhakk/voicebot.git"
         self.master = SHA
+        self.is_ancestor = False
+        self.receipts = []
+        self.web_identity_code = None
         self.source_ids = [WEB]
         self.rooms = [0, 0]
         self.calls = []
@@ -190,6 +193,10 @@ class ExternalCommands:
                 operation = "up-" + argv[-1]
         if operation == "run" and argv[argv.index("--network") + 1] == "none":
             operation = "artifact-check"
+        if operation == "exec" and argv[3:6] == ["python", "-m", "app.release_status"]:
+            operation = "release-" + argv[6]
+        if operation == "exec" and argv[3:] == ["python", "-c", self.web_identity_code]:
+            operation = "release-identity"
         if self.fail == "timeout-" + operation:
             raise subprocess.TimeoutExpired(argv, kwargs["timeout"], PRIVATE, PRIVATE)
         if self.fail == operation:
@@ -208,6 +215,10 @@ class ExternalCommands:
             elif operation == "archive":
                 assert argv[-1] == SHA
                 out = self.payload
+            elif operation == "merge-base":
+                assert argv[-4:] == ["merge-base", "--is-ancestor", SHA, self.master]
+                if not self.is_ancestor:
+                    raise subprocess.CalledProcessError(1, argv, PRIVATE, PRIVATE)
             else:
                 assert operation == "fetch"
         elif operation == "ps":
@@ -220,12 +231,22 @@ class ExternalCommands:
             if not selected:
                 raise subprocess.CalledProcessError(1, argv, PRIVATE, PRIVATE)
             out = json.dumps(copy.deepcopy(selected)).encode()
-        elif operation == "exec":
-            assert argv[2] == self.containers[WORKER]["Id"]
-            assert argv[3:5] == ["python", "-c"] and len(argv) == 6
-            out = (str(self.rooms.pop(0)) + "\n").encode()
-            if not self.rooms:
-                self.after_probe()
+        elif operation in ("exec", "release-identity", "release-record"):
+            if operation == "release-identity":
+                assert argv[2] == self.containers["web"]["Id"]
+                assert argv[3:] == ["python", "-c", self.web_identity_code]
+                compile(self.web_identity_code, "web-loaded-identity", "exec")
+                out = ("8" * 64).encode()
+            elif argv[3:6] == ["python", "-m", "app.release_status"]:
+                assert argv[2] == self.containers[WORKER]["Id"]
+                assert argv[-3:] == ["record", SHA, "8" * 64]
+                self.receipts.append(argv)
+            else:
+                assert argv[2] == self.containers[WORKER]["Id"]
+                assert argv[3:5] == ["python", "-c"] and len(argv) == 6
+                out = (str(self.rooms.pop(0)) + "\n").encode()
+                if not self.rooms:
+                    self.after_probe()
         elif operation == "image":
             assert argv[2:5] == ["inspect", "--format", "{{.Id}}"]
             assert argv[-1] == "voicebot-telephone:" + SHA
@@ -312,6 +333,7 @@ def lane(tmp_path, monkeypatch):
         spec = importlib.util.spec_from_file_location("release_sync_under_test", SCRIPT)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
+        double.web_identity_code = module.WEB_IDENTITY
         monkeypatch.setattr(module.subprocess, "run", double)
         monkeypatch.setattr(module.sys, "dont_write_bytecode", True)
         monkeypatch.setattr(
@@ -366,6 +388,7 @@ def test_success_replaces_only_worker_and_bridge_from_exact_archived_revision(
     git_commands = [c for c, _ in lane.external.calls if c[0] == "git"]
     assert any("fetch" in c and "origin" in c for c in git_commands)
     assert any(c[-3:] == ["archive", "--format=tar", SHA] for c in git_commands)
+    assert len(lane.external.receipts) == 1
 
 
 def test_private_service_umask_does_not_make_packaged_modules_unreadable(lane):
@@ -465,6 +488,36 @@ def test_master_mismatch_defers_without_mutation(lane, capsys):
     assert capsys.readouterr().out.strip() == "DEFER: release_master_mismatch"
 
 
+def test_published_master_ancestor_still_deploys_only_published_code(lane, capsys):
+    lane.external.master = "f" * 40
+    lane.external.is_ancestor = True
+    assert lane.run() == 0
+    assert capsys.readouterr().out.strip() == "PASS: release_synced"
+    assert any(
+        c[-3:] == ["archive", "--format=tar", SHA] for c, _ in lane.external.calls
+    )
+    assert len(lane.external.receipts) == 1
+
+
+@pytest.mark.parametrize("stage", ["merge-base", "timeout-merge-base"])
+def test_ancestry_command_errors_never_authorize_an_unverified_release(lane, stage):
+    lane.external.master = "f" * 40
+    lane.external.fail = stage
+    assert lane.run() == 1
+    assert not lane.external.mutations()
+    assert not lane.external.receipts
+
+
+@pytest.mark.parametrize("stage", ["release-identity", "release-record"])
+def test_failed_release_receipt_never_claims_success(lane, stage, capsys):
+    lane.external.fail = stage
+    assert lane.run() == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err.strip() == "FAIL: release_sync_failed"
+    assert not lane.external.receipts
+
+
 @pytest.mark.parametrize(
     "target,change",
     [
@@ -526,7 +579,10 @@ def test_already_current_healthy_targets_need_no_build_replacement_or_room_query
         lane.external.containers[name]["Image"] = ARTIFACT
     assert lane.run() == 0
     assert not lane.external.mutations()
-    assert not any("exec" in c for c, _ in lane.external.calls)
+    assert not any(
+        "exec" in c and "-c" in c and c[2] != WEB for c, _ in lane.external.calls
+    )
+    assert len(lane.external.receipts) == 1
     assert capsys.readouterr().out.strip() == "PASS: release_current"
 
 
@@ -557,7 +613,10 @@ def test_stopped_worker_is_recovered_using_a_private_count_only_probe(lane):
     lane.external.after_up = recover
     assert lane.run() == 0
     assert any(c[1] == "run" for c, _ in lane.external.calls)
-    assert not any(c[1] == "exec" for c, _ in lane.external.calls)
+    assert not any(
+        c[1] == "exec" and "-c" in c and c[2] != WEB for c, _ in lane.external.calls
+    )
+    assert len(lane.external.receipts) == 1
 
 
 def test_matching_tags_with_different_actual_image_ids_are_not_current(lane, capsys):
@@ -714,6 +773,55 @@ def test_final_language_model_drift_is_not_reported_as_success(lane, capsys):
     assert capsys.readouterr().out == ""
 
 
+@pytest.mark.parametrize(
+    "field,expected",
+    [
+        ("RESTAURANT_STATE_DB", "/data/restaurant-booking.db"),
+        ("RESTAURANT_CONFIG_PATH", ""),
+        ("RESTAURANT_DEMO_WRITES", "1"),
+        ("CALLS_DB", "/data/calls.db"),
+    ],
+)
+def test_matching_release_does_not_hide_restaurant_configuration_drift(
+    lane, capsys, field, expected
+):
+    lane.external.profiles[field] = expected
+    for name in (WORKER, BRIDGE):
+        config = lane.external.containers[name]["Config"]
+        config["Image"] = "voicebot-telephone:" + SHA
+        config["Labels"].update({"voicebot.release": SHA, "voicebot.web-source": WEB})
+        lane.external.containers[name]["Image"] = ARTIFACT
+    values = lane.external.containers[WORKER]["Config"]["Env"]
+    values[:] = [v for v in values if not v.startswith(field + "=")]
+    values.append(field + "=synthetic-drift")
+    assert lane.run() == 0
+    assert capsys.readouterr().out.strip() == "PASS: release_synced"
+    assert field + "=" + expected in lane.external.containers[WORKER]["Config"]["Env"]
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "RESTAURANT_STATE_DB",
+        "RESTAURANT_CONFIG_PATH",
+        "RESTAURANT_DEMO_WRITES",
+        "CALLS_DB",
+    ],
+)
+def test_final_restaurant_configuration_drift_is_not_success(lane, capsys, field):
+    lane.external.profiles[field] = "synthetic-expected"
+
+    def drift(name):
+        if name == BRIDGE:
+            values = lane.external.containers[WORKER]["Config"]["Env"]
+            values[:] = [v for v in values if not v.startswith(field + "=")]
+            values.append(field + "=synthetic-drift")
+
+    lane.external.after_up = drift
+    assert lane.run() == 1
+    assert capsys.readouterr().out == ""
+
+
 def test_same_sha_new_web_identity_updates_config(lane):
     for name in (WORKER, BRIDGE):
         config = lane.external.containers[name]["Config"]
@@ -847,8 +955,29 @@ def test_external_failure_is_nonzero_and_prints_only_fixed_safe_code(
         assert not any(
             c[-1] == "twilio-bridge" and "up" in c for c, _ in lane.external.calls
         )
+    if stage == "up-twilio-bridge":
+        bridge = lane.external.containers[BRIDGE]
+        assert bridge["Id"] == "c" * 64
+        assert bridge["State"]["Running"] is True
+        assert any(
+            c[:2] == ["docker", "start"] and c[-1] == bridge["Id"]
+            for c, _ in lane.external.calls
+        )
     if stage in ("fetch", "config", "timeout-inspect", "timeout-fetch", "timeout-exec"):
         assert not lane.external.mutations()
+
+
+def test_failed_replacement_never_restarts_a_different_bridge_identity(lane, capsys):
+    def failed_after_replacement(name):
+        if name == BRIDGE:
+            raise subprocess.CalledProcessError(17, ["synthetic-up"], PRIVATE, PRIVATE)
+
+    lane.external.after_up = failed_after_replacement
+    assert lane.run() == 1
+    assert capsys.readouterr().err.strip() == "FAIL: release_sync_failed"
+    assert lane.external.containers[BRIDGE]["Id"] == "e" * 64
+    assert lane.external.containers[BRIDGE]["State"]["Running"] is True
+    assert not any(c[:2] == ["docker", "start"] for c, _ in lane.external.calls)
 
 
 @pytest.mark.parametrize("change", ["health", "image", "labels", "mount"])

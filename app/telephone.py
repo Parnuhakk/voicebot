@@ -11,8 +11,8 @@ import re
 import time
 import uuid
 from datetime import datetime, timedelta
-from typing import Any
 from zoneinfo import ZoneInfo
+from typing import Any
 
 from .demo import (
     DEMO_TIMEZONE,
@@ -1109,6 +1109,7 @@ class CallTools:
             self.invalidate_recap()
             return None
         fields = pending["recap"]
+        start = None
         if pending.get("kind") != "stay":
             start = datetime.fromisoformat(fields["start"])
             if start.tzinfo is not None:
@@ -1123,6 +1124,8 @@ class CallTools:
                     f"guest {fields['guest_name']}. Total example price {fields['quoted_total']} {fields['currency']}. "
                     f"No payment is collected. {consent}"
                 )
+            if start is None:
+                return None
             return (
                 f"Fictional test booking: {fields['service_name']}, {fields['provider_name']}, "
                 f"{spoken_date(start.date().isoformat())} at {spoken_time(start.strftime('%H:%M'))}, "
@@ -1138,6 +1141,8 @@ class CallTools:
                 **fields,
                 consent=self.say(CONSENT_TEXT),
             )
+        if start is None:
+            return None
         if self.language == "ru":
             month = (
                 "января",
@@ -1185,7 +1190,10 @@ class CallTools:
         """Trusted delivery boundary only, never a model tool or consent flag."""
         if not isinstance(hold_id, str) or not self.render_recap(hold_id):
             return False
-        self.pending["delivery"] = True
+        pending = self.pending
+        if pending is None:
+            return False
+        pending["delivery"] = True
         return True
 
     def guard_reply(self, text, results):
@@ -2141,11 +2149,11 @@ class CallTools:
                 or (type(booking_id) is int and booking_id > 0)
             ):
                 return self._unknown_mutation(name)
-            self.bookings.add(str(booking["id"]))
-            self.booking_kinds[str(booking["id"])] = (
+            self.bookings.add(str(booking_id))
+            self.booking_kinds[str(booking_id)] = (
                 "stay" if name == "confirm_booking" else "slot"
             )
-            self.last_booking = str(booking["id"])
+            self.last_booking = str(booking_id)
             self.booking_holds[self.last_booking] = args["hold_id"]
             self.confirmed_holds.add(args["hold_id"])
             self.outcome = "booking_confirmed"
@@ -2231,7 +2239,7 @@ def sdk_tools(state, *, conversation=False):
     from livekit.agents import function_tool
 
     def make(schema):
-        async def invoke(raw_arguments: dict):
+        async def invoke(raw_arguments: dict[str, Any]):
             return await state.dispatch(schema["name"], raw_arguments)
 
         return function_tool(invoke, raw_schema=schema)

@@ -11,7 +11,7 @@ from app.languages import CONSENT
 from app.providers.groq import GroqClient
 from app.providers.voice_config import VoiceConfig
 from app.restaurant_call import COPY
-from app.restaurant_reasoning import reasoned_reply, safe_wording
+from app.restaurant_reasoning import reasoned_reply, restaurant_facts, safe_wording
 from tests.test_restaurant_http import (
     AUTH,
     client as http_client,
@@ -33,6 +33,11 @@ QUESTIONS = {
     "et": "Üks meist on vegan, teisele meeldivad seened. Mida soovitaksite ja miks?",
     "en": "One of us is vegan, another likes mushrooms. What would you recommend and why?",
     "ru": "Один из нас веган, другой любит грибы. Что вы посоветуете и почему?",
+}
+MEDICAL_GUARANTEES = {
+    "et": "Seda rooga võid süüa reaktsiooni kartmata; ristsaastumist ei teki.",
+    "en": "You can eat this dish without worrying about a reaction; cross-contact cannot occur",
+    "ru": "Это блюдо можно есть без опасения реакции; перекрёстного загрязнения не бывает.",
 }
 
 
@@ -179,14 +184,20 @@ def test_unverified_answer_falls_back_without_false_claims_or_writes(client, fai
         ("en", "The table is available for you."),
         ("en", "The soup costs 20 euros."),
         ("en", "It is allergen-free."),
+        ("en", MEDICAL_GUARANTEES["en"]),
+        ("en", "This dish is suitable for anyone with celiac disease."),
         ("en", "Please provide your phone number."),
         ("et", "Teie laud on broneeritud."),
         ("et", "Supp maksab 20 eurot."),
         ("et", "Roog on allergeenivaba."),
+        ("et", MEDICAL_GUARANTEES["et"]),
+        ("et", "See roog sobib tsöliaakia korral."),
         ("et", "Öelge oma telefoninumber."),
         ("ru", "Ваш столик забронирован."),
         ("ru", "Суп стоит 20 рублей."),
         ("ru", "Это блюдо без аллергенов."),
+        ("ru", MEDICAL_GUARANTEES["ru"]),
+        ("ru", "Это блюдо подходит при целиакии."),
         ("ru", "Сообщите ваш телефон."),
         ("en", "<think>PRIVATE reasoning</think> I recommend soup."),
         ("en", "https://invented.example/menu"),
@@ -257,6 +268,101 @@ def test_booking_confirmation_and_allergy_questions_use_canonical_flow(client):
     saved = turn(client, session, CONSENT["en"], receipt=proposal["recap_delivery_id"])
     assert saved["reply"] == COPY["en"]["confirmed"]
     assert saved["booking_changes"][0]["action"] == "confirmed" and model.calls == []
+
+
+@pytest.mark.parametrize(
+    "language,question",
+    [
+        ("et", "Mul on tsöliaakia. Mida soovitate süüa?"),
+        ("en", "I have celiac disease. What can I eat from your menu?"),
+        ("ru", "У меня целиакия. Что можно выбрать из меню?"),
+        ("et", "Mul on toidutalumatus. Mida soovitate süüa?"),
+        ("en", "I have food intolerance. What do you recommend from the menu?"),
+        ("ru", "У меня пищевая непереносимость. Что посоветуете из меню?"),
+        ("et", "Mul on raske piimaallergia. Mida soovitate süüa?"),
+        ("en", "I have a serious milk allergy. What food would you recommend?"),
+        ("ru", "У меня сильная аллергия. Что можно выбрать из меню?"),
+    ],
+)
+def test_medical_food_questions_and_followups_stay_canonical(
+    client, language, question
+):
+    model = Model(MEDICAL_GUARANTEES[language], language)
+    client.app.state.stack["llm_primary"] = model
+    session = start(client, language)["session_id"]
+    followups = {
+        "et": ("Mida te soovitate?", "Aga lõhe?"),
+        "en": ("What would you recommend?", "And salmon?"),
+        "ru": ("Что вы посоветуете?", "А лосось?"),
+    }
+    for utterance in (question, *followups[language]):
+        result = turn(client, session, utterance, language=language)
+        state = client.app.state.demo_sessions.sessions[session].tools
+        assert (
+            result["reply"]
+            == state.information_reply("allergens")
+            == client.provider.spoken[-1]
+        )
+        assert state.restaurant["allergy_notice"][language] in result["reply"]
+        assert result["language"] == language and result["warnings"] == []
+        assert result["booking_changes"] == [] and result["recap_delivery_id"] is None
+        assert not state.reasoning_allowed and state._reasoned_reply is None
+        assert state.guard_reply(MEDICAL_GUARANTEES[language], []) == result["reply"]
+        assert state.pending is None and not state.bookings and model.calls == []
+
+
+@pytest.mark.parametrize(
+    "followup",
+    [
+        "And vegetable soup?",
+        "And vegetable soup with a tablespoon?",
+        "The cookbook mentions vegetable soup; is it okay for me?",
+    ],
+)
+def test_food_words_are_not_booking_requests_after_medical_disclosure(client, followup):
+    model = Model("Vegetable soup is safe for you.")
+    client.app.state.stack["llm_primary"] = model
+    session = start(client)["session_id"]
+    for utterance in (
+        "I have celiac disease. What can I eat from your menu?",
+        "What would you recommend?",
+        followup,
+    ):
+        result = turn(client, session, utterance)
+        state = client.app.state.demo_sessions.sessions[session].tools
+        assert result["reply"] == state.information_reply("allergens")
+        assert result["reply"] == client.provider.spoken[-1]
+        assert not state.reasoning_allowed and state._reasoned_reply is None
+        assert state.guard_reply(model.candidate["reply"], []) == result["reply"]
+        assert result["booking_changes"] == [] and result["recap_delivery_id"] is None
+        assert model.calls == []
+
+
+def test_ineligible_reasoning_helper_returns_before_any_model_call(make_state):
+    state = make_state("en")
+    question = "I have a serious milk allergy. Is the soup safe?"
+    state.observe_user_text(question, language="en")
+    assert not state.reasoning_allowed
+    model = Model()
+    assert reasoned_reply(state, [{"role": "user", "content": question}], model) is None
+    assert model.calls == [] and state._reasoned_reply is None
+
+
+def test_medical_food_topic_survives_the_three_topic_limit(client):
+    model = Model(MEDICAL_GUARANTEES["en"])
+    client.app.state.stack["llm_primary"] = model
+    session = start(client)["session_id"]
+    result = turn(
+        client,
+        session,
+        "Where are you, when are you open, is there parking, and what can I eat with celiac disease?",
+    )
+    state = client.app.state.demo_sessions.sessions[session].tools
+    assert state.restaurant["allergy_notice"]["en"] in result["reply"]
+    assert result["reply"] == state.question_reply() == client.provider.spoken[-1]
+    assert not state.reasoning_allowed and state._reasoned_reply is None
+    assert result["booking_changes"] == [] and result["recap_delivery_id"] is None
+    assert model.calls == []
 
 
 def test_disable_switch_and_public_capability_match(client, monkeypatch):
@@ -388,3 +494,190 @@ def test_guest_instructions_cannot_add_facts_or_authorize_an_action(client):
     review_data = json.loads(model.calls[1]["messages"][1]["content"])
     assert "wine" not in review_data["facts"]["menu_items"]
     assert "UNTRUSTED DATA" in model.calls[1]["messages"][0]["content"]
+
+
+@pytest.mark.parametrize(
+    "unsafe",
+    [
+        "We can seat four at 19:00 tomorrow.",
+        "Your reservation is all set.",
+        "Your reservation\nis all set.",
+        "Your reservation is all\nset.",
+    ],
+)
+def test_approving_model_cannot_speak_unverified_availability_or_booking_status(
+    client, unsafe
+):
+    model = Model(unsafe)
+    model.candidate["fact_ids"] = ["capacity_rules"]
+    client.app.state.stack["llm_primary"] = model
+    session = start(client, "en")["session_id"]
+    result = turn(client, session, "Do you have seating for four at 19:00 tomorrow?")
+    state = client.app.state.demo_sessions.sessions[session].tools
+    assert result["reply"] != unsafe
+    assert result["reply"] == state.inquiry_reply() == client.provider.spoken[-1]
+    assert result["booking_changes"] == [] and not state.bookings
+    assert state._reasoned_reply is None and len(model.calls) == 1
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "What is your address, opening hours, and parking? Is soup safe for a severe milk allergy?",
+        "What is your address, opening hours, and parking? Can you prevent cross-contact?",
+        "What is your address, opening hours, and parking? Is the soup suitable for coeliac disease?",
+        "What is your address, opening hours, and parking? Is the soup suitable for celiac disease?",
+    ],
+)
+def test_allergy_safety_after_three_topics_cannot_reach_generated_answers(
+    client, question
+):
+    unsafe = "The soup is fine for your milk allergy; our kitchen prevents all cross-contact."
+    model = Model(unsafe)
+    client.app.state.stack["llm_primary"] = model
+    session = start(client, "en")["session_id"]
+    result = turn(client, session, question)
+    state = client.app.state.demo_sessions.sessions[session].tools
+    assert model.calls == []
+    assert state.restaurant["allergy_notice"]["en"] in result["reply"]
+    assert (
+        result["reply"] != unsafe and "allergens" in state._restaurant_question.topics
+    )
+    assert result["booking_changes"] == [] and not state.bookings
+
+
+@pytest.mark.parametrize("padding,length", [(True, 600), (False, 600), (False, 601)])
+def test_reviewed_answer_uses_the_same_normalized_speech_length_bound(
+    client, padding, length
+):
+    reply = "A helpful menu description " + "a" * (length - 27)
+    assert len(reply) == length
+    candidate = " \n" + reply + "\n " if padding else reply
+    model = Model(candidate)
+    client.app.state.stack["llm_primary"] = model
+    session = start(client, "en")["session_id"]
+    result = turn(client, session, QUESTIONS["en"])
+    if length <= 600:
+        assert result["reply"] == reply == client.provider.spoken[-1]
+        assert result["warnings"] == [] and len(model.calls) == 2
+        reviewed = json.loads(model.calls[1]["messages"][1]["content"])
+        assert reviewed["candidate"]["reply"] == reply
+    else:
+        assert result["reply"] != reply and len(model.calls) == 1
+        assert result["warnings"] == [
+            {"stage": "llm", "code": "grounded_reply_unavailable"}
+        ]
+    assert result["booking_changes"] == []
+
+
+@pytest.mark.parametrize(
+    "language,unwanted",
+    [
+        ("et", "Selles demos soovitan köögiviljasuppi."),
+        (
+            "et",
+            "See on fiktiivne restoran testbroneeringute tegemiseks. Köögiviljasupp on vegan.",
+        ),
+        ("en", "In this demo, I'd recommend vegetable soup."),
+        ("en", "This fictional restaurant is for testing. Try the vegetable soup."),
+        ("ru", "В этой демонстрации я предложу овощной суп."),
+        (
+            "ru",
+            "Это вымышленный ресторан для тестового бронирования. Выберите овощной суп.",
+        ),
+        ("et", "See restoran on kõneabilise ja lauabroneeringute katsetamiseks."),
+        ("en", "This is a test restaurant for trying a voice assistant."),
+        ("ru", "Этот ресторан предназначен для проверки голосового помощника."),
+    ],
+)
+def test_generated_test_narration_falls_back_before_speech(client, language, unwanted):
+    model = Model(unwanted, language)
+    model.candidate["fact_ids"] = ["venue", "menu_items"]
+    client.app.state.stack["llm_primary"] = model
+    session = start(client, language)["session_id"]
+    result = turn(client, session, QUESTIONS[language], language=language)
+    assert result["reply"] != unwanted
+    assert result["reply"] == client.provider.spoken[-1]
+    assert len(model.calls) == 1 and not safe_wording(unwanted, language)
+    assert result["booking_changes"] == []
+    assert result["warnings"] == [
+        {"stage": "llm", "code": "grounded_reply_unavailable"}
+    ]
+
+
+@pytest.mark.parametrize("language", ["et", "en", "ru"])
+def test_ordinary_generation_facts_use_venue_name_not_testing_description(
+    make_state, language
+):
+    state = make_state(language)
+    state.observe_user_text(QUESTIONS[language], language=language)
+    facts = restaurant_facts(state)
+    assert facts["venue"] == "Meretuule"
+    assert state.restaurant["description"][language] not in facts.values()
+
+
+@pytest.mark.parametrize(
+    "language,question,unsafe",
+    [
+        ("en", "Please send a message to the chef.", "I will inform the kitchen."),
+        ("en", "What is on the menu?", "I will inform the kitchen."),
+        ("en", QUESTIONS["en"], "Your request has reached the chef."),
+        ("en", QUESTIONS["en"], "I'll handle that for you."),
+        ("en", QUESTIONS["en"], "I can save your special request."),
+        ("en", QUESTIONS["en"], "Your food order is accepted."),
+        ("en", QUESTIONS["en"], "Delivery is arranged."),
+        ("en", QUESTIONS["en"], "Your special request has been accepted."),
+        ("en", QUESTIONS["en"], "Your special request will be fulfilled."),
+        ("en", QUESTIONS["en"], "Your note has been taken."),
+        ("et", QUESTIONS["et"], "Teatan köögile teie allergiast."),
+        ("et", QUESTIONS["et"], "Panen teie erisoovi kirja."),
+        ("et", QUESTIONS["et"], "Võtan teie toidutellimuse vastu."),
+        ("et", QUESTIONS["et"], "Ma saan selle korraldada."),
+        ("ru", QUESTIONS["ru"], "Я уведомлю кухню о вашей аллергии."),
+        ("ru", QUESTIONS["ru"], "Ваше пожелание передано повару."),
+        ("ru", QUESTIONS["ru"], "Я запишу ваше пожелание."),
+        ("ru", QUESTIONS["ru"], "Ваш заказ принят."),
+        ("ru", QUESTIONS["ru"], "Доставка организована."),
+        ("ru", QUESTIONS["ru"], "Я могу это сделать."),
+        ("ru", QUESTIONS["ru"], "Ваше особое пожелание принято."),
+        ("ru", QUESTIONS["ru"], "Особая просьба будет исполнена."),
+    ],
+)
+def test_generated_capability_promises_are_rejected_for_any_question(
+    client, language, question, unsafe
+):
+    model = Model(unsafe, language, approved=True)
+    client.app.state.stack["llm_primary"] = model
+    session = start(client, language)["session_id"]
+    result = turn(client, session, question, language=language)
+    state = client.app.state.demo_sessions.sessions[session].tools
+    assert result["reply"] == (state.inquiry_reply() or COPY[language]["domain"])
+    assert result["reply"] == client.provider.spoken[-1] != unsafe
+    assert state._reasoned_reply is None and len(model.calls) == 1
+    assert not state.pending and not state.holds and not state.bookings
+    assert result["booking_changes"] == [] and result["recap_delivery_id"] is None
+
+
+@pytest.mark.parametrize(
+    "language,unsafe",
+    [
+        ("en", "I will inform the kitchen."),
+        ("en", "Your special request has been accepted."),
+        ("et", "Teatan köögile teie allergiast."),
+        ("ru", "Я уведомлю кухню о вашей аллергии."),
+    ],
+)
+def test_final_wording_boundary_rechecks_capability_safety(
+    make_state, language, unsafe
+):
+    from app.restaurant_reasoning import facts_digest, restaurant_facts
+
+    state = make_state(language)
+    state.observe_user_text(QUESTIONS[language], language=language)
+    state._reasoned_reply = (
+        state._turn_serial,
+        language,
+        unsafe,
+        facts_digest(restaurant_facts(state)),
+    )
+    assert state.guard_reply(unsafe, []) == state.inquiry_reply()

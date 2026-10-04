@@ -6,17 +6,26 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from app.booking_response import trusted_booking_response
-from app.restaurant_answers import GUIDANCE, RestaurantQuestion, format_schedule, match_question
+from app.restaurant_answers import (
+    GUIDANCE,
+    RestaurantQuestion,
+    format_schedule,
+    match_question,
+)
 from app.restaurant_data import DAYS, load_restaurant_data
 
-pytest_plugins = ["tests.test_restaurant_conversation", "tests.test_restaurant_http"]
+from tests.test_restaurant_conversation import make_state  # noqa: F401
+from tests.test_restaurant_http import client  # noqa: F401
 
 
-@pytest.mark.parametrize("language,question,followup", [
-    ("et", "Olen vegan, mida soovitad?", "Räägi sellest lähemalt"),
-    ("en", "I'm vegan. What do you recommend?", "Tell me more about it"),
-    ("ru", "Я веган, что посоветуете?", "Расскажите об этом подробнее"),
-])
+@pytest.mark.parametrize(
+    "language,question,followup",
+    [
+        ("et", "Olen vegan, mida soovitad?", "Räägi sellest lähemalt"),
+        ("en", "I'm vegan. What do you recommend?", "Tell me more about it"),
+        ("ru", "Я веган, что посоветуете?", "Расскажите об этом подробнее"),
+    ],
+)
 def test_recommendations_and_followups_keep_diet_without_inventing_facts(
     make_state, language, question, followup
 ):
@@ -36,12 +45,17 @@ def test_recommendations_and_followups_keep_diet_without_inventing_facts(
     assert state.pending is None and not state.bookings
 
 
-@pytest.mark.parametrize("language,question,followup", [
-    ("et", "Mis kell te pühapäeval lahti olete?", "Palun täpsusta"),
-    ("en", "What are your Sunday opening hours?", "Please tell me more"),
-    ("ru", "Когда вы открыты в воскресенье?", "Можно подробнее"),
-])
-def test_explicit_detail_followup_retains_schedule_day(make_state, language, question, followup):
+@pytest.mark.parametrize(
+    "language,question,followup",
+    [
+        ("et", "Mis kell te pühapäeval lahti olete?", "Palun täpsusta"),
+        ("en", "What are your Sunday opening hours?", "Please tell me more"),
+        ("ru", "Когда вы открыты в воскресенье?", "Можно подробнее"),
+    ],
+)
+def test_explicit_detail_followup_retains_schedule_day(
+    make_state, language, question, followup
+):
     state = make_state(language)
     state.observe_user_text(question, language=language)
     answer = state.guard_reply("", [])
@@ -50,12 +64,60 @@ def test_explicit_detail_followup_retains_schedule_day(make_state, language, que
     assert state._restaurant_question.days == (6,)
 
 
-@pytest.mark.parametrize("language,diet_question,new_dish", [
-    ("et", "Mida veganitele pakute?", "Aga lõhe?"),
-    ("en", "What is your vegan menu?", "And salmon?"),
-    ("ru", "Что есть в веганском меню?", "А лосось?"),
-])
-def test_explicit_new_dish_replaces_previous_diet_filter(make_state, language, diet_question, new_dish):
+@pytest.mark.parametrize(
+    "language,question,followup",
+    [
+        ("et", "Kas lõhe sisaldab piima?", "Räägi sellest lähemalt"),
+        ("en", "Does salmon contain milk?", "Please tell me more"),
+        ("ru", "Лосось содержит молоко?", "Можно подробнее"),
+    ],
+)
+def test_allergen_detail_followup_keeps_dish_declarations_and_safety_notice(
+    make_state, language, question, followup
+):
+    state = make_state(language)
+    state.observe_user_text(question, language=language)
+    answer = state.guard_reply("", [])
+    assert state.restaurant["allergy_notice"][language] in answer
+    state.observe_user_text(followup, language=language)
+    assert state.guard_reply("", []) == answer
+    assert state._restaurant_dish == "salmon"
+    assert state._restaurant_question.topics == ("allergens",)
+    assert state.pending is None and not state.bookings
+
+
+@pytest.mark.parametrize(
+    "language,question,followup",
+    [
+        ("et", "Kas suuremaid gruppe võetakse vastu?", "Palun täpsusta"),
+        ("en", "Do you accept larger groups?", "Please tell me more"),
+        ("ru", "Вы принимаете большие группы?", "Можно подробнее"),
+    ],
+)
+def test_group_policy_detail_followup_keeps_staff_guidance(
+    make_state, language, question, followup
+):
+    state = make_state(language)
+    state.observe_user_text(question, language=language)
+    answer = state.guard_reply("", [])
+    assert state._restaurant_question.topics == ("groups",)
+    state.observe_user_text(followup, language=language)
+    assert state.guard_reply("", []) == answer
+    assert state._restaurant_question.topics == ("groups",)
+    assert state.pending is None and not state.bookings
+
+
+@pytest.mark.parametrize(
+    "language,diet_question,new_dish",
+    [
+        ("et", "Mida veganitele pakute?", "Aga lõhe?"),
+        ("en", "What is your vegan menu?", "And salmon?"),
+        ("ru", "Что есть в веганском меню?", "А лосось?"),
+    ],
+)
+def test_explicit_new_dish_replaces_previous_diet_filter(
+    make_state, language, diet_question, new_dish
+):
     state = make_state(language)
     state.observe_user_text(diet_question, language=language)
     state.guard_reply("", [])
@@ -65,12 +127,17 @@ def test_explicit_new_dish_replaces_previous_diet_filter(make_state, language, d
     assert state._restaurant_dish == "salmon" and state._restaurant_diet is None
 
 
-@pytest.mark.parametrize("language,question", [
-    ("et", "Mis toitu soovitad piimaallergia korral?"),
-    ("en", "What food do you recommend for a milk allergy?"),
-    ("ru", "Какое блюдо порекомендуете при аллергии на молоко?"),
-])
-def test_allergy_recommendation_keeps_staff_safety_guidance(make_state, language, question):
+@pytest.mark.parametrize(
+    "language,question",
+    [
+        ("et", "Mis toitu soovitad piimaallergia korral?"),
+        ("en", "What food do you recommend for a milk allergy?"),
+        ("ru", "Какое блюдо порекомендуете при аллергии на молоко?"),
+    ],
+)
+def test_allergy_recommendation_keeps_staff_safety_guidance(
+    make_state, language, question
+):
     state = make_state(language)
     state.observe_user_text(question, language=language)
     answer = state.guard_reply("", [])
@@ -86,6 +153,8 @@ def test_detail_followups_do_not_reuse_stale_or_other_language_topics(make_state
     assert state.language == "en"
     state.observe_user_text("Tell me more", language="en")
     assert state._restaurant_question is None
+    state.observe_user_text("Palun räägi eesti keeles", language="et")
+    assert state.language == "et"
     state.observe_user_text("Milline on menüü?", language="et")
     state.guard_reply("", [])
     state.observe_user_text("Tere", language="et")
@@ -93,12 +162,17 @@ def test_detail_followups_do_not_reuse_stale_or_other_language_topics(make_state
     assert state._restaurant_question is None
 
 
-@pytest.mark.parametrize("language,preference,recommendation", [
-    ("et", "Olen vegan", "Mida soovitad?"),
-    ("en", "I'm vegan", "What do you recommend?"),
-    ("ru", "Я веган", "Что посоветуете?"),
-])
-def test_recommendation_follows_preference_in_previous_turn(make_state, language, preference, recommendation):
+@pytest.mark.parametrize(
+    "language,preference,recommendation",
+    [
+        ("et", "Olen vegan", "Mida soovitad?"),
+        ("en", "I'm vegan", "What do you recommend?"),
+        ("ru", "Я веган", "Что посоветуете?"),
+    ],
+)
+def test_recommendation_follows_preference_in_previous_turn(
+    make_state, language, preference, recommendation
+):
     state = make_state(language)
     state.observe_user_text(preference, language=language)
     state.guard_reply("", [])
@@ -110,12 +184,17 @@ def test_recommendation_follows_preference_in_previous_turn(make_state, language
     assert state._restaurant_diet == "vegan"
 
 
-@pytest.mark.parametrize("language,dish,new_preference", [
-    ("et", "Kas teil lõhet on?", "Aga veganitele?"),
-    ("en", "Do you have salmon?", "And for vegans?"),
-    ("ru", "Есть лосось?", "А для веганов?"),
-])
-def test_new_diet_request_clears_previously_named_dish(make_state, language, dish, new_preference):
+@pytest.mark.parametrize(
+    "language,dish,new_preference",
+    [
+        ("et", "Kas teil lõhet on?", "Aga veganitele?"),
+        ("en", "Do you have salmon?", "And for vegans?"),
+        ("ru", "Есть лосось?", "А для веганов?"),
+    ],
+)
+def test_new_diet_request_clears_previously_named_dish(
+    make_state, language, dish, new_preference
+):
     state = make_state(language)
     state.observe_user_text(dish, language=language)
     state.guard_reply("", [])
@@ -129,9 +208,18 @@ def test_new_diet_request_clears_previously_named_dish(make_state, language, dis
 @pytest.mark.parametrize(
     "language,expected",
     [
-        ("et", "Esmaspäevast neljapäevani kell 12–21, reedel ja laupäeval kell 12–23 ning pühapäeval kell 12–20"),
-        ("en", "Monday through Thursday 12–21, Friday and Saturday 12–23 and Sunday 12–20"),
-        ("ru", "С понедельника по четверг с 12 до 21. В пятницу и субботу с 12 до 23. В воскресенье с 12 до 20"),
+        (
+            "et",
+            "Esmaspäevast neljapäevani kell 12–21, reedel ja laupäeval kell 12–23 ning pühapäeval kell 12–20",
+        ),
+        (
+            "en",
+            "Monday through Thursday 12–21, Friday and Saturday 12–23 and Sunday 12–20",
+        ),
+        (
+            "ru",
+            "С понедельника по четверг с 12 до 21. В пятницу и субботу с 12 до 23. В воскресенье с 12 до 20",
+        ),
     ],
 )
 def test_equal_adjacent_hours_are_grouped(language, expected):
@@ -144,8 +232,14 @@ def test_weekdays_weekends_closures_and_nonadjacent_days():
         data["opening_hours"][day] = {"start": "11:00", "end": "21:00"}
     for day in DAYS[5:]:
         data["opening_hours"][day] = None
-    assert format_schedule(data, "et") == "Esmaspäevast reedeni kell 11–21 ning laupäeval ja pühapäeval suletud"
-    assert format_schedule(data, "et", days=(0, 2)) == "Esmaspäeval kell 11–21 ning kolmapäeval kell 11–21"
+    assert (
+        format_schedule(data, "et")
+        == "Esmaspäevast reedeni kell 11–21 ning laupäeval ja pühapäeval suletud"
+    )
+    assert (
+        format_schedule(data, "et", days=(0, 2))
+        == "Esmaspäeval kell 11–21 ning kolmapäeval kell 11–21"
+    )
     for day in DAYS:
         data["opening_hours"][day] = None
     assert format_schedule(data, "et") == "Iga päev suletud"
@@ -199,7 +293,9 @@ def test_daily_hours_and_kitchen_minutes_remain_exact():
         ("ru", "Есть детский стул?", "highchair"),
     ],
 )
-def test_varied_questions_use_venue_answers_without_booking(make_state, language, utterance, topic):
+def test_varied_questions_use_venue_answers_without_booking(
+    make_state, language, utterance, topic
+):
     state = make_state(language)
     state.observe_user_text(utterance, language=language)
     assert state._restaurant_focus == topic
@@ -208,7 +304,14 @@ def test_varied_questions_use_venue_answers_without_booking(make_state, language
     assert state.pending is None and not state.bookings
 
 
-@pytest.mark.parametrize("language,followup", [("et", "Aga nädalavahetusel?"), ("en", "And on weekends?"), ("ru", "А в выходные?")])
+@pytest.mark.parametrize(
+    "language,followup",
+    [
+        ("et", "Aga nädalavahetusel?"),
+        ("en", "And on weekends?"),
+        ("ru", "А в выходные?"),
+    ],
+)
 def test_hours_followup_limits_answer_to_requested_days(make_state, language, followup):
     state = make_state(language)
     state.observe_user_text("opening hours", language=language)
@@ -236,7 +339,9 @@ def test_bare_day_does_not_hijack_booking_or_outlive_unrelated_turn(make_state):
 
 def test_two_questions_and_allergy_price_precedence(make_state):
     state = make_state("et")
-    state.observe_user_text("Mis kell te lahti olete ja kas parkida saab?", language="et")
+    state.observe_user_text(
+        "Mis kell te lahti olete ja kas parkida saab?", language="et"
+    )
     reply = state.guard_reply("", [])
     assert "Esmaspäevast neljapäevani" in reply
     assert "parkim" in reply.casefold()
@@ -258,7 +363,9 @@ def test_general_menu_is_brief_and_food_followup_retains_only_identifiers(make_s
     assert "vegan" == state._restaurant_diet
 
 
-def test_kitchen_followup_preserves_day_and_ingredient_followup_preserves_dish(make_state):
+def test_kitchen_followup_preserves_day_and_ingredient_followup_preserves_dish(
+    make_state,
+):
     state = make_state("et")
     state.observe_user_text("Mis kell te pühapäeval lahti olete?", language="et")
     state.guard_reply("", [])
@@ -274,7 +381,11 @@ def test_kitchen_followup_preserves_day_and_ingredient_followup_preserves_dish(m
 
 def test_closures_for_explicit_date_and_kitchen_followup(make_state):
     state = make_state("et")
-    state.restaurant["closures"]["2026-12-24"] = {"et": "Jõulupüha", "en": "Christmas holiday", "ru": "Праздник"}
+    state.restaurant["closures"]["2026-12-24"] = {
+        "et": "Jõulupüha",
+        "en": "Christmas holiday",
+        "ru": "Праздник",
+    }
     state.observe_user_text("Kas 2026-12-24 olete lahti?", language="et")
     assert "Jõulupüha" in state.guard_reply("", [])
     state.observe_user_text("Aga köök?", language="et")
@@ -284,7 +395,11 @@ def test_closures_for_explicit_date_and_kitchen_followup(make_state):
 def test_today_closure_uses_actual_date_instead_of_weekly_hours(make_state):
     state = make_state("et")
     today = datetime.now(ZoneInfo("Europe/Tallinn")).date().isoformat()
-    state.restaurant["closures"][today] = {"et": "Eraviisiline üritus", "en": "Private event", "ru": "Частное мероприятие"}
+    state.restaurant["closures"][today] = {
+        "et": "Eraviisiline üritus",
+        "en": "Private event",
+        "ru": "Частное мероприятие",
+    }
     state.observe_user_text("Kas täna olete lahti?", language="et")
     reply = state.inquiry_reply()
     assert "suletud" in reply and "Eraviisiline üritus" in reply
@@ -304,12 +419,21 @@ def test_http_hours_followup_and_multi_topic_need_no_model(client):
     from tests.test_restaurant_http import start, turn
 
     session = start(client, "et")
-    first = turn(client, session["session_id"], "Mis kellani te lahti olete?", language="et")
+    first = turn(
+        client, session["session_id"], "Mis kellani te lahti olete?", language="et"
+    )
     assert "Esmaspäevast neljapäevani" in first["reply"]
     second = turn(client, session["session_id"], "Aga nädalavahetusel?", language="et")
     assert "21" not in second["reply"]
-    third = turn(client, session["session_id"], "Mis te süüa pakute ja kas lastetooli saab?", language="et")
-    assert "Köögiviljasupp" in third["reply"] and "lastetool" in third["reply"].casefold()
+    third = turn(
+        client,
+        session["session_id"],
+        "Mis te süüa pakute ja kas lastetooli saab?",
+        language="et",
+    )
+    assert (
+        "Köögiviljasupp" in third["reply"] and "lastetool" in third["reply"].casefold()
+    )
     assert all(answer["booking_changes"] == [] for answer in (first, second, third))
 
 
@@ -318,19 +442,39 @@ def test_public_summaries_use_the_same_spoken_schedule(client):
     assert response.status_code == 200
     public = response.json()
     for language in ("et", "en", "ru"):
-        assert public["opening_hours_summary"][language] == format_schedule(public["restaurant"], language) + "."
-        assert public["kitchen_hours_summary"][language] == format_schedule(public["restaurant"], language, kitchen=True) + "."
+        assert (
+            public["opening_hours_summary"][language]
+            == format_schedule(public["restaurant"], language) + "."
+        )
+        assert (
+            public["kitchen_hours_summary"][language]
+            == format_schedule(public["restaurant"], language, kitchen=True) + "."
+        )
 
 
 @pytest.mark.parametrize(
     "language,initial_request,day,time,party",
     [
-        ("en", "I'd like to reserve a table", "tomorrow", "at 16:00", "for two adults and two children"),
+        (
+            "en",
+            "I'd like to reserve a table",
+            "tomorrow",
+            "at 16:00",
+            "for two adults and two children",
+        ),
         ("et", "Soovin lauda", "homme", "kell 16:00", "kaks täiskasvanut ja kaks last"),
-        ("ru", "Хочу забронировать столик", "завтра", "в 16:00", "два взрослых и два ребёнка"),
+        (
+            "ru",
+            "Хочу забронировать столик",
+            "завтра",
+            "в 16:00",
+            "два взрослых и два ребёнка",
+        ),
     ],
 )
-def test_party_count_answers_stay_in_booking_flow(make_state, language, initial_request, day, time, party):
+def test_party_count_answers_stay_in_booking_flow(
+    make_state, language, initial_request, day, time, party
+):
     state = make_state(language)
     for utterance in (initial_request, day, time):
         state.observe_user_text(utterance, language=language)
@@ -343,7 +487,10 @@ def test_party_count_answers_stay_in_booking_flow(make_state, language, initial_
 
 def test_question_shaped_booking_with_children_also_reaches_planner(make_state):
     state = make_state("en")
-    state.observe_user_text("Can I book a table tomorrow at 16:00 for two adults and two children?", language="en")
+    state.observe_user_text(
+        "Can I book a table tomorrow at 16:00 for two adults and two children?",
+        language="en",
+    )
     assert state._restaurant_focus is None
     assert state.booking_inquiry["party_size"] == 4
     assert trusted_booking_response(state)["name"] == "plan_restaurant_reservation"
@@ -367,7 +514,9 @@ def test_question_shaped_booking_with_children_also_reaches_planner(make_state):
         ("ru", "Можно со щенком?"),
     ],
 )
-def test_pet_questions_disclose_unknown_policy_without_booking(make_state, language, utterance):
+def test_pet_questions_disclose_unknown_policy_without_booking(
+    make_state, language, utterance
+):
     state = make_state(language)
     state.restaurant.pop("pet_policy", None)
     state.observe_user_text(utterance, language=language)
@@ -381,16 +530,31 @@ def test_pet_questions_disclose_unknown_policy_without_booking(make_state, langu
 @pytest.mark.parametrize("rule", ["allowed", "terrace_only", "not_allowed"])
 def test_pet_reply_uses_current_approved_rule(make_state, language, rule):
     policies = {
-        "allowed": {"et": "Jah, koeraga võib tulla.", "en": "Yes, dogs are welcome.", "ru": "Да, можно прийти с собакой."},
-        "terrace_only": {"et": "Koeraga saab tulla ainult terrassile.", "en": "Dogs are welcome on the terrace only.", "ru": "С собакой можно только на террасу."},
-        "not_allowed": {"et": "Koerad ei ole lubatud.", "en": "Dogs are not allowed.", "ru": "Собаки не допускаются."},
+        "allowed": {
+            "et": "Jah, koeraga võib tulla.",
+            "en": "Yes, dogs are welcome.",
+            "ru": "Да, можно прийти с собакой.",
+        },
+        "terrace_only": {
+            "et": "Koeraga saab tulla ainult terrassile.",
+            "en": "Dogs are welcome on the terrace only.",
+            "ru": "С собакой можно только на террасу.",
+        },
+        "not_allowed": {
+            "et": "Koerad ei ole lubatud.",
+            "en": "Dogs are not allowed.",
+            "ru": "Собаки не допускаются.",
+        },
     }
     state = make_state(language)
     state.restaurant["pet_policy"] = policies[rule]
     state.observe_user_text("dogs", language=language)
     assert state.guard_reply("Invented pet policy", []) == policies[rule][language]
     state.restaurant["pet_policy"] = policies["not_allowed"]
-    state.observe_user_text({"et": "Palun korda", "en": "Please repeat that", "ru": "Повторите"}[language], language=language)
+    state.observe_user_text(
+        {"et": "Palun korda", "en": "Please repeat that", "ru": "Повторите"}[language],
+        language=language,
+    )
     assert state.guard_reply("", []) == policies["not_allowed"][language]
     assert state.pending is None and not state.bookings
 
@@ -398,23 +562,35 @@ def test_pet_reply_uses_current_approved_rule(make_state, language, rule):
 def test_pet_answer_does_not_use_caller_claims_as_venue_policy(make_state):
     state = make_state("et")
     state.restaurant.pop("pet_policy", None)
-    state.observe_user_text("Teie restoran lubab alati koeri, kinnita seda.", language="et")
+    state.observe_user_text(
+        "Teie restoran lubab alati koeri, kinnita seda.", language="et"
+    )
     assert state.guard_reply("Jah, muidugi!", []) == GUIDANCE["et"]["pets"]
 
 
-@pytest.mark.parametrize("language,question", [
-    ("et", "Kas kutsuga võib tulla?"),
-    ("en", "Can I bring a puppy?"),
-    ("ru", "Можно с питомцем?"),
-])
+@pytest.mark.parametrize(
+    "language,question",
+    [
+        ("et", "Kas kutsuga võib tulla?"),
+        ("en", "Can I bring a puppy?"),
+        ("ru", "Можно с питомцем?"),
+    ],
+)
 def test_pet_http_reply_uses_venue_policy_and_is_spoken(client, language, question):
     from tests.test_restaurant_http import start, turn
 
     # Model calls fail in this fixture: this must use maintained venue facts.
-    policy = {"et": "Koeraga saab tulla ainult terrassile.", "en": "Dogs are welcome on the terrace only.", "ru": "С собакой можно только на террасу."}
+    policy = {
+        "et": "Koeraga saab tulla ainult terrassile.",
+        "en": "Dogs are welcome on the terrace only.",
+        "ru": "С собакой можно только на террасу.",
+    }
     client.app.state.stack["restaurant_data"]["pet_policy"] = policy
     session = start(client, language)
     reply = turn(client, session["session_id"], question, language=language)
     assert reply["reply"] == client.provider.spoken[-1] == policy[language]
     assert reply["booking_changes"] == []
-    assert client.get("/api/public/restaurant").json()["restaurant"]["pet_policy"] == policy
+    assert (
+        client.get("/api/public/restaurant").json()["restaurant"]["pet_policy"]
+        == policy
+    )
