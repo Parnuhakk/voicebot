@@ -87,3 +87,44 @@ It then failed the isolated evening caller reply with input similarity **0.0**.
 End-of-run runtime and whole restaurant state checks passed. This remains a
 **failed 2/3 diagnostic**, not a passing strict multilingual batch. No recognition,
 voice, data, safety-copy, checker threshold or independent-ASR hint was changed.
+
+## Published follow-up and remaining speech boundaries
+
+PR #47 was merged as `592d7083150ac047c6ee2d5907e96878ca1cdf6e`. Both jobs in
+PR CI `37199404975` and master CI `37199552343` passed. Locked delivery checks
+matched **102 application/demo source hashes in each web/worker/bridge role**,
+the worker/bridge image IDs, the unchanged speech profile and infrastructure,
+and the original data volume. Prior persistent and event-row prefixes survived;
+the whole prepublication restaurant digest also matched at this check.
+
+A fresh strict serial FAQ run failed after two Estonian passes. The third,
+special-request refusal had exact, fresh captions but failed the independent
+audio-content gate (raw similarity **0.970760**). End-of-batch runtime and whole
+restaurant-state checks passed. Separate one-case note diagnostics passed; three
+unhinted decodes of the same later PCM agreed, with only an already-permitted
+compound-word space. These diagnostics **do not replace the failed batch**, prove
+its failed audio correct, or demonstrate recognizer nondeterminism.
+
+A complete eight-case paired short-input comparison scored **5/8 for MAI-1.5
+and 5/8 for MAI-2**. Both failed isolated evening input; MAI-1.5 also failed a
+foreign-language source control. Foreign controls used the existing Estonian
+caller voice, so the accent limits that evidence. Recognition and production
+voices remain unchanged; no safe replacement was established.
+
+The newer host-only recovery release `8c3b2c7` was preserved by fast-forward;
+its application source is identical to `592d708`. The public browser helper now
+checks the published unified calendar link (`/dashboard#calendar-section`), its
+native section and all three legacy 308 aliases with preserved query strings.
+Desktop/mobile public checks and four negative-navigation controls passed;
+existing privacy, asset, health and retired-host checks remain intact. This is a
+test-only update to the published navigation contract, not an application change.
+
+The next instrumented strict run on `8c3b2c7` also failed after two Estonian
+passes at the note's **0.970760** audio-content gate. Two further unhinted decodes
+of that identical failed PCM agreed with its original rejected transcription:
+negation counts matched, but there were two character replacements and one
+compound-space insertion. Those decodes did not promote the failed result.
+Whole restaurant state, runtime and checker integrity remained unchanged.
+
+The telephone goal remains active. No fresh passing 12-case batch, genuine human
+microphone, carrier path, number ownership or real-restaurant acceptance is claimed.
