@@ -46,4 +46,12 @@ Täielik kohalik ühendatud komplekt: **12 756 läbis, 17 jäeti vahele, 36 subt
 
 GitHubi ühendatud versiooni kontroll enne viimast sõnapiiri parandust: **12 439 läbis, 86 jäeti vahele, 36 subtesti läbis**; lisaks Linuxi hosti/Compose'i kontrollis 216 läbimist ja 5 vahelejätmist. Mõlemad tegelikud konteinerid ehitati; ühised identiteedid kattusid ning native töötaja ja Twilio silla import läbis võrgu ja päris volitusteta konteineris. Windowsis paigaldatud meedia-SDK-ga testitakse rohkem native juhtumeid kui Linuxi põhipakettidega CI-s, seetõttu on arvud erinevad.
 
-Lõpliku PR39 commit'i CI ja avaldamise tagasilugemine kontrollitakse enne töö lõpetamist. Eelnev ebaõnnestunud CI leiti ja parandati; seda ei esitata edukana. Varasem 11 684 läbimise ja kolme kassiküsimuse vana ootuse lahknevusega kontroll oli vahetulemus, mille lahknevused parandati enne ülaltoodud edukat kontrolli.
+Lõplik kontrollitud commit `0be0f2bdbf0c847985fd55c3b8bf0533a339ee00`: [GitHubi kontroll](https://github.com/Parnuhakk/voicebot/actions/runs/37182707750) läbis mõlemad tööd. Linuxi põhipakettidega **12 440 läbis, 86 jäeti vahele, 36 subtesti läbis**; hosti ja Compose'i kontrollis 216 läbimist, 5 vahelejätmist. Konteinerite ehitamine, identiteetide võrdlus ning native töötaja ja silla import läbisid. Lõplik kohalik külalise vestluse, teenindusküsimuste ja kogumiku kontroll: **433 läbis**.
+
+[PR39](https://github.com/Parnuhakk/voicebot/pull/39) ühendati 4. oktoobril kell 06:27:43 UTC, avaldatud koodi commit `0bbffde9d84b52272270adb4439a12b35253acc6`. Avaliku veebisaidi tagasilugemine kell **06:33:06 UTC** kinnitas:
+
+- `/api/public/restaurant`: `customer_questions_version` on `reviewed-service-v1`; kõik neli perevõimalust on `true` ja kõik kolm keeleversiooni olemas.
+- `/api/status`: telefoniprotsessi väljalase on `in_sync`, versioon `0bbffde9d84b52272270adb4439a12b35253acc6`; veeb ja telefon näitavad sama sõrmejälge `b3153e3e98b396d1c2719776e66a1e02442ca12f6de0086704ea1bbbd94a599c`.
+- `public_ingress_verified` ja `carrier_call_verified` on endiselt `false`. Päris operaatorikõnet ei tehtud; staatuseraport ei tõenda akustilist kvaliteeti.
+
+Eelnev ebaõnnestunud CI leiti ja parandati; seda ei esitata edukana. Varasem 11 684 läbimise ja kolme kassiküsimuse vana ootuse lahknevusega kontroll oli vahetulemus, mille lahknevused parandati enne ülaltoodud edukat kontrolli.
