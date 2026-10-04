@@ -538,8 +538,12 @@ async def fallback_audio(language="et"):
 
 
 def prewarm(proc):
+    from .business import business_type
+
     protect_logs()
-    proc.userdata["vad"] = silero.VAD.load()
+    # Keep short restaurant utterance pauses inside one unrestricted STT request.
+    options = {"min_silence_duration": 1.0} if business_type() == "restaurant" else {}
+    proc.userdata["vad"] = silero.VAD.load(**options)
 
 
 async def play_failure(room, language="et"):
