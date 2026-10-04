@@ -94,6 +94,9 @@ def environment(source, *, bridge_source=None):
     ):
         if k in source_env:
             env[k] = source_env[k]
+    # A missing web override means its business/account default, never the
+    # invoking shell's unrelated provider choice.
+    env["VOICEBOT_STT_PROVIDER"] = source_env.get("VOICEBOT_STT_PROVIDER", "")
     env["STAY_DEMO_WRITES"] = source_env.get(
         "STAY_DEMO_WRITES", source_env.get("EASY_DEMO_WRITES", "0")
     )

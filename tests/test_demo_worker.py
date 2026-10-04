@@ -90,7 +90,7 @@ def test_worker_does_not_authorize_individual_stt_fragments():
             patch("app.worker.AgentSession", return_value=session) as constructed,
             patch("app.worker.TelephoneAgent"),
             patch(
-                "app.worker.TelephoneSTT",
+                "app.worker.TelephoneSTT.from_env",
                 return_value=SimpleNamespace(aclose=AsyncMock()),
             ),
             patch("app.worker.groq.LLM"),
