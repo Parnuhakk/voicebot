@@ -9,11 +9,11 @@
     />
     <title>Voicebot · Restaurant reception</title>
     <script src="/operator-dashboard.js?v=e2bebda58021"></script>
-    <link rel="stylesheet" href="/restaurant.css?v=697d634f4c9c" />
-    <link rel="stylesheet" href="/operator-dashboard.css?v=bcee0c7e5fde" />
+    <link rel="stylesheet" href="/restaurant.css?v=1be2bdb3e744" />
+    <link rel="stylesheet" href="/operator-dashboard.css?v=0063de3a89f6" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script src="/speech-playback.js?v=279720c050cc" defer></script>
-    <script src="/restaurant.js?v=f054ddea9a94" defer></script>
+    <script src="/restaurant.js?v=d1181cf61932" defer></script>
     <script src="/speech-capture.js?v=fb9adf1eaf2e" defer></script>
   </head>
   <body>
@@ -216,6 +216,13 @@
             ><button
               type="button"
               class="example-button secondary"
+              data-example="incomplete"
+              data-copy="exampleIncomplete"
+            >
+              Puuduva ajaga soov</button
+            ><button
+              type="button"
+              class="example-button secondary"
               data-example="menu"
               data-copy="exampleMenu"
             >
@@ -275,7 +282,14 @@
           </div>
           <form id="reservation-form" class="reservation-form">
             <label for="reservation-date" data-copy="date">Kuupäev</label
-            ><input id="reservation-date" name="date" type="date" required />
+            ><input
+              id="reservation-date"
+              name="date"
+              type="date"
+              required
+              aria-describedby="reservation-time-help reservation-date-error"
+            />
+            <p id="reservation-date-error" class="helper reservation-error" hidden></p>
             <label for="reservation-time" data-copy="time">Saabumisaeg</label
             ><input
               id="reservation-time"
@@ -283,7 +297,10 @@
               type="time"
               required
               step="900"
+              aria-describedby="reservation-time-help reservation-time-error"
             />
+            <small id="reservation-time-help" data-copy="timeHelp">Kuupäev ja saabumisaeg on Tallinna ajas. Vali aeg 15-minutilise sammuga.</small>
+            <p id="reservation-time-error" class="helper reservation-error" hidden></p>
             <label for="reservation-party" data-copy="party"
               >Külalisi koos lastega</label
             ><input
@@ -294,7 +311,10 @@
               max="6"
               required
               inputmode="numeric"
+              aria-describedby="reservation-party-help reservation-party-error"
             />
+            <p id="reservation-party-error" class="helper reservation-error" hidden></p>
+            <p id="reservation-party-help" class="helper" data-copy="capacityHelp">Demo: 1–6 külalist koos lastega. Suurema grupi ja erisoovid kinnitab personal.</p>
             <button id="reservation-prepare" type="submit" data-copy="prepare">
               Kontrolli lauda
             </button>
@@ -347,9 +367,6 @@
           >
             End reservation session
           </button>
-          <p class="helper" data-copy="capacityHelp">
-            Suure grupi ja erisoovid peab kinnitama personal.
-          </p>
         </section>
       </div>
       <section id="bookings-section" class="panel" aria-labelledby="bookings-title">

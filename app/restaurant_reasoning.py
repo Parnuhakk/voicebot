@@ -182,6 +182,10 @@ def safe_wording(reply: str, language: str) -> bool:
         r"\btable\b.{0,65}\bavailable\b|\blaud\b.{0,65}\b(?:vaba|saadaval)\b|"
         r"\bсвобод\w*\b.{0,65}\bстол\w*\b|"
         r"\b(?:allergen[- ]free|allergy[- ]safe|safe for.*allerg|allergeenivaba|allergiale ohutu|без аллергенов|безопасн\w*.*аллерг)\b|"
+        # Unsupported actions stay in deterministic guidance, even when a
+        # mixed question loses its topic or a model reviewer wrongly approves.
+        r"\b(?:waitlists?|waiting\s+lists?|callbacks?|ootenimekir\w*|tagasihelist\w*|перезвон\w*|позвон\w*|лист\w* ожидани\w*|обратн\w* звон\w*)\b|"
+        r"\bcall\b.{0,40}\bback\b|\bhelist\w*\b.{0,40}\btagasi\b|"
         r"[€$]|\b(?:euros?|euro\w*|EUR|dollars?|USD|рубл\w*)\b|"
         r"\b(?:tell|provide|send)\b.{0,40}\b(?:phone|email|address)\b|"
         r"\b(?:öelge|andke|saatke)\b.{0,40}\b(?:telefon|e-posti|aadress)\w*\b|"

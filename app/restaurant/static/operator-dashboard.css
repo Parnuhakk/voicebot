@@ -3,7 +3,7 @@
 .icon-library { position: absolute; width: 0; height: 0; overflow: hidden; }
 :root.operator-dashboard {
   color: #19333f; background: #f2f6f7; color-scheme: light;
-  --green: #1b6e78; --line: #dce6e9; --muted: #61747e; --sidebar-width: 232px;
+  --green: #1b6e78; --line: #dce6e9; --muted: #60737d; --sidebar-width: 232px;
 }
 .operator-dashboard body { font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
 .operator-dashboard :is(button, a, input, select, summary) { touch-action: manipulation; }
