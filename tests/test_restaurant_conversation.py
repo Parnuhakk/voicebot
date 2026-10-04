@@ -389,7 +389,7 @@ def test_unknown_question_does_not_replay_previous_booking_plan(make_state):
     inquiry = state.booking_inquiry
     state.observe_user_text("What is the Wi-Fi password?")
     side_answer = trusted_booking_response(state)["content"]
-    assert side_answer.startswith(COPY["en"]["information_unknown"])
+    assert side_answer.startswith(state.information_reply("amenities_help"))
     assert side_answer.endswith(COPY["en"]["resume_check"])
     assert state.booking_inquiry == inquiry
     assert state.pending is None
@@ -408,11 +408,11 @@ def test_unknown_question_with_numbers_cannot_become_a_booking(
     previous = state.booking_inquiry
     state.observe_user_text(question)
     side_answer = trusted_booking_response(state)["content"]
-    assert side_answer.startswith(COPY["en"]["information_unknown"])
+    assert side_answer.startswith(state.information_reply("amenities_help"))
     if has_inquiry:
         assert side_answer.endswith(COPY["en"]["resume_check"])
     else:
-        assert side_answer == COPY["en"]["information_unknown"]
+        assert side_answer == state.information_reply("amenities_help")
     assert state.booking_inquiry == previous
 
 
@@ -430,9 +430,12 @@ def test_unverified_english_question_does_not_get_unrelated_menu_answer(
     state = make_state()
     state.observe_user_text(question)
     assert state.language == "en"
-    assert trusted_booking_response(state) == {
-        "content": COPY["en"]["information_unknown"]
-    }
+    expected = (
+        state.information_reply("amenities_help")
+        if "Wi-Fi" in question
+        else COPY["en"]["information_unknown"]
+    )
+    assert trusted_booking_response(state) == {"content": expected}
 
 
 def test_ambiguous_time_change_does_not_keep_previous_time():

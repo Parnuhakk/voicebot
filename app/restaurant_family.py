@@ -12,17 +12,25 @@ LABELS = {
     "en": ("drawing activities", "toys", "a play corner", "a children's menu"),
     "ru": ("возможность порисовать", "игрушки", "игровой уголок", "детское меню"),
 }
-MENU = re.compile(
-    r"lastemenüü|laste\s+menüü|(?:children'?s?|kids'?|child)\s+menu|детск\w*\s+меню"
-)
-ACTIVITIES = re.compile(
+
+
+def _fold(text: str) -> str:
+    return text.casefold().translate(str.maketrans({"ä": "a", "ö": "o", "õ": "o", "ü": "u", "ё": "е", "’": "'"}))
+
+
+def _pattern(text: str) -> re.Pattern[str]:
+    return re.compile(_fold(text))
+
+
+MENU = _pattern(r"lastemenüü|laste\s+menüü|(?:children'?s?|kids'?|child)\s+(?:menu|meals?)|детск\w*\s+меню")
+ACTIVITIES = _pattern(
     r"joonist\w*|värvim\w*|mänguas\w*|mängunur\w*|laste\s+(?:nurk|tegevus)\w*|"
-    + r"colou?ring|crayons?|drawing|art supplies|toys?|play\s+(?:corner|area|room)|"
-    + r"рисова\w*|порисова\w*|раскрас\w*|игруш\w*|игров\w*\s+(?:угол\w*|комнат\w*|зон\w*)"
+    + r"colou?ring|crayons?|\bdraw(?:ing)?\b|art supplies|toys?|play\s+(?:corner|area|room)|"
+    + r"рисова\w*|порисова\w*|рисун\w*|раскрас\w*|игруш\w*|игров\w*\s+(?:угол\w*|комнат\w*|зон\w*)"
 )
-WELCOME = re.compile(
+WELCOME = _pattern(
     r"(?:kas|võib|saab).*(?:lastega|lapsega).*(?:tulla|külastada)|"
-    + r"(?:mida|kas|on).*(?:lastele|lapsel|lapsed).*(?:teha|tegevus|mängida)|"
+    + r"(?:mida|kas|on).*(?:lastele|laps\w*).*(?:teha|tegevus|mängida)|"
     + r"(?:kas|on).*(?:laste|pere)sõbralik|"
     + r"(?:are|is).*(?:child|kid|family)[ -]friendly|"
     + r"(?:can|may).*(?:bring|come with).*(?:children|kids|child|baby)|"
@@ -31,13 +39,14 @@ WELCOME = re.compile(
     + r"(?:можно|можем).*(?:с\s+(?:детьми|реб[её]нком)|привести\s+реб[её]нка)|"
     + r"(?:подходит|подойд[её]т).*(?:детям|для\s+детей)"
     + r"|(?:есть|чем|что).*(?:заняться|делать|поиграть).*(?:детям|реб[её]нку|для\s+детей)"
+    + r"|чем.*(?:дети|реб[её]нок).*заня\w*"
 )
-DETAILS = re.compile(
-    r"järelevalv|lapsehoid|vanus|vanuse|puhast|tasut|maksab|hind|broneer|"
-    + r"supervis|babysit|childcare|age\b|ages\b|clean|free\b|charge|cost|price|reserv|"
-    + r"присмотр|нян|возраст|убира\w*|чист\w*|бесплат|платн|стоит|стоим|брон"
+DETAILS = _pattern(
+    r"järelevalv|lapsehoid|vanus|vanuse|puhast|tasut|maksab|hind|broneer|kaasa|pliiats|kriit|"
+    + r"supervis|babysit|childcare|age\b|ages\b|clean|free\b|charge|cost|price|reserv|take.*home|pencils?|crayons?|"
+    + r"присмотр|нян|возраст|убира\w*|чист\w*|бесплат|платн|стоит|стоим|брон|домой|карандаш|мелк"
 )
-MENU_DETAILS = re.compile(
+MENU_DETAILS = _pattern(
     r"allerg|allergeen|аллерг|ingredient|koostis|состав|sisald|contain|"
     + r"mis\s+(?:road|toidud|valik)|mida.*(?:süüa|lastemenüüs|pakute)|"
     + r"what.*(?:dishes|food|serve|include|on|in)|"
@@ -47,7 +56,7 @@ MENU_DETAILS = re.compile(
 
 def family_topic(text: str) -> str | None:
     """Separate facility facts from party counts and unconfirmed details."""
-    text = text.casefold()
+    text = _fold(text)
     menu = MENU.search(text)
     activity = ACTIVITIES.search(text)
     if not (menu or activity or WELCOME.search(text)):

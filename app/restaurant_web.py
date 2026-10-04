@@ -72,6 +72,7 @@ def add_restaurant_routes(app, sessions):
             },
             "table_booking_ready": app.state.capabilities["slot_booking_ready"],
             "answer_policy_version": "grounded-restaurant-v1",
+            "customer_questions_version": "reviewed-service-v1",
             "booking_interruption_version": "resume-booking-v1",
             "grounded_answers_ready": reasoning_enabled(app.state.stack["llm_primary"]),
             "booking_access": "operator_demo",

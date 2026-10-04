@@ -12,6 +12,7 @@ from .booking_faq import FAQ_PATH, load_faq, normalize
 from .restaurant_data import DAYS
 from .restaurant_dates import resolve_restaurant_date
 from .restaurant_family import family_topic
+from .restaurant_service_questions import CONFLICTS, GENERAL_TOPICS, general_topic
 from .restaurant_times import ALTERNATIVE, DIGITAL, PREFIX, SUFFIX, parse_spoken_time
 
 
@@ -51,7 +52,7 @@ INFORMATION_TOPICS = (
     "food_orders",
     "family",
     "family_details",
-)
+) + GENERAL_TOPICS
 
 ALLERGY_SAFETY = (
     r"allerg|allergeen|аллерг|глютен|glut(?:ee|e)n|peanut|pähkl|орех|laktoos|lactose|лактоз|"
@@ -146,7 +147,7 @@ def capability_booking_clause(text: str) -> str | None:
 PATTERNS = {
     "allergens": MEDICAL_FOOD_CONCERN
     + r"|allerg|allergeen|аллерг|глютен|glut(?:ee|e)n|peanut|pähkl|орех|laktoos|lactose|лактоз|sisald|contain|koostis|ingredients|содерж|состав",
-    "price": r"\b(?:prices?|costs?|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maks(?:ab|avad|ma)|цен\w*|стоим\w*|сколько(?:\s+\w+){0,2}\s+сто(?:ит|ят|ить))\b",
+    "price": r"\b(?:prices?|costs?|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maks(?:ab|avad|aks|ma|ta|umus)|цен\w*|стоим\w*|сколько(?:\s+\w+){0,2}\s+сто(?:ит|ят|ить))\b",
     "menu": r"menüü?|menu|меню|vegan|веган|vegetarian|taimetoit|вегетар|\b(?:dishes|serve|roogi|блюд\w*)\b|mis.*süüa|mida.*(?:süüa|pakute)",
     "kitchen": r"kitchen|köök|köögi|кухн|(?:kell|kellaajani|millal).*süüa|when.*(?:food|eat)|(?:до скольки|когда).*еда",
     "hours": r"\b(?:hours|open\w*|close\w*|shut|lahtiole\w*|avatud|avate|avane\w*|lahti|kinni|sulg\w*|tööa\w*|откры\w*|закры\w*|работа\w*|часы\s+работы)\b",
@@ -367,6 +368,23 @@ def match_question(
         topics = [topic for topic in topics if topic != "menu"]
     if not topics and (has_dish or has_diet):
         topics = ["menu"]
+    extra = general_topic(information_text)
+    if (
+        not extra
+        and previous
+        and previous.family_allergens
+        and re.fullmatch(
+            r"(?:aga|ja|and|what about|а|и)\s+(?:milk|eggs?|gluten|nuts?|lactose|soy|piim\w*|muna\w*|gluteen\w*|pähkl\w*|laktoos\w*|молок\w*|яйц\w*|глютен\w*|орех\w*|лактоз\w*|со[яю])\s*[.!?]*",
+            text,
+        )
+    ):
+        extra = "child_allergens"
+    if extra == "emergency_help":
+        topics = [extra]
+    elif extra:
+        topics = [extra] + [
+            topic for topic in topics if topic not in CONFLICTS.get(extra, set())
+        ]
     days = tuple(
         index
         for index, pattern in enumerate(DAY_PATTERNS)
@@ -421,8 +439,9 @@ def match_question(
         date_issue,
         recommendation,
         family_allergens=bool(
-            "allergens" in topics
-            and (family or detail_followup and previous and previous.family_allergens)
+            "child_allergens" in topics
+            or "allergens" in topics
+            and (family or previous and previous.family_allergens)
         ),
     )
 

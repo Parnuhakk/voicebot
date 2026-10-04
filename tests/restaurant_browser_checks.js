@@ -10,6 +10,7 @@ async page => {
   await page.goto('http://127.0.0.1:8766/', {waitUntil:'networkidle'});
   const familyInformation = await (await page.request.get('http://127.0.0.1:8766/api/public/restaurant')).json();
   assert.deepEqual(familyInformation.restaurant.family_facilities, {drawing:true,toys:true,play_corner:true,children_menu:true});
+  assert.equal(familyInformation.customer_questions_version, 'reviewed-service-v1');
   assert.equal(await page.locator('a[href]').evaluateAll(links=>links.some(link=>new URL(link.href).hostname==='meretuule.arleserver.cfd')),false,'Robot navigation still opens the removed demo site');
   const chooseLanguage = async code => page.locator('.language-option').filter({
     has: page.locator('input[value="' + code + '"]'),
@@ -275,6 +276,20 @@ async page => {
       await page.waitForFunction(()=>!state.turnBusy);
       assert.equal(await page.locator('#demo-messages .message').last().locator('span').textContent(), familyInformation.family_facilities_summary[language.code]);
       assert.equal(await page.evaluate(()=>state.recap), null, 'family answer created a booking proposal');
+    }
+    const customerQuestions = {
+      et: [['Kas kassiga võib tulla?', 'teiste lemmikloomade'], ['Millised allergeenid on lastemenüüs?', 'lastemenüü koostise'], ['Kas seda kõnet salvestatakse?', 'andmete säilitamise'], ['Mis kell mängunurk avatud on?', 'mängunurga eraldi'], ['Kas lõhe on täna veel saadaval?', 'tänase saadavuse'], ['Lapsel on raske hingata, mida teha?', '112']],
+      en: [['Can I bring a cat?', 'pets other than dogs'], ["What allergens are in the children's menu?", "children's menu ingredients"], ['Is this call being recorded?', 'retention'], ["What are the play corner's opening hours?", 'separate opening hours'], ['Is the salmon still available today?', "today's dish availability"], ['My child is struggling to breathe. What should I do?', '112']],
+      ru: [['Можно прийти с кошкой?', 'другими домашними животными'], ['Какие аллергены есть в детском меню?', 'составе детского меню'], ['Этот звонок записывается?', 'хранения данных'], ['В какие часы открыт игровой уголок?', 'отдельных часах работы'], ['Лосось сегодня ещё есть?', 'наличии блюд сегодня'], ['Ребёнку трудно дышать. Что делать?', '112']],
+    }[language.code];
+    for (const [question, expected] of customerQuestions) {
+      await page.locator('#demo-text').fill(question);
+      await page.locator('#demo-send').click();
+      await page.waitForFunction(()=>!state.turnBusy);
+      const answer = await page.locator('#demo-messages .message').last().locator('span').textContent();
+      assert(answer.includes(expected), `customer question ${question}: ${answer}`);
+      assert.equal(await page.evaluate(()=>state.recap), null, 'service question created a booking proposal');
+      assert.equal(await page.locator('#demo-recap-read').isVisible(), false);
     }
     const timeQuestions = {
       en: ["I'd like a table tomorrow at 6 o clock", 'in the evening', 'Do you mean AM or PM?', 'How many of you are coming, including children?'],

@@ -520,9 +520,13 @@ def test_pet_questions_disclose_unknown_policy_without_booking(
     state = make_state(language)
     state.restaurant.pop("pet_policy", None)
     state.observe_user_text(utterance, language=language)
-    assert state._restaurant_focus == "pets"
+    from app.restaurant_service_questions import general_reply, general_topic
+
+    topic = general_topic(utterance) or "pets"
+    assert state._restaurant_focus == topic
     answer = trusted_booking_response(state)
-    assert answer == {"content": GUIDANCE[language]["pets"]}
+    expected = general_reply(state.restaurant, topic, language) if topic == "other_pets" else GUIDANCE[language]["pets"]
+    assert answer == {"content": expected}
     assert state.pending is None and not state.bookings
 
 
