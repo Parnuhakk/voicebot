@@ -349,7 +349,7 @@ def scenario(language, day):
         "et": {
             "voice": "et-EE-KertNeural",
             "locale": "et-EE",
-            "request": f"Palun broneeri laud neljale inimesele {date} kell kuus õhtul.",
+            "request": f"Soovin lauda neljale inimesele {date} kell kuus õhtul.",
             "premature_yes": "Jah.",
             "conditional": "Jah, kui saame istuda akna ääres.",
             "consent": "Jah, olen nõus.",
