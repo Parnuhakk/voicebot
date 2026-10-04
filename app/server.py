@@ -769,7 +769,7 @@ def create_app():
         else:
             app.include_router(dashboard_api.router)
 
-    from fastapi.responses import FileResponse, Response
+    from fastapi.responses import FileResponse, RedirectResponse, Response
 
     from .booking_web import add_booking_routes
 
@@ -848,10 +848,16 @@ def create_app():
         @app.api_route(
             "/booking-calendar/", methods=["GET", "HEAD"], include_in_schema=False
         )
-        def restaurant_calendar():
-            return FileResponse(
-                os.path.join(static_dir, "booking-calendar.html"),
-                media_type="text/html",
+        @app.api_route(
+            "/booking-calendar.html", methods=["GET", "HEAD"], include_in_schema=False
+        )
+        def restaurant_calendar(request: Request):
+            destination = "/dashboard"
+            if request.url.query:
+                destination += "?" + request.url.query
+            return RedirectResponse(
+                destination + "#calendar-section",
+                status_code=308,
                 headers={"Cache-Control": "no-store"},
             )
 

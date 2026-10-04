@@ -155,15 +155,38 @@ def test_calendar_missing_auth_configuration_and_store_fail_closed(
     assert not Path(adapter.state_db).exists()
 
 
-def test_calendar_assets_are_local_versioned_and_link_real_dashboard(calendar_client):
-    response = calendar_client.get("/booking-calendar.html")
+@pytest.mark.parametrize(
+    "path", ["/booking-calendar", "/booking-calendar/", "/booking-calendar.html"]
+)
+@pytest.mark.parametrize("method", ["get", "head"])
+def test_old_calendar_page_redirects_into_single_workspace(
+    calendar_client, path, method
+):
+    response = getattr(calendar_client, method)(
+        path + "?source=calendar&language=et", follow_redirects=False
+    )
+    assert response.status_code == 308
+    assert (
+        response.headers["location"]
+        == "/dashboard?source=calendar&language=et#calendar-section"
+    )
+    assert response.headers["cache-control"] == "no-store"
+    assert response.content == b""
+
+
+def test_calendar_assets_are_local_versioned_inside_real_dashboard(calendar_client):
+    response = calendar_client.get("/dashboard")
     assert response.status_code == 200
     html = response.text
-    assert 'id="calendar-mode"' in html
+    assert 'id="calendar-section"' in html
+    assert html.count('id="operator-token"') == 1
+    assert 'id="calendar-auth"' not in html
+    assert "<iframe" not in html
+    assert 'id="cal-calendar-mode"' in html
     for target in (
-        "/dashboard#demo-section",
-        "/dashboard#bookings-section",
-        "/dashboard#reservation-heading",
+        "#demo-section",
+        "#bookings-section",
+        "#reservation-heading",
     ):
         assert target in html
     import hashlib
@@ -176,7 +199,7 @@ def test_calendar_assets_are_local_versioned_and_link_real_dashboard(calendar_cl
         assert asset.status_code == 200
         assert match[1] == hashlib.sha256(asset.content).hexdigest()[:12]
         assert "trycloudflare" not in asset.text
-    assert "/booking-calendar.html" in calendar_client.get("/dashboard").text
+    assert 'href="#calendar-section"' in html
 
 
 def test_calendar_disabled_backend_is_controlled_unavailability(

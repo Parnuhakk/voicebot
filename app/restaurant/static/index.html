@@ -11,9 +11,11 @@
     <script src="/operator-dashboard.js?v=e2bebda58021"></script>
     <link rel="stylesheet" href="/restaurant.css?v=1be2bdb3e744" />
     <link rel="stylesheet" href="/operator-dashboard.css?v=e757d9ddf0eb" />
+    <link rel="stylesheet" href="/booking-calendar.css?v=a4596c437ca1" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script src="/speech-playback.js?v=3a5d284b39c2" defer></script>
-    <script src="/restaurant.js?v=aaf72ef746b7" defer></script>
+    <script src="/booking-calendar.js?v=7533f4756704" defer></script>
+    <script src="/restaurant.js?v=33913e032aac" defer></script>
     <script src="/speech-capture.js?v=fb9adf1eaf2e" defer></script>
   </head>
   <body>
@@ -36,7 +38,7 @@
         <div><strong>Meretuule</strong><span data-copy="demo">Fiktiivne restoranidemo.</span></div>
       </div>
       <nav class="navigation" aria-label="Töölaua jaotised" data-aria="navigationLabel">
-        <a href="/booking-calendar.html"><svg class="icon" aria-hidden="true"><use href="#i-grid" /></svg><span data-copy="calendarTitle">Lauakalender</span></a>
+        <a href="#calendar-section"><svg class="icon" aria-hidden="true"><use href="#i-grid" /></svg><span data-copy="calendarTitle">Lauakalender</span></a>
         <a href="#bookings-section"><svg class="icon" aria-hidden="true"><use href="#i-calendar" /></svg><span data-copy="bookingsTitle">Lauabroneeringud</span></a>
         <a href="#calls-section"><svg class="icon" aria-hidden="true"><use href="#i-journal" /></svg><span data-copy="historyTitle">Kõneajalugu</span></a>
         <a href="#demo-section"><svg class="icon" aria-hidden="true"><use href="#i-chat" /></svg><span data-copy="voiceTitle">Proovi kõneabilist</span></a>
@@ -370,6 +372,50 @@
           </button>
         </section>
       </div>
+      <section id="calendar-section" class="calendar-widget" aria-labelledby="cal-title" tabindex="-1">
+        <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <symbol id="cal-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" /></symbol>
+          <symbol id="cal-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></symbol>
+          <symbol id="cal-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6" /></symbol>
+          <symbol id="cal-timeline" viewBox="0 0 24 24"><path d="M7 4v16M3 8h13M11 13h10M3 18h10" /></symbol>
+        </svg>
+        <div class="page-heading"><div><h2 id="cal-title" data-calendar-copy="title">Lauakalender</h2><p data-calendar-copy="intro">Lauad ja broneeringud ühes vaates.</p></div><span class="demo-badge" id="cal-mode-badge"></span><a class="primary" id="cal-real-booking" href="#reservation-heading" data-calendar-copy="prepare">Kontrolli lauda</a><button class="primary" id="cal-new-booking" data-calendar-copy="newBooking" type="button" hidden>Uus näidisbroneering</button></div>
+        <div class="calendar-access">
+          <label for="cal-calendar-mode" data-calendar-copy="mode">Kalendri vaade</label><select id="cal-calendar-mode"><option value="live" data-calendar-copy="live" selected>Operaatori kalender</option><option value="preview" data-calendar-copy="preview">Fiktiivne eelvaade</option></select>
+          <button class="replay-button" id="cal-refresh-calendar" type="button" data-calendar-copy="refresh" disabled>Uuenda</button>
+          <p id="cal-mode-notice"></p><p id="cal-calendar-status" role="status" aria-live="polite"></p>
+        </div>
+        <div class="calendar">
+          <div class="calendar-toolbar">
+            <div class="date-heading"><svg class="icon" aria-hidden="true"><use href="#i-calendar" /></svg><h3 id="cal-date-heading"></h3><span class="year" id="cal-year-label"></span><span class="date-divider" aria-hidden="true"></span><label class="sr-only" for="cal-time-select" data-calendar-copy="arrival">Saabumisaeg</label><select id="cal-time-select"></select></div>
+            <div class="calendar-controls"><button class="icon-button" id="cal-previous-week" type="button" data-calendar-aria="previousWeek"><svg class="icon rotate" aria-hidden="true"><use href="#cal-chevron" /></svg></button><label class="month-picker"><span id="cal-month-label"></span><input id="cal-date-picker" type="date" data-calendar-aria="chooseDate" /></label><button class="icon-button" id="cal-next-week" type="button" data-calendar-aria="nextWeek"><svg class="icon" aria-hidden="true"><use href="#cal-chevron" /></svg></button></div>
+          </div>
+          <div class="week-strip" id="cal-week-strip" data-calendar-aria="chooseDay"></div>
+        </div>
+        <div class="booking-workspace">
+          <section class="floor-panel" aria-labelledby="cal-floor-heading">
+            <div class="floor-header"><div><h3 id="cal-floor-heading" data-calendar-copy="room">Saal</h3><p id="cal-table-summary"></p></div><div class="view-switch" role="tablist" data-calendar-aria="view"><button id="cal-floor-tab" type="button" role="tab" data-calendar-aria="floor" aria-selected="true" aria-controls="cal-floor-view" tabindex="0"><svg class="icon" aria-hidden="true"><use href="#i-grid" /></svg><span data-calendar-copy="floor">Saaliplaan</span></button><button id="cal-timeline-tab" type="button" role="tab" data-calendar-aria="timeline" aria-selected="false" aria-controls="cal-timeline-view" tabindex="-1"><svg class="icon" aria-hidden="true"><use href="#cal-timeline" /></svg><span data-calendar-copy="timeline">Ajajoon</span></button></div></div>
+            <div class="capacity-tabs" role="tablist" data-calendar-aria="capacity"></div>
+            <div id="cal-table-content" role="tabpanel" aria-labelledby="cal-capacity-all">
+              <div id="cal-floor-view" role="tabpanel" aria-labelledby="cal-floor-tab"><div class="floor-map"><div class="window-wall"><span data-calendar-copy="window">Aknaäärsed kohad</span></div><div class="tables" id="cal-tables"></div><div class="room-footer"><span class="entrance" data-calendar-copy="entrance">Sissepääs</span><span class="room-name" data-calendar-copy="room">Saal</span><span class="plant" aria-hidden="true"><svg class="icon"><use href="#i-leaf" /></svg></span></div></div></div>
+              <div id="cal-timeline-view" role="tabpanel" aria-labelledby="cal-timeline-tab" hidden><div class="timeline-scroll"><div id="cal-timeline-grid"></div></div><p class="timeline-note" id="cal-timeline-note"></p></div>
+            </div>
+            <div class="floor-bottom"><div class="legend"><span><i class="available-dot"></i><span data-calendar-copy="noConflict">Konflikti pole</span></span><span><i class="reserved-dot"></i><span data-calendar-copy="reservedHeld">Broneeritud / hoitud</span></span><span><i class="unknown-dot"></i><span data-calendar-copy="unknown">Teadmata</span></span></div><span id="cal-availability-count"></span></div>
+          </section>
+          <aside class="assistant-panel" id="cal-preview-panel" aria-labelledby="cal-assistant-heading" hidden>
+            <div class="assistant-header"><span class="assistant-icon"><svg class="icon" aria-hidden="true"><use href="#i-wave" /></svg></span><div><h3 id="cal-assistant-heading" data-calendar-copy="assistant">Kõneabiline</h3><p data-calendar-copy="callToTable">Kõnest lauani.</p></div></div>
+            <div class="voice-stage" id="cal-voice-stage" data-stage="ready"><div class="waveform" id="cal-waveform" aria-hidden="true"></div><p id="cal-voice-status" role="status" aria-live="polite"></p><span id="cal-voice-caption"></span></div>
+            <div class="conversation" id="cal-conversation" data-calendar-aria="conversation"><div class="conversation-message guest" id="cal-guest-message"><span class="speaker" data-calendar-copy="guest">Külaline</span><p></p></div><div class="request-details"><span id="cal-request-date"></span><span id="cal-request-time"></span><span data-calendar-copy="fourGuests">4 külalist</span></div><div class="conversation-message assistant-message" id="cal-assistant-message" hidden><span class="speaker">Voicebot</span><p id="cal-assistant-reply"></p></div><div class="conversation-message guest consent-message" id="cal-consent-message" hidden><span class="speaker" data-calendar-copy="guest">Külaline</span><p data-calendar-copy="consent">„Jah, see sobib.”</p></div></div>
+            <div class="booking-result" id="cal-booking-result" hidden><span class="result-check"><svg class="icon" aria-hidden="true"><use href="#cal-check" /></svg></span><div><strong data-calendar-copy="demoConfirmed">Näidisbroneering kinnitatud</strong><span id="cal-result-details"></span></div></div>
+            <div class="assistant-bottom"><div class="progress-track" aria-hidden="true"><span id="cal-story-progress"></span></div><button class="replay-button" id="cal-replay" type="button" data-calendar-copy="replay">Esita uuesti</button><p data-calendar-copy="sampleNotice">Näidiskõne. Päris broneeringut ei tehta.</p></div>
+          </aside>
+          <aside class="live-panel" id="cal-live-panel"><h3 data-calendar-copy="liveHeading">Broneeringud ilma oletusteta.</h3><p id="cal-venue-rules"></p><p data-calendar-copy="snapshotNotice">Hetktõmmis, mitte broneeringu garantii. Uuenda enne tegutsemist.</p><a class="primary" href="#demo-section" data-calendar-copy="voiceDemo">Proovi kõneabilist</a><a href="#bookings-section" data-calendar-copy="savedBookings">Vaata broneeringuid</a><p data-calendar-copy="consentNotice">Lauad salvestatakse alles pärast kokkuvõtet ja selget kinnitust. Restoran on fiktiivne.</p></aside>
+        </div>
+        <div class="service-summary"><div><div><strong data-calendar-copy="seating">Istekohti kõigile</strong><span id="cal-seating-description"></span></div></div><div class="seating-stat"><strong id="cal-total-seats">—</strong><span data-calendar-copy="totalSeats">istekohti kokku</span></div><div class="seating-stat"><strong id="cal-dining-duration">—</strong><span data-calendar-copy="duration">minutit broneeringu kohta</span></div></div>
+        <dialog id="cal-table-dialog" aria-labelledby="cal-table-dialog-title"><div class="dialog-heading"><h3 id="cal-table-dialog-title"></h3><button class="icon-button" type="button" data-close="table-dialog" data-calendar-aria="closeTable"><svg class="icon" aria-hidden="true"><use href="#cal-close" /></svg></button></div><p id="cal-table-dialog-description"></p><div class="table-detail" id="cal-table-dialog-detail"></div><button class="primary" type="button" data-close="table-dialog" data-calendar-copy="back">Tagasi saali</button></dialog>
+        <dialog id="cal-booking-dialog" aria-labelledby="cal-booking-dialog-title"><div class="dialog-heading"><div><h3 id="cal-booking-dialog-title" data-calendar-copy="newBooking">Uus näidisbroneering</h3><p data-calendar-copy="addSample">Lisa kalendrisse näidisbroneering.</p></div><button class="icon-button" type="button" data-close="booking-dialog" data-calendar-aria="closeBooking"><svg class="icon" aria-hidden="true"><use href="#cal-close" /></svg></button></div><form id="cal-booking-form"><label for="cal-booking-name" data-calendar-copy="guestName">Külalise nimi</label><input id="cal-booking-name" name="name" value="Alex Morgan" required maxlength="60" /><div class="form-row"><div><label for="cal-booking-date" data-calendar-copy="date">Kuupäev</label><input id="cal-booking-date" type="date" name="date" required /></div><div><label for="cal-booking-time" data-calendar-copy="arrival">Saabumisaeg</label><select id="cal-booking-time" name="time"></select></div></div><label for="cal-booking-party" data-calendar-copy="guests">Külaliste arv</label><select id="cal-booking-party" name="party"><option value="2" data-calendar-copy="party2">2 külalist</option><option value="4" data-calendar-copy="party4" selected>4 külalist</option><option value="8" data-calendar-copy="party8">8 külalist</option></select><p id="cal-booking-error" class="form-error" role="alert" hidden></p><p class="form-help" data-calendar-copy="localNotice">Ainult eelvaade. Säilib lehel kuni uuesti laadimiseni.</p><button class="primary" type="submit" data-calendar-copy="addBooking">Lisa näidisbroneering</button></form></dialog>
+        <div class="toast" id="cal-toast" role="status" aria-live="polite" hidden></div>
+      </section>
       <section id="bookings-section" class="panel" aria-labelledby="bookings-title">
         <div class="panel-heading">
           <div>

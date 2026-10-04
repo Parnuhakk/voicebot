@@ -17,6 +17,7 @@ async function run() {
     '/dashboard': ['index.html', 'text/html; charset=utf-8'],
     '/restaurant.css': ['restaurant.css', 'text/css'],
     '/operator-dashboard.css': ['operator-dashboard.css', 'text/css'],
+    '/booking-calendar.css': ['booking-calendar.css', 'text/css'],
     '/landing.css': ['landing.css', 'text/css'],
     '/favicon.svg': ['favicon.svg', 'image/svg+xml'],
     '/fonts/figtree-latin.woff2': [path.join(root, 'app/dashboard/static/fonts/figtree-latin.woff2'), 'font/woff2'],
@@ -58,10 +59,11 @@ async function run() {
       assert(await page.getByRole('heading', {name:'Hea vastuvõtt algab enne saabumist.'}).isVisible());
       assert(await page.getByRole('link', {name:'Proovi kõneabilist', exact:true}).first().isVisible());
       assert.equal(await page.getByRole('link', {name:'Proovi kõneabilist', exact:true}).first().getAttribute('href'), '/dashboard#demo-section');
-      assert.equal(await page.getByRole('link', {name:'Vaata lauakalendrit', exact:true}).first().getAttribute('href'), '/booking-calendar.html');
+      assert.equal(await page.getByRole('link', {name:'Vaata lauakalendrit', exact:true}).first().getAttribute('href'), '/dashboard#calendar-section');
       assert(await page.getByRole('navigation', {name:'Peamenüü'}).getByRole('link', {name:'Töölaud', exact:true}).isVisible());
       // The overview must hand off to real controls, not nonfunctional mock UI.
       for (const [name, target] of [
+        ['Vaata lauakalendrit', 'calendar-section'],
         ['Broneeri laud', 'reservation-heading'],
         ['Vaata kõneajalugu', 'calls-section'],
         ['Vaata restoraniteavet', 'information-section'],
@@ -95,7 +97,7 @@ async function run() {
       assert.equal(await page.locator('form, input').count(), 0, 'landing exposes a credential or booking form');
       const broken = await page.locator('a[href]').evaluateAll(links => links.map(link => link.getAttribute('href')).filter(href => {
         if (href.startsWith('#')) return !document.getElementById(href.slice(1));
-        return !['/', '/dashboard', '/dashboard#demo-section', '/dashboard#reservation-heading', '/dashboard#calls-section', '/dashboard#information-section', '/booking-calendar.html'].includes(href);
+        return !['/', '/dashboard', '/dashboard#demo-section', '/dashboard#reservation-heading', '/dashboard#calls-section', '/dashboard#information-section', '/dashboard#calendar-section'].includes(href);
       }));
       assert.deepEqual(broken, [], 'unapproved URL or broken local anchor');
       const stylesheet = await page.locator('link[rel="stylesheet"]').getAttribute('href');
@@ -155,7 +157,7 @@ async function run() {
     assert.deepEqual(external, [], 'external runtime dependency');
     assert.deepEqual(errors, [], 'browser errors');
     assert(requests.every(req => req.method === 'GET' && !req.pathname.startsWith('/api/')), 'landing accessed private APIs');
-    console.log(JSON.stringify({result:'passed', widths:[1440,1024,800,540,390,320], workspaceHandoffs:18, contrast:'passed', javascript:'disabled', reducedMotion:'passed', stylesheetFailure:'passed', externalRequests:0, apiRequests:0, screenshots, browser:browser.version()}));
+    console.log(JSON.stringify({result:'passed', widths:[1440,1024,800,540,390,320], workspaceHandoffs:24, contrast:'passed', javascript:'disabled', reducedMotion:'passed', stylesheetFailure:'passed', externalRequests:0, apiRequests:0, screenshots, browser:browser.version()}));
     await context.close();
   } finally {
     if (browser) await browser.close();

@@ -1,9 +1,11 @@
 # Restobot website and robot compatibility
 
 `https://restobot.arleserver.cfd/` is the canonical Voicebot website. The public
-landing shares the authored calendar's style. The preserved operator restaurant
-workspace is at `/dashboard`, and `/booking-calendar.html` integrates the table
-calendar. Stored bookings and the text/microphone demo retain operator authorization.
+landing shares the operator workspace's style. `/dashboard` combines the table
+calendar, stored bookings, text/microphone demo and restaurant information with
+one operator connection. `/dashboard#calendar-section` opens the calendar;
+the former calendar page and slash aliases redirect there with queries preserved.
+Stored bookings, occupancy and the text/microphone demo retain operator authorization.
 
 Use the existing Coolify application domains
 `https://restobot.arleserver.cfd,https://robot.arleserver.cfd`.
@@ -47,8 +49,10 @@ including its assets and APIs, if a fallback route forwards it.
 
 ## Verify
 
-- Restobot `/`, `/dashboard`, `/booking-calendar.html`, `/health`, versioned
+- Restobot `/`, `/dashboard`, `/health`, versioned
   assets and `/api/public/restaurant`: HTTP 200.
+- `/booking-calendar`, `/booking-calendar/` and `/booking-calendar.html`: HTTP 308
+  to `/dashboard` with the original query and `#calendar-section`.
 - Old robot browser pages: HTTP 308 preserving path/query; old `/health`: HTTP 200.
 - Restobot navigation has no links to the retired hostname. Existing restaurant,
   demo and microphone controls remain present.

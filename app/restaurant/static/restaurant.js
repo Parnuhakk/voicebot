@@ -761,6 +761,7 @@ function presentation() {
 }
 function localize() {
   const copy = demoCopy();
+  calendar.setLanguage(uiLanguage());
   document.documentElement.classList.toggle("is-connected", state.connected);
   document.documentElement.lang = uiLanguage();
   document.title = copy.title + " · Voicebot";
@@ -1103,6 +1104,7 @@ function logout() {
   stopAudio();
   state.credential = "";
   state.connected = false;
+  calendar.setConnected(false);
   state.sessionId = state.callId = null;
   state.turnBusy = state.readBusy = state.previewBusy = false;
   state.page = 1;
@@ -1138,6 +1140,7 @@ async function connect() {
     await api("/api/catalogue");
     if (generation !== state.generation) return;
     state.connected = true;
+    calendar.setConnected(true);
     localize();
     status("auth-status", demoCopy().tokenHelp, "success");
     status("demo-status", demoCopy().ready);
@@ -1201,6 +1204,7 @@ function updateBookingReceiptStatus(receipt, action) {
 }
 function appendBookingReceipt(container, change) {
   if (!selectBooking(change)) return;
+  calendar.refresh();
   const generation = state.generation;
   for (const receipt of document.querySelectorAll(".booking-receipt")) {
     if (receipt.dataset.bookingId === String(change.id))
@@ -1941,6 +1945,10 @@ setInterval(() => {
   if (!document.hidden) refreshTelephoneStatus();
 }, 60000);
 setInterval(renderTelephoneStatus, 1000);
+const calendar = window.createBookingCalendar($("calendar-section"), {
+  language: uiLanguage(),
+  readCalendar: (date) => api("/api/restaurant/calendar?date=" + encodeURIComponent(date), { cache: "no-store" }),
+});
 document.addEventListener("visibilitychange", () => {
   renderTelephoneStatus();
   if (!document.hidden) refreshTelephoneStatus();
@@ -2123,12 +2131,14 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 window.addEventListener("pagehide", () => {
+  calendar.clear();
   stopMic();
   stopAudio();
   clearReservationClock();
   for (const controller of state.controllers) controller.abort();
 });
 window.addEventListener("pageshow", () => {
+  calendar.refresh();
   if (!reservation.holdId) return;
   if (currentReservationProposal()) startReservationClock();
   else expireReservationProposal();

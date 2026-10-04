@@ -56,7 +56,7 @@ async page => {
   assert.equal(requests.length, 0, 'choosing a language called a provider before sign-in');
   assert.equal(await page.locator('aside.sidebar').count(),1,'restaurant adaptation removed the dashboard sidebar');
   assert.equal(await page.locator('.sidebar nav a').count(),5,'dashboard navigation is missing');
-  assert(await page.locator('.sidebar nav a[href="/booking-calendar.html"]').isVisible(),'calendar navigation is missing');
+  assert(await page.locator('.sidebar nav a[href="#calendar-section"]').isVisible(),'native calendar navigation is missing');
   for (const href of await page.locator('.sidebar nav a').evaluateAll(links=>links.map(link=>link.getAttribute('href')))) {
     if (!href.startsWith('#')) continue;
     assert(await page.locator(href).isVisible(),`navigation target ${href} is missing`);

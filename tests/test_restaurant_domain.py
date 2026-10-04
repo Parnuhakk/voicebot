@@ -61,7 +61,7 @@ def test_canonical_landing_and_workspace_are_distinct(client):
     links = DemoLinks()
     links.feed(landing.text)
     assert "/dashboard#demo-section" in links.destinations
-    assert "/booking-calendar.html" in links.destinations
+    assert "/dashboard#calendar-section" in links.destinations
     assert 'id="operator-token"' not in landing.text
     assert 'id="operator-token"' in workspace.text
 
