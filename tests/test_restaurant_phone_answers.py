@@ -49,6 +49,7 @@ CASES = [
 
 ESTONIAN_ASR_NOTE_QUESTIONS = [
     "Kas saate minu allergiast kõügile teatada?",
+    "Kas saate minu allergiast külgile teatada?",
     "Kas saate lisada proneeringule eri soovi?",
     "Kas saate mu allergiaproneeringule kirja panna?",
 ]

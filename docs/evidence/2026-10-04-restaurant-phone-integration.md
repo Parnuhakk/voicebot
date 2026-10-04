@@ -6,10 +6,10 @@ The robot-only restaurant release `598a1a1c498f24bac524083e83780b74ce680e52`
 and its published descendant `2b65eee73585b460bf7f6b74627b99bc635ad138` have
 verified synchronization checkpoints. All 94 app/demo files matched the healthy
 web/worker/bridge roles; original volume and LiveKit/SIP/Redis connections were
-preserved. The reviewed clock-choice repair below passed 12,357 tests and 36
-subtests on the 2b65 base, plus ten browser journeys. Newer published `8494f8a`
-was subsequently observed healthy in all three roles; final-source acceptance
-must use that descendant, not treat older receipts as current proof.
+preserved. The combined 8494/clock repair/final literal-question tree passed
+12,372 tests and 36 subtests, plus ten browser journeys. Published `8494f8a`
+was observed healthy in all three roles; publication and exact-source acceptance
+of these final repairs remain separate gates, not inferred from older receipts.
 
 Strict final native telephone acceptance is **not complete**: the first 598 suite
 passed ET menu/allergy before an unexpected note reply; EN menu/allergy/note before
@@ -526,3 +526,52 @@ do not justify dropping or normalizing that safety requirement. Estonian native
 input still needs identification of the complete synthetic-question artifact;
 no fuzzy production substitution is introduced. Concurrent state changes and
 runtime-not-current deferrals stay failures, not accepted telephone evidence.
+
+## SDK-segmented Estonian capability question
+
+The published 8494 language intake preserves automatic recognition: weak `yeah`
+and `yep` acknowledgements do not choose the initial call language. Changed-area
+checks passed **292** tests in32.09s; independent Codex review passed **73** plus
+**24** acknowledgement/consent/switch/refusal scenarios. The combined 8494/clock
+repair tree then passed **12,367 tests, 36 subtests**, six skips and two warnings,
+207.10s; basetemp `/tmp/opencode/restaurant-recovery-8494-clock-final`. All ten
+browser journeys passed with no JavaScript errors or external requests.
+
+Shared-lock deferrals prevented native candidate characterization on 8494; they
+are not content failures or speech passes. An alternate real `TelephoneSTT` plus
+default Silero `StreamAdapter` run on the public calm-caller synthetic question
+identified a complete `külgile` question artifact, ET/six words/0.951 similarity,
+with the old selector returning `allergens`. Comparison used only predefined
+public substitutions; recognition text/audio/credentials were never printed or
+stored. The diagnostic itself exited1 after attempting a nonexistent `VAD.aclose`
+method following successful stream/adapter/recognizer closure. Its metadata is a
+root-cause observation, not a clean native acceptance receipt.
+
+Only `Kas saate minu allergiast külgile teatada?` is added to the existing ET
+FAQ variants. Four real-path parameter cases guard canonical refusal, automatic
+recognized-HTTP input, owned-hold/expiry retention with revoked delivery/consent,
+and partial input that cannot change an English booking. Before the literal
+addition, **three new cases failed** while thirteen existing/partial checks passed.
+The focused phone/reasoning/interruption suite then passed **309** in23.32s.
+No matcher, output safety substitution, booking parser, voice or recognition
+setting changes. Exact identity with the earlier native artifact remains unproven;
+final wire acceptance is still required, rather than inferred from local SDK input.
+
+A fresh 8494 read-only storage checkpoint preserves every original and alias-
+premerge prefix across all four databases, integrity `ok`: restaurant56reservations/
+109actions/1othercallerhold, Easy42writes and Stay5bookings. It did not claim the
+shared lock or whole-table equality. The fresh-environment signed incoming
+webhook-only probe also passed403/200 and `no-store`, with no agent/carrier call.
+Receipts: `restaurant-recovery-clock-premerge.json` and
+`restaurant-recovery-8494-incoming.json` under `/tmp/opencode`.
+
+Fresh full verification of the final alias/clock/inherited-language integration:
+**12,372 passed, 36 subtests**, six explicit skips, two existing warnings, 176.18s;
+command above with basetemp `/tmp/opencode/restaurant-recovery-kulgile-final`.
+All ten Chromium journeys passed again with zero JavaScript errors and external
+requests. Full native ET/EN/RU acceptance is still a separate pending gate.
+
+Independent Codex final-alias review: **16** variant/partial cases and all **128**
+phone-answer cases passed, plus bounded JSON/routing/context assertions. No
+concrete P0/P1 found; exact phrase boundaries, capability priority and retained
+owned-hold/fresh-delivery consent were verified. It makes no native-wire claim.
