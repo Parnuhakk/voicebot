@@ -185,6 +185,11 @@ POSITIVE = {
         "Everything works for us",
         "That'll work perfectly for us",
         "Thats exactly what I wanted",
+        "So good",
+        "Quite good",
+        "Just perfect",
+        "Exactly right",
+        "Perfectly fine for us",
     ),
     "ru": (
         "да",
@@ -236,6 +241,7 @@ POSITIVE = {
         "Принимаю",
         "Хорошо, делайте",
         "Да, можно",
+        "Это было бы идеально",
     ),
 }
 NEGATIVE = {
