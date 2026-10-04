@@ -483,6 +483,69 @@ checks, zero active rooms, unchanged protected checkout/all 19 status entries an
 all 23 unrelated running-service identities. Worker/bridge were already at
 contributor revision `56e7c9f`; that is not this session's final deployment proof.
 
+## Published live release — October 4
+
+Final normal integration **`2ca82abddc1a7eefb9176b3d59c653307c7bf7cf`** was pushed
+to both the recovery branch and `master` without force or discarded contributor
+history. The configured webhook deployed that exact source. At **00:00:30 UTC**,
+the running healthy web container and public robot website served the exact index
+and all six matching assets. Restaurant-only/synthetic/language DTOs are correct;
+`/hotel` and `/hotel/` return 410 without redirects, unauthenticated confirmation
+returns 403.
+
+The installed controller returned **`PASS: release_synced`**. At **00:03:50 UTC**,
+worker and bridge are healthy on the exact same media image, labelled with that
+release and the running web container identity. Native dependency validation
+passes; public release status is `in_sync`, with common fingerprint
+`182ce15549e2ce6d18f2e015592332f8717a5e26b6a157bd87ee039a04abd4ef`.
+That is a dated controller identity check, not perpetual carrier/provider health.
+
+Headless Chromium on the actual public site verifies ET/EN/RU landmarks and
+first-screen mobile controls, no overflow, page errors, external or mutation
+requests; it does not access a physical microphone. The retired Meretuule host
+does not serve the website, API, health or asset paths and does not redirect:
+the live proxy responds **503**, not the initially over-specific expected 404.
+No DNS removal or carrier operation is inferred, and that hostname was not
+republished or changed during this release.
+
+The first bounded fictional RTC batch produced a **Russian PASS**: seven final
+inputs, nine replies, three canonical recap segments and 4,117 voiced frames;
+premature/conditional/declined turns did not write, and an independent strong-
+ownership ledger check verified the later confirmed reservation and cancellation.
+ET/EN attempts failed after two final inputs/four replies without a canonical
+recap. The batch therefore failed overall; no three-language PASS is inferred.
+
+An isolated real-provider boundary check identified the machine ISO caller date
+as ambiguous in Estonian while time/party were correct. The runner also failed
+to recognize the existing canonical date-ambiguity clarification. Six actual
+unit REDs preceded a probe-only repair: speak one named calendar date using the
+existing date renderer (without an additional relative weekday), and answer
+that canonical ambiguity prompt with the explicit date. All **80** probe cases
+pass, including ownership, premature/conditional/declined writes, exact ledger
+details, bounded independent cleanup, cancellation and child-process failure.
+No application speech/parser/consent policy, room deadline or cleanup guard was
+relaxed. A failed temporary diagnostic wrapper was repaired separately; no raw
+speech/transcript/credential was saved or printed.
+
+The probe-only independent static closure is clear. Fresh full source suites pass:
+**11,858 core / 80 skipped / 36 subtests**, 141.62 seconds, followed by
+**12,263 media / 6 skipped / 36 subtests**, 156.02 seconds. Browser/packaging
+results above attest the unchanged application; `git diff 2ca82ab -- app data/demo`
+is empty. Neither production image copies the host acceptance script.
+
+The named-date provider batch still **failed overall**: Estonian reached six
+inputs/eight replies/two canonical recaps but returned `probe_confirm_unproven`;
+English returned `probe_no_recap` after two inputs/four replies; Russian again
+passed its complete owned confirmation/cancellation, 4,126 voiced frames.
+Blind acceptance retries stopped. Scoped boundary diagnostics now inspect only
+parsed field/keyword/confirmation predicates, canonical reply categories and
+owned-ledger count/match/status flags, never raw text or credentials.
+
+Application services remain at verified `2ca82ab`; shipping the reviewed host
+probe/evidence with `[skip cd]` deliberately avoids restarting that unchanged
+runtime. Final preservation and completion remain gated on actual ET/EN proof,
+the final cleanup results and the final evidence audit.
+
 ## Pre-rollout preservation qualification
 
 Read-only hash-only snapshot at 2026-10-03 20:34:39 UTC records healthy web,

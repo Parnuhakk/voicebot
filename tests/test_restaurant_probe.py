@@ -57,6 +57,8 @@ def probe():
 
 @pytest.fixture
 def transport_probe(monkeypatch):
+    from app.restaurant_call import restaurant_spoken_date
+
     # Only transport fault tests isolate policy. Actual renders below use the
     # real current canonical constructor/COPY, not this deliberately fake text.
     copybook = {
@@ -67,7 +69,14 @@ def transport_probe(monkeypatch):
         for language in ("et", "en", "ru")
     }
     with monkeypatch.context() as local:
-        local.setitem(sys.modules, "app.restaurant_call", NS(COPY=copybook))
+        local.setitem(
+            sys.modules,
+            "app.restaurant_call",
+            NS(
+                COPY=copybook,
+                restaurant_spoken_date=restaurant_spoken_date,
+            ),
+        )
         return load_probe()
 
 
@@ -730,8 +739,9 @@ def rendered(language):
 
 
 @pytest.mark.parametrize("language", ["et", "en", "ru"])
+@pytest.mark.parametrize("date_question", ["date", "date_ambiguous"])
 def test_dialogue_only_missing_details_later_consent_and_independent_cancellation(
-    probe, language
+    probe, language, date_question
 ):
     from app.restaurant_call import COPY
 
@@ -739,7 +749,7 @@ def test_dialogue_only_missing_details_later_consent_and_independent_cancellatio
     replies = iter(
         [
             "no proposal",
-            COPY[language]["date"],
+            COPY[language][date_question],
             COPY[language]["time"],
             rendered(language),
             rendered(language),
@@ -786,6 +796,25 @@ def test_dialogue_only_missing_details_later_consent_and_independent_cancellatio
     assert reads == list(range(1, 10))
     assert result["premature_yes_no_write"] and result["conditional_no_write"]
     assert "bare_yes_no_write" not in result
+
+
+@pytest.mark.parametrize(
+    "language,month", [("et", "oktoobril"), ("en", "October"), ("ru", "октября")]
+)
+def test_spoken_caller_dates_use_one_named_month_and_recover_ambiguous_input(
+    probe, language, month
+):
+    from app.restaurant_call import parse_restaurant_request
+
+    phrases = probe.scenario(language, DAY)
+    assert month in phrases["details"]["date"]
+    assert month in phrases["request"]
+    assert parse_restaurant_request(
+        phrases["details"]["date"],
+        {"date_issue": "date_ambiguous"},
+        now=NOW,
+        expected_field="date_ambiguous",
+    ) == {"date": "2026-10-17"}
 
 
 @pytest.mark.parametrize(

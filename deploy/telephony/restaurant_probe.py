@@ -25,7 +25,7 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).parent))
-from app.restaurant_call import COPY
+from app.restaurant_call import COPY, restaurant_spoken_date
 
 REPLY_TIMEOUT = 60
 CONVERSATION_TIMEOUT = 240
@@ -305,7 +305,9 @@ async def worker_credentials(container):
 def scenario(language, day):
     if language not in ("et", "en", "ru"):
         raise ValueError("probe_language_invalid")
-    date = day.isoformat()
+    # Speak one named calendar date, not a machine ISO sequence or a second
+    # relative weekday. Keep the expected ledger date independently in run().
+    date = restaurant_spoken_date(day.isoformat(), language).rsplit(", ", 1)[-1]
     phrases = {
         "et": {
             "voice": "et-EE-KertNeural",
@@ -418,12 +420,14 @@ async def exercise(speak, read, phrases, language, day):
             field = next(
                 (
                     key
-                    for key in ("date", "time", "party")
+                    for key in ("date", "date_ambiguous", "time", "party")
                     if COPY[language][key] in reply
                 ),
                 None,
             )
             assert field is not None, "probe_no_recap"
+            if field == "date_ambiguous":
+                field = "date"
             assert extra_turns < 3, "probe_detail_limit"
             extra_turns += 1
             reply = await speak(phrases["details"][field])
