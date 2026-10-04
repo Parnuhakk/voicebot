@@ -2,21 +2,23 @@
 
 ## Current verified disposition
 
-The robot-only restaurant release `598a1a1c498f24bac524083e83780b74ce680e52`
-and its published descendant `2b65eee73585b460bf7f6b74627b99bc635ad138` have
-verified synchronization checkpoints. All 94 app/demo files matched the healthy
-web/worker/bridge roles; original volume and LiveKit/SIP/Redis connections were
-preserved. The combined 972/clock repair/final literal-question tree passed
-12,623 tests and 36 subtests, plus eleven browser journeys. Newer published
-`97218039288dcefefa38e6e3b40598de10c50be1` was observed healthy with matching
-source links in all three roles at02:48:42Z, then retained by normal integration.
-Its source/storage acceptance and final repair publication remain separate gates;
-neither is inferred from older receipts.
+Robot-only restaurant release `94baecee81577e9e1f0ba1ff5a350874bb3e94a3` is
+published and synchronized. It retains PR36's clock/FAQ repairs and adds a peer's
+bounded whole-question retention repair. Both master CI jobs passed. Fresh combined
+checks passed 12,646 tests/36 subtests and all eleven Chromium journeys. All94
+app/demo files match each healthy web/worker/bridge role; nine authorization and
+no-store cases pass. Original volume/infrastructure and all original/earlier fresh-
+premerge row prefixes remain intact. Fresh HTTPS/assets/menu/ET-EN-RU mobile and
+robot-only retired-host checks pass. The870 receipts below remain dated checkpoints.
 
-Strict final native telephone acceptance is **not complete**: the first 598 suite
-passed ET menu/allergy before an unexpected note reply; EN menu/allergy/note before
-an independent takeaway-audio rejection; RU menu before an allergy-audio rejection.
-These failures remain recorded and are under metadata-only root-cause investigation.
+Strict complete multilingual native acceptance is **not complete**. On94, English
+and Estonian passed all four cases with unchanged restaurant state. Russian menu
+passed before its allergy-audio rejection.
+Current and historical failures remain recorded; metadata-only diagnosis continues
+without weakening required refusals/referrals or changing production voices/ASR.
+The reviewed private ET whole-canonical compound-spacing correction passed the
+actual94note and takeaway. A minimal shared Russian notice revision is being
+verified; no new-release or complete Russian wire acceptance is claimed yet.
 No physical-microphone, carrier/PSTN or real restaurant acceptance is claimed.
 
 The sections below retain the chronological repair and verification history;
@@ -622,3 +624,239 @@ Pure menu questions still permit separately reviewed free wording; this offline
 comparison does not prove every eligible generated menu reply will be identical.
 No supported reasoning is disabled to satisfy a witness. The live strict caption,
 audio and safety checks remain necessary for the sampled native turns.
+
+## Published `870aa41` release and preservation receipts
+
+- PR36 merged normally at2026-10-04T03:03:16Z under the shared release lock with
+  zero active rooms. Fresh premerge:65 fictional restaurant reservations,
+  127actions/0holds, Easy42writes and Stay5bookings; all original prefixes retained.
+- Current headCI37172603075 and masterCI37172928009 passed both Linux/shared-image
+  jobs. Published870 and reviewed8f complete Git trees are identical; only the
+  evidence document differs from the full-suite6c98 tree. The existing
+  reconciler deferred once on an occupied lock, then returned
+  `PASS: release_current`; all three roles already matched the new published source.
+- Locked03:07:44Z verification matched all94app/demo files in each healthy role,
+  release/source links and identical media image. Original volume and original
+  LiveKit/SIP/Redis IDs remain unchanged. Media configuration matches and initial
+  recognition remains automatic. Nine private missing/wrong/valid authorization
+  cases returned403/403/200, all `no-store`; no credentials were emitted.
+- Read-only03:10:34Z transactions: all four integrity checks `ok`; every original
+  and fresh-premerge row prefix preserved. Restaurant65reservations/127actions/
+  0holds, Easy42writes and Stay5bookings. Business tables equal fresh premerge;
+  legitimate call-history additions are preserved, not claimed as whole-table
+  equality. This proof does not claim a global cross-database snapshot or lock.
+- Fresh-environment signed webhook-only proof passed unsigned403/signed200,
+  `no-store` and the bound stream contract. No agent dispatch/carrier call and
+  no account/original-number ownership certificate are claimed.
+- Fresh public Chromium proof passed HTTPSroot200, six exact same-origin asset
+  fingerprints, three menu items, health/private denial, hotel410 and all four
+  removed-host paths503. ET/EN/RU voice and microphone controls fit the first
+  390x844 screen without overflow; all four new production screenshots were read.
+- Installed-image packaging: the first wrapper used a nonexistent opt-in name,
+  so only3passed/2skipped. After reading the actual test contract and supplying
+  `VOICEBOT_PACKAGING_BASE_IMAGE` with the installed image digest, all5passed
+  in10.71s; no image pulls or network. The initial skips are not relabeled passes.
+- The branch was normally fast-forwarded to published870 and pushed. No other
+  owner's worktree, goal, caller hold or stored booking was overwritten or cleared.
+
+Receipts under `/tmp/opencode`: `restaurant-recovery-clock-972-{head-ci,
+publication,idle-premerge}.json`, `restaurant-recovery-870-{master-ci,sync,
+verification,preservation,incoming,live-summary}.json` and the four870screenshots.
+
+## Strict870 native speech disposition
+
+The same reviewed private helper and uniform in-memory `azure-calm` synthetic
+caller ran serially on the exact detached870 release. Bot voices, production
+recognition, automatic initial language and independent Azure ET/EN/RU candidate
+recognition stayed unchanged. No expected-answer, caller-language or phrase hints
+entered independent recognition; no captured speech/audio/credentials were stored.
+
+| Language | Accepted cases | Complete acceptance |
+| --- | --- | --- |
+| ET | menu0.980, allergy0.998 | No: note independent-audio content mismatch |
+| EN | menu1.000, allergy1.000, note1.000, takeaway0.994 | Yes:4cases/exact870/restaurant state unchanged |
+| RU | menu0.973 | No: allergy independent-audio content mismatch |
+
+ET note passed the fresh-input, exact-caption and voiced-PCM boundary before its
+independent content failure. This distinguishes the repaired input selector from
+the remaining output-recognition problem; exact identity with an earlier captured
+input artifact is still not inferred. Russian mandatory staff verification remains
+required. No incomplete language run is counted as four-case acceptance.
+
+Private receipts: `restaurant-recovery-870-rtc-{et,en,ru,summary}.json`. Earlier
+failures, transient state changes, incomplete input and shared-lock/runtime
+deferrals remain preserved in the chronological sections/private receipts. Physical
+microphone, carrier/PSTN, original-number continuity and real-restaurant acceptance
+remain unverified. Final telephone completion auditing must wait for all criteria;
+the dashboard's robot/auth/storage acceptance is a separate goal.
+
+Direct production-voice/configuration synthesis, without RTC, reproduced the ET
+note rejection at0.994: the **entire** independently recognized normalized answer
+equals the approved answer except `allergia ohutust` versus `allergiaohutust`.
+Required proposition6 is the only failed pattern. No loss of refusal, extra claim
+or voice/delivery change was observed. A separate native metadata retry deferred
+four times on the shared release lock, so it adds no native input/output identity
+proof. Any proposed private-checker correction must be whole-canonical-only;
+fuzzy medical-word substitutions and caption normalization remain excluded.
+
+Russian direct output still fails proposition17 at0.983, with a noncanonical
+staff-verification phrase. This is **not** accepted as the required clause, and
+no Russian safety/referral exception is introduced. Diagnostic transcripts/audio
+stay in memory; receipts contain only indexes, counts and public-fixture matches.
+
+## Newer published `94baece` reconciliation
+
+The once-only Codex dashboard completion audit passed all four robot-only870
+snapshot criteria, independently inspecting receipts/screenshots/report publication
+and recomputing14 preservation-prefix comparisons. It explicitly excludes later
+descendants and telephone completion. Closure-time03:46:05Z verification found
+newer master/deployed94 in all three healthy roles; the old audit is not presented
+as current94 proof. That published history was normally merged ase46e4ab without
+conflicts or another owner's dirty source/goal intake.
+
+The new application's only delta to870 is three lines adding seven complete
+known questions inside the existing `fullmatch`; mixed unknown-count corrections
+still cannot retain stale four-person plans. The peer's four ET synthetic booking-
+caller literals are qualified separately, not production voice/language/consent
+changes and not a change to our private FAQ caller. Our own tracked difference
+to published master is only this evidence document; no production redeployment
+for documentation. Later report-only master013bce1 (`[skip cd]`) is normally
+retained too; its application/data/tests/deployment source equals deployed94.
+
+Fresh isolated combinede46 verification:
+
+```bash
+env -i PATH=/usr/bin:/bin HOME=/tmp/opencode LANG=C.UTF-8 \
+  PYTHONDONTWRITEBYTECODE=1 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 EASY_LIVE_TESTS=0 \
+  /home/arle/.cache/voicebot-restaurant-recovery-venv/bin/python -m pytest \
+  -q -ra -p no:cacheprovider --tb=line \
+  --basetemp=/tmp/opencode/restaurant-recovery-94-combined
+```
+
+**12,646 tests, 36 subtests PASS**, exit0,210.21s; six explicit opt-in skips and
+two existing warnings. All eleven Chromium journeys pass, including the current
+guest failure/renewal/receipt matrix, with no JavaScript errors/external requests.
+Release94 masterCI37173731889 passed both Linux/shared-image jobs.
+
+Independent Codex review qualified only the new94 delta:24targeted tests and
+63 supplemental state assertions passed (42 appended-clause negatives,7current
+hold/expiry/proposal cases,14expired/unowned cases), no concreteP0/P1. No provider,
+live recognition, fabricated-to-live receipt equivalence or repeated dashboard
+completion audit is claimed from those supplemental checks.
+
+Locked03:51:05Z current94 verification: all94files per healthy role, original
+volume/LiveKit-SIP-Redis IDs, matching media configuration/image, automatic initial
+language and nine403/403/200/no-store authorization cases PASS. All four integrity
+checks are `ok`; every original and earlier972 idle-premerge row prefix remains
+intact. Current restaurant85reservations/167actions/0holds, Easy42writes/Stay5bookings
+include concurrent additions, not deletions or byte equality of growing tables.
+Read-only transactions do not claim a global cross-database atomic snapshot.
+
+Fresh signed webhook-only03:51:47Z403/200/no-store/bound stream proof passed without
+agent/carrier invocation. Fresh public Chromium verifies HTTPS200, six exact
+same-origin asset fingerprints/menu3/private denial/hotel410/removed-host503 and
+ET/EN/RU first-screen voice/microphone controls without overflow/JavaScript errors.
+All four new94 production screenshots were read. Receipts in `/tmp/opencode`:
+`restaurant-recovery-94-{master-ci,verification,incoming,live-summary}.json`.
+
+## Reviewed private ET compound boundary
+
+Direct unchanged production synthesis proved that the entire ET note reply was
+canonical except `allergia ohutust` spacing. Only the private audio comparator
+now admits that word-boundary equivalence when **all normalized words** then equal
+the approved reply. It does not normalize captions, other compounds, missing
+negations, extra words, staff-verification clauses or production recognition.
+The raw similarity remains measured on unmodified recognized text with the
+existing0.78 floor. The ET accepted fixture returns0.994152, not1.
+
+Failing-first:2expected failures/122passes. The first green invocation had
+4failures/120passes because four negative fixtures used lowercase replacement
+against capitalized `Allergia`; their mutation never occurred. Those fixtures
+were corrected and each asserts its replacement target exists. **124offline checks
+passed** in4.35s, zero providers. Independent Codex approved the narrow boundary
+with124tests and24 supplemental assertions, including all12 canonical positives,
+high-similarity negatives and caption rejection. Its first root import-path
+invocation had116passes/8dependency failures; corrected execution scope passed
+without edits. The attempted Spark route failed before execution because the
+ChatGPT account does not support it; the existing Codex-account route was used,
+never a Go fallback. All failures remain recorded as failures or invalid fixtures.
+
+Russian `нужно проверить с сотрудником` remains mandatory; noncanonical or missing
+staff verification is still rejected. A fresh exact94 ET/EN/RU run held the
+shared release lock across the serial batch, preserving every freshness, canonical
+caption, audio, language, safety and unchanged-restaurant-state requirement.
+Only English satisfied all4cases/exactrelease/unchangedstate. ET menu/allergy/note
+passed at0.980/0.998/0.994 before takeaway audio failed; RU menu passed at0.982
+before allergy audio failed. Both incomplete runs remain FAIL, exit1 aggregate.
+Current receipts: `restaurant-recovery-94-rtc-{et,en,ru,summary}.json`.
+
+Direct unchanged production-voice ET takeaway synthesis reproduced the rejection
+at0.989583 with only proposition8 missing. The entire normalized recognized reply
+equals canonical except **both** `kaasa müügi` and `laua broneeringuga` spacing;
+no contradiction or unrelated word mutation. Metadata-only receipt:
+`restaurant-recovery-94-direct-takeaway-diagnostic.json` (public full candidate5,
+12expected/14recognized words). This is not RTC acceptance. A further bounded
+private whole-canonical correction requires failing-first tests and independent
+review; no fuzzy medical/referral matching or caption relaxation is permitted.
+
+## Explicit Russian staff-verification notice candidate
+
+The reviewed ET takeaway correction admits only the three observed complete
+compounds and rejects immediately if repairing one leaves any noncanonical words;
+it closes the demonstrated similarity-fallback gap, not production booking logic.
+Failing-first2/144 then4/144;148private checks and the narrow Codex review pass.
+Two supplemental rejection assertions in untouched generic fallback failed; they
+are retained as limits, not universal canonical-equivalence success. Strict exact94
+ET now passes all four cases at0.980/0.998/0.994/0.990 with unchanged restaurant
+state. The final aggregate still fails because RU allergy recognition misses only
+the staff-verification proposition at0.982609; it says the public noncanonical
+staff phrase, not the approved referral. English94all4proof remains unchanged.
+
+Production Russian SSML preserves the literal notice and has no pronunciation
+substitutions. A bounded same-voice/same-delivery experiment reproduced the old
+recognition failure, then tested the explicit subject:
+
+> В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.
+
+This says the restaurant employee **must** check composition and possible kitchen
+allergen contact; it retains the refusal to promise allergen-free food and the
+serious-allergy/before-ordering referral. It changes no ingredient/menu fact,
+booking authority, kitchen-notification ability or real-restaurant claim.
+Two direct repetitions scored0.991489. A separate metadata-only check retained
+all four required clauses and the entire public answer aside from `ё`/`е`, which
+existing dish/referral patterns already support. No voice, production ASR or
+expected-answer/caller-language hints changed. This is direct diagnostic evidence,
+not RTC acceptance. Receipts: `restaurant-recovery-94-ru-wording-{experiment,clause-diagnostic}.json`.
+
+Failing-first native/HTTP/held-recap regressions:3FAIL, then3FAIL after correcting
+one held-fixture oracle. The first fixture used an unlisted complete question whose
+existing safe policy clears the pending proposal; the retention test now uses an
+already-whitelisted milk-allergy statement. No booking grammar was broadened.
+The shared Russian notice line alone changed;131phone-answer tests pass9.48s.
+Private missing/optional/reversed/wrong-actor/ingredient/cross-contact checks had
+7FAIL/152PASS before the new literal obligation was required. After the first
+guard159PASS; two added leading-negation/bigger-word tests failed, then exact
+word boundaries and negative lookbehind made161offline checks pass, zero providers.
+The old `нужно проверить с сотрудником` requirement remains enforced for old
+fixtures; the new approved notice requires its explicit employee obligation.
+No missing referral or noncanonical recognized staff phrase is normalized away.
+The full isolated repository run passes **12,649 tests/36 subtests**, exit0,
+206.27s, with six explicit opt-in skips and two existing deprecation warnings.
+All eleven Chromium153journeys pass with no JavaScript errors/external requests,
+including the guest preparation/renewal/receipt matrix. JSONparse confirms only
+the Russian notice changed in restaurant data; all93otherapp/demo files, menu,
+prices, tables, ET/ENcopy, productionvoices/ASR and booking logic are unchanged.
+Codex round1 passes the production semantics/three new regressions and161private
+tests (164total), but reports a private P1: with existing `ё`/`е` variation, an
+intact staff obligation plus a second reversed obligation passes at0.832143/
+0.833631. Four literal contradiction variants fail before repair; one finite
+contradiction pattern now rejects staff `не должен`/`может не` with `проверить`/
+`проверять`. All165private offline checks pass, zero providers. This is a tightened
+negative guard, not a recognition/referral exception or a production source change.
+Focused Codex P1 re-review passes165tests: all four reported contradictory forms
+reject above0.78, while removing only the new regex in memory makes them accept.
+All12canonical positives and legacy staff/refusal/allergen negatives pass. One
+initial supplemental harness incorrectly assumed every legacy mutation exceeded
+0.78; correcting that test assumption required no repository edit. No concrete
+P0/P1 remains in the reviewed finite repair. Publication and fresh exact-release
+multilingual wire proof remain pending; direct synthesis does not close the goal.

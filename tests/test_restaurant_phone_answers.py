@@ -54,6 +54,76 @@ ESTONIAN_ASR_NOTE_QUESTIONS = [
     "Kas saate mu allergiaproneeringule kirja panna?",
 ]
 
+RUSSIAN_ALLERGY_NOTICE = (
+    "В меню указаны аллергены. Сотрудник ресторана должен проверить состав и "
+    "возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. "
+    "При серьёзной аллергии поговорите с рестораном до заказа."
+)
+
+
+def test_russian_allergy_answer_requires_staff_to_verify_before_ordering(make_state):
+    state = make_state("ru")
+    state.observe_user_text("Содержит ли лосось молоко?", detected_language="ru")
+    expected = "Запечённый лосось: рыба, молоко. " + RUSSIAN_ALLERGY_NOTICE
+    assert trusted_booking_response(state) == {"content": expected}
+    assert state.guard_reply("Я обещаю еду без аллергенов.", []) == expected
+    assert not state.holds and not state.bookings and not state.pending
+
+
+def test_russian_allergy_audio_http_uses_the_same_literal_safety_notice(client):
+    session = start(client, "auto")["session_id"]
+    client.provider.transcript = "Содержит ли лосось молоко?"
+    response = client.post(
+        "/api/turn",
+        headers=AUTH,
+        json={
+            "session_id": session,
+            "audio_b64": base64.b64encode(b"RIFF-synthetic-fixture").decode(),
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()
+    assert result["language"] == "ru"
+    assert (
+        result["reply"] == "Запечённый лосось: рыба, молоко. " + RUSSIAN_ALLERGY_NOTICE
+    )
+    assert client.provider.spoken[-1] == result["reply"]
+    assert client.provider.recognized_languages == ["auto"]
+    assert result["booking_changes"] == [] and not result["recap_delivery_id"]
+
+
+def test_russian_allergy_side_question_keeps_hold_but_revokes_delivered_consent(
+    make_state,
+):
+    async def run():
+        state = make_state("ru")
+        prepared = await prepare(state)
+        assert state.mark_recap_delivered(prepared["hold_id"])
+        previous = state.pending
+        recap = state.render_recap()
+        state.observe_user_text(
+            "У меня сильная аллергия на молоко", detected_language="ru"
+        )
+        expected = (
+            "Овощной суп: сельдерей; Запечённый лосось: рыба, молоко; "
+            "Ризотто с грибами: молоко. " + RUSSIAN_ALLERGY_NOTICE
+        )
+        assert state.guard_reply("Я обещаю еду без аллергенов.", []) == (
+            expected + " " + COPY["ru"]["resume_booking"] + " " + recap
+        )
+        assert state.pending is not previous
+        assert state.pending["hold_id"] == previous["hold_id"]
+        assert state.pending["expires_at"] == previous["expires_at"]
+        assert not state.pending["delivery"] and not state.pending["approved"]
+        assert not state.bookings
+        assert (
+            await state.dispatch(
+                "confirm_slot_booking", {"hold_id": prepared["hold_id"]}
+            )
+        )["error"] == "consent_required"
+
+    asyncio.run(run())
+
 
 @pytest.mark.parametrize("question", ESTONIAN_ASR_NOTE_QUESTIONS)
 def test_estonian_note_asr_variants_keep_canonical_refusal_without_booking(
