@@ -188,7 +188,9 @@ def test_public_audio_commit_plans_recap_before_later_consent(
             assert state.pending["delivery"] and not state.pending["approved"]
             assert not state.bookings
 
-            assert await commit(CONSENT[language]) == COPY[language]["confirmed"]
+            assert (await commit(CONSENT[language])).startswith(
+                COPY[language]["confirmed"]
+            )
             assert agent.finalized == [caller_text, CONSENT[language]]
             assert actions == ["plan_restaurant_reservation", "confirm_slot_booking"]
             assert len(state.bookings) == 1

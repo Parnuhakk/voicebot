@@ -91,7 +91,7 @@ def test_answer_then_resume_each_missing_detail_without_restarting(
         channel,
         proposal["recap_delivery_id"],
     )
-    assert saved["reply"] == COPY[language]["confirmed"]
+    assert saved["reply"].startswith(COPY[language]["confirmed"])
     assert saved["booking_changes"][0]["party_size"] == 4
     assert saved["booking_changes"][0]["start_local"].startswith(tomorrow() + "T14:00")
     rows = client.get("/api/bookings?date=" + tomorrow(), headers=AUTH).json()["items"]
@@ -145,7 +145,7 @@ def test_questions_after_summary_keep_hold_and_require_new_delivery(
         channel,
         repeated["recap_delivery_id"],
     )
-    assert saved["reply"] == COPY[language]["confirmed"]
+    assert saved["reply"].startswith(COPY[language]["confirmed"])
     assert len(state.bookings) == 1 and len(state.confirmed_holds) == 1
 
 
@@ -319,7 +319,7 @@ def test_mixed_correction_and_menu_question_cannot_restore_obsolete_proposal(
     saved = speak(
         client, session, agreement, language, channel, corrected["recap_delivery_id"]
     )
-    assert saved["reply"] == COPY[language]["confirmed"]
+    assert saved["reply"].startswith(COPY[language]["confirmed"])
     assert len(saved["booking_changes"]) == 1
     assert rows() == [
         (

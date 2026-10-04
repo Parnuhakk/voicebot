@@ -277,7 +277,11 @@ def test_confirmed_speech_reports_saved_state_without_browser_only_instructions(
         language=language,
         receipt=proposal["recap_delivery_id"],
     )
-    assert answer["reply"] == expected == client.provider.spoken[-1]
+    assert answer["reply"].startswith(expected + " ")
+    assert answer["reply"] == client.provider.spoken[-1]
+    assert "Meretuule" in answer["reply"]
+    assert "Esimene Külaline" in answer["reply"]
+    assert "?" not in answer["reply"]
     assert answer["booking_changes"][0]["action"] == "confirmed"
 
 

@@ -393,12 +393,20 @@ async page => {
     assert(await page.locator('#demo-recap-read').isVisible(), 'new booking recap is missing');
     assert(temporalRecap.endsWith({et:'Kas teile sobib?',en:'Does that work for you?',ru:'Вам подходит?'}[language.code]));
     await page.locator('#demo-recap-read').click();
-    const affirmative = {et:'Jah, super, see sobib mulle väga hästi!',en:'Absolutely, that works for me, thank you!',ru:'Да, всё отлично, спасибо большое!'}[language.code];
+    const affirmative = {et:'See kõlab väga hästi!',en:"That's very good.",ru:'Это очень хороший вариант!'}[language.code];
     for (let index = 0; index < 2; index++) {
       await page.locator('#demo-text').fill(affirmative);
       await page.locator('#demo-send').click();
       await page.waitForFunction(()=>!state.turnBusy && !state.readBusy);
-      if (!index) assert.equal(await page.locator('#demo-messages .booking-receipt[data-action="confirmed"]').count(),1);
+      if (!index) {
+        assert.equal(await page.locator('#demo-messages .booking-receipt[data-action="confirmed"]').count(),1);
+        const summary=await page.locator('#demo-messages .message').last().locator('span').textContent();
+        assert(summary.includes('Meretuule') && summary.includes('Esimene Külaline'));
+        assert(summary.includes({et:'18:00',en:'6:30 PM',ru:'18:30'}[language.code]));
+        assert(summary.includes({et:'4 inimesele',en:'4 guests',ru:'четырёх гостей'}[language.code]));
+        assert(summary.includes(language.code==='ru'?'полтора часа':'90'));
+        assert(!summary.includes('?'),'confirmed reservation asked another question');
+      }
       assert.equal(await page.locator('#bookings .booking-recent').count(),1);
     }
     const naturalBooking = await page.evaluate(()=>state.latestBooking);
@@ -502,10 +510,13 @@ async page => {
   const voiceReceipt=await page.evaluate(()=>state.recapDeliveryId);
   assert(voiceReceipt);
   await page.evaluate(()=>{state.page=2;document.getElementById('booking-date').value=tallinnDay();});
-  await send('Yes, that works for me!');
+  await send("That's very good.");
   const confirmedVoice=requests.findLast(request=>request.body.recap_delivery_id);
   assert.equal(confirmedVoice.body.recap_delivery_id,voiceReceipt);
   assert((await page.locator('#demo-messages .message').last().textContent()).includes('confirmed'));
+  const confirmationSummary=await page.locator('#demo-messages .message').last().textContent();
+  assert(confirmationSummary.includes('Meretuule') && confirmationSummary.includes('6:00 PM') && confirmationSummary.includes('4 guests') && confirmationSummary.includes('90 minutes') && confirmationSummary.includes('Esimene Külaline'));
+  assert(!confirmationSummary.includes('?'),'confirmation asked another question');
   const voiceBooking=await page.evaluate(()=>state.latestBooking);
   assert(voiceBooking && voiceBooking.date===await page.evaluate(()=>tallinnDay(1)));
   await waitBooking(voiceBooking.id,'confirmed');

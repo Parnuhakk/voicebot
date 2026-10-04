@@ -90,8 +90,9 @@ def test_booking_requires_later_exact_consent_after_delivered_recap(
         confirmed = await state.dispatch(response["name"], response["arguments"])
         assert confirmed["ok"] is True
         assert (
-            state.guard_reply("anything invented", state.results)
-            == COPY[language]["confirmed"]
+            state.guard_reply("anything invented", state.results).startswith(
+                COPY[language]["confirmed"]
+            )
         )
 
     asyncio.run(run())
@@ -174,8 +175,9 @@ def test_estonian_natural_confirmation_and_known_asr_spellings(make_state, utter
         result = await state.dispatch(action["name"], action["arguments"])
         assert result["ok"] and result["booking"]["party_size"] == 4
         assert (
-            state.guard_reply("invented success", state.results)
-            == COPY["et"]["confirmed"]
+            state.guard_reply("invented success", state.results).startswith(
+                COPY["et"]["confirmed"]
+            )
         )
         rows = await state.dispatcher._slot.get_operator_bookings(tomorrow())
         assert len(rows["items"]) == 1

@@ -9,7 +9,7 @@ import pytest
 from app.booking_response import trusted_booking_response
 from app.providers.azure_tts import ssml
 from app.providers.speech_delivery import SpeechDelivery, is_recap
-from app.restaurant_call import COPY
+from app.restaurant_call import COPY, restaurant_spoken_date
 from app.restaurant_consent import is_restaurant_confirmation
 from tests.test_restaurant_conversation import prepare
 from tests.test_restaurant_http import AUTH, start, tomorrow, turn
@@ -58,6 +58,9 @@ POSITIVE = {
         "Jess",
         "Võib küll",
         "Tore, kinnitage palun",
+        "See kõlab väga hästi!",
+        "See oleks väga hea, aitäh",
+        "Väga hea, see sobib",
     ),
     "en": (
         "yes",
@@ -94,6 +97,12 @@ POSITIVE = {
         "That would be lovely",
         "Yesss!",
         "Cool, go ahead!",
+        "That's very good.",
+        "That’s very good.",
+        "That is really very good, thank you!",
+        "That sounds very good",
+        "It looks really great",
+        "That would be so wonderful",
     ),
     "ru": (
         "да",
@@ -125,6 +134,9 @@ POSITIVE = {
         "Договорились",
         "Сделайте бронь",
         "Да-да, подходит!",
+        "Это очень хорошо",
+        "Это очень хороший вариант",
+        "Это было бы замечательно, спасибо",
     ),
 }
 NEGATIVE = {
@@ -151,6 +163,9 @@ NEGATIVE = {
         "see sobib allergia korral",
         "tänan info eest",
         "kinnitan tühi jutt",
+        "See kõlab väga hästi, aga homme",
+        "See oleks väga hea, kui hind sobib",
+        "See kõlab väga hästi?",
     ),
     "en": (
         "thanks",
@@ -171,6 +186,11 @@ NEGATIVE = {
         "everything is not correct",
         "that works or maybe not",
         "please repeat",
+        "That's very good, but make it five",
+        "That's very good if you have a terrace",
+        "That's not very good",
+        "Is that very good",
+        "That's very good?",
     ),
     "ru": (
         "спасибо",
@@ -189,6 +209,9 @@ NEGATIVE = {
         "всё не верно",
         "да или нет",
         "пожалуйста повторите",
+        "Это очень хороший вариант, но завтра",
+        "Это было бы замечательно, если есть терраса",
+        "Это очень хорошо?",
     ),
 }
 
@@ -274,9 +297,13 @@ def test_complete_answers_are_not_limited_to_a_fixed_phrase_list(
         ("en", "yes"),
         ("en", "okay"),
         ("en", "Sounds good, please confirm the reservation"),
+        ("en", "That's very good."),
+        ("en", "That’s really very good, thank you!"),
+        ("et", "See kõlab väga hästi!"),
         ("ru", "да"),
         ("ru", "подходит"),
         ("ru", "Да, всё отлично, спасибо большое!"),
+        ("ru", "Это очень хороший вариант"),
     ],
 )
 @pytest.mark.parametrize("channel", ["text", "audio"])
@@ -305,7 +332,18 @@ def test_agreement_immediately_saves_one_visible_reservation(
     result = client.post("/api/turn", json=payload, headers=AUTH)
     assert result.status_code == 200, result.text
     confirmed = result.json()
-    assert confirmed["reply"] == COPY[language]["confirmed"]
+    assert confirmed["reply"].startswith(COPY[language]["confirmed"] + " ")
+    assert "?" not in confirmed["reply"]
+    assert "Meretuule" in confirmed["reply"]
+    assert "Esimene Külaline" in confirmed["reply"]
+    assert restaurant_spoken_date(tomorrow(), language) in confirmed["reply"]
+    assert ("2:00 PM" if language == "en" else "14:00") in confirmed["reply"]
+    assert client.provider.spoken[-1] == confirmed["reply"]
+    if language == "ru":
+        assert "четырёх гостей" in confirmed["reply"]
+        assert "полтора часа" in confirmed["reply"]
+    else:
+        assert "4" in confirmed["reply"] and "90" in confirmed["reply"]
     assert (
         confirmed["tools_used"] == 1
         and confirmed["booking_changes"][0]["action"] == "confirmed"
@@ -316,6 +354,84 @@ def test_agreement_immediately_saves_one_visible_reservation(
     rows = client.get("/api/bookings?date=" + tomorrow(), headers=AUTH).json()["items"]
     assert len(rows) == 1 and str(rows[0]["id"]) == identifier
     assert rows[0]["status"] == "confirmed" and rows[0]["service_id"] == 4
+
+
+@pytest.mark.parametrize(
+    "language,utterance,agreement,party_words",
+    [
+        ("en", "A table for three tomorrow at 7 pm", "That's very good.", "3 guests"),
+        ("et", "Soovin homme lauda kolmele kell 19.00", "See kõlab väga hästi.", "3 inimesele"),
+        ("ru", "Столик на троих завтра в 19:00", "Это очень хороший вариант.", "трёх гостей"),
+    ],
+)
+def test_reported_reply_confirms_three_guests_at_seven_and_summarizes_the_call(
+    client, language, utterance, agreement, party_words
+):
+    session = start(client, language)["session_id"]
+    proposal = turn(client, session, utterance, language=language)
+    assert proposal["recap_delivery_id"] and not proposal["booking_changes"]
+    saved = turn(
+        client,
+        session,
+        agreement,
+        language=language,
+        receipt=proposal["recap_delivery_id"],
+    )
+    assert saved["reply"].startswith(COPY[language]["confirmed"] + " ")
+    assert "?" not in saved["reply"]
+    assert "Meretuule" in saved["reply"] and "Esimene Külaline" in saved["reply"]
+    assert restaurant_spoken_date(tomorrow(), language) in saved["reply"]
+    assert ("7:00 PM" if language == "en" else "19:00") in saved["reply"]
+    assert party_words in saved["reply"]
+    assert ("полтора часа" if language == "ru" else "90") in saved["reply"]
+    assert saved["booking_changes"][0]["party_size"] == 3
+    assert client.provider.spoken[-1] == saved["reply"]
+    rows = client.get("/api/bookings?date=" + tomorrow(), headers=AUTH).json()["items"]
+    assert len(rows) == 1 and rows[0]["status"] == "confirmed"
+    assert rows[0]["service_id"] == 3 and "19:00" in rows[0]["start_local"]
+
+
+@pytest.mark.parametrize("language", ["et", "en", "ru"])
+def test_summary_uses_committed_details_and_selected_guest_fixture(
+    make_state, language
+):
+    async def run():
+        state = make_state(language)
+        assert state.render_confirmation() is None
+        state.observe_user_text("Prepare a table", language=language)
+        proposal = await state.dispatch(
+            "plan_restaurant_reservation",
+            {
+                "date": tomorrow(),
+                "start_time": "19:00",
+                "party_size": 3,
+                "guest_fixture_id": "guest-002",
+            },
+        )
+        assert state.mark_recap_delivered(proposal["hold_id"])
+        state.observe_user_text(
+            {"et": "Väga hea", "en": "That's very good", "ru": "Это очень хорошо"}[
+                language
+            ]
+        )
+        saved = await state.dispatch(
+            "confirm_slot_booking", {"hold_id": proposal["hold_id"]}
+        )
+        assert saved["ok"]
+        state._restaurant_inquiry = {
+            "date": "2099-01-01", "start_time": "08:00", "party_size": 10
+        }
+        reply = state.guard_reply("Invented details for ten guests at 8 AM", [])
+        assert reply.startswith(COPY[language]["confirmed"] + " ")
+        assert "Teine Külaline" in reply and "Esimene Külaline" not in reply
+        assert ("7:00 PM" if language == "en" else "19:00") in reply
+        assert ("трёх гостей" if language == "ru" else "3") in reply
+        assert "2099" not in reply and "?" not in reply
+        state.mutation_uncertain = True
+        assert state.render_confirmation() is None
+        assert state.guard_reply(reply, []) == COPY[language]["unknown"]
+
+    asyncio.run(run())
 
 
 @pytest.mark.parametrize(

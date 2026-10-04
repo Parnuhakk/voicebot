@@ -93,7 +93,7 @@ def test_native_booking_resumes_after_information_questions(
                 await native_turn(session, agent, CONSENT[language])
                 assert len(state.bookings) == 1 and model.calls == 0
                 assert (
-                    agent.chat_ctx.items[-1].text_content == COPY[language]["confirmed"]
+                    agent.chat_ctx.items[-1].text_content.startswith(COPY[language]["confirmed"])
                 )
             finally:
                 await session.aclose()
@@ -159,7 +159,7 @@ def test_native_session_keeps_first_caller_language_and_voice(
                 await native_turn(session, agent, CONSENT[selected])
                 assert state.language == selected and len(state.bookings) == 1
                 assert (
-                    agent.chat_ctx.items[-1].text_content == COPY[selected]["confirmed"]
+                    agent.chat_ctx.items[-1].text_content.startswith(COPY[selected]["confirmed"])
                 )
                 assert model.calls == 0
             finally:
@@ -228,6 +228,9 @@ def test_native_short_acknowledgement_keeps_language_unselected(tmp_path, weak):
             "See sobib mulle väga hästi, aitäh!",
         ),
         ("en", "A table for four tomorrow at 2 pm", "yes"),
+        ("en", "A table for four tomorrow at 2 pm", "That's very good."),
+        ("et", "Soovin homme lauda neljale kell 14.00", "See kõlab väga hästi!"),
+        ("ru", "Столик на четверых завтра в 14:00", "Это очень хороший вариант!"),
         ("en", "A table for four tomorrow at 2 pm", "That works for me, thank you!"),
         ("ru", "Столик на четверых завтра в 14:00", "да"),
         (
@@ -335,7 +338,9 @@ def test_native_sdk_confirmation_is_visible_in_the_restaurant_database(
                 await native_turn(session, agent, confirmation)
                 assert len(state.bookings) == 1
                 assert (
-                    agent.chat_ctx.items[-1].text_content == COPY[language]["confirmed"]
+                    agent.chat_ctx.items[-1].text_content.startswith(
+                        COPY[language]["confirmed"]
+                    )
                 )
                 assert model.calls == 0
             finally:

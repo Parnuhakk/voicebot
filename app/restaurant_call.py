@@ -39,7 +39,7 @@ from .restaurant_answers import (
     natural_list,
 )
 from .restaurant_consent import CONFIRMATION_QUESTIONS, is_restaurant_confirmation
-from .restaurant_data import restaurant_demo_profile
+from .restaurant_data import restaurant_booking_details, restaurant_demo_profile
 from .restaurant_date_vocabulary import RUSSIAN_COUNTS
 from .restaurant_dates import ESTONIAN_COUNTS, resolve_restaurant_date
 from .restaurant_family import family_topic
@@ -66,6 +66,7 @@ COPY: dict[str, dict[str, str]] = {
         "unavailable": "Sel ajal sobivat lauda ei ole. Kas sobiks mõni teine kellaaeg või päev?",
         "unknown": "Ma ei saanud toimingu tulemust kinnitada. Palun ärge korrake seda; kontrollige broneeringu olekut.",
         "confirmed": "Teie lauabroneering on kinnitatud.",
+        "confirmation_summary": "Laud restoranis {name}, {date} kell {time}, {party} inimesele, {duration} minutiks, nimele {guest}.",
         "cancelled": "Teie broneering on tühistatud.",
         "existing": "See laud on juba broneeritud. Teist broneeringut ma ei teinud.",
         "already_cancelled": "See lauabroneering on juba tühistatud.",
@@ -97,6 +98,7 @@ COPY: dict[str, dict[str, str]] = {
         "unavailable": "There is no suitable table at that time. Would you like another time or date?",
         "unknown": "I couldn't confirm the result. Please don't repeat the action; check the reservation's status.",
         "confirmed": "Your table reservation is confirmed.",
+        "confirmation_summary": "A table at {name}, {date} at {time}, for {party} guests, for {duration} minutes, under {guest}.",
         "cancelled": "Your reservation is cancelled.",
         "existing": "That table is already booked. I haven't made a second reservation.",
         "already_cancelled": "This table reservation is already cancelled.",
@@ -128,6 +130,7 @@ COPY: dict[str, dict[str, str]] = {
         "unavailable": "На это время столика нет. Подойдёт другое время или день?",
         "unknown": "Не удалось подтвердить результат действия. Не повторяйте его; проверьте статус брони.",
         "confirmed": "Готово, бронь подтверждена.",
+        "confirmation_summary": "Столик в {name}, {date} в {time}, на {party}, на {duration}, на имя {guest}.",
         "cancelled": "Готово, бронь отменена.",
         "existing": "Этот столик уже забронирован. Дублировать бронь не будем.",
         "already_cancelled": "Эта бронь уже отменена.",
@@ -1913,6 +1916,75 @@ class RestaurantCallTools(CallTools):
             return answer + " " + COPY[self.language]["resume_booking"] + " " + recap
         return self._with_capabilities(recap, capabilities)
 
+    def render_confirmation(self) -> str | None:
+        """Summarize only a successful owned write, using its committed details."""
+        copybook = COPY[self.language]
+        reply = copybook["confirmed"]
+        booking_id = self.last_booking
+        if (
+            self.mutation_uncertain
+            or booking_id not in self.bookings
+            or booking_id in self.cancelled_bookings
+        ):
+            return None
+        hold_id = self.booking_holds.get(booking_id)
+        fixture = self.confirmation_guests.get(hold_id)
+        if not isinstance(fixture, str):
+            return reply
+        guest = self.demo["guests"].get(fixture)
+        if guest is None:
+            return reply
+        booking = next(
+            (
+                result["booking"]
+                for result in reversed(tuple(self.actions.values()))
+                if result.get("ok") is True
+                and isinstance(result.get("booking"), dict)
+                and str(result["booking"].get("id")) == booking_id
+            ),
+            None,
+        )
+        if booking is None:
+            return reply
+        try:
+            details = restaurant_booking_details(booking, self.restaurant)
+            start_text, end_text = details["start_local"], details["end_local"]
+            day, party = details["date"], details["party_size"]
+            if not (
+                isinstance(start_text, str)
+                and isinstance(end_text, str)
+                and isinstance(day, str)
+                and type(party) is int
+            ):
+                return reply
+            start = datetime.fromisoformat(start_text)
+            end = datetime.fromisoformat(end_text)
+            duration = int((end - start).total_seconds() // 60)
+            summary = copybook["confirmation_summary"].format(
+                name=self.restaurant["name"],
+                date=restaurant_spoken_date(day, self.language),
+                time=(
+                    spoken_time(start.strftime("%H:%M"))
+                    if self.language == "en"
+                    else start.strftime("%H:%M")
+                ),
+                party=(
+                    russian_speech.guest_count(party)
+                    if self.language == "ru"
+                    else party
+                ),
+                duration=(
+                    russian_speech.duration(duration)
+                    if self.language == "ru"
+                    else duration
+                ),
+                guest=f"{guest['firstName']} {guest['lastName']}",
+            )
+        except (KeyError, TypeError, ValueError):
+            # Optional summary metadata cannot erase an already completed write.
+            return reply
+        return reply + " " + summary
+
     def guard_reply(self, text, results):
         reply = self._restaurant_guard_reply(text, results)
         question_keys = (
@@ -2020,7 +2092,12 @@ class RestaurantCallTools(CallTools):
             ):
                 return copybook[self._restaurant_inquiry["date_issue"]]
             if self.turn_mutation:
-                return copybook[self.turn_mutation] + " " + copybook["failed"]
+                mutation_reply = (
+                    self.render_confirmation() or copybook["confirmed"]
+                    if self.turn_mutation == "confirmed"
+                    else copybook[self.turn_mutation]
+                )
+                return mutation_reply + " " + copybook["failed"]
             if "restaurant_party_size_invalid" in errors:
                 return copybook["staff"]
             if "slot_unavailable" in errors:
@@ -2029,6 +2106,8 @@ class RestaurantCallTools(CallTools):
         if self.turn_mutation:
             self._restaurant_inquiry = None
             self._restaurant_capability_topics = ()
+            if self.turn_mutation == "confirmed":
+                return self.render_confirmation() or copybook["confirmed"]
             return copybook[self.turn_mutation]
         recap = self.render_recap()
         if recap:
