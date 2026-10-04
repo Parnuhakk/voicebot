@@ -210,6 +210,15 @@ require an exact new time and cannot reuse an earlier selection. These selectors
 are not caller transcripts and cannot reach a booking tool until resolved.
 The public API supplies `booking_time_examples` in each supported language.
 
+A read-only follow-up such as `hommikul või õhtul?`, `AM or PM?`, or
+`Утром или вечером?` explains the caller's saved clock rather than starting the
+booking interview again. An ambiguous six is explained as 06:00 versus 18:00;
+an exact 18:00 is six in the evening. Without a clock anchor the assistant asks
+which time the caller means. Date and guest count survive the question, while
+an owned recap is reissued with earlier delivery/approval revoked. A question
+does not choose a time, check availability, or confirm a booking. This is a
+dialogue repair, not a measured improvement in speech recognition accuracy.
+
 The calendar also understands day/week offsets (`kahe päeva pärast`,
 `in two days`, `через два дня`) and explicitly qualified calendar weeks
 (`järgmise nädala reedel`, `next week on Friday`,
