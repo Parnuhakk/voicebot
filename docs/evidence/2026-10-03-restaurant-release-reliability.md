@@ -882,6 +882,36 @@ qualification is retained in the private snapshot, not hidden as a green all-ID
 comparison. A further concurrent master/native revision `870aa41` is observed;
 the tested repair will be checkpointed before bounded normal intake of that delta.
 
+### Final published-phone safeguard intake
+
+Verified retention repair `3ab502d` is checkpointed before normally merging
+contributor `870aa41` into candidate `527505c`, without conflicts. The bounded
+six-file delta retains repeated-clock-unit and semicolon-alternative clarification,
+adds one exact ET FAQ recognition variant and includes corresponding no-write
+regressions. Its independent static review is clear and explicitly does not
+validate historical provider claims. Because application/data changed, both full
+suites and browser/delivery gates are refreshed once for this candidate.
+
+Latest candidate core: **12,233 passed / 83 skipped / 36 subtests**, 165.63 seconds.
+All eleven Chromium journeys and 24 delivery cases pass again, no external
+requests. Syntax/JSON/six assets/216-file hygiene pass. Eighteen of twenty incoming
+files are byte-identical to frozen `870aa41`; existing contributor guest-current
+test AST remains unchanged and its policy differs only in the reviewed three
+whole-question alias lines. Both Dockerfiles and installed/repository controller
+remain byte-identical to the already executed five-case packaging gate. Latest
+media and actual publication/deployment/RTC gates are not inferred from core.
+
+Read-only retired-host verification at **03:13:47 UTC** returns generic HTTP 503
+without redirects on root, hotel, public-restaurant and status paths. No DNS,
+account or ingress setting is changed and that hostname is not republished.
+
+Latest **`527505c` combined media**: **12,646 passed / 6 skipped / 36 subtests**,
+245.74 seconds, exit 0. This is the final code gate paired with the 12,233 core
+gate above, not a sum of overlapping suites. The gate-record commit changes this
+evidence file only; application, fixtures, tests, assets and deployment source
+remain the exact verified candidate. Publication and acceptance still require
+fresh live evidence.
+
 ## Pre-rollout preservation qualification
 
 Read-only hash-only snapshot at 2026-10-03 20:34:39 UTC records healthy web,
