@@ -1,0 +1,31 @@
+[Unit]
+Description=Cloudflare Tunnel for migrated home applications
+After=network-online.target vps-migrated-proxy.service terrapoint-ingress.service
+Wants=network-online.target terrapoint-ingress.service
+Requires=vps-migrated-proxy.service
+
+[Service]
+Type=notify
+User=cloudflared
+Group=cloudflared
+ExecStart=/usr/bin/cloudflared --no-autoupdate tunnel run --token-file /etc/cloudflared/home-apps.token
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=30
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

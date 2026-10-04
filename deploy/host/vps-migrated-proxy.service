@@ -1,0 +1,16 @@
+[Unit]
+Description=Migrated loopback-only Traefik proxy
+Requires=docker.service
+Wants=network-online.target
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/docker start coolify-proxy
+ExecStop=/usr/bin/docker stop coolify-proxy
+TimeoutStartSec=180
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target
