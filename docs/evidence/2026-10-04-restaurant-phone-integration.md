@@ -2,28 +2,32 @@
 
 ## Current verified disposition
 
-Robot-only restaurant release `4ba789b917318de74bdffd9d63505812714188a8` is
-published and synchronized through PR37. It retains the published clock/FAQ and
-whole-question retention repairs and clarifies only the shared Russian staff-
-verification notice. Both master CI jobs passed. Combined checks passed
-12,649 tests/36 subtests and all eleven Chromium journeys. All94
+Robot-only restaurant release `a7be09c992a7ce0a42e0750d7535ef726af0be4d` is
+published and synchronized through PR38. It retains the published clock/FAQ,
+whole-question retention and Russian staff-verification repairs, and clarifies
+only the Russian refusal to notify kitchen staff. Both master CI jobs passed.
+Combined checks passed 12,652 tests/36 subtests and all eleven Chromium journeys. All94
 app/demo files match each healthy web/worker/bridge role; nine authorization and
 no-store cases pass. Original volume/infrastructure and all original/earlier fresh-
 premerge row prefixes remain intact. Fresh HTTPS/assets/menu/ET-EN-RU mobile and
-robot-only retired-host checks pass. The870/94 receipts below remain dated checkpoints.
+robot-only retired-host checks pass. Restaurant/Easy/Stay booking state is unchanged;
+new call-history rows do not invalidate exact preservation of every prior row.
+The870/94/4ba receipts below remain dated checkpoints.
 
-Strict complete multilingual native acceptance is **not complete**. Both4ba serial
-batches passed all four English and Estonian cases with unchanged restaurant state.
-The first batch failed Russian allergy audio; the second passed allergy but failed
-Russian note audio. An unchanged-checker Russian diagnostic repeat passed all four
-cases between them. These different outcomes remain recorded, not treated as a
-complete successful aggregate.
-Current and historical failures remain recorded; metadata-only diagnosis continues
-without weakening required refusals/referrals or changing production voices/ASR.
+The bounded native acceptance batch on exacta7be passes **all twelve cases** at
+2026-10-04T06:01:18Z: four each in ET/EN/RU, with exact fresh captions, independent
+automatic recognition and unchanged restaurant state throughout the serial batch.
+Both earlier4ba aggregate failures remain FAIL, alongside the intervening RU-only
+diagnostic success. No failed or partial run is relabeled as full acceptance.
+The new batch calls the original strict checker, with a rejection-only metadata
+observer that never ran because no case failed. Required refusals/referrals and
+production voices/ASR are unchanged.
 The private ET whole-canonical compound-spacing correction and tightened Russian
 staff/refusal/contradiction guards remain reviewed and unchanged. The first failed
 batch is retained; a successful repeat does not establish deterministic recognition.
 No physical-microphone, carrier/PSTN or real restaurant acceptance is claimed.
+The final telephone completion audit remains pending; the dashboard's completed
+audit is separate and is not repeated.
 
 The sections below retain the chronological repair and verification history;
 their earlier “current”/“final” checkpoints are not the latest acceptance result.
@@ -970,4 +974,65 @@ review passes176tests (three production-path/173private),12canonical positives,
 legacy refusals and eight new rejection cases. Removing only the new guards in
 memory makes all eight accept above0.78, proving the regressions are nonvacuous.
 No concrete P0/P1 is found in this delta. This remains offline approval;
-new-release publication and strict multilingual native acceptance are pending.
+the publication below supersedes the candidate checkpoint, not native acceptance.
+
+## Publisheda7be preservation and fresh native gate
+
+PR38 merged normally as `a7be09c992a7ce0a42e0750d7535ef726af0be4d` at
+2026-10-04T05:44:41Z under the shared release lock with zero rooms. Reviewed
+`5a6520975e4e54a6055fa928614bb633ca1605c6` and published complete trees are equal;
+the owned recovery branch was fast-forwarded and pushed. Head CI37180561281 and
+master CI37180765398 passed both `linux-release` and `shared-images`. The existing
+Node20 action annotation remains a warning, not a job failure.
+
+The new web became healthy at05:45:55Z. The existing reconciler safely deferred
+twice on `release_busy`, then returned `PASS: release_synced` at05:47:52Z. All94
+app/demo files match each healthy web/worker/bridge role; original volume,
+LiveKit/SIP/Redis IDs, media configuration and production voice/delivery/model
+profiles remain unchanged. Initial language stays automatic. All nine authorization
+and `no-store` cases pass. Fresh HTTPS/assets/menu/retired-host/ET-EN-RU mobile
+checks pass, and all four production screenshots were read. Fresh signed-webhook-
+only proof at05:54:07Z passes403/200, `no-store` and bound stream contract without
+agent dispatch or carrier invocation. Fresh Twilio values are used only from the
+environment; number/account ownership is not verified.
+
+The initial verification receipt at05:53:29Z fails an additional whole-call-history
+equality assertion, not a preservation check: one call, one session and36events
+were appended since the fresh premerge snapshot. All original, earlier972,4ba and
+fresh-premerge row prefixes match exactly; all four integrity checks pass. The
+failed receipt remains retained. A fresh locked zero-room read at05:55:44Z verifies
+those same prefixes and whole unchanged booking state:85restaurant reservations,
+167actions,0holds;42Easy writes;5Stay bookings;34call-booking associations. Whole
+history equality is explicitly not claimed. No cross-database atomic snapshot or
+identity/source claim for the appended call is made.
+
+A complete strict serial ET/EN/RU batch ran on the exact detached `a7be09c`.
+The shared lock spans all languages; the synthetic caller's private `azure-calm`
+remap changes no production settings. The reviewed on-disk helper is pinned to
+`4a8d490c1cf3cd8a93d57fc683dd2ba7fd20afcaf87371a73a425d160e08bcdc`.
+Its original audio guard is called first, unchanged; a failure-only observer emits
+metadata and rethrows rather than repairing or accepting rejected content. No
+expected answer, caller language or phrase hints reach independent recognition.
+Fresh final input, exact captions, audible PCM, language, required propositions,
+contradictions, raw0.78floor and unchanged restaurant state remain mandatory.
+The batch exits0 at06:01:18Z with all twelve cases passing:
+
+| Language | Menu | Allergy | Note | Takeaway | Result |
+| --- | --- | --- | --- | --- | --- |
+| ET | .980 | .998 | .994 | .990 | 4/4 PASS |
+| EN | 1.000 | 1.000 | 1.000 | .994 | 4/4 PASS |
+| RU | .973 | .991 | 1.000 | .994 | 4/4 PASS |
+
+Every case has fresh final input, exact approved captions and voiced PCM. All
+mandatory safety propositions and the appropriate output language survive
+independent automatic recognition; no contradiction is accepted. Restaurant
+state is unchanged for each language and the entire serial batch. Exact runtime
+and source-lineage checks pass at its end; content hashes were matched before the
+batch. There were no failure-observer records.
+The result establishes this bounded native RTC witness, not deterministic ASR,
+physical listening, carrier/PSTN reachability, number continuity/ownership or
+real-restaurant acceptance. Earlier failures and all diagnostic qualifications
+remain retained. The once-only telephone completion audit is still pending.
+
+Receipts in `/tmp/opencode/`:
+`restaurant-recovery-ru-staff-note-{publication,head-ci,master-ci,sync,verification,verification-final,incoming,live-summary,rtc-summary}.json`.
