@@ -197,6 +197,10 @@ NUMBER_WORDS = {
     "neljakesi": 4,
     "viiekesi": 5,
     "kuuekesi": 6,
+    "seitsmekesi": 7,
+    "kaheksakesi": 8,
+    "üheksakesi": 9,
+    "kümnekesi": 10,
     "one": 1,
     "two": 2,
     "three": 3,
@@ -242,6 +246,13 @@ NUMBER_WORDS = {
         if value >= 21 and re.fullmatch(r"[a-z ]+", word)
     },
 }
+
+
+DINER_FORMS = "|".join(
+    re.escape(word)
+    for word in sorted(NUMBER_WORDS, key=len, reverse=True)
+    if word.endswith(("le", "kesi"))
+)
 
 
 DAY_LABELS = {
@@ -404,6 +415,15 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
             inquiry["time_candidates"] = requested_time.candidates
         else:
             inquiry["time_invalid"] = True
+        # Conflicting clocks own every recognized temporal span too. Mask each
+        # separately, preserving a real diner count between the clock choices.
+        clock_spans = requested_time.spans or (
+            (requested_time.span,) if requested_time.span else ()
+        )
+        for low, high in clock_spans:
+            text = text[:low] + " " * (high - low) + text[high:]
+        if clock_spans:
+            text = " ".join(text.split())
     words = "|".join(
         re.escape(word) for word in sorted(NUMBER_WORDS, key=len, reverse=True)
     )
@@ -413,10 +433,6 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
     )
     party_prefix = r"(?:for(?:\s+a\s+party\s+of)?|на|для|kokku|total)"
     party = re.search(r"\b" + party_prefix + r"\s+" + number + r"\b", text)
-    if party and requested_time and requested_time.span:
-        low, high = requested_time.span
-        if party.start() < high and party.end() > low:
-            party = None
     party = party or re.search(
         r"\b" + number + r"\s+" + guest_noun + r"\b",
         text,
@@ -439,15 +455,33 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
         or re.search(
             r"\b(?:meid on|meid tuleb|me tuleme|tuleme|oleme)\s+" + number + r"\b", text
         )
-        or re.search(r"\b(kahekesi|kolmekesi|neljakesi|viiekesi|kuuekesi)\b", text)
+        or re.search(r"\b(" + DINER_FORMS + r")\b", text)
     )
     if not party and not requested_time and "party_size" in inquiry:
         party = re.fullmatch(r"tegelikult\s+" + number, text.strip(".!?"))
-    party = party or re.search(
-        r"\b(ühele|kahele|kolmele|neljale|viiele|kuuele|seitsmele|kaheksale)\b", text
-    )
     if not party and not requested_time and re.search(r"\bpalun\b", text):
         party = re.fullmatch(r"(?:palun\s+)?" + number + r"(?:,?\s+palun)?[.!]?", text)
+
+    def partial_number(match, group=1):
+        """Every total/component must own its complete numeric phrase."""
+        return bool(
+            match
+            and (
+                re.search(
+                    r"\b(?:\w*(?:kümmend|kümne\w*|sada|saja|tuhat|tuhande\w*)|hundred|thousand|\d+)"
+                    r"(?:[ -]+(?:and|ja|и))?[ -]+$",
+                    text[: match.start(group)],
+                )
+                or re.match(
+                    r"[ -]+(?:"
+                    + number
+                    + r"|\w*(?:kümmend|kümne\w*|sada|saja|tuhat|tuhande\w*))\b",
+                    text[match.end(group) :],
+                )
+            )
+        )
+
+    partial_compound = partial_number(party)
     if party:
         inquiry["party_size"] = (
             int(party[1]) if party[1].isdigit() else NUMBER_WORDS[party[1]]
@@ -487,6 +521,12 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
         + r" (?:last|lapse\w*)\b",
         text,
     )
+    partial_compound |= (
+        partial_number(adult)
+        or partial_number(children)
+        or partial_number(subset)
+        or partial_number(subset, 2)
+    )
     if subset:
         total, child_count = (
             int(value) if value.isdigit() else NUMBER_WORDS[value]
@@ -507,6 +547,7 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
         total = re.search(
             r"\b(?:total|kokku|всего)\s+" + number + r"\b", text
         ) or re.search(r"\b" + number + r"\s+in\s+total\b", text)
+        partial_compound |= partial_number(total)
         if total and count(total) != components:
             inquiry.pop("party_size", None)
             inquiry["party_invalid"] = True
@@ -525,12 +566,21 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
     for match in alternative.finditer(text):
         count_prefix = re.search(r"\b" + party_prefix + r"\s*$", text[: match.start()])
         count_suffix = re.match(r"\s+" + guest_noun + r"\b", text[match.end() :])
-        if count_prefix or count_suffix or expected_field == "party":
+        if (
+            count_prefix
+            or count_suffix
+            or expected_field == "party"
+            or any(word.endswith(("le", "kesi")) for word in match.groups())
+        ):
             inquiry.pop("party_size", None)
             inquiry["party_invalid"] = True
+    total_matches = list(
+        re.finditer(r"\b" + number + r"\s+" + guest_noun + r"\b", text)
+    )
+    partial_compound |= any(partial_number(match) for match in total_matches)
     totals = {
         int(match[1]) if match[1].isdigit() else NUMBER_WORDS[match[1]]
-        for match in re.finditer(r"\b" + number + r"\s+" + guest_noun + r"\b", text)
+        for match in total_matches
     }
     if len(totals) > 1:
         inquiry.pop("party_size", None)
@@ -550,6 +600,11 @@ def parse_restaurant_request(text, previous=None, *, now=None, expected_field=No
     if party and re.search(
         r"\b(?:not|mitte|ei|не)(?:\s+\w+){0,2}\s*$", text[: party.start()]
     ):
+        inquiry.pop("party_size", None)
+        inquiry["party_invalid"] = True
+    if partial_compound:
+        # A recognized unit of an unconsumed larger number is not the total,
+        # even if reserving that smaller group would fit a configured table.
         inquiry.pop("party_size", None)
         inquiry["party_invalid"] = True
     return inquiry
@@ -635,7 +690,7 @@ def _restaurant_detail_followup(text, previous, *, expected_field=None):
             + count
             + r"(?: "
             + noun
-            + r")?|"
+            + r"(?: jaoks)?)?|"
             r"(?:there (?:will be|are)|we (?:are|will be)|we['’]re|meid (?:on|tuleb|oleks)|me tuleme|tuleme|oleme|нас(?: будет)?) "
             + number
             + r"(?: "
@@ -1291,7 +1346,9 @@ class RestaurantCallTools(CallTools):
                     planning_text, prior, expected_field=expected_field
                 )
                 or (
-                    had_pending
+                    self._restaurant_inquiry is not None
+                    and re.match(r"^(?:tegelikult|hoopis)\b", planning_text)
+                    or had_pending
                     or details
                     and {"start_time", "party_size"} <= details.keys()
                 )
