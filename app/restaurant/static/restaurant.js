@@ -186,19 +186,19 @@ const TEXT = {
     "Один помощник для бронирования столика и ответов на вопросы гостей.",
   ],
   language: [
-    "Vali vestluse keel",
-    "Choose your conversation language",
-    "Выберите язык разговора",
+    "Lehe ja tervituse keel",
+    "Page and greeting language",
+    "Язык страницы и приветствия",
   ],
   languageHelp: [
-    "Abiline alustab ja vastab valitud keeles.",
-    "The assistant starts and replies in your chosen language.",
-    "Помощник начинает разговор и отвечает на выбранном языке.",
+    "Esimene sõnum määrab keele. Vahetamiseks palu abilist.",
+    "Your first message sets the language. Ask to switch it.",
+    "Язык задаёт первое сообщение. Для смены попросите.",
   ],
   languageLocked: [
-    "Keele vahetamiseks lõpeta pooleliolev vestlus.",
-    "End the active conversation before changing language.",
-    "Завершите текущий разговор перед сменой языка.",
+    "Lehe keele muutmiseks lõpeta pooleliolev vestlus.",
+    "End the active conversation before changing the page language.",
+    "Чтобы сменить язык страницы, завершите текущий разговор.",
   ],
   demo: [
     "Fiktiivne restoranidemo.",

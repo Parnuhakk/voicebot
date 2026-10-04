@@ -12,7 +12,8 @@ async page => {
   assert.equal(await page.locator('#demo-section').getAttribute('lang'),'en');
   assert.equal(await page.locator('#demo-send').textContent(),'Send message');
   assert((await page.locator('#demo-models').textContent()).includes('en-US-JennyNeural'));
-  assert((await page.locator('#demo-language-help').textContent()).includes('end this conversation'));
+  assert((await page.locator('#demo-language-help').textContent()).includes('language of your first message'));
+  assert((await page.locator('#demo-language-help').textContent()).includes('Ask the assistant to switch languages'));
   await page.locator('#demo-start').click();
   assert((await page.locator('#demo-status').textContent()).includes('operator token'));
   assert.equal(requests.length,0,'signed-out language selection sent a private request');

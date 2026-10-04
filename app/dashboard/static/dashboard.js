@@ -5,7 +5,7 @@ const bookingUi = {kind:"slot", sessionId:null, busy:false, uncertain:false, hol
 const DEMO_COPY = {
   et: {
     title:"Proovi kõneabilist", subtitle:"Kirjuta sõnum või räägi mikrofoniga",
-    languageLabel:"Vestluse keel / Conversation language", languageHelp:"Vali keel enne vestlust. Keele muutmiseks lõpeta vestlus ja alusta uut.", voiceLabel:"Abilise hääl / Assistant voice",
+    languageLabel:"Tervituse keel / Greeting language", languageHelp:"Valik määrab tervituse keele. Abiline jätkab sinu esimese sõnumi keeles. Keele vahetamiseks palu seda abiliselt.", voiceLabel:"Abilise hääl / Assistant voice",
     introTitle:"Üks vestlus. Lihtsam vastuvõtt.", intro:"Küsi teenuste kohta, leia sobiv aeg ja proovi broneerimist fiktiivse külalisena.",
     start:"Alusta demovestlust", end:"Lõpeta vestlus", history:"Vaata vestluse ajalugu", messageLabel:"Sõnum demoabilisele", send:"Saada sõnum",
     placeholder:"Näiteks: soovin homme massaaži", micLevel:"Mikrofoni helitase", speakNaturally:"Räägi loomulikult.",
@@ -30,7 +30,7 @@ const DEMO_COPY = {
   },
   en: {
     title:"Try the voice assistant", subtitle:"Type a message or speak into your microphone",
-    languageLabel:"Conversation language / Vestluse keel", languageHelp:"Choose a language before starting. To change it, end this conversation and start a new one.", voiceLabel:"Assistant voice / Abilise hääl",
+    languageLabel:"Greeting language / Tervituse keel", languageHelp:"Your choice sets the greeting language. The assistant continues in the language of your first message. Ask the assistant to switch languages if needed.", voiceLabel:"Assistant voice / Abilise hääl",
     introTitle:"One conversation. A simpler reception.", intro:"Ask about services, find a suitable time and try a booking with a fictional guest.",
     start:"Start demo conversation", end:"End conversation", history:"View conversation history", messageLabel:"Message the demo assistant", send:"Send message",
     placeholder:"For example: I'd like a massage tomorrow", micLevel:"Microphone level", speakNaturally:"Speak naturally.",
