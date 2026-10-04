@@ -56,6 +56,6 @@
   "allergy_notice": {
     "et": "Menüüs on märgitud teadaolevad allergeenid, kuid koostis ja ristkontakti võimalus tuleb personaliga üle kontrollida. Ma ei saa lubada allergeenivaba toitu. Raske allergia korral palun rääkige enne tellimist restorani töötajaga.",
     "en": "The menu lists known allergens, but staff must verify ingredients and possible cross-contact. I cannot guarantee allergen-free food. For a serious allergy, speak directly with the restaurant before ordering.",
-    "ru": "В меню указаны аллергены, но состав и возможный контакт с аллергенами на кухне нужно проверить с сотрудником. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа."
+    "ru": "В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа."
   }
 }

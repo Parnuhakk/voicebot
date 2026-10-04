@@ -12,13 +12,13 @@ premerge row prefixes remain intact. Fresh HTTPS/assets/menu/ET-EN-RU mobile and
 robot-only retired-host checks pass. The870 receipts below remain dated checkpoints.
 
 Strict complete multilingual native acceptance is **not complete**. On94, English
-passed all four cases with unchanged restaurant state. Estonian menu/allergy/note
-passed, but takeaway independent-audio content validation failed. Russian menu
+and Estonian passed all four cases with unchanged restaurant state. Russian menu
 passed before its allergy-audio rejection.
 Current and historical failures remain recorded; metadata-only diagnosis continues
 without weakening required refusals/referrals or changing production voices/ASR.
 The reviewed private ET whole-canonical compound-spacing correction passed the
-actual94note; the incomplete ET/RU runs are not inferred to be complete from870.
+actual94note and takeaway. A minimal shared Russian notice revision is being
+verified; no new-release or complete Russian wire acceptance is claimed yet.
 No physical-microphone, carrier/PSTN or real restaurant acceptance is claimed.
 
 The sections below retain the chronological repair and verification history;
@@ -798,3 +798,65 @@ no contradiction or unrelated word mutation. Metadata-only receipt:
 12expected/14recognized words). This is not RTC acceptance. A further bounded
 private whole-canonical correction requires failing-first tests and independent
 review; no fuzzy medical/referral matching or caption relaxation is permitted.
+
+## Explicit Russian staff-verification notice candidate
+
+The reviewed ET takeaway correction admits only the three observed complete
+compounds and rejects immediately if repairing one leaves any noncanonical words;
+it closes the demonstrated similarity-fallback gap, not production booking logic.
+Failing-first2/144 then4/144;148private checks and the narrow Codex review pass.
+Two supplemental rejection assertions in untouched generic fallback failed; they
+are retained as limits, not universal canonical-equivalence success. Strict exact94
+ET now passes all four cases at0.980/0.998/0.994/0.990 with unchanged restaurant
+state. The final aggregate still fails because RU allergy recognition misses only
+the staff-verification proposition at0.982609; it says the public noncanonical
+staff phrase, not the approved referral. English94all4proof remains unchanged.
+
+Production Russian SSML preserves the literal notice and has no pronunciation
+substitutions. A bounded same-voice/same-delivery experiment reproduced the old
+recognition failure, then tested the explicit subject:
+
+> В меню указаны аллергены. Сотрудник ресторана должен проверить состав и возможный контакт с аллергенами на кухне. Я не могу обещать еду без аллергенов. При серьёзной аллергии поговорите с рестораном до заказа.
+
+This says the restaurant employee **must** check composition and possible kitchen
+allergen contact; it retains the refusal to promise allergen-free food and the
+serious-allergy/before-ordering referral. It changes no ingredient/menu fact,
+booking authority, kitchen-notification ability or real-restaurant claim.
+Two direct repetitions scored0.991489. A separate metadata-only check retained
+all four required clauses and the entire public answer aside from `ё`/`е`, which
+existing dish/referral patterns already support. No voice, production ASR or
+expected-answer/caller-language hints changed. This is direct diagnostic evidence,
+not RTC acceptance. Receipts: `restaurant-recovery-94-ru-wording-{experiment,clause-diagnostic}.json`.
+
+Failing-first native/HTTP/held-recap regressions:3FAIL, then3FAIL after correcting
+one held-fixture oracle. The first fixture used an unlisted complete question whose
+existing safe policy clears the pending proposal; the retention test now uses an
+already-whitelisted milk-allergy statement. No booking grammar was broadened.
+The shared Russian notice line alone changed;131phone-answer tests pass9.48s.
+Private missing/optional/reversed/wrong-actor/ingredient/cross-contact checks had
+7FAIL/152PASS before the new literal obligation was required. After the first
+guard159PASS; two added leading-negation/bigger-word tests failed, then exact
+word boundaries and negative lookbehind made161offline checks pass, zero providers.
+The old `нужно проверить с сотрудником` requirement remains enforced for old
+fixtures; the new approved notice requires its explicit employee obligation.
+No missing referral or noncanonical recognized staff phrase is normalized away.
+The full isolated repository run passes **12,649 tests/36 subtests**, exit0,
+206.27s, with six explicit opt-in skips and two existing deprecation warnings.
+All eleven Chromium153journeys pass with no JavaScript errors/external requests,
+including the guest preparation/renewal/receipt matrix. JSONparse confirms only
+the Russian notice changed in restaurant data; all93otherapp/demo files, menu,
+prices, tables, ET/ENcopy, productionvoices/ASR and booking logic are unchanged.
+Codex round1 passes the production semantics/three new regressions and161private
+tests (164total), but reports a private P1: with existing `ё`/`е` variation, an
+intact staff obligation plus a second reversed obligation passes at0.832143/
+0.833631. Four literal contradiction variants fail before repair; one finite
+contradiction pattern now rejects staff `не должен`/`может не` with `проверить`/
+`проверять`. All165private offline checks pass, zero providers. This is a tightened
+negative guard, not a recognition/referral exception or a production source change.
+Focused Codex P1 re-review passes165tests: all four reported contradictory forms
+reject above0.78, while removing only the new regex in memory makes them accept.
+All12canonical positives and legacy staff/refusal/allergen negatives pass. One
+initial supplemental harness incorrectly assumed every legacy mutation exceeded
+0.78; correcting that test assumption required no repository edit. No concrete
+P0/P1 remains in the reviewed finite repair. Publication and fresh exact-release
+multilingual wire proof remain pending; direct synthesis does not close the goal.
