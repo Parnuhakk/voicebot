@@ -14,9 +14,13 @@ async function run() {
   const {chromium} = require(process.argv[2] || 'playwright');
   const files = {
     '/': ['landing.html', 'text/html; charset=utf-8'],
+    '/dashboard': ['index.html', 'text/html; charset=utf-8'],
+    '/restaurant.css': ['restaurant.css', 'text/css'],
+    '/operator-dashboard.css': ['operator-dashboard.css', 'text/css'],
     '/landing.css': ['landing.css', 'text/css'],
     '/favicon.svg': ['favicon.svg', 'image/svg+xml'],
     '/fonts/figtree-latin.woff2': [path.join(root, 'app/dashboard/static/fonts/figtree-latin.woff2'), 'font/woff2'],
+    '/fonts/figtree-latin-ext.woff2': [path.join(root, 'app/dashboard/static/fonts/figtree-latin-ext.woff2'), 'font/woff2'],
   };
   const requests = [];
   const server = http.createServer((req, res) => {
@@ -46,7 +50,7 @@ async function run() {
     const page = await context.newPage();
     page.on('pageerror', error => errors.push(error.message));
     page.on('response', response => {if (response.status() >= 400) errors.push(`HTTP ${response.status()}: ${response.url()}`);});
-    for (const width of [1440, 390, 320]) {
+    for (const width of [1440, 1024, 800, 540, 390, 320]) {
       await page.setViewportSize({width, height:width === 1440 ? 1000 : 844});
       await page.goto(origin, {waitUntil:'networkidle'});
       assert.equal(await page.locator('html').getAttribute('lang'), 'et');
@@ -56,6 +60,23 @@ async function run() {
       assert.equal(await page.getByRole('link', {name:'Proovi kõneabilist', exact:true}).first().getAttribute('href'), '/dashboard#demo-section');
       assert.equal(await page.getByRole('link', {name:'Vaata lauakalendrit', exact:true}).first().getAttribute('href'), '/booking-calendar.html');
       assert(await page.getByRole('navigation', {name:'Peamenüü'}).getByRole('link', {name:'Töölaud', exact:true}).isVisible());
+      // The overview must hand off to real controls, not nonfunctional mock UI.
+      for (const [name, target] of [
+        ['Broneeri laud', 'reservation-heading'],
+        ['Vaata kõneajalugu', 'calls-section'],
+        ['Vaata restoraniteavet', 'information-section'],
+      ]) {
+        const link = page.getByRole('link', {name, exact:true});
+        assert.equal(await link.count(), 1, `missing workspace shortcut: ${name}`);
+        await link.click();
+        await page.waitForLoadState('networkidle');
+        assert.equal(page.url(), `${origin}/dashboard#${target}`);
+        assert(await page.locator(`#${target}`).isVisible());
+        assert(await page.locator(`#${target}`).evaluate(el => {
+          const box = el.getBoundingClientRect(); return box.top < innerHeight && box.bottom > 0;
+        }), `${name} did not scroll to its controls`);
+        await page.goto(origin, {waitUntil:'networkidle'});
+      }
       assert(await page.locator('#demo-disclosure').isVisible(), 'fictional demo disclosure is hidden');
       assert.match(await page.locator('#demo-disclosure').textContent(), /Meretuule.*väljamõeldud/s);
       assert.match(await page.locator('#demo-disclosure').textContent(), /päris broneeringut ei tehta/i);
@@ -74,11 +95,34 @@ async function run() {
       assert.equal(await page.locator('form, input').count(), 0, 'landing exposes a credential or booking form');
       const broken = await page.locator('a[href]').evaluateAll(links => links.map(link => link.getAttribute('href')).filter(href => {
         if (href.startsWith('#')) return !document.getElementById(href.slice(1));
-        return !['/', '/dashboard', '/dashboard#demo-section', '/booking-calendar.html'].includes(href);
+        return !['/', '/dashboard', '/dashboard#demo-section', '/dashboard#reservation-heading', '/dashboard#calls-section', '/dashboard#information-section', '/booking-calendar.html'].includes(href);
       }));
       assert.deepEqual(broken, [], 'unapproved URL or broken local anchor');
       const stylesheet = await page.locator('link[rel="stylesheet"]').getAttribute('href');
       assert.equal(stylesheet, `/landing.css?v=${digest(path.join(staticRoot, 'landing.css'))}`);
+      // Rendered text contrast catches light-on-mint and muted-on-navy regressions.
+      const lowContrast = await page.evaluate(() => {
+        const rgb = color => (color.match(/[\d.]+/g) || []).map(Number);
+        const luminance = color => color.slice(0, 3).map(value => {
+          const channel = value / 255; return channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4;
+        }).reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0);
+        return [...document.querySelectorAll('body *')].filter(el => el instanceof HTMLElement &&
+          el.getBoundingClientRect().width > 0 && [...el.childNodes].some(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim())
+        ).flatMap(el => {
+          const style = getComputedStyle(el), foreground = rgb(style.color);
+          let background = [255, 255, 255], parent = el;
+          while (parent) {
+            const color = rgb(getComputedStyle(parent).backgroundColor);
+            if (color.length === 3 || color[3] === 1) {background = color; break;}
+            parent = parent.parentElement;
+          }
+          const [light, dark] = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+          const ratio = (light + .05) / (dark + .05);
+          const large = parseFloat(style.fontSize) >= 24 || (parseFloat(style.fontSize) >= 18.66 && Number(style.fontWeight) >= 700);
+          return ratio + .01 < (large ? 3 : 4.5) ? [{text:el.textContent.trim().slice(0, 60), ratio}] : [];
+        });
+      });
+      assert.deepEqual(lowContrast, [], `${width}px unreadable text`);
       await page.keyboard.press('Tab');
       assert.equal(await page.locator(':focus').textContent(), 'Liigu sisu juurde');
       await page.keyboard.press('Enter');
@@ -111,7 +155,7 @@ async function run() {
     assert.deepEqual(external, [], 'external runtime dependency');
     assert.deepEqual(errors, [], 'browser errors');
     assert(requests.every(req => req.method === 'GET' && !req.pathname.startsWith('/api/')), 'landing accessed private APIs');
-    console.log(JSON.stringify({result:'passed', widths:[1440,390,320], javascript:'disabled', reducedMotion:'passed', stylesheetFailure:'passed', externalRequests:0, apiRequests:0, screenshots, browser:browser.version()}));
+    console.log(JSON.stringify({result:'passed', widths:[1440,1024,800,540,390,320], workspaceHandoffs:18, contrast:'passed', javascript:'disabled', reducedMotion:'passed', stylesheetFailure:'passed', externalRequests:0, apiRequests:0, screenshots, browser:browser.version()}));
     await context.close();
   } finally {
     if (browser) await browser.close();

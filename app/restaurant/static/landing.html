@@ -3,12 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#f6f9f9" />
+    <meta name="theme-color" content="#173844" />
     <meta name="description" content="RestoBot on restorani AI-kõneabiline ja lauabroneeringute töölaud. Proovi kõneabilist ning tutvu lauakalendriga väljamõeldud Meretuule restoranis." />
     <title>RestoBot · Hea vastuvõtt algab enne saabumist</title>
     <link rel="preload" href="/fonts/figtree-latin.woff2?v=4ba7d3d09669" as="font" type="font/woff2" crossorigin />
     <link rel="icon" href="/favicon.svg?v=35ecc0e2d894" type="image/svg+xml" />
-    <link rel="stylesheet" href="/landing.css?v=97b9d0d0e418" />
+    <link rel="stylesheet" href="/landing.css?v=07dd7cceb580" />
   </head>
   <body>
     <a class="skip-link" href="#main">Liigu sisu juurde</a>
@@ -20,10 +20,12 @@
       <symbol id="people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3" /><path d="M3 21v-3a6 6 0 0 1 12 0v3m1-16a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5v2" /></symbol>
       <symbol id="leaf" viewBox="0 0 24 24"><path d="M20 4C9 2 2 9 5 16s15 5 15-12ZM4 21 16 9" /></symbol>
       <symbol id="arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6" /></symbol>
+      <symbol id="journal" viewBox="0 0 24 24"><path d="M8 5h11a2 2 0 0 1 2 2v13H8a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3h2v17M5 16h4m5-6h3m-3 4h3" /></symbol>
+      <symbol id="grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2" /><rect x="14" y="3" width="7" height="7" rx="2" /><rect x="3" y="14" width="7" height="7" rx="2" /><rect x="14" y="14" width="7" height="7" rx="2" /></symbol>
     </svg>
     <header class="site-header">
       <div class="header-inner">
-        <a class="brand" href="/" aria-label="RestoBot avaleht" translate="no"><svg class="icon" aria-hidden="true"><use href="#wave" /></svg>restobot<span>.</span></a>
+        <a class="brand" href="/" aria-label="RestoBot avaleht" translate="no"><span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#wave" /></svg></span>restobot<span class="brand-dot">.</span></a>
         <nav aria-label="Peamenüü">
           <a href="#how-it-works">Kuidas töötab</a>
           <a href="/booking-calendar.html">Lauakalender</a>
@@ -33,23 +35,35 @@
     </header>
     <main id="main" tabindex="-1">
       <section class="hero" aria-labelledby="hero-heading">
+        <div class="hero-inner">
         <div class="hero-copy">
-          <p class="product-label"><span class="label-line" aria-hidden="true"></span>AI-kõneabiline restoranile</p>
+          <p class="product-label"><svg class="icon" aria-hidden="true"><use href="#wave" /></svg>AI-kõneabiline restoranile</p>
           <h1 id="hero-heading">Hea vastuvõtt algab enne saabumist.</h1>
           <p class="hero-description">Külaline soovib lauda. RestoBot aitab leida sobiva aja, küsib kinnituse ja hoiab broneeringud ühes kohas.</p>
-          <p class="hero-aside">Vähem korraldamist. Rohkem külalislahkust.</p>
           <div class="hero-actions">
             <a class="button primary" href="/dashboard#demo-section">Proovi kõneabilist<svg class="icon" aria-hidden="true"><use href="#arrow" /></svg></a>
-            <a class="button secondary" href="/booking-calendar.html"><svg class="icon" aria-hidden="true"><use href="#calendar" /></svg>Vaata lauakalendrit</a>
+            <a class="calendar-link" href="/booking-calendar.html">Vaata lauakalendrit<svg class="icon" aria-hidden="true"><use href="#arrow" /></svg></a>
           </div>
           <p class="demo-guidance">Demo avaneb töölaual. Kõneabilise proovimiseks on vaja operaatori ligipääsu.</p>
-          <div class="hero-footnote"><svg class="icon" aria-hidden="true"><use href="#leaf" /></svg><span>Teie meeskond võõrustab.<br />RestoBot aitab broneerida.</span></div>
+          <div class="hero-footnote"><svg class="icon" aria-hidden="true"><use href="#check" /></svg><span>Broneering tekib alles külalise kinnitusel.</span></div>
         </div>
         <figure class="reception-scene" aria-labelledby="scene-title" aria-describedby="demo-disclosure">
-          <div class="scene-header"><div><span class="scene-venue" translate="no">Meretuule</span><h2 id="scene-title">Kõnest lauani.</h2></div><span class="sample-badge">Näidisvestlus</span></div>
+          <div class="preview-topbar"><span class="preview-location"><svg class="icon" aria-hidden="true"><use href="#grid" /></svg><span translate="no">Meretuule</span><span aria-hidden="true">/</span>Vastuvõtt</span><span class="sample-badge">Näidisvaade</span></div>
+          <div class="preview-layout">
+          <div class="preview-rail" aria-hidden="true">
+            <span class="preview-brand" translate="no"><svg class="icon"><use href="#wave" /></svg>restobot.</span>
+            <span class="preview-property"><svg class="icon"><use href="#leaf" /></svg><span translate="no">Meretuule</span></span>
+            <span class="preview-nav selected"><svg class="icon"><use href="#grid" /></svg>Lauakalender</span>
+            <span class="preview-nav"><svg class="icon"><use href="#phone" /></svg>Kõneabiline</span>
+            <span class="preview-nav"><svg class="icon"><use href="#calendar" /></svg>Broneeringud</span>
+            <svg class="coastal-lines" viewBox="0 0 210 90" fill="none"><path d="M-20 35c40-48 64 48 114 0s74 48 130 0M-20 51c40-48 64 48 114 0s74 48 130 0M-20 67c40-48 64 48 114 0s74 48 130 0" /></svg>
+            <span class="preview-rail-caption">Restorani vastuvõtt</span>
+          </div>
+          <div class="scene-workspace">
+          <div class="scene-header"><div><span class="scene-venue">Kõneabiline + lauakalender</span><h2 id="scene-title">Kõnest lauani.</h2></div><span class="preview-date">7. oktoober<br /><strong>19.00</strong></span></div>
           <div class="guest-request"><span class="scene-icon"><svg class="icon" aria-hidden="true"><use href="#phone" /></svg></span><div><span class="speaker">Külaline</span><p>„Sooviksin kolmapäevaks kell seitse lauda neljale.”</p></div></div>
           <div class="table-proposal">
-            <div class="proposal-header"><span>Laua ettepanek</span><span>7. oktoober · 19.00</span></div>
+            <div class="proposal-header"><span>Laua ettepanek</span><span>4 külalist · 90 min</span></div>
             <svg class="dining-room" viewBox="0 0 490 225" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <path class="room-wall" d="M25 183V30q0-12 12-12h416q12 0 12 12v165H86" />
               <path class="room-window" d="M145 15h200m-200 6h200M175 15v6m50-6v6m40-6v6m50-6v6" />
@@ -64,11 +78,23 @@
             <div class="assistant-reply"><svg class="icon" aria-hidden="true"><use href="#wave" /></svg><p><strong translate="no">RestoBot</strong>„Laud neljale 7. oktoobril kell 19.00. Kas kinnitan broneeringu?”</p></div>
           </div>
           <div id="confirmation-example" class="confirmation-example"><p><span class="speaker">Külaline</span>„Jah, palun kinnita.”</p><div class="confirmed-result"><span class="confirmation-icon"><svg class="icon" aria-hidden="true"><use href="#check" /></svg></span><div><strong>Näidisbroneering kinnitatud</strong><span>Laud 03 · 4 külalist · 19.00</span></div></div></div>
+          </div>
+          </div>
           <figcaption id="demo-disclosure">Meretuule on väljamõeldud restoran. See on näidisvestlus; päris broneeringut ei tehta.</figcaption>
         </figure>
+        </div>
+        <div class="hero-bottom"><p>Teie meeskond võõrustab. <span>RestoBot aitab broneerida.</span></p><span>Vähem korraldamist. Rohkem külalislahkust.</span></div>
+      </section>
+      <section class="workspace-section" aria-labelledby="workspace-heading">
+        <div class="workspace-copy"><span class="section-icon"><svg class="icon" aria-hidden="true"><use href="#grid" /></svg></span><h2 id="workspace-heading">Kogu vastuvõtt.<br />Üks selge töölaud.</h2><p>Lauad, kõned ja restorani teave ühes kohas. Meeskond näeb, mis on kinnitatud, ja külaline teab, mida oodata.</p><a class="text-link" href="/dashboard">Ava töölaud<svg class="icon" aria-hidden="true"><use href="#arrow" /></svg></a></div>
+        <div class="workspace-tools">
+          <article class="workspace-tool"><span class="tool-icon"><svg class="icon" aria-hidden="true"><use href="#calendar" /></svg></span><div><h3>Lauabroneeringud</h3><p>Vali aeg ja seltskonna suurus. Vaata pakkumine üle ning kinnita alles siis.</p><a class="text-link" href="/dashboard#reservation-heading">Broneeri laud<svg class="icon" aria-hidden="true"><use href="#arrow" /></svg></a></div></article>
+          <article class="workspace-tool"><span class="tool-icon"><svg class="icon" aria-hidden="true"><use href="#journal" /></svg></span><div><h3>Kõneajalugu</h3><p>Vaata kõnede tehnilisi sündmusi ja broneerimistoimingute tulemusi.</p><a class="text-link" href="/dashboard#calls-section">Vaata kõneajalugu<svg class="icon" aria-hidden="true"><use href="#arrow" /></svg></a></div></article>
+          <article class="workspace-tool"><span class="tool-icon"><svg class="icon" aria-hidden="true"><use href="#leaf" /></svg></span><div><h3>Restorani teave</h3><p>Menüü, lahtiolekuajad ja broneerimisreeglid — sama info, millele toetub kõneabiline.</p><a class="text-link" href="/dashboard#information-section">Vaata restoraniteavet<svg class="icon" aria-hidden="true"><use href="#arrow" /></svg></a></div></article>
+        </div>
       </section>
       <section id="how-it-works" class="how-it-works" aria-labelledby="how-heading">
-        <div class="section-heading"><h2 id="how-heading">Üks sujuv vestlus.<br />Selge broneering.</h2><p>Alates esimesest küsimusest kuni külalise kinnituseni — iga samm on arusaadav nii külalisele kui ka teie meeskonnale.</p></div>
+        <div class="section-heading"><h2 id="how-heading">Hea teenindus.<br />Juba esimesest kõnest.</h2><p>Kolm lihtsat sammu. Külaline räägib oma soovist, abiline leiab sobiva laua ja küsib enne salvestamist kinnituse.</p></div>
         <ol class="journey">
           <li><div class="step-heading"><span class="step-number">1</span><svg class="icon" aria-hidden="true"><use href="#phone" /></svg></div><h3>Külaline ütleb oma soovi</h3><p>Kõneabiline täpsustab kuupäeva, saabumisaja ja külaliste arvu. Samas vestluses saab küsida restorani kohta.</p></li>
           <li><div class="step-heading"><span class="step-number">2</span><svg class="icon" aria-hidden="true"><use href="#calendar" /></svg></div><h3>RestoBot pakub sobivat lauda</h3><p>Ettepanek lähtub vabast ajast ja seltskonna suurusest. Lauakalender aitab meeskonnal saalist ülevaadet saada.</p></li>
@@ -79,7 +105,7 @@
         <div class="language-copy"><svg class="icon" aria-hidden="true"><use href="#people" /></svg><div><h2 id="language-heading">Teie külalise keeles.</h2><p>Kõneabilist saab proovida eesti, inglise ja vene keeles.</p></div></div>
         <ul class="languages" aria-label="Kõneabilise toetatud keeled"><li>Eesti</li><li lang="en">English</li><li lang="ru">Русский</li></ul>
       </section>
-      <section class="try-section" aria-labelledby="try-heading"><div><h2 id="try-heading">Tutvuge oma uue vastuvõtuabilisega.</h2><p>Proovige vestlust töölaual või vaadake, kuidas lauakalender töötab.</p></div><a class="button primary" href="/dashboard#demo-section">Proovi kõneabilist<svg class="icon" aria-hidden="true"><use href="#arrow" /></svg></a></section>
+      <section class="try-section" aria-labelledby="try-heading"><span class="try-mark"><svg class="icon" aria-hidden="true"><use href="#wave" /></svg></span><div><h2 id="try-heading">Järgmine külaline<br />algab ühest vestlusest.</h2><p>Proovi kõneabilist Meretuule näidisrestoranis.<br />Töölaual vajad operaatori ligipääsu.</p></div><a class="button primary" href="/dashboard#demo-section">Proovi kõneabilist<svg class="icon" aria-hidden="true"><use href="#arrow" /></svg></a></section>
     </main>
     <footer class="site-footer"><a class="brand footer-brand" href="/" aria-label="RestoBot avaleht" translate="no">restobot<span>.</span></a><p>Meretuule demo · väljamõeldud restoran</p><a href="/dashboard">Ava töölaud<svg class="icon" aria-hidden="true"><use href="#arrow" /></svg></a></footer>
   </body>
