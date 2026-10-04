@@ -137,10 +137,13 @@ The in-memory diagnostic used synthesized caller audio reduced to **8 kHz,
 mu-law**, then resampled to the worker's **24 kHz upload**. On the same twelve
 Anu-voiced Estonian field samples, exact fields with matching original source
 metadata passed **8/12** with MAI, **9/12** with Whisper Turbo and **8/12** with
-full Whisper after the parsing repairs. MAI rejected the foreign-language
-control and returned an empty result for silence; both Whisper variants failed
-those controls in this bounded experiment. Therefore MAI stays configured;
-there is no automatic foreign-source override, forced locale or consent prompt.
+full Whisper after the parsing repairs. MAI rejected the authored French-text
+control and returned an empty result for silence; both Whisper variants missed
+those expected outcomes in this bounded experiment. The French text used an
+allowed English-locale multilingual caller voice, so this does **not** prove
+genuine French-audio accuracy or unsafe Whisper source detection. The evidence
+is insufficient for a safe provider swap: MAI stays configured, with no
+automatic foreign-source override, forced locale or consent prompt.
 
 Other Nova-voiced diagnostic samples were substantially less reliable. These
 small synthetic results are not human-call accuracy estimates or proof that a
@@ -149,3 +152,12 @@ still fail original-source qualification. Audio and recognized text were kept
 only in memory; the recorded evidence contains case IDs and match booleans.
 Native finalized-turn and delivered-recap regressions cover state retention;
 they do not establish physical-microphone, carrier or public-ingress acceptance.
+
+## Weak initial acknowledgements
+
+First-turn `ja`, `jaa`, `yah`, `ya` and `ah`, or a terminal question mark on a
+known weak acknowledgement, do not select a reply language solely from a noisy
+supported source tag. A later clear ET/EN/RU request selects it normally. This
+only delays language locking: original-source rejection, explicit language
+requests, full commitments, delivered-recap consent and cancellation are
+unchanged. It does not repair incorrectly recognized words or empty speech.
