@@ -166,3 +166,78 @@ publication remain separate gates. Final `python -m pytest tests -q` passed
 All **12 browser journeys** passed; native optional-dependency collection also
 skips correctly in the core-only environment. Exact publication and a fresh
 strict multilingual batch are still pending at this candidate check.
+
+## PR #48 publication and current acceptance result
+
+The reviewed repair was committed as `7540d2e` and merged as
+`6fd6e4d5df4d4abb78c5dcb12431278265fb199c`. PR CI `37204656161` and master CI
+`37204876841` passed both jobs; the merged tree equals the verified candidate.
+The guarded shared synchronizer respected lock deferrals. Locked delivery checks
+matched all **102 source hashes per role**, equal worker/bridge images, unchanged
+speech settings and infrastructure, the original volume, four database integrity
+checks and preserved persistent/event prefixes. The whole prior restaurant digest
+also matched. Mutable-table and non-atomic cross-database qualifications remain.
+
+The existing configured number still points to the canonical webhook using
+**POST**. Read-only number lookup and signed/unsigned webhook, stream binding and
+`no-store` checks passed. Desktop/mobile public checks passed; the separate
+Meretuule host still returned **503** on all four tested routes.
+
+The first fresh strict batch on `6fd6e4d` **failed at the first Estonian menu
+caption gate**, before an independent-audio case ran. Two fresh assistant finals
+did not combine into the exact approved reply. Whole restaurant state, runtime
+and checker integrity stayed unchanged. A separate one-case diagnostic found an
+extra short final followed by the exact menu final; its post-input audio passed
+the original independent gate at **0.980392**. That audio diagnostic does not
+promote either caption failure or constitute whole-batch acceptance.
+
+Read-only metadata in the two diagnostic windows records two VAD speech starts,
+one unsupported-language turn and then one recognized turn. This is consistent
+with an input-fragment boundary problem, but does not identify the short caption's
+generation or justify accepting rejected source-language input. The telephone goal
+remains active; short human Estonian, physical microphones and PSTN remain unproven.
+
+## Native utterance grouping — candidate
+
+The same authored menu WAV reproduced the input-boundary failure without an RTC
+room. Installed default VAD split it into two chunks: the **1.088-second** first
+chunk was rejected as an unsupported source; the second was recognized as ET.
+The complete WAV and diagnostic **1-second** silence grouping each preserved ET
+recognition at **0.990654**. No production settings changed in that diagnostic.
+
+The minimal candidate changes only restaurant `prewarm` to use the existing
+Silero VAD's `min_silence_duration=1.0`; other businesses retain native defaults.
+Nominal native end-of-speech detection waits an additional **450 ms**, not an
+established end-to-end latency change. Speech-start threshold, prefix padding,
+interruption, unrestricted recognition, foreign-source rejection and booking
+consent policy remain unchanged.
+
+Failing-first native tests produced **6 failures / 2 passes**: short pauses split
+into two chunks/requests instead of one, and invalid business configuration did
+not fail before loading the model. The initial green run exposed a test-cleanup
+assumption: `StreamAdapter.aclose` removes its listener but does not close the
+wrapped provider. Explicit test-provider cleanup resolved that failure.
+
+Independent OpenAI **static review** found no P0/P1. Its two P2 suggestions are
+retained: the submitted fixture WAV includes both complete speech bursts and
+internal silence, and mixed supported/unsupported sources are rejected in either
+order. These are buffering/policy tests, not human speech-quality evidence.
+Published peer `8fbae42` was preserved. A separate static review of that new delta
+also found no P0/P1; its native held-language-switch regression is retained.
+That journey verifies the same hold at language change, exact English recap,
+rejected early consent and late playback, then a fresh recap and one later
+booking with zero model calls. Premature agreement must not resurrect the
+discarded proposal; its existing invalidation policy was not changed.
+
+All **138 scoped tests** passed. Final integrated full checks, including the
+additional journey, passed **15,432 tests + 36 subtests**, 6 skips and 2 existing
+warnings (243.58s); all **12 browser journeys** passed on the same application
+bytes. The unchanged private checker/observer controls passed **186 tests**.
+Exact publication and fresh strict speech acceptance remain separate gates.
+
+A paired eight-case authored synthetic input comparison completed with **5/8**
+for both default and candidate grouping. Both recognized the exact day-part
+counterquestion; isolated morning/evening and prefixed morning still failed the
+source/content criteria. Existing-ET-voice foreign controls remained rejected and
+are accent-qualified. This repair addresses intra-utterance fragmentation, not
+an established fix for isolated human Estonian words.

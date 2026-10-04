@@ -189,6 +189,75 @@ def test_whole_recap_still_requires_delivered_later_consent(tmp_path):
     asyncio.run(run())
 
 
+def test_native_held_language_switch_requires_new_recap_delivery(tmp_path):
+    async def run():
+        requests = []
+        started, resume = asyncio.Event(), asyncio.Event()
+
+        async def chunks():
+            if len(requests) == 2:
+                started.set()
+                await resume.wait()
+            yield b"\x10\x01" * 4800, False
+
+        @asynccontextmanager
+        async def post(**kwargs):
+            requests.append(ET.fromstring(kwargs["data"]))
+            yield NS(raise_for_status=lambda: None, content=NS(iter_chunks=chunks))
+
+        async with native_restaurant(tmp_path, "et", post) as call:
+            await native_turn(
+                call.session, call.agent, "Soovin homme lauda neljale kell 18:00."
+            )
+            old = call.state.pending
+            assert old["delivery"] and not old["approved"]
+            call.agent._detected_language = "en"
+            handle = call.session.generate_reply(
+                user_input=await finalized(call.agent, "Speak English, please.")
+            )
+            await asyncio.wait_for(started.wait(), 2)
+            current = call.state.pending
+            assert current is not old and current["hold_id"] == old["hold_id"]
+            assert call.state.language == "en" and not current["delivery"]
+            assert not current["approved"] and not call.state.bookings
+            expected = call.state.render_recap(current["hold_id"])
+            assert expected.startswith("I can offer a table at Meretuule,")
+            assert "for 4 guests" in expected and expected.endswith(
+                "Does that work for you?"
+            )
+            assert "".join(requests[1].itertext()) == expected
+            assert (
+                requests[1].find(".//" + SSML + "voice").get("name")
+                == "en-US-JennyNeural"
+            )
+            # The old ET playback receipt cannot authorize this new EN recap.
+            call.state.observe_user_text("Yes, I confirm.", detected_language="en")
+            denied = await call.state.dispatch(
+                "confirm_slot_booking", {"hold_id": current["hold_id"]}
+            )
+            assert denied["error"] == "consent_required" and not current["approved"]
+            assert not call.state.bookings
+            resume.set()
+            await asyncio.wait_for(handle, 4)
+            assert handle.exception() is None
+            assert call.session.history.items[-1].text_content == expected
+            # Early agreement discarded that proposal; late playback cannot
+            # resurrect its delivery. A fresh recap must precede later consent.
+            assert not current["delivery"] and not current["approved"]
+            assert call.state.pending is not current and not call.state.bookings
+            await native_turn(
+                call.session,
+                call.agent,
+                "Please reserve a table tomorrow at 1800 for four guests total.",
+            )
+            assert call.session.history.items[-1].text_content == expected
+            assert call.state.pending["delivery"] and not call.state.pending["approved"]
+            await native_turn(call.session, call.agent, "Yes, I confirm.")
+            assert len(call.state.bookings) == 1 and call.model.calls == 0
+
+    asyncio.run(run())
+
+
 def test_whole_provider_failure_cannot_deliver_recap(tmp_path):
     async def run():
         requests = []
