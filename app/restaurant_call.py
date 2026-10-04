@@ -15,6 +15,7 @@ from .languages import ENGLISH_INVITATION, LANGUAGE_POLICY, english_clarificatio
 from .restaurant_consent import CONFIRMATION_QUESTIONS, is_restaurant_confirmation
 from .restaurant_times import NUMBERS, parse_spoken_time
 from .restaurant_data import restaurant_demo_profile
+from .restaurant_service_questions import GENERAL_TOPICS, general_reply
 from .restaurant_dates import ESTONIAN_COUNTS, resolve_restaurant_date
 from .restaurant_date_vocabulary import RUSSIAN_COUNTS
 from .providers.speech_delivery import spoken_estonian_date
@@ -600,12 +601,12 @@ class RestaurantCallTools(CallTools):
                 self._restaurant_dish = item["id"]
                 break
         aliases = {
-            "vegetable-soup": ("soup", "supp", "supi", "суп"),
-            "salmon": ("salmon", "lõhe", "лосось", "лосос"),
-            "mushroom-risotto": ("risotto", "risoto", "ризотто"),
+            "vegetable-soup": r"\b(?:soups?|supp|suppi|suppe|supi(?:s|st|le|ga|d|ta)?|суп(?:а|е|у|ом|ы|ов)?)\b",
+            "salmon": r"\b(?:salmon|lõhe(?:s|st|le|ga|t|ta)?|лосос(?:ь|я|е|ю|ем))\b",
+            "mushroom-risotto": r"\b(?:risotto|risoto|risoto(?:s|st|t|ga|le)|ризотто)\b",
         }
-        for identifier, words in aliases.items():
-            if any(word in text for word in words) and any(
+        for identifier, pattern in aliases.items():
+            if re.search(pattern, text) and any(
                 item["id"] == identifier for item in self.restaurant["menu"]
             ):
                 self._restaurant_dish = identifier
@@ -787,6 +788,8 @@ class RestaurantCallTools(CallTools):
         ))
 
     def _resume_booking_reply(self, answer: str) -> str:
+        if self._restaurant_focus == "emergency_help":
+            return answer
         if self._restaurant_inquiry is None or self.pending or not self._restaurant_booking_paused:
             return answer
         copybook = COPY[self.language]
@@ -853,6 +856,8 @@ class RestaurantCallTools(CallTools):
 
     def information_reply(self, topic):
         copybook = COPY[self.language]
+        if topic in GENERAL_TOPICS:
+            return general_reply(self.restaurant, topic, self.language)
         if topic in {"family", "family_details"}:
             from .restaurant_family import family_reply
 
@@ -962,6 +967,8 @@ class RestaurantCallTools(CallTools):
         return copybook["domain"]
 
     def trusted_restaurant_response(self, *, after_tool=False, allow_actions=True):
+        if self._restaurant_focus == "emergency_help":
+            return {"content": self.guard_reply("", [])}
         if after_tool and self.results:
             return {"content": self.guard_reply("", self.results)}
         if (
@@ -992,6 +999,7 @@ class RestaurantCallTools(CallTools):
             (self._restaurant_focus or self._restaurant_unmatched)
             and self._restaurant_focus not in {"staff", "domain", "demo"}
             and "allergens" not in topics
+            and not set(topics).intersection(GENERAL_TOPICS)
             and not (
                 self.pending or self.cancel_approval or self.turn_mutation
                 or self.mutation_uncertain or self.clarification
@@ -1205,6 +1213,10 @@ class RestaurantCallTools(CallTools):
 
     def _restaurant_guard_reply(self, text, results):
         copybook = COPY[self.language]
+        if self._restaurant_focus == "emergency_help" and not (
+            self.unsupported_language or self.input_recovery_reply or self.clarification
+        ):
+            return self.information_reply("emergency_help")
         results = [
             row.get("result", row)
             for row in [*self.results, *(results or [])]

@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 from .restaurant_data import DAYS
 from .restaurant_dates import resolve_restaurant_date
 from .restaurant_family import family_topic
+from .restaurant_service_questions import CONFLICTS, GENERAL_TOPICS, general_topic
 
 
 @dataclass(frozen=True)
@@ -28,11 +29,11 @@ INFORMATION_TOPICS = (
     "duration", "children", "groups", "cancellation_help", "changes", "late",
     "parking", "pets", "highchair", "accessibility", "terrace", "extras", "staff",
     "family", "family_details",
-)
+) + GENERAL_TOPICS
 
 PATTERNS = {
     "allergens": r"allerg|allergeen|аллерг|глютен|glut(?:ee|e)n|peanut|pähkl|орех|laktoos|lactose|лактоз|sisald|contain|koostis|ingredients|содерж|состав",
-    "price": r"\b(?:price|cost|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maksab|цен\w*|стоим\w*|сколько(?:\s+\w+){0,2}\s+сто(?:ит|ят|ить))\b",
+    "price": r"\b(?:price|cost|how much (?:is|does|do|for|would)|hind|hinna\w*|hinnaga|maksab|maksavad|maksaks|maksma|maksta|maksumus|цен\w*|стоим\w*|сколько(?:\s+\w+){0,2}\s+сто(?:ит|ят|ить))\b",
     "menu": r"menüü|menu|меню|vegan|веган|vegetarian|taimetoit|вегетар|\b(?:dishes|serve|roogi|блюд\w*)\b|mis.*süüa|mida.*(?:süüa|pakute)",
     "kitchen": r"kitchen|köök|köögi|кухн|(?:kell|kellaajani|millal).*süüa|when.*(?:food|eat)|(?:до скольки|когда).*еда",
     "hours": r"\b(?:hours|open\w*|close\w*|shut|lahtiole\w*|avatud|avate|lahti|kinni|sulge\w*|tööa\w*|откры\w*|закры\w*|работа\w*|часы\s+работы)\b",
@@ -147,6 +148,11 @@ def match_question(
         topics = [topic for topic in topics if topic != "menu"]
     if not topics and (has_dish or has_diet):
         topics = ["menu"]
+    extra = general_topic(text)
+    if extra == "emergency_help":
+        topics = [extra]
+    elif extra:
+        topics = [extra] + [topic for topic in topics if topic not in CONFLICTS.get(extra, set())]
     days = tuple(index for index, pattern in enumerate(DAY_PATTERNS)
                  if re.search(r"\b(?:" + pattern + r")\b", text))
     if re.search(r"nädalavahetus|weekends?|выходн", text):
