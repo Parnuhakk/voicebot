@@ -66,11 +66,18 @@ RUSSIAN_NOTE_REFUSAL = (
 )
 
 
-def test_russian_note_refuses_kitchen_staff_notification_without_a_booking(make_state):
+RUSSIAN_NOTE_QUESTIONS = [
+    "Можете записать мою аллергию в бронирование?",
+    "Можете записать мою аллергию в бронировании?",
+]
+
+
+@pytest.mark.parametrize("question", RUSSIAN_NOTE_QUESTIONS)
+def test_russian_note_refuses_kitchen_staff_notification_without_a_booking(
+    make_state, question
+):
     state = make_state("ru")
-    state.observe_user_text(
-        "Можете записать мою аллергию в бронирование?", detected_language="ru"
-    )
+    state.observe_user_text(question, detected_language="ru")
     assert trusted_booking_response(state) == {"content": RUSSIAN_NOTE_REFUSAL}
     assert (
         state.guard_reply("Я уведомляю сотрудников кухни.", []) == RUSSIAN_NOTE_REFUSAL
@@ -78,9 +85,10 @@ def test_russian_note_refuses_kitchen_staff_notification_without_a_booking(make_
     assert not state.holds and not state.bookings and not state.pending
 
 
-def test_russian_note_audio_http_delivers_the_kitchen_staff_refusal(client):
+@pytest.mark.parametrize("question", RUSSIAN_NOTE_QUESTIONS)
+def test_russian_note_audio_http_delivers_the_kitchen_staff_refusal(client, question):
     session = start(client, "auto")["session_id"]
-    client.provider.transcript = "Можете записать мою аллергию в бронирование?"
+    client.provider.transcript = question
     response = client.post(
         "/api/turn",
         headers=AUTH,
@@ -97,8 +105,10 @@ def test_russian_note_audio_http_delivers_the_kitchen_staff_refusal(client):
     assert result["booking_changes"] == [] and not result["recap_delivery_id"]
 
 
+@pytest.mark.parametrize("question", RUSSIAN_NOTE_QUESTIONS)
 def test_russian_note_staff_refusal_keeps_hold_but_revokes_delivered_consent(
     make_state,
+    question,
 ):
     async def run():
         state = make_state("ru")
@@ -106,9 +116,7 @@ def test_russian_note_staff_refusal_keeps_hold_but_revokes_delivered_consent(
         previous = state.pending
         recap = state.render_recap()
         assert state.mark_recap_delivered(proposal["hold_id"])
-        state.observe_user_text(
-            "Можете записать мою аллергию в бронирование?", detected_language="ru"
-        )
+        state.observe_user_text(question, detected_language="ru")
         assert state.guard_reply("Я уведомляю сотрудников кухни.", []) == (
             RUSSIAN_NOTE_REFUSAL + " " + COPY["ru"]["resume_booking"] + " " + recap
         )
@@ -124,6 +132,20 @@ def test_russian_note_staff_refusal_keeps_hold_but_revokes_delivered_consent(
         )["error"] == "consent_required"
 
     asyncio.run(run())
+
+
+@pytest.mark.parametrize("question", RUSSIAN_NOTE_QUESTIONS)
+def test_russian_note_after_allergy_is_a_refusal_not_an_allergen_catalogue(
+    make_state, question
+):
+    state = make_state("ru")
+    state.observe_user_text("Что у вас в меню?", detected_language="ru")
+    assert trusted_booking_response(state)
+    state.observe_user_text("Содержит ли лосось молоко?", detected_language="ru")
+    assert trusted_booking_response(state)
+    state.observe_user_text(question, detected_language="ru")
+    assert trusted_booking_response(state) == {"content": RUSSIAN_NOTE_REFUSAL}
+    assert not state.holds and not state.bookings and not state.pending
 
 
 def test_russian_allergy_answer_requires_staff_to_verify_before_ordering(make_state):

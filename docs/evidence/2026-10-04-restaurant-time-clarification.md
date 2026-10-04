@@ -241,3 +241,54 @@ counterquestion; isolated morning/evening and prefixed morning still failed the
 source/content criteria. Existing-ET-voice foreign controls remained rejected and
 are accent-qualified. This repair addresses intra-utterance fragmentation, not
 an established fix for isolated human Estonian words.
+
+## Published grouping proof and remaining Russian selector boundary
+
+PR **#49** published the grouping repair as **`86aefbe`**. Both PR and master
+CI jobs passed. Locked deployed verification matched **102 source hashes per
+role**, equal worker/bridge images and the reviewed candidate tree. Only the
+native VAD silence duration changed; recognition, output voices/rates, other VAD
+fields, infrastructure and original storage volume were preserved. Four database
+integrity checks, persistent/event prefixes and the whole restaurant digest
+passed. Configured-number routing still uses the canonical **POST** webhook with
+signed/unsigned, stream-binding and `no-store` checks; no carrier call or number
+ownership certification is claimed. Public desktop/mobile checks passed and all
+four separate Meretuule routes remained **503**.
+
+The fresh strict serial FAQ batch on that release **failed** after ten individual
+passes: ET **4/4**, EN **4/4**, then RU menu/allergy. ET note retained the exact
+fresh caption and independent-audio score **0.994152**. RU note failed its caption
+gate; its input differed from the authored question by one grammatical ending.
+Whole restaurant state, runtime and original checker were unchanged. No earlier
+failed batch is promoted by these individual passes.
+
+The original three-turn clock probe also **failed**: the ambiguous request and
+exact “hommikul või õhtul?” counterquestion passed fresh-caption and audio gates,
+but isolated “õhtul” failed fresh-input recognition with similarity **0.0**. The
+counterquestion's independent audio scored **0.822967** under the unchanged
+**0.78** floor. Neither this partial probe nor synthetic speech proves reliable
+human short-word understanding.
+
+A bounded RU input/caption diagnostic identified the recognized note question as
+an authored booking-locative variant, one character different at the final word.
+The existing finite capability bank did not include it, so the selector chose
+`allergens` rather than `special_requests`. The candidate adds only that one
+equivalent question to `booking-101`; all answer wording and policies stay exact.
+Failing-first fresh, HTTP, held-consent, contextual and native-synthesis tests
+produced **5 failures / 145 passes**. After the one-value addition, **418 scoped
+tests** passed with one existing warning. Full verification passed **15,439 tests
++ 36 subtests**, 6 skips and 2 existing warnings (256.51s); all **12 browser
+journeys** passed. The unchanged private checker/observer controls passed **186
+tests**. Independent OpenAI **static review** found no P0/P1/P2; the reviewer
+could not run commands and did not independently compare the bank against HEAD.
+Owner verification separately checks that only this variant was added. Exact
+publication and a new strict whole-batch speech check remain pending;
+isolated-word recognition remains unresolved.
+
+The installed recognizers were also compared on the same eight authored native
+1-second-VAD inputs: **MAI-2 5/8**, **Groq Turbo 5/8**, **Groq large-v3 4/8**.
+Turbo recognized both isolated Estonian day parts correctly, but both Groq models
+lost the accent-qualified Spanish and German source-language controls. Groq also
+provides global, not per-phrase, source metadata. The comparison completed with
+unchanged production/state/runtime; its top-level success is not recognition
+acceptance. No recognizer replacement or rejection-policy relaxation was made.

@@ -110,6 +110,14 @@ async def native_restaurant(tmp_path, language, post, playback=None):
             "ru-RU-SvetlanaNeural",
             "ru-RU",
         ),
+        (
+            "ru",
+            "Можете записать мою аллергию в бронировании?",
+            "Я не сохраняю особые пожелания и не уведомляю сотрудников кухни. "
+            "Я не могу подтвердить безопасность при аллергии.",
+            "ru-RU-SvetlanaNeural",
+            "ru-RU",
+        ),
     ],
 )
 def test_native_refusal_keeps_full_context_in_one_request(
