@@ -817,6 +817,71 @@ Syntax, intended three-file scope, credential/conflict/whitespace checks pass.
 This checkpoint is safe to commit before the normal contributor merge; it is not
 an acceptance or combined-source completion claim.
 
+### Guest-current contributor intake and whole-question retention repair
+
+Caller qualification is retained in `8182f7a`, then contributor `9721803` is
+normally merged into `ea92957`. Both histories remain ancestors; there is no
+force-push, reset or protected-checkout mutation. The new UI/browser static review
+finds no P0/P1, but its layout matrix asserts guest-workspace overflow only, not
+whole-page overflow freedom. Both static reviewers are independent Codex-account
+lanes; neither substitutes for the owner's executed checks.
+
+The business reviewer identifies a new P1: the whole-read whitelist clears a
+valid incomplete inquiry and replaces recognized location/highchair answers with
+unknown-information recovery. Owner's isolated canonical reproduction extends
+the same defect to seven already-supported direct question forms. Exact FAQ-demo
+and parking controls retain preferences. Fourteen state/HTTP regressions fail
+with the missing canonical answer; seven unknown-count mixed-question controls
+pass before the repair.
+
+The minimal fix adds those seven exact alternatives inside the existing whole
+`fullmatch`; it does not authorize arbitrary topic substrings or relax correction,
+allergy, ownership or consent rules. New checks require canonical answers,
+retained date/four-person count, a subsequent independently expected 14:00 plan,
+a fresh unapproved/undelivered recap and denial of a write without delivery.
+Mixed unknown-count clauses still cannot inherit the old four-person plan.
+
+Scoped core verification: **704 passed / 8 skipped**, 53.49 seconds. An initial
+command referenced a nonexistent test filename, ran no tests and is not counted
+as a pass; the corrected path is `tests/test_restaurant_phone_answers.py`.
+Independent static follow-up closes the concrete P1 and finds no new P1 in the
+repair. It does not claim exhaustive information-phrasing support. Fresh isolated
+restrictive-source Docker packaging: **5 passed**, 11.19 seconds, network disabled
+with the existing local image and read-only non-root runtime. Final combined
+core/media, all eleven Chromium journeys, delivery checks, publication, real RTC
+and final preservation gates are still pending.
+
+Final combined gate after the retention repair:
+
+- Core `python -m pytest tests -q -p no:cacheprovider --tb=short`:
+  **12,222 passed / 83 skipped / 36 subtests**, 168.52 seconds.
+- Pinned media same command: **12,635 passed / 6 skipped / 36 subtests**,
+  200.46 seconds. Counts overlap and are not summed; warnings are the existing
+  Starlette/httpx and Python `audioop` deprecations.
+- All **eleven** Chromium journeys pass with zero external requests. The new
+  guest-current journey covers nine native-validation combinations, 45 failure
+  paths, three structured recaps, receipt/renewal rejection and multilingual
+  interludes; no independent provider or microphone proof is implied.
+- All **24** delivery cases pass; isolated packaging remains **5 passed**.
+- **199 Python AST / 23 JS syntax / 10 JSON parses / 6 asset digests** pass;
+  cumulative **216 text-file** credential/conflict/whitespace checks are clean.
+- Thirteen contributor files are byte-identical to frozen `9721803`; its existing
+  guest-current test AST remains unchanged. Its policy differs only in the three
+  reviewed exact-whole alias lines. Prior source, contributor and caller commits
+  remain ancestors. Fresh publication/deployment/RTC acceptance is not claimed
+  from these local gates.
+
+Fresh pre-publication preservation at **03:04:46 UTC** confirms unchanged
+configuration/volumes/current route, all four database integrity checks, stable
+first/later history, prior immutable call identities, zero rooms, all 23 original
+unrelated service IDs and the protected checkout. The first comparison attempt
+also required a later additional container `relaxed_lehmann`, now absent before
+publication. Its disappearance is independently isolated; cause is unproven and
+no recreation/removal is performed. The original 23 services all match. This
+qualification is retained in the private snapshot, not hidden as a green all-ID
+comparison. A further concurrent master/native revision `870aa41` is observed;
+the tested repair will be checkpointed before bounded normal intake of that delta.
+
 ## Pre-rollout preservation qualification
 
 Read-only hash-only snapshot at 2026-10-03 20:34:39 UTC records healthy web,

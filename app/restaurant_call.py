@@ -675,6 +675,9 @@ def _read_only_restaurant_question(text, menu):
         DETAIL_FOLLOWUP.fullmatch(value)
         or re.fullmatch(
             r"(?:please |palun |пожалуйста )?(?:"
+            r"where are you located|do you have highchairs|how long can we keep the table|"
+            r"do you serve vegan food|how much is the soup|does the salmon cost ten euros|"
+            r"what are the café opening hours|"
             r"(?:(?:olen (?:vegan|taimetoitlane))[,\.]? )?mida (?:te )?soovit(?:ad|ate)(?: süüa)?|"
             r"(?:(?:i(?:'m| am) (?:vegan|vegetarian))[,\.]? )?what (?:would|do) you recommend(?: to eat)?|"
             r"(?:(?:я (?:веган|вегетарианец|вегетарианка))[,\.]? )?что (?:вы )?(?:посоветуете|порекомендуете)(?: поесть)?|"
