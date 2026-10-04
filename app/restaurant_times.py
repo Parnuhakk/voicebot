@@ -518,7 +518,7 @@ def _selection(
 def parse_spoken_time(
     text: str,
     *,
-    pending: tuple[str, str] | None = None,
+    pending: tuple[str, ...] | None = None,
     allow_bare: bool = False,
 ) -> RequestedTime | None:
     """Return only clock selectors. Bare numbers require an expected time reply."""
@@ -693,7 +693,7 @@ def parse_spoken_time(
         )
     bare = None
     if not found and (allow_bare or pending):
-        bare = text
+        bare = re.sub(r"\bat night\b", "night", text)
         for pattern in PERIODS.values():
             bare = pattern.sub(" ", bare)
         bare = re.sub(r"\b(?:in the|in|the|please|palun|пожалуйста)\b", " ", bare)
@@ -733,9 +733,18 @@ def parse_spoken_time(
             for pattern in PERIODS.values()
             for match in pattern.finditer(text)
         ):
-            return RequestedTime(candidates=pending, invalid=True)
+            return RequestedTime(
+                candidates=pending if len(pending) > 1 else None, invalid=True
+            )
         hour, minute = map(int, pending[0].split(":"))
-        return _selection(hour, minute, period, meridiem=meridiem)
+        selection = _selection(
+            hour, minute, period, meridiem=meridiem and len(pending) > 1
+        )
+        # A single saved 24-hour clock is not an AM/PM choice. A contradictory
+        # day part needs a new clock; it cannot silently shift the existing one.
+        if len(pending) == 1 and selection.value != pending[0]:
+            return RequestedTime(invalid=True)
+        return selection
     if not found and period and bare == "":
         return RequestedTime(invalid=True)
     if not found:
