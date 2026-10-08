@@ -12,8 +12,8 @@ import pytest
 ACCOUNT = "AC" + "a" * 32
 CALL = "CA" + "b" * 32
 STREAM = "MZ" + "c" * 32
-VOICE_URL = "https://restobot.arleserver.cfd/api/twilio/voice"
-MEDIA_URL = "wss://restobot.arleserver.cfd/api/twilio/media"
+VOICE_URL = "https://restobot.arle.top/api/twilio/voice"
+MEDIA_URL = "wss://restobot.arle.top/api/twilio/media"
 # Public, deliberately non-credential test fixtures. Never use live environment.
 ENV = {
     "TWILIO_AUTH_TOKEN": "synthetic-test-only-credential",
@@ -75,7 +75,7 @@ def test_fixed_url_signature_includes_all_untrimmed_duplicate_values():
     assert s.valid_signature(cfg, VOICE_URL, params, sig)
     assert not s.valid_signature(cfg, VOICE_URL + "/", params, sig)
     assert not s.valid_signature(
-        cfg, "http://robot.arleserver.cfd/api/twilio/voice", params, sig
+        cfg, "http://robot.arle.top/api/twilio/voice", params, sig
     )
     changed = deepcopy(params)
     changed["Z"][0] = "last"
@@ -90,8 +90,8 @@ def test_fixed_url_signature_includes_all_untrimmed_duplicate_values():
     [
         MEDIA_URL,
         MEDIA_URL + "/",
-        "wss://robot.arleserver.cfd/api/twilio/media",
-        "wss://robot.arleserver.cfd/api/twilio/media/",
+        "wss://robot.arle.top/api/twilio/media",
+        "wss://robot.arle.top/api/twilio/media/",
     ],
 )
 def test_ws_signature_uses_only_fixed_wss_and_documented_slash(url):
@@ -103,7 +103,7 @@ def test_ws_signature_uses_only_fixed_wss_and_documented_slash(url):
 @pytest.mark.parametrize(
     "url",
     [
-        "https://robot.arleserver.cfd/api/twilio/media",
+        "https://robot.arle.top/api/twilio/media",
         MEDIA_URL + "?x=1",
         "wss://foreign.invalid/api/twilio/media",
         MEDIA_URL + "/foreign",
@@ -114,9 +114,7 @@ def test_foreign_ws_signature_urls_are_rejected(url):
     assert not s.valid_media_signature(s.Config.from_env(ENV), sign(url))
 
 
-@pytest.mark.parametrize(
-    "url", [VOICE_URL, "https://robot.arleserver.cfd/api/twilio/voice"]
-)
+@pytest.mark.parametrize("url", [VOICE_URL, "https://robot.arle.top/api/twilio/voice"])
 def test_voice_signature_accepts_only_explicit_new_and_legacy_origins(url):
     s = security()
     fields = {
@@ -131,7 +129,7 @@ def test_voice_signature_accepts_only_explicit_new_and_legacy_origins(url):
     "url",
     [
         "https://foreign.invalid/api/twilio/voice",
-        "http://restobot.arleserver.cfd/api/twilio/voice",
+        "http://restobot.arle.top/api/twilio/voice",
         VOICE_URL + "/",
         VOICE_URL + "?x=1",
     ],

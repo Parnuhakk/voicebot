@@ -33,6 +33,8 @@ def edge_declared(host):
     if not host or host.lower().rstrip(".") in (
         "robot.arleserver.cfd",
         "restobot.arleserver.cfd",
+        "robot.arle.top",
+        "restobot.arle.top",
     ):
         return False
     try:

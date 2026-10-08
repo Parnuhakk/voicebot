@@ -14,12 +14,12 @@ import time
 from dataclasses import dataclass
 from urllib.parse import urlsplit
 
-VOICE_URL = "https://restobot.arleserver.cfd/api/twilio/voice"
-MEDIA_URL = "wss://restobot.arleserver.cfd/api/twilio/media"
-LEGACY_VOICE_URL = "https://robot.arleserver.cfd/api/twilio/voice"
-LEGACY_MEDIA_URL = "wss://robot.arleserver.cfd/api/twilio/media"
+VOICE_URL = "https://restobot.arle.top/api/twilio/voice"
+MEDIA_URL = "wss://restobot.arle.top/api/twilio/media"
+LEGACY_VOICE_URL = "https://robot.arle.top/api/twilio/voice"
+LEGACY_MEDIA_URL = "wss://robot.arle.top/api/twilio/media"
 NATIVE_AUDIO_MARK = "voicebot-native-audio"
-FALLBACK_URL = "https://restobot.arleserver.cfd/api/twilio/unavailable-et.wav"
+FALLBACK_URL = "https://restobot.arle.top/api/twilio/unavailable-et.wav"
 MAX_PENDING = 16
 MAX_ACTIVE = 2
 BINDING_TTL = 30

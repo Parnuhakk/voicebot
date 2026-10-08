@@ -191,7 +191,7 @@ def test_compose_parser_keeps_bridge_separate_and_only_twilio_paths_public():
     labels = service["labels"]
     assert (
         labels["traefik.http.routers.voicebot-twilio.rule"]
-        == "(Host(`restobot.arleserver.cfd`) || Host(`robot.arleserver.cfd`)) && PathPrefix(`/api/twilio/`)"
+        == "(Host(`restobot.arle.top`) || Host(`robot.arle.top`)) && PathPrefix(`/api/twilio/`)"
     )
     assert int(labels["traefik.http.routers.voicebot-twilio.priority"]) >= 1000
     assert (

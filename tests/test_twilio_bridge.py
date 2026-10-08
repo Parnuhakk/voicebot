@@ -83,13 +83,13 @@ def voice(client, fields=None, url=VOICE_URL, signature=None, query=""):
 
 
 @pytest.mark.parametrize(
-    "origin", ["https://restobot.arleserver.cfd", "https://robot.arleserver.cfd"]
+    "origin", ["https://restobot.arle.top", "https://robot.arle.top"]
 )
 def test_new_and_legacy_signed_webhook_emit_canonical_restobot_stream(client, origin):
     response = voice(client, url=origin + "/api/twilio/voice")
     assert response.status_code == 200
     stream = ET.fromstring(response.text).find("Connect/Stream")
-    assert stream.get("url") == "wss://restobot.arleserver.cfd/api/twilio/media"
+    assert stream.get("url") == "wss://restobot.arle.top/api/twilio/media"
     assert response.headers["Cache-Control"] == "no-store"
 
 
@@ -309,7 +309,7 @@ def test_capacity_returns_cached_bilingual_audio_and_hangup_without_paid_job(cli
     assert root.find("Connect") is None
     assert (
         root.find("Play").text
-        == "https://restobot.arleserver.cfd/api/twilio/unavailable-et.wav"
+        == "https://restobot.arle.top/api/twilio/unavailable-et.wav"
     )
     assert root.find("Hangup") is not None
     audio = client.get("/api/twilio/unavailable-et.wav")

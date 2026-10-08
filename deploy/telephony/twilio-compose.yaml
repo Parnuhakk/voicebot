@@ -18,14 +18,14 @@ services:
       voicebot.web-source: ${VOICEBOT_WEB_SOURCE:-manual}
       traefik.enable: "true"
       traefik.docker.network: coolify
-      traefik.http.routers.voicebot-twilio.rule: (Host(`restobot.arleserver.cfd`) || Host(`robot.arleserver.cfd`)) && PathPrefix(`/api/twilio/`)
+      traefik.http.routers.voicebot-twilio.rule: (Host(`restobot.arle.top`) || Host(`robot.arle.top`)) && PathPrefix(`/api/twilio/`)
       traefik.http.routers.voicebot-twilio.priority: "10000"
       traefik.http.routers.voicebot-twilio.entrypoints: ${TWILIO_TRAEFIK_ENTRYPOINT:-https}
       traefik.http.routers.voicebot-twilio.tls: "true"
       traefik.http.routers.voicebot-twilio.tls.certresolver: ${TWILIO_TRAEFIK_CERTRESOLVER:-letsencrypt}
       traefik.http.routers.voicebot-twilio.service: voicebot-twilio
       traefik.http.services.voicebot-twilio.loadbalancer.server.port: "8082"
-      traefik.http.routers.voicebot-twilio-http.rule: (Host(`restobot.arleserver.cfd`) || Host(`robot.arleserver.cfd`)) && PathPrefix(`/api/twilio/`)
+      traefik.http.routers.voicebot-twilio-http.rule: (Host(`restobot.arle.top`) || Host(`robot.arle.top`)) && PathPrefix(`/api/twilio/`)
       traefik.http.routers.voicebot-twilio-http.priority: "10000"
       traefik.http.routers.voicebot-twilio-http.entrypoints: http
       traefik.http.routers.voicebot-twilio-http.service: voicebot-twilio
