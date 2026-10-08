@@ -11,7 +11,12 @@ from app.booking_response import trusted_booking_response
 from app.languages import CONSENT, requested_language, spoken_date
 from app.restaurant_call import COPY, parse_restaurant_request
 from app.restaurant_data import load_restaurant_data, restaurant_demo_profile
-from tests.test_restaurant_conversation import make_state as state_factory, prepare, tomorrow
+from tests.test_restaurant_conversation import (
+    make_state as state_factory,
+    next_friday,
+    prepare,
+    tomorrow,
+)
 from tests.test_restaurant_http import AUTH, client as http_client, start, turn
 
 make_state = state_factory
@@ -238,7 +243,11 @@ def test_partly_parsed_correction_never_inherits_old_date_or_diner_count(
     inquiry = state.booking_inquiry or {}
     assert inquiry.get("party_size") == fresh_count
     assert inquiry.get("party_size") != 4
-    assert inquiry.get("date") != tomorrow()
+    # A date inside the correction must be the freshly parsed one; a correction
+    # without a date must drop the old one rather than inherit it. Comparing
+    # against tomorrow() alone breaks on Thursdays, where next-Friday == tomorrow.
+    expected_date = next_friday() if "Friday" in text else None
+    assert inquiry.get("date") == expected_date
     assert "name" not in (trusted_booking_response(state) or {})
     assert state.pending is None and not state.bookings
 

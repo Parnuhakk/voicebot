@@ -35,6 +35,16 @@ def tomorrow():
     ).isoformat()
 
 
+def next_friday():
+    """Next-occurrence Friday, matching app/restaurant_dates weekday resolution.
+
+    On a Thursday this legitimately equals tomorrow(), so a corrected date may
+    equal tomorrow() without having been inherited.
+    """
+    today = datetime.now(ZoneInfo("Europe/Tallinn")).date()
+    return (today + timedelta(days=(4 - today.weekday()) % 7 or 7)).isoformat()
+
+
 async def prepare(state, party=4, time="14:00"):
     state.observe_user_text("Prepare a table.", language=state.language)
     result = await state.dispatch(
@@ -89,10 +99,8 @@ def test_booking_requires_later_exact_consent_after_delivered_recap(
         assert response["name"] == "confirm_slot_booking"
         confirmed = await state.dispatch(response["name"], response["arguments"])
         assert confirmed["ok"] is True
-        assert (
-            state.guard_reply("anything invented", state.results).startswith(
-                COPY[language]["confirmed"]
-            )
+        assert state.guard_reply("anything invented", state.results).startswith(
+            COPY[language]["confirmed"]
         )
 
     asyncio.run(run())
@@ -174,10 +182,8 @@ def test_estonian_natural_confirmation_and_known_asr_spellings(make_state, utter
         assert action["name"] == "confirm_slot_booking"
         result = await state.dispatch(action["name"], action["arguments"])
         assert result["ok"] and result["booking"]["party_size"] == 4
-        assert (
-            state.guard_reply("invented success", state.results).startswith(
-                COPY["et"]["confirmed"]
-            )
+        assert state.guard_reply("invented success", state.results).startswith(
+            COPY["et"]["confirmed"]
         )
         rows = await state.dispatcher._slot.get_operator_bookings(tomorrow())
         assert len(rows["items"]) == 1
