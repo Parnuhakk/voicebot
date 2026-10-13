@@ -33,6 +33,7 @@ services:
       traefik.http.middlewares.voicebot-twilio-https.redirectscheme.scheme: https
       traefik.http.middlewares.voicebot-twilio-https.redirectscheme.permanent: "true"
     ports: ["127.0.0.1:8082:8082"]
+    mem_limit: 1g
     networks: [coolify]
     init: true
     restart: unless-stopped

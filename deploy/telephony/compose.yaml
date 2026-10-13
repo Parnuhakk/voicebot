@@ -4,6 +4,7 @@ services:
     image: redis@sha256:e7723ff73d963f5cc6d9c4643ea3d989527a402a319239054e9472a7fb9219a2
     command: [redis-server, --appendonly, "yes"]
     volumes: [livekit_redis:/data]
+    mem_limit: 512m
     networks:
       coolify:
         aliases: [voicebot-media-redis]
@@ -17,6 +18,7 @@ services:
       LIVEKIT_KEYS: ${LIVEKIT_KEYS:?media credentials required}
     volumes: [./livekit.yaml:/etc/livekit/livekit.yaml:ro]
     ports: ["127.0.0.1:7880:7880"]
+    mem_limit: 1g
     networks: [coolify]
     depends_on: [redis]
     restart: unless-stopped
@@ -25,6 +27,7 @@ services:
     environment:
       SIP_CONFIG_BODY: ${SIP_CONFIG_BODY:?SIP configuration required}
     ports: ["127.0.0.1:5060:5060/udp", "127.0.0.1:5060:5060/tcp"]
+    mem_limit: 512m
     networks: [coolify]
     depends_on: [livekit, redis]
     restart: unless-stopped
@@ -75,6 +78,7 @@ services:
       VOICEBOT_TELEPHONE_DEMO: "1"
     volumes: [booking_state:/data]
     ports: ["127.0.0.1:8081:8081"]
+    mem_limit: 5g
     networks: [coolify]
     depends_on: [livekit]
     init: true
